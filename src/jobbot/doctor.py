@@ -97,5 +97,14 @@ def run(bundle: ConfigBundle) -> tuple[bool, list[Check]]:
     except Exception as exc:
         checks.append(Check("Exports", False, str(exc)))
     resumes = candidate.existing_resumes()
-    checks.append(Check("Resume registry", len(resumes) == 4, f"{len(resumes)}/4 existing private files"))
+    configured = len(candidate.resume_files)
+    # Resume documents are intentionally private and excluded from release archives.
+    # Routing configuration must exist, but a fresh installation remains healthy
+    # until the user places their own files at those paths.
+    resume_registry_ok = configured == 4 and all(path.is_relative_to(bundle.root) for path in candidate.resume_files.values())
+    checks.append(Check(
+        "Resume registry",
+        resume_registry_ok,
+        f"{len(resumes)}/{configured} private files present; missing files are optional and never packaged",
+    ))
     return all(check.ok for check in checks), checks

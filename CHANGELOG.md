@@ -14,5 +14,6 @@
 - Fixed acceptance-cap resume semantics, primary-platform remote evidence, trusted full-detail promotion, and dashboard source coverage.
 - Added persisted required/preferred qualification, state-eligibility, remote-evidence, schedule, and score-component fields plus reviewable old/new description-derived diffs.
 - Live-tested LinkedIn search/detail traversal, multi-page progression, multi-query sequencing, write-through durability, interruption/resume, bridge restart, and rerun dedupe in normal installed Chrome.
+- Made private resume documents optional in `doctor`, allowing a clean release install to pass while preserving factual resume routing when local files are supplied.
 
 Historical release notes are retained under `docs/history/`.
