@@ -4,6 +4,7 @@ import json
 import sqlite3
 
 from .m0001_ledger import _ensure
+from ._sql import execute_statements
 
 VERSION = 3
 NAME = "dashboard application funnel verification and field diffs"
@@ -11,7 +12,7 @@ NAME = "dashboard application funnel verification and field diffs"
 
 def upgrade(conn: sqlite3.Connection) -> None:
     _ensure(conn, "application_events", {"source": "TEXT NOT NULL DEFAULT 'cli'"})
-    conn.executescript("""
+    execute_statements(conn, """
     CREATE TABLE IF NOT EXISTS job_diffs(
       diff_id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, version_id INTEGER NOT NULL,
       field_name TEXT NOT NULL, old_value_json TEXT NOT NULL, new_value_json TEXT NOT NULL,

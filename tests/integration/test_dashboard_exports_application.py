@@ -44,6 +44,10 @@ class DashboardExportApplicationTests(unittest.TestCase):
                 with urllib.request.urlopen(base + "/api/jobs?page=2&page_size=50", timeout=5) as response:
                     payload = json.loads(response.read())
                 self.assertEqual(payload["total"], 2100); self.assertEqual(len(payload["jobs"]), 50); self.assertEqual(payload["page"], 2)
+                with urllib.request.urlopen(base + "/api/coverage", timeout=5) as response:
+                    coverage = json.loads(response.read())
+                self.assertEqual(set(coverage["primary"]), {"linkedin", "indeed", "glassdoor"})
+                self.assertIn("supplemental", coverage)
                 job_id = payload["jobs"][0]["job_id"]
                 request = urllib.request.Request(base + f"/api/jobs/{job_id}/application", data=json.dumps({"status": "APPLIED", "notes": "dashboard test"}).encode(), headers={"Content-Type": "application/json"}, method="POST")
                 with urllib.request.urlopen(request, timeout=5) as response: self.assertTrue(json.loads(response.read())["ok"])

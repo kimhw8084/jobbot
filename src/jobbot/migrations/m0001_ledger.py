@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import sqlite3
 
+from ._sql import execute_statements
+
 VERSION = 1
 NAME = "permanent ledger and immutable versions"
 
@@ -18,7 +20,7 @@ def _ensure(conn: sqlite3.Connection, table: str, columns: dict[str, str]) -> No
 
 
 def upgrade(conn: sqlite3.Connection) -> None:
-    conn.executescript("""
+    execute_statements(conn, """
     CREATE TABLE IF NOT EXISTS jobs(
       job_id TEXT PRIMARY KEY,
       title TEXT, company TEXT, location_raw TEXT, canonical_url TEXT, apply_url TEXT,

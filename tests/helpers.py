@@ -16,14 +16,14 @@ def bundle_with_database(database: Path, output: Path | None = None) -> ConfigBu
     return ConfigBundle(original.root, copy.deepcopy(original.strategy), copy.deepcopy(original.candidate), runtime)
 
 
-def scored(title: str, description: str, *, location: str = "Remote — United States", employment: str = "Full-time permanent", source: str = "greenhouse") -> Job:
+def scored(title: str, description: str, *, location: str = "Remote — United States", employment: str = "Full-time permanent", source: str = "greenhouse", remote_status: str = "remote") -> Job:
     bundle = load_bundle(PROJECT_ROOT)
     job = Job(
         source_site=source, source_job_id=title.replace(" ", "-") + "-100",
         canonical_url="https://boards.greenhouse.io/example/jobs/100",
         apply_url="https://boards.greenhouse.io/example/jobs/100",
         title=title, company="Example Health", location_raw=location,
-        remote_status="remote", employment_type=employment,
+        remote_status=remote_status, employment_type=employment,
         description=description, posted_at="2026-09-07T12:00:00+00:00",
     )
     setattr(job, "_mode", "deep")

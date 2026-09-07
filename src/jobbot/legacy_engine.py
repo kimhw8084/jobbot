@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remote Career Job Search Automation v3.1.0 — Recall-First Enrichment + Verification + Exhaustive Ledger.
+"""JobBot v3.2.0 — recall-first enrichment, verification, and exhaustive ledger.
 
 Design goals:
 - retrieve broadly enough to sustain 10–20 strong applications/day and 500+ cumulative,
@@ -67,18 +67,47 @@ def word_tokens(text: str) -> list[str]:
 def title_token_coverage(pattern: str, title: str) -> float:
     generic={"specialist","coordinator","associate","analyst","manager","senior","junior","lead","remote","the","and","of","for","to","in"}
     pt=[x for x in word_tokens(pattern) if x not in generic]
+    # Exact phrase matching is handled by the caller. A single surviving token
+    # (for example "healthcare" from "Healthcare Coordinator") is not enough
+    # evidence for a fuzzy occupational-family match.
+    if len(pt) < 2:
+        return 0.0
     tt=set(word_tokens(title))
     return (sum(1 for x in pt if x in tt)/len(pt)) if pt else 0.0
 
 
+def _heading_positions(text: str, headings: Iterable[str]) -> list[int]:
+    """Find genuine section labels without matching prose such as 'requirements per FDA'."""
+    positions: set[int] = set()
+    stripped = text.lstrip()
+    offset = len(text) - len(stripped)
+    generic = {"requirements", "preferred", "bonus", "ideally"}
+    for heading in headings:
+        label = clean_text(heading)
+        if not label:
+            continue
+        escaped = re.escape(label).replace(r"\ ", r"\s+")
+        start_match = re.match(rf"(?i)^{escaped}(?:\s*:|\s+|$)", stripped)
+        if start_match:
+            positions.add(offset)
+        for match in re.finditer(rf"(?im)^\s*{escaped}(?:\s*:|\s+|$)", text):
+            positions.add(match.start())
+        for match in re.finditer(rf"(?i)(?<![A-Za-z0-9]){escaped}\s*:", text):
+            positions.add(match.start())
+        if norm(label) not in generic:
+            for match in re.finditer(rf"(?i)(?<![A-Za-z0-9]){escaped}(?![A-Za-z0-9])", text):
+                positions.add(match.start())
+    return sorted(positions)
+
+
 def extract_required_block(text: str, strategy: dict[str,Any]) -> str:
     low=text.lower(); cfg=strategy.get("strategy",{}).get("requirements",{})
-    starts=[low.find(h.lower()) for h in cfg.get("required_section_headings",[]) if low.find(h.lower())>=0]
+    starts=_heading_positions(text,cfg.get("required_section_headings",[]))
     if starts:
         start=min(starts); end=min(len(text),start+10000)
-        for h in cfg.get("preferred_section_headings",[])+cfg.get("section_stop_headings",[]):
-            i=low.find(h.lower(),start+5)
-            if i>=0: end=min(end,i)
+        boundaries=_heading_positions(text,cfg.get("preferred_section_headings",[])+cfg.get("section_stop_headings",[]))
+        later=[position for position in boundaries if position>start+5]
+        if later: end=min(end,min(later))
         return text[start:end]
     chunks=re.split(r"(?<=[.!?])\s+|\n+",text)
     markers=("required","must have","must possess","minimum","you have","you bring","what you need","what you'll need")
@@ -86,13 +115,12 @@ def extract_required_block(text: str, strategy: dict[str,Any]) -> str:
 
 
 def extract_preferred_block(text: str, strategy: dict[str,Any]) -> str:
-    low=text.lower(); cfg=strategy.get("strategy",{}).get("requirements",{})
-    starts=[low.find(h.lower()) for h in cfg.get("preferred_section_headings",[]) if low.find(h.lower())>=0]
+    cfg=strategy.get("strategy",{}).get("requirements",{})
+    starts=_heading_positions(text,cfg.get("preferred_section_headings",[]))
     if not starts: return ""
     start=min(starts); end=min(len(text),start+6000)
-    for h in cfg.get("section_stop_headings",[]):
-        i=low.find(h.lower(),start+5)
-        if i>=0: end=min(end,i)
+    later=[position for position in _heading_positions(text,cfg.get("section_stop_headings",[])) if position>start+5]
+    if later: end=min(end,min(later))
     return text[start:end]
 
 
@@ -185,7 +213,7 @@ def employment_analysis(job:Job)->tuple[str,str]:
         return "fixed_term_employee","fixed-term/contract arrangement stated"
     if "contract" in et and not any(x in et for x in ("full time permanent","permanent")):
         return "fixed_term_employee","source employment type is contract"
-    if "full time" in et or "fulltime" in et or phrase_present("full-time",text):
+    if "full time" in et or "fulltime" in et or phrase_present("full-time",text) or re.search(r"(?:^|[,(/ -])FT(?:$|[,)/ -])", job.title):
         if "permanent" in et or phrase_present("permanent position",text): return "full_time_permanent","full-time permanent"
         return "full_time_employee","full-time role; no contractor marker detected"
     if "permanent" in et: return "full_time_permanent","permanent role"
@@ -232,7 +260,15 @@ def recall_prefilter(job:Job,strategy:dict[str,Any])->tuple[bool,str]:
 
 
 def source_remote_declared(job: Job) -> bool:
-    return job.remote_status.lower()=="remote" or job.source_site in {"remotive","jobicy","remoteok","remotelanders"}
+    status=norm(job.remote_status)
+    location=norm(job.location_raw)
+    metadata_remote=(
+        status in {"remote","fully remote","100 remote","us remote"}
+        or location in {"remote","fully remote","100 remote","us remote","remote united states","remote texas"}
+        or location.startswith("remote ")
+        or location.endswith(" remote")
+    )
+    return metadata_remote or job.source_site in {"remotive","jobicy","remoteok","remotelanders"}
 
 
 def remote_gate(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> tuple[str,str,float]:
@@ -373,7 +409,7 @@ def capability_for(term: str, candidate: dict[str,Any]) -> tuple[str,str]:
 def classify_role(job: Job, strategy: dict[str,Any], mode: str) -> tuple[Optional[dict[str,Any]],list[str],float,str,float]:
     """Recall-first occupational classification.
 
-    v2.1 deliberately separates *role recall* from final qualification. A broad but plausible
+    JobBot deliberately separates *role recall* from final qualification. A broad but plausible
     coordinator/specialist title can enter a profile with moderate relevance so its ATS description
     can be evaluated; it cannot reach Apply Now without qualification, source and employment gates.
     """
@@ -508,7 +544,7 @@ def requirement_analysis(job: Job, profile: dict[str,Any], strategy: dict[str,An
         ("finance/accounting",["accounting","financial analysis","FP&A","revenue recognition","ASC 606","CPA"]),
         ("software engineering",["software development","software engineering","Java","Apex","React","Kubernetes"]),
         ("cybersecurity",["cybersecurity","vulnerability management","penetration testing","OWASP","Burp Suite"]),
-        ("sales",["sales quota","closing business","full sales cycle","account executive"]),
+        ("sales",["sales quota","sales experience","healthcare sales","closing business","full sales cycle","account executive","account management"]),
         ("clinical trials",["clinical trial management","clinical research","clinical trial manager"]),
         ("recruiting",["recruiting operations","talent acquisition","sourcing"]),
     ]
@@ -597,6 +633,21 @@ def extract_timezone_requirement(text:str)->str:
     return ""
 
 
+def extract_schedule_requirement(text:str)->str:
+    chunks=_sentence_chunks(text,200)
+    matches=[x for x in chunks if re.search(r"\b(?:schedule|shift|hours|weekends?|evenings?|overnight|on[- ]call|time zone|timezone)\b",x,re.I)]
+    return " ".join(matches[:4])[:1200]
+
+
+def extract_eligible_states(job:Job)->list[str]:
+    full=" ".join([job.location_raw,job.description])
+    patterns=re.findall(r"(?:must (?:live|reside|be located)|residents? of|remote (?:in|from)|eligible states?|based in|open to candidates in)\s+([^.;]{2,220})",full,flags=re.I)
+    states:set[str]=set()
+    for value in patterns:
+        states |= extract_states(value)
+    return sorted(states)
+
+
 def work_auth_analysis(text:str,candidate:dict[str,Any])->tuple[str,str]:
     low=text.lower(); req=""
     markers=["without sponsorship","unable to sponsor","no sponsorship","will not sponsor","cannot sponsor","authorized to work for any employer","must be authorized to work","visa sponsorship is not available"]
@@ -633,14 +684,19 @@ def urgency_score(job:Job)->float:
 def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Job:
     # Every downstream parser works on normalized visible text, never raw ATS HTML.
     job.description=strip_html(job.description or "")
+    job.required_qualifications=extract_required_block(job.description,strategy)
+    job.preferred_qualifications=extract_preferred_block(job.description,strategy)
+    job.eligible_states=extract_eligible_states(job)
     mode=getattr(job,"_mode","fast"); profile,kws,rel,family,dscore=classify_role(job,strategy,mode)
     job.relevance_score=round(rel,1); job.normalized_title_family=family or ""; job.domain_score=round(dscore,1)
     job.application_deadline,job.posting_status=parse_deadline(job.description)
     job.remote_gate,job.remote_gate_reason,job.remote_confidence=remote_gate(job,strategy,candidate)
+    job.remote_evidence={"decision":job.remote_gate,"reason":job.remote_gate_reason,"source_metadata_remote":source_remote_declared(job)}
     job.employment_class,job.employment_reason=employment_analysis(job)
     job.source_verification,job.source_verification_reason,job.canonical_verified=source_verification_analysis(job)
     job.source_confidence=round(source_confidence(job,strategy),1); job.extraction_confidence=round(extraction_confidence(job),1)
     job.travel_percent=extract_travel_percent(job.description); job.timezone_requirement=extract_timezone_requirement(job.description)
+    job.schedule_requirement=extract_schedule_requirement(job.description)
     job.work_auth_gate,job.work_authorization_requirement=work_auth_analysis(job.description,candidate)
     job.application_friction_score=round(application_friction_score(job),1); job.urgency_score=round(urgency_score(job),1)
     amin=annualized_salary(job.salary_min,job.salary_max,job.salary_period)
@@ -653,6 +709,7 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
         job.search_profile=""; job.career_lane=""; job.resume_variant=""; job.matched_keywords=[]; job.qualification_score=0.0
         job.requirement_matches=[]; job.requirement_gaps=[]; job.required_skills=[]; job.management_required=0
         job.landing_score=job.career_score=job.door_score=0.0; job.recommendation="OUT_OF_SCOPE"; job.hard_reject_reasons=[]; job.score_reasons=["role-family relevance below threshold / out of scope"]
+        job.score_components={"role_relevance":job.relevance_score,"qualification_fit":0.0,"landing_fit":0.0,"career_value":0.0,"door_score":0.0}
         return job
     job.search_profile=clean_text(profile.get("name")); job.career_lane=clean_text(profile.get("career_lane")); job.resume_variant=clean_text(profile.get("resume_variant")); job.matched_keywords=kws
     a=requirement_analysis(job,profile,strategy,candidate); job.requirement_matches=a["matches"]; job.requirement_gaps=a["critical_gaps"]+a["learnable_gaps"]; job.required_skills=a["required_skills"]; job.management_required=1 if a["management_required"] else 0; job.years_required=a["years_required"]
@@ -686,13 +743,21 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     sc=strategy.get("strategy",{}).get("scoring",{}); critical=a["critical_gaps"]
     stable_employment=job.employment_class in {"full_time_employee","full_time_permanent"}
     verified=bool(job.canonical_verified)
+    trusted_primary_detail=(
+        job.source_site in {"linkedin","indeed","glassdoor"}
+        and job.source_confidence>=88
+        and job.extraction_confidence>=85
+        and len(job.description or "")>=500
+        and job.source_verification not in {"identity_mismatch","unverified_discovery"}
+    )
+    promotable_source=verified or trusted_primary_detail
     if job.hard_reject_reasons: job.recommendation="SKIP_HARD_GATE"
     elif job.source_verification in {"identity_mismatch"}: job.recommendation="SKIP_HARD_GATE"
     elif job.employment_class in {"independent_contractor","freelance","temporary","seasonal"}: job.recommendation="CONTRACT_REVIEW"
     elif job.employment_class=="fixed_term_employee": job.recommendation="FIXED_TERM_REVIEW"
     elif job.employment_class=="part_time": job.recommendation="PART_TIME_REVIEW"
     elif job.employment_class=="unknown": job.recommendation="REVIEW"
-    elif not verified: job.recommendation="REVIEW"
+    elif not promotable_source: job.recommendation="REVIEW"
     elif job.remote_gate=="review": job.recommendation="REVIEW_REMOTE"
     elif job.work_auth_gate=="review": job.recommendation="REVIEW"
     elif rel>=float(sc.get("minimum_relevance_for_apply",80)) and q>=float(sc.get("minimum_qualification_for_apply",72)) and job.landing_score>=float(sc.get("minimum_landing_for_apply",74)) and job.career_score>=float(sc.get("minimum_career_for_apply",55)) and not critical and not soft_hits and stable_employment: job.recommendation="APPLY_NOW"
@@ -712,6 +777,7 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     if a["learnable_gaps"]: job.score_reasons.append("gaps: "+", ".join(a["learnable_gaps"][:5]))
     if critical: job.score_reasons.append("critical gaps: "+", ".join(critical[:3]))
     if soft_hits: job.score_reasons.append("soft penalties: "+", ".join(soft_hits[:5]))
+    job.score_components={"role_relevance":job.relevance_score,"qualification_fit":job.qualification_score,"landing_fit":job.landing_score,"career_value":job.career_score,"door_score":job.door_score,"freshness":job.urgency_score,"application_friction":job.application_friction_score,"source_confidence":job.source_confidence,"remote_confidence":job.remote_confidence}
     return job
 
 # Make browser capture in the core use the new scoring engine.
@@ -760,6 +826,44 @@ def _sentence_chunks(text:str, limit:int=500)->list[str]:
     return [x for x in chunks if len(x)>=8][:limit]
 
 
+def _description_facts(text: str) -> dict[str, Any]:
+    """Extract reviewable source facts for field-level version diffs.
+
+    These facts are derived only after a source description changes. They are not
+    included in the content hash, so parser improvements cannot manufacture a new
+    employer-posting version.
+    """
+    chunks = _sentence_chunks(text)
+
+    def matching(pattern: str, limit: int = 30) -> list[str]:
+        return [chunk for chunk in chunks if re.search(pattern, chunk, re.I)][:limit]
+
+    credentials: list[str] = []
+    for name, patterns in _CRED_PATTERNS.items():
+        if any(re.search(pattern, text or "", re.I) for pattern in patterns):
+            credentials.append(name)
+    credentials.extend(
+        matching(r"\b(?:licen[cs]e|certification|credential)\b", 12)
+    )
+    remote_sentences = matching(
+        r"\b(?:remote|hybrid|onsite|on-site|in-office|work from home|eligible states?|must (?:live|reside|be located)|relocation)\b"
+    )
+    eligible_states: set[str] = set()
+    for sentence in remote_sentences:
+        eligible_states |= extract_states(sentence)
+    return {
+        "requirements": matching(
+            r"\b(?:required qualifications?|minimum qualifications?|requirements?|must (?:have|possess|be)|\d{1,2}\+?\s+years?|degree required|bachelor'?s|master'?s)\b"
+        ),
+        "licenses_certifications": credentials[:30],
+        "remote_location": remote_sentences,
+        "eligible_states": sorted(eligible_states),
+        "schedule": matching(
+            r"\b(?:schedule|shift|hours|weekends?|evenings?|overnight|on-call|time zone|timezone|PST|PDT|EST|EDT|CST|CDT|MST|MDT)\b"
+        ),
+    }
+
+
 def diff_snapshots(old:dict[str,Any], new:dict[str,Any])->dict[str,Any]:
     diff:dict[str,Any]={}
     simple=["title","company","location_raw","canonical_url","apply_url","remote_status","employment_type","salary_text","salary_min","salary_max","salary_currency","salary_period","posted_at","category","tags","application_deadline","posting_status","travel_percent","timezone_requirement","work_authorization_requirement"]
@@ -774,8 +878,13 @@ def diff_snapshots(old:dict[str,Any], new:dict[str,Any])->dict[str,Any]:
             if tag in {"delete","replace"}: removed.extend(a[i1:i2])
         diff["description"]={
             "old_chars":len(old.get("description", "")),"new_chars":len(new.get("description", "")),
-            "added":added[:20],"removed":removed[:20],
+            "old":removed[:20],"new":added[:20],"added":added[:20],"removed":removed[:20],
         }
+        old_facts = _description_facts(old.get("description", ""))
+        new_facts = _description_facts(new.get("description", ""))
+        for field in ("requirements", "licenses_certifications", "remote_location", "eligible_states", "schedule"):
+            if old_facts[field] != new_facts[field]:
+                diff[field] = {"old": old_facts[field], "new": new_facts[field]}
     return diff
 
 
@@ -924,6 +1033,12 @@ class PrecisionStore(c.Store):
             "source_verification_reason":clean_text(getattr(job,"source_verification_reason","")),
             "canonical_verified":int(getattr(job,"canonical_verified",0) or 0),
             "recall_reason":clean_text(getattr(job,"recall_reason","")),
+            "required_qualifications":clean_text(getattr(job,"required_qualifications","")),
+            "preferred_qualifications":clean_text(getattr(job,"preferred_qualifications","")),
+            "eligible_states_json":json.dumps(getattr(job,"eligible_states",[]),ensure_ascii=False),
+            "remote_evidence_json":json.dumps(getattr(job,"remote_evidence",{}),ensure_ascii=False),
+            "schedule_requirement":clean_text(getattr(job,"schedule_requirement","")),
+            "score_components_json":json.dumps(getattr(job,"score_components",{}),ensure_ascii=False),
         }
 
     def _insert_version(self,jid:str,snap:dict[str,Any],h:str,job:Job,ok:str,diff:dict[str,Any],reason:str):
@@ -2037,7 +2152,7 @@ def doctor(config:dict[str,Any],strategy:dict[str,Any],db:Path)->int:
     return rc
 
 def main()->int:
-    ap=argparse.ArgumentParser(description="Remote Career Job Search Automation v3.1.0 — recall-first canonical verification + append-only ledger + precision + throughput"); ap.add_argument("--config",default="config.toml"); sub=ap.add_subparsers(dest="cmd",required=True)
+    ap=argparse.ArgumentParser(description="JobBot v3.2.0 — recall-first canonical verification and append-oriented career ledger"); ap.add_argument("--config",default="config.toml"); sub=ap.add_subparsers(dest="cmd",required=True)
     p=sub.add_parser("run",help="Retrieve every reachable job inside configured automatic-source boundaries, version changes, qualify, score, and export"); p.add_argument("--mode",choices=["fast","deep"],default="fast")
     sub.add_parser("stats"); sub.add_parser("progress"); sub.add_parser("audit",help="Explain retrieval volume, filtering, verification backlog and Big-3 coverage"); sub.add_parser("candidate-check"); sub.add_parser("self-test"); sub.add_parser("security-check"); sub.add_parser("versioning-test"); sub.add_parser("throughput-test"); sub.add_parser("doctor"); sub.add_parser("integrity-check")
     p=sub.add_parser("capture",help="Safely capture one supplemental public job page from user-assisted browsing (Big-3 disabled)"); p.add_argument("--platform",default="web"); p.add_argument("--url",default="")

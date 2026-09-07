@@ -10,5 +10,9 @@
 - Hardened the normal-Chrome MV3 state machine with centralized selectors, write-through result/detail commits, two-tab traversal, 20-second heartbeat, leases, checkpoint resume, bounded bridge retries, challenge cooldown/isolation, and honest safety-stop semantics.
 - Added server-paginated local dashboard, persistent application actions/history, retrieval audit, portable exports, funnel analysis, release builder, and macOS/Linux/Windows launchers.
 - Added static Big-3 fixtures and deterministic unit/integration/regression tests, including prior false positives and parser boundary defects.
+- Fixed the extension dashboard bootstrap asset and added self-reload when an unpacked extension is still running an older manifest.
+- Fixed acceptance-cap resume semantics, primary-platform remote evidence, trusted full-detail promotion, and dashboard source coverage.
+- Added persisted required/preferred qualification, state-eligibility, remote-evidence, schedule, and score-component fields plus reviewable old/new description-derived diffs.
+- Live-tested LinkedIn search/detail traversal, multi-page progression, multi-query sequencing, write-through durability, interruption/resume, bridge restart, and rerun dedupe in normal installed Chrome.
 
 Historical release notes are retained under `docs/history/`.

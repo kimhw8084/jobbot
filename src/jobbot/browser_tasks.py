@@ -181,7 +181,8 @@ def resume_run(base: Path, rid: int | None = None) -> int:
         row = store.conn.execute(
             """SELECT browser_run_id FROM browser_runs
                WHERE status IN ('queued','running','partial','stopped')
-                  OR EXISTS (SELECT 1 FROM browser_search_tasks t WHERE t.browser_run_id=browser_runs.browser_run_id AND t.status IN ('queued','running','incomplete'))
+                  OR EXISTS (SELECT 1 FROM browser_search_tasks t WHERE t.browser_run_id=browser_runs.browser_run_id
+                    AND (t.status IN ('queued','running') OR (t.status='incomplete' AND t.safety_stop_reason NOT LIKE 'Acceptance limit reached%')))
                ORDER BY browser_run_id DESC LIMIT 1"""
         ).fetchone()
         if not row:
@@ -194,8 +195,9 @@ def resume_run(base: Path, rid: int | None = None) -> int:
     store.conn.execute(
         """UPDATE browser_search_tasks
            SET status='queued', completed_at=NULL, lease_owner='', lease_until=NULL,
-               last_error=CASE WHEN status='incomplete' THEN last_error ELSE '' END
-           WHERE browser_run_id=? AND status IN ('running','incomplete')""", (rid,)
+               last_error='', safety_stop_reason=''
+           WHERE browser_run_id=? AND (status='running' OR
+             (status='incomplete' AND safety_stop_reason NOT LIKE 'Acceptance limit reached%'))""", (rid,)
     )
     store.conn.execute(
         """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,

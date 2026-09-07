@@ -26,6 +26,10 @@ class ExtensionBridgeTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 checked = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
                 self.assertEqual(checked.returncode, 0, checked.stderr)
+        dashboard = (PROJECT_ROOT / "extension" / "dashboard.html").read_text(encoding="utf-8")
+        self.assertIn('src="dashboard.js"', dashboard)
+        self.assertNotIn('src="start.js"', dashboard)
+        self.assertTrue((PROJECT_ROOT / "extension" / "dashboard.js").is_file())
 
 
 if __name__ == "__main__": unittest.main()

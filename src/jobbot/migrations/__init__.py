@@ -8,6 +8,8 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0002_browser_tasks",
     "jobbot.migrations.m0003_product",
     "jobbot.migrations.m0004_source_occurrences",
+    "jobbot.migrations.m0005_structured_evidence",
+    "jobbot.migrations.m0006_diff_backfill",
 )
 
 

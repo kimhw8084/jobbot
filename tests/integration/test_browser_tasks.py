@@ -52,10 +52,11 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 db = root / "data" / "jobs.sqlite3"; conn = sqlite3.connect(db)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results").fetchone()[0], 1); conn.close()
                 rpc.handle({"action": "detail_read", "run_id": run_id, "task_id": task_id, "source_site": "indeed", "source_job_id": "write-1", "source_url": "https://www.indeed.com/viewjob?jk=write-1"})
-                saved = rpc.handle({"action": "record_job", "run_id": run_id, "task_id": task_id, "job": {"source_job_id": "write-1", "canonical_url": "https://www.indeed.com/viewjob?jk=write-1", "title": "Patient Enrollment Specialist", "company": "Example Health", "location": "Remote — United States", "remote_status": "remote", "employment_type": "Full-time permanent", "description": "Fully remote healthcare enrollment. Required Qualifications: 2 years relevant experience. Full-time permanent."}})
+                saved = rpc.handle({"action": "record_job", "run_id": run_id, "task_id": task_id, "job": {"source_job_id": "write-1", "canonical_url": "https://www.indeed.com/viewjob?jk=write-1", "title": "Patient Enrollment Specialist", "company": "Example Health", "location": "United States", "employment_type": "Full-time permanent", "description": "Healthcare enrollment. Required Qualifications: 2 years relevant experience. Full-time permanent."}})
                 self.assertTrue(saved["ok"])
                 conn = sqlite3.connect(db)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], 1)
+                self.assertEqual(conn.execute("SELECT remote_gate FROM jobs").fetchone()[0], "pass")
                 self.assertEqual(conn.execute("SELECT detail_read FROM search_task_results").fetchone()[0], 1); conn.close()
                 paused = rpc.handle({"action": "pause_platform", "run_id": run_id, "platform": "indeed", "reason": "fixture challenge"})
                 self.assertGreaterEqual(paused["tasks_paused"], 1)
@@ -64,6 +65,43 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 self.assertTrue(conn.execute("SELECT cooldown_until FROM browser_platform_runs WHERE browser_run_id=?", (run_id,)).fetchone()[0]); conn.close()
             finally:
                 rpc.BASE = previous
+
+    def test_resume_does_not_repeat_completed_acceptance_cap(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            run_id = browser_tasks.enqueue_gate(root, "linkedin", 7, 20)
+            db = root / "data" / "jobs.sqlite3"
+            conn = sqlite3.connect(db)
+            tasks = conn.execute(
+                "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",
+                (run_id,),
+            ).fetchall()
+            conn.execute(
+                "UPDATE browser_search_tasks SET status='incomplete',safety_stop_reason='Acceptance limit reached (20); production has no count limit' WHERE task_id=?",
+                (tasks[0][0],),
+            )
+            conn.execute(
+                "UPDATE browser_search_tasks SET status='incomplete',safety_stop_reason='manual_emergency_stop' WHERE task_id=?",
+                (tasks[1][0],),
+            )
+            conn.execute(
+                "UPDATE browser_runs SET status='stopped',stop_requested=1 WHERE browser_run_id=?",
+                (run_id,),
+            )
+            conn.commit()
+            conn.close()
+            browser_tasks.resume_run(root, run_id)
+            conn = sqlite3.connect(db)
+            try:
+                states = [
+                    row[0] for row in conn.execute(
+                        "SELECT status FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",
+                        (run_id,),
+                    )
+                ]
+                self.assertEqual(states, ["incomplete", "queued", "queued"])
+            finally:
+                conn.close()
 
 
 if __name__ == "__main__": unittest.main()

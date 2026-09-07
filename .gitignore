@@ -18,8 +18,8 @@ data/*.sqlite3-*
 data/backups/
 data/discovered_ats.json
 cache/
-out/
-logs/
+out/*
+logs/*
 artifacts/
 dist/
 release/

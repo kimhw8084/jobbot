@@ -55,7 +55,7 @@ Linux and Windows wrappers are available as `scripts/jobbot.sh`, `scripts/jobbot
 - `RUN_FAST_SEARCH.command` — overlapping seven-day P0/P1 search plus supplemental feeds.
 - `RUN_PLATFORM_LINKEDIN.command`, `RUN_PLATFORM_INDEED.command`, `RUN_PLATFORM_GLASSDOOR.command` — isolate one primary platform.
 - `RESUME_SEARCH.command` — resumes persistent unfinished checkpoints.
-- `STOP_SEARCH.command` — emergency checkpointed stop.
+- `STOP_SEARCH.command` — requests an orderly stop after the current job; use `python -m jobbot stop --emergency` only when immediate checkpointing is necessary.
 - `OPEN_DASHBOARD.command`, `AUDIT.command`, `DOCTOR.command`, `IMPORT_EXISTING_DB.command` — local operations.
 
 ## Configuration and data safety

@@ -18,7 +18,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, (1, 2, 3, 4))
+            self.assertEqual(result.applied, (1, 2, 3, 4, 5, 6))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -66,7 +66,11 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 mirror = scored(first.title, first.description, source="indeed")
                 mirror.source_job_id = "indeed-900"; mirror.canonical_url = "https://www.indeed.com/viewjob?jk=indeed-900"; mirror.apply_url = first.apply_url
                 self.assertEqual(store.upsert(mirror), "unchanged")
-                changed = scored(first.title, first.description + " Updated salary and schedule.")
+                changed = scored(
+                    first.title,
+                    first.description
+                    + " Required Qualifications: 3 years of healthcare enrollment. Evening schedule in Central Time. RN preferred.",
+                )
                 changed.salary_text = "$60,000 - $70,000"; changed.raw = {"_board": "example"}
                 self.assertEqual(store.upsert(changed), "updated")
                 job_id = store.resolve_job_id(first)
@@ -74,6 +78,16 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 self.assertEqual(store.conn.execute("SELECT COUNT(*) FROM source_occurrences").fetchone()[0], 2)
                 self.assertEqual(store.conn.execute("SELECT COUNT(*) FROM job_versions WHERE job_id=?", (job_id,)).fetchone()[0], 2)
                 self.assertGreater(store.conn.execute("SELECT COUNT(*) FROM job_diffs WHERE job_id=?", (job_id,)).fetchone()[0], 0)
+                diff_rows = {
+                    row["field_name"]: row
+                    for row in store.conn.execute("SELECT * FROM job_diffs WHERE job_id=?", (job_id,))
+                }
+                self.assertIn("description", diff_rows)
+                self.assertIn("requirements", diff_rows)
+                self.assertIn("licenses_certifications", diff_rows)
+                self.assertIn("schedule", diff_rows)
+                self.assertNotEqual(diff_rows["description"]["old_value_json"], "null")
+                self.assertNotEqual(diff_rows["description"]["new_value_json"], "null")
                 self.assertEqual(store.reconcile_complete_board("greenhouse", "example", set(), 1, 2), 0)
                 self.assertEqual(store.reconcile_complete_board("greenhouse", "example", set(), 2, 2), 1)
                 self.assertEqual(store.conn.execute("SELECT change_status FROM jobs WHERE job_id=?", (job_id,)).fetchone()[0], "CLOSED")

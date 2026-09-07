@@ -2,10 +2,7 @@
 from __future__ import annotations
 
 import json
-import sqlite3
-import struct
 import sys
-import traceback
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -18,25 +15,10 @@ BASE = PROJECT_ROOT
 j.VERSION=v3.V3_VERSION; j.c.VERSION=v3.V3_VERSION
 
 
-def log(msg:str)->None: print(f"[jobbot-native] {msg}",file=sys.stderr,flush=True)
+def log(msg:str)->None: print(f"[jobbot-rpc] {msg}",file=sys.stderr,flush=True)
 
 def lease_time()->str:
     return (datetime.now(timezone.utc)+timedelta(minutes=3)).isoformat(timespec='seconds')
-
-def read_message()->dict[str,Any]|None:
-    raw_len=sys.stdin.buffer.read(4)
-    if not raw_len:return None
-    if len(raw_len)!=4:raise RuntimeError('truncated native message length')
-    n=struct.unpack('=I',raw_len)[0]
-    if n<=0 or n>64*1024*1024:raise RuntimeError(f'invalid inbound message size: {n}')
-    raw=sys.stdin.buffer.read(n)
-    if len(raw)!=n:raise RuntimeError('truncated native message body')
-    obj=json.loads(raw.decode('utf-8'));return obj if isinstance(obj,dict) else {'action':'invalid'}
-
-def write_message(obj:dict[str,Any])->None:
-    raw=json.dumps(obj,ensure_ascii=False,separators=(',',':')).encode('utf-8')
-    if len(raw)>1024*1024:raise RuntimeError('outbound native message exceeds 1 MiB')
-    sys.stdout.buffer.write(struct.pack('=I',len(raw)));sys.stdout.buffer.write(raw);sys.stdout.buffer.flush()
 
 def open_store():
     db,out,_,cfg,strategy=v3.paths(BASE);store=j.PrecisionStore(db);v3.init_browser_schema(store.conn);return store,cfg,strategy,out
@@ -129,7 +111,8 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             url=j.canonical_url(j.clean_text(raw.get('canonical_url') or raw.get('url') or ''));sid=j.clean_text(raw.get('source_job_id') or '')
             if not title or not url:return {'ok':False,'error':'insufficient_job_identity'}
             source_site=j.clean_text(task['platform'])
-            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=j.canonical_url(j.clean_text(raw.get('apply_url') or url)),title=title,company=company,location_raw=j.clean_text(raw.get('location') or 'Remote'),remote_status=j.clean_text(raw.get('remote_status') or 'unknown'),employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'source_payload':raw})
+            remote_status=j.clean_text(raw.get('remote_status') or ('remote' if int(task['remote_required'] or 0) else 'unknown'))
+            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=j.canonical_url(j.clean_text(raw.get('apply_url') or url)),title=title,company=company,location_raw=j.clean_text(raw.get('location') or 'Remote'),remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_evidence':bool(task['remote_required']),'source_payload':raw})
             setattr(job,'_mode','deep');j.score_job(job,strategy,cfg.get('candidate',{}));ledger_status=store.upsert(job,commit=False)
             fields={'new':'jobs_new','updated':'jobs_updated','unchanged':'jobs_unchanged'}
             if ledger_status in fields:
@@ -204,17 +187,3 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             rid=int(msg.get('run_id') or 0);message=j.clean_text(msg.get('message') or 'extension error');conn.execute("UPDATE browser_runs SET last_error=?,last_progress_at=? WHERE browser_run_id=?",(message,j.now_iso(),rid));event(conn,rid,None,'run_error',message,msg,out);conn.commit();return {'ok':True}
         return {'ok':False,'error':'unknown_action','action':action}
     finally:store.close()
-
-def main()->int:
-    log(f'started {v3.V3_VERSION}')
-    try:
-        while True:
-            msg=read_message()
-            if msg is None:break
-            try:resp=handle(msg)
-            except Exception as e:log(traceback.format_exc());resp={'ok':False,'error':type(e).__name__,'message':str(e)[:700]}
-            if msg.get('request_id'):resp['request_id']=msg.get('request_id')
-            write_message(resp)
-    except Exception:log(traceback.format_exc());return 1
-    return 0
-if __name__=='__main__':raise SystemExit(main())

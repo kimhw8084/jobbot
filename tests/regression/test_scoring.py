@@ -44,7 +44,32 @@ class ScoringRegressionTests(unittest.TestCase):
         interoperability = scored("Clinical Data Analyst", "Fully remote full-time. Required Qualifications: SQL, HL7, FHIR, CCDA, ADT and 5 years healthcare interoperability.")
         self.assertNotIn(interoperability.recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"})
 
+    def test_fuzzy_title_and_section_heading_precision(self) -> None:
+        analytics = scored(
+            "Healthcare Data and Analytics Specialist - Remote - USA",
+            "Fully remote, full-time role. Required Qualifications: SQL and 3 years of healthcare analytics.",
+            source="linkedin",
+        )
+        self.assertEqual(analytics.search_profile, "P1-healthcare-quality-data")
+        self.assertNotEqual(analytics.normalized_title_family, "Healthcare Coordinator")
+        sales = scored(
+            "Patient Access Specialist",
+            "Meet requirements per FDA rules. Essential Requirements: 5 years of healthcare sales and account management. Desired Requirements: MBA.",
+        )
+        self.assertEqual(sales.years_required, 5)
+        self.assertIn("5 years of healthcare sales", sales.required_qualifications)
+        self.assertNotIn("MBA", sales.required_qualifications)
+        self.assertNotIn(sales.recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"})
+
+    def test_complete_trusted_primary_detail_can_enter_qualified_queue(self) -> None:
+        description = "Fully remote US healthcare enrollment role. Required Qualifications: 2 years relevant operations experience. Full-time permanent employee with benefits. HIPAA, Excel, patient communication, intake, and documentation accuracy. " * 5
+        job = scored("Patient Enrollment Specialist", description, source="linkedin")
+        self.assertGreaterEqual(job.extraction_confidence, 85)
+        self.assertIn(job.recommendation, {"APPLY_NOW", "APPLY_VOLUME"})
+
     def test_remote_clinical_management_and_employment_gates(self) -> None:
+        linkedin_shape = scored("Patient Access Specialist", "Healthcare enrollment operations role.", location="Remote", source="linkedin", remote_status="unknown")
+        self.assertEqual(linkedin_shape.remote_gate, "pass")
         self.assertEqual(scored("Patient Access Specialist", "#LI-Remote. Hybrid required with three mandatory office days.").recommendation, "SKIP_HARD_GATE")
         self.assertEqual(scored("Patient Enrollment Specialist — Offshore Philippines", "Remote role.", location="USA").recommendation, "SKIP_HARD_GATE")
         self.assertEqual(scored("Healthcare Quality Specialist", "Fully remote. Active RN license required.").recommendation, "SKIP_HARD_GATE")

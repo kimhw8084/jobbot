@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import sqlite3
 
+from ._sql import execute_statements
+
 from .m0001_ledger import _ensure
 
 VERSION = 2
@@ -9,7 +11,7 @@ NAME = "durable normal-Chrome search tasks"
 
 
 def upgrade(conn: sqlite3.Connection) -> None:
-    conn.executescript("""
+    execute_statements(conn, """
     CREATE TABLE IF NOT EXISTS browser_runs(
       browser_run_id INTEGER PRIMARY KEY AUTOINCREMENT, version TEXT NOT NULL, mode TEXT NOT NULL,
       platform TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'queued', created_at TEXT NOT NULL,

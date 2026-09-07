@@ -10,9 +10,10 @@ from typing import Any, Iterable, Sequence
 EXPORT_COLUMNS = (
     "job_id", "recommendation", "title", "company", "career_lane", "canonical_source_site",
     "posted_at", "first_seen", "last_seen", "salary_text", "employment_class", "remote_gate",
-    "location_raw", "relevance_score", "qualification_score", "landing_score", "career_score",
+    "eligible_states_json", "location_raw", "relevance_score", "qualification_score", "landing_score", "career_score",
     "door_score", "resume_variant", "application_status", "canonical_url", "apply_url",
-    "description", "requirement_matches_json", "requirement_gaps_json", "score_reasons_json",
+    "description", "required_qualifications", "preferred_qualifications", "requirement_matches_json",
+    "requirement_gaps_json", "remote_evidence_json", "schedule_requirement", "score_components_json", "score_reasons_json",
 )
 
 

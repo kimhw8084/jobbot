@@ -66,9 +66,25 @@ def clean_text(v: Any) -> str:
 
 
 class HTMLTextExtractor(HTMLParser):
+    BLOCK_TAGS = {
+        "address", "article", "aside", "blockquote", "br", "dd", "div", "dl", "dt",
+        "figcaption", "figure", "footer", "h1", "h2", "h3", "h4", "h5", "h6",
+        "header", "hr", "li", "main", "nav", "ol", "p", "pre", "section", "table",
+        "td", "th", "tr", "ul",
+    }
+
     def __init__(self) -> None:
         super().__init__()
         self.parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() in self.BLOCK_TAGS:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in self.BLOCK_TAGS:
+            self.parts.append("\n")
+
     def handle_data(self, data: str) -> None:
         if data.strip():
             self.parts.append(data.strip())
@@ -81,7 +97,11 @@ def strip_html(v: Any) -> str:
     p = HTMLTextExtractor()
     try:
         p.feed(s)
-        return clean_text(" ".join(p.parts))
+        text = " ".join(p.parts)
+        text = re.sub(r"[ \t\f\v]+", " ", text)
+        text = re.sub(r" *\n *", "\n", text)
+        text = re.sub(r"\n{2,}", "\n", text)
+        return text.strip()
     except Exception:
         return clean_text(re.sub(r"<[^>]+>", " ", s))
 

@@ -56,9 +56,16 @@ jobicy = 65
 remoteok = 65
 unknown = 50
 
+[strategy.remote]
+accepted_markers = ["fully remote", "100% remote", "remote — united states", "remote - united states", "remote, us", "us remote", "remote in texas", "remote — texas", "remote - texas", "work from home", "remote-first", "remote first", "home-based", "home based"]
+reject_markers = ["hybrid required", "on-site required", "onsite required", "in-person required", "not a fully remote position", "expected to work onsite", "expected to work on-site", "work onsite", "work on-site", "in office 5 days", "in-office 5 days", "onsite three days", "on-site three days", "onsite four days", "on-site four days"]
+state_of_interest = "TX"
+unknown_state_restriction_action = "review"
+state_restricted_without_tx_action = "reject"
+
 [strategy.requirements]
-required_section_headings = ["Requirements", "Required Qualifications", "Minimum Qualifications", "What You'll Need", "What You Need", "What We Need to See", "What You've Done", "You Should Get in Touch If"]
-preferred_section_headings = ["Preferred Qualifications", "Preferred", "Nice to Have", "Bonus", "Ideally", "Bonus Skills"]
+required_section_headings = ["Requirements", "Essential Requirements", "Required Qualifications", "Minimum Qualifications", "Minimum Required Experience", "What You'll Need", "What You Need", "What We Need to See", "What You've Done", "You Should Get in Touch If"]
+preferred_section_headings = ["Preferred Qualifications", "Desired Qualifications", "Desired Requirements", "Preferred", "Nice to Have", "Bonus", "Ideally", "Bonus Skills"]
 section_stop_headings = ["Benefits", "What We Offer", "Compensation", "About Us", "Equal Opportunity", "Our Values", "Why Join", "Perks"]
 critical_skill_catalog = ["SQL", "Power BI", "Tableau", "Looker", "Python", "R", "HL7", "FHIR", "CCDA", "ADT", "Epic", "Cerner", "Salesforce", "NetSuite", "Workday", "SAP", "Oracle", "HEDIS", "Stars", "NCQA", "risk adjustment", "medical coding", "ICD-10", "Apex", "Java", "JavaScript", "TypeScript", "React", "AWS", "Azure", "GCP"]
 management_phrases = ["manage a team", "managing a team", "people management", "manage managers", "managed managers", "direct reports", "team leadership", "people leadership", "hiring and coaching"]
