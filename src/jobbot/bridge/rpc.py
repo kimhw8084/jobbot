@@ -39,6 +39,29 @@ def get_run(conn,rid):return conn.execute("SELECT * FROM browser_runs WHERE brow
 
 def platform_order_sql()->str:return "CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 WHEN 'glassdoor' THEN 2 ELSE 99 END"
 
+def refresh_task_counters(conn, rid:int)->None:
+    """Derive status counters from durable task rows after resume/state changes."""
+    counts=conn.execute("""SELECT
+      COALESCE(SUM(status='exhausted'),0) completed,
+      COALESCE(SUM(status='incomplete'),0) incomplete,
+      COALESCE(SUM(status='challenged'),0) challenged
+      FROM browser_search_tasks WHERE browser_run_id=?""",(rid,)).fetchone()
+    conn.execute("UPDATE browser_runs SET tasks_completed=?,tasks_incomplete=?,tasks_challenged=? WHERE browser_run_id=?",
+        (counts['completed'],counts['incomplete'],counts['challenged'],rid))
+    platforms=conn.execute("SELECT platform FROM browser_platform_runs WHERE browser_run_id=?",(rid,)).fetchall()
+    for row in platforms:
+        platform=row['platform']
+        values=conn.execute("""SELECT
+          COALESCE(SUM(status='exhausted'),0) completed,
+          COALESCE(SUM(status='incomplete'),0) incomplete,
+          COALESCE(SUM(status='challenged'),0) challenged,
+          COALESCE(SUM(status='failed'),0) failed
+          FROM browser_search_tasks WHERE browser_run_id=? AND platform=?""",(rid,platform)).fetchone()
+        conn.execute("""UPDATE browser_platform_runs
+          SET tasks_completed=?,tasks_incomplete=?,tasks_challenged=?,tasks_failed=?
+          WHERE browser_run_id=? AND platform=?""",
+          (values['completed'],values['incomplete'],values['challenged'],values['failed'],rid,platform))
+
 def handle(msg:dict[str,Any])->dict[str,Any]:
     action=str(msg.get('action') or '')
     store,cfg,strategy,out=open_store();conn=store.conn
@@ -171,6 +194,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             pending=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('queued','running')",(rid,)).fetchone()['n']
             bad=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('incomplete','challenged','failed','auth_required','paused','stopped')",(rid,)).fetchone()['n']
             final='stopped' if int(r['stop_requested'] or 0) else ('partial' if pending or bad else 'completed')
+            refresh_task_counters(conn,rid)
             conn.execute("UPDATE browser_runs SET status=?,completed_at=?,last_progress_at=?,current_task_id=NULL WHERE browser_run_id=?",(final,j.now_iso(),j.now_iso(),rid));event(conn,rid,None,'run_finished',final,{},out);conn.commit()
             try:j.export_all(store,out,strategy,cfg,'deep')
             except Exception as e:log(f'export warning: {e}')
@@ -178,6 +202,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='run_status':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
+            refresh_task_counters(conn,rid);conn.commit();r=get_run(conn,rid)
             tasks=conn.execute("SELECT task_id,platform,query_text,status,results_seen,detail_count_read,jobs_recorded,unique_jobs_recorded,duplicate_sightings,jobs_new,jobs_updated,jobs_unchanged,pages_visited,current_search_url,page_number,scroll_generation,last_page_fingerprint,last_source_job_id,challenge_reason,last_error,exhaustion_reason,safety_stop_reason FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",(rid,)).fetchall();plats=conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=? ORDER BY CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END",(rid,)).fetchall();return {'ok':True,'run':{k:r[k] for k in r.keys()},'platforms':[{k:p[k] for k in p.keys()} for p in plats],'tasks':[{k:t[k] for k in t.keys()} for t in tasks]}
         if action=='task_status':
             tid=int(msg.get('task_id') or 0);t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(tid,)).fetchone()

@@ -67,41 +67,49 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 rpc.BASE = previous
 
     def test_resume_does_not_repeat_completed_acceptance_cap(self) -> None:
+        previous = rpc.BASE
         with tempfile.TemporaryDirectory() as td:
             root = self.make_root(td)
-            run_id = browser_tasks.enqueue_gate(root, "linkedin", 7, 20)
-            db = root / "data" / "jobs.sqlite3"
-            conn = sqlite3.connect(db)
-            tasks = conn.execute(
-                "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",
-                (run_id,),
-            ).fetchall()
-            conn.execute(
-                "UPDATE browser_search_tasks SET status='incomplete',safety_stop_reason='Acceptance limit reached (20); production has no count limit' WHERE task_id=?",
-                (tasks[0][0],),
-            )
-            conn.execute(
-                "UPDATE browser_search_tasks SET status='incomplete',safety_stop_reason='manual_emergency_stop' WHERE task_id=?",
-                (tasks[1][0],),
-            )
-            conn.execute(
-                "UPDATE browser_runs SET status='stopped',stop_requested=1 WHERE browser_run_id=?",
-                (run_id,),
-            )
-            conn.commit()
-            conn.close()
-            browser_tasks.resume_run(root, run_id)
-            conn = sqlite3.connect(db)
+            rpc.BASE = root
             try:
-                states = [
-                    row[0] for row in conn.execute(
-                        "SELECT status FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",
-                        (run_id,),
-                    )
-                ]
-                self.assertEqual(states, ["incomplete", "queued", "queued"])
-            finally:
+                run_id = browser_tasks.enqueue_gate(root, "linkedin", 7, 20)
+                db = root / "data" / "jobs.sqlite3"
+                conn = sqlite3.connect(db)
+                tasks = conn.execute(
+                    "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",
+                    (run_id,),
+                ).fetchall()
+                conn.execute(
+                    "UPDATE browser_search_tasks SET status='incomplete',safety_stop_reason='Acceptance limit reached (20); production has no count limit' WHERE task_id=?",
+                    (tasks[0][0],),
+                )
+                conn.execute(
+                    "UPDATE browser_search_tasks SET status='incomplete',safety_stop_reason='manual_emergency_stop' WHERE task_id=?",
+                    (tasks[1][0],),
+                )
+                conn.execute(
+                    "UPDATE browser_runs SET status='stopped',stop_requested=1,tasks_incomplete=2 WHERE browser_run_id=?",
+                    (run_id,),
+                )
+                conn.commit()
                 conn.close()
+                browser_tasks.resume_run(root, run_id)
+                conn = sqlite3.connect(db)
+                try:
+                    states = [
+                        row[0] for row in conn.execute(
+                            "SELECT status FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",
+                            (run_id,),
+                        )
+                    ]
+                    self.assertEqual(states, ["incomplete", "queued", "queued"])
+                finally:
+                    conn.close()
+                status = rpc.handle({"action": "run_status", "run_id": run_id})
+                self.assertEqual(status["run"]["tasks_incomplete"], 1)
+                self.assertEqual(status["platforms"][0]["tasks_incomplete"], 1)
+            finally:
+                rpc.BASE = previous
 
 
 if __name__ == "__main__": unittest.main()
