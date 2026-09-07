@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jobbot-local"
+version = "3.2.0"
+description = "Local, read-only, normal-Chrome remote career search ledger"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Private use" }
+authors = [{ name = "JobBot contributors" }]
+dependencies = []
+
+[project.scripts]
+jobbot = "jobbot.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.unittest]
+start-directory = "tests"

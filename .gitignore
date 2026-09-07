@@ -1,0 +1,31 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local/private runtime state
+.browser-profile/
+browser-profile/
+resumes/
+data/*.sqlite3
+data/*.sqlite3-*
+data/backups/
+data/discovered_ats.json
+cache/
+out/
+logs/
+artifacts/
+dist/
+release/
+*.zip
+
+# Keep empty runtime directories documented without tracking their contents.
+!data/.gitkeep
+!out/.gitkeep
+!logs/.gitkeep

@@ -1,4 +1,0 @@
-2026-09-07T19:02:18+00:00 event=run_started task=- normal Chrome platform-first run started
-2026-09-07T19:02:18+00:00 event=task_started task=334 glassdoor: patient enrollment specialist
-2026-09-07T19:02:25+00:00 event=auth_failed task=- glassdoor: Glassdoor sign-in required
-2026-09-07T19:02:25+00:00 event=run_finished task=- partial

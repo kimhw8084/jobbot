@@ -1,0 +1,137 @@
+[candidate]
+name = "Elizabeth Kim-Ortiz"
+country = "US"
+state = "TX"
+metro = "Austin Metropolitan Area"
+remote_only = true
+professional_positioning = "Bilingual Healthcare Operations & Data Quality Specialist"
+work_authorization = "unknown"
+minimum_salary_annual = 0
+preferred_salary_annual = 65000
+max_travel_percent = -1
+primary_employment = "full_time_stable"
+include_fixed_term_review = true
+include_contract_review = false
+include_part_time_review = false
+relevant_operations_years = 4.0
+direct_healthcare_years = 3.0
+enrollment_years = 2.0
+higher_ed_years = 1.7
+remote_operations_years = 4.0
+people_management_years = 0.0
+professional_data_analytics_years = 0.0
+professional_implementation_years = 0.0
+education = ["Master of Arts, Clinical Mental Health Counseling", "Bachelor of Arts, Psychology"]
+credentials = ["Google Data Analytics Professional Certificate", "HIPAA Compliance Training", "Crisis Intervention Training"]
+languages = ["English native", "Spanish fluent written and verbal"]
+
+[resume_files]
+enrollment_operations = "resumes/Elizabeth_Kim-Ortiz_Resume_Enrollment_Operations(1).docx"
+healthcare_qa = "resumes/Elizabeth_Kim-Ortiz_Resume_Healthcare_QA(1).docx"
+higher_ed_records = "resumes/Elizabeth_Kim-Ortiz_Resume_HigherEd_Records(1).docx"
+content_quality = "resumes/Elizabeth_Kim-Ortiz_Resume_Content_Quality(1).docx"
+
+[[capabilities]]
+name = "healthcare enrollment"
+level = "proven"
+aliases = ["healthcare enrollment", "patient enrollment", "RPM enrollment", "Remote Patient Monitoring enrollment", "high-volume patient enrollment"]
+
+[[capabilities]]
+name = "patient communication and intake"
+level = "proven"
+aliases = ["patient education", "patient communication", "healthcare intake", "patient intake", "patient onboarding"]
+
+[[capabilities]]
+name = "HIPAA and PHI workflows"
+level = "proven"
+aliases = ["HIPAA", "PHI", "HIPAA-sensitive", "PHI-sensitive", "confidential healthcare records"]
+
+[[capabilities]]
+name = "documentation and verification"
+level = "proven"
+aliases = ["documentation accuracy", "verification workflows", "student documentation", "transcript tracking", "registration documentation", "student records", "records accuracy"]
+
+[[capabilities]]
+name = "remote cross-team operations"
+level = "proven"
+aliases = ["remote work", "remote workflow coordination", "cross-department handoffs", "cross-team handoffs", "Microsoft Teams"]
+
+[[capabilities]]
+name = "higher education enrollment"
+level = "proven"
+aliases = ["higher-ed enrollment", "admissions support", "SIS", "SIS review", "SIS auditing", "student enrollment"]
+
+[[capabilities]]
+name = "bilingual English Spanish"
+level = "proven"
+aliases = ["English", "Spanish", "bilingual", "English/Spanish"]
+
+[[capabilities]]
+name = "office and learning systems"
+level = "proven"
+aliases = ["Excel", "Microsoft Excel", "Outlook", "Canvas", "Blackboard", "RPM365"]
+
+[[capabilities]]
+name = "quality and process support"
+level = "strong_transfer"
+aliases = ["healthcare QA support", "documentation quality", "data quality", "process improvement", "workflow improvement", "quality review", "quality operations"]
+
+[[capabilities]]
+name = "implementation and project coordination"
+level = "strong_transfer"
+aliases = ["implementation coordination", "project coordination", "cross-functional operations", "SOP", "SOP documentation", "workflow documentation"]
+
+[[capabilities]]
+name = "Google Data Analytics"
+level = "training"
+aliases = ["Google Data Analytics", "analytics concepts", "data visualization concepts"]
+
+[[capabilities]]
+name = "SQL"
+level = "training"
+aliases = ["SQL"]
+
+[[capabilities]]
+name = "advanced Power BI"
+level = "not_evidenced"
+aliases = ["Power BI", "advanced Power BI"]
+
+[[capabilities]]
+name = "Tableau"
+level = "not_evidenced"
+aliases = ["Tableau"]
+
+[[capabilities]]
+name = "healthcare interoperability"
+level = "not_evidenced"
+aliases = ["HL7", "FHIR", "CCDA", "ADT", "TEFCA", "QHIN", "interoperability"]
+
+[[capabilities]]
+name = "healthcare quality measurement ownership"
+level = "not_evidenced"
+aliases = ["HEDIS", "Stars", "NCQA"]
+
+[[capabilities]]
+name = "people management"
+level = "not_evidenced"
+aliases = ["formal people management", "manage a team", "direct reports", "hiring and coaching"]
+
+[[capabilities]]
+name = "software engineering"
+level = "not_evidenced"
+aliases = ["software engineering", "software development", "Java", "React", "TypeScript", "Kubernetes"]
+
+[[capabilities]]
+name = "cybersecurity"
+level = "not_evidenced"
+aliases = ["cybersecurity", "penetration testing", "vulnerability management", "OWASP"]
+
+[[capabilities]]
+name = "finance accounting"
+level = "not_evidenced"
+aliases = ["professional finance", "accounting", "FP&A", "CPA", "revenue recognition"]
+
+[[capabilities]]
+name = "clinical licensure"
+level = "not_evidenced"
+aliases = ["RN", "LPN", "LVN", "NP", "MD", "DO", "LCSW", "LPC", "LMFT", "BCBA", "CPC", "CCS", "CRC", "RHIT", "RHIA", "CNM", "IBCLC", "CNA", "CMA", "PT", "OT", "SLP", "RDN", "RD", "PharmD", "RPh"]

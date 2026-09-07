@@ -1,6 +1,0 @@
-2026-09-07T19:20:50+00:00 event=run_started task=- normal Chrome platform-first run started
-2026-09-07T19:20:50+00:00 event=task_started task=340 indeed: patient enrollment specialist
-2026-09-07T19:20:52+00:00 event=auth_verified task=- indeed: Indeed session authenticated
-2026-09-07T19:20:52+00:00 event=navigation task=340 open search https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date
-2026-09-07T19:20:54+00:00 event=platform_paused task=- indeed: captcha
-2026-09-07T19:20:54+00:00 event=run_finished task=- partial

@@ -1,0 +1,218 @@
+[strategy]
+version = "3.2.0"
+name = "Bilingual Healthcare Operations & Data Quality"
+primary_platforms = ["linkedin", "indeed", "glassdoor"]
+remote_required = true
+
+[strategy.portfolio]
+healthcare_percent = 80
+higher_ed_percent = 15
+content_ai_percent = 5
+fallback_lane = "FALLBACK_TRANSFERABLE"
+
+[strategy.run_modes.fast]
+max_priority = 1
+include_core_only = true
+
+[strategy.run_modes.deep]
+max_priority = 3
+include_core_only = true
+
+[strategy.scoring]
+minimum_relevance_for_apply = 80
+minimum_qualification_for_apply = 72
+minimum_landing_for_apply = 74
+minimum_career_for_apply = 55
+minimum_landing_for_volume_apply = 68
+minimum_career_for_volume_apply = 50
+high_value_stretch_min_career = 78
+high_value_stretch_min_landing = 52
+review_final_score = 62
+landing_qualification_weight = 0.70
+door_landing_weight = 0.70
+door_career_weight = 0.30
+
+[strategy.throughput]
+daily_minimum = 10
+daily_target = 15
+daily_maximum = 20
+max_same_company_per_day = 2
+max_same_title_family_per_day = 4
+p3_max_percent = 5
+
+[strategy.source_confidence]
+greenhouse = 100
+lever = 100
+ashby = 100
+workday = 100
+smartrecruiters = 100
+employer_ats = 100
+linkedin = 94
+indeed = 92
+glassdoor = 88
+remotelanders = 78
+remotive = 72
+jobicy = 65
+remoteok = 65
+unknown = 50
+
+[strategy.requirements]
+required_section_headings = ["Requirements", "Required Qualifications", "Minimum Qualifications", "What You'll Need", "What You Need", "What We Need to See", "What You've Done", "You Should Get in Touch If"]
+preferred_section_headings = ["Preferred Qualifications", "Preferred", "Nice to Have", "Bonus", "Ideally", "Bonus Skills"]
+section_stop_headings = ["Benefits", "What We Offer", "Compensation", "About Us", "Equal Opportunity", "Our Values", "Why Join", "Perks"]
+critical_skill_catalog = ["SQL", "Power BI", "Tableau", "Looker", "Python", "R", "HL7", "FHIR", "CCDA", "ADT", "Epic", "Cerner", "Salesforce", "NetSuite", "Workday", "SAP", "Oracle", "HEDIS", "Stars", "NCQA", "risk adjustment", "medical coding", "ICD-10", "Apex", "Java", "JavaScript", "TypeScript", "React", "AWS", "Azure", "GCP"]
+management_phrases = ["manage a team", "managing a team", "people management", "manage managers", "managed managers", "direct reports", "team leadership", "people leadership", "hiring and coaching"]
+
+[strategy.filters]
+hard_reject_required_credentials = ["RN", "LPN", "LVN", "NP", "MD", "DO", "LCSW", "LPC", "LMFT", "BCBA", "CPC", "CCS", "CRC", "RHIT", "RHIA", "CNM", "IBCLC", "CNA", "CMA", "PT", "OT", "SLP", "RDN", "RD", "PharmD", "RPh"]
+hard_reject_phrases = ["mandatory office days", "relocation required", "onsite required"]
+soft_penalty_phrases = ["weekends required", "evenings required", "rotating weekends", "on-call rotation", "high volume call center"]
+
+[strategy.role_rules]
+out_of_scope_title_terms = ["software engineer", "software developer", "AI engineer", "machine learning engineer", "DevOps engineer", "security engineer", "sales engineer", "solutions architect", "product manager", "product designer", "data scientist", "scientist", "R&D engineer", "product development engineer", "mechanical engineer", "electrical engineer", "frontend engineer", "backend engineer", "account executive", "sales representative", "sales manager", "territory manager", "marketing manager", "marketing director", "controller", "accountant", "accounting", "finance manager", "financial analyst", "deal desk manager", "recruiter", "talent acquisition", "attorney", "lawyer", "underwriter", "physician", "psychiatrist", "therapist", "nurse", "nurse practitioner", "registered nurse", "medical assistant", "virtual assistant"]
+hard_seniority_terms = ["vice president", "vp,", "vp ", "chief ", "senior director", "executive director", "principal engineer", "staff engineer", "head of "]
+manager_terms = ["manager", "supervisor", "team lead", "people leader"]
+engineering_terms = ["engineer", "engineering", "developer", "architect", "devops", "software", "programmer"]
+
+[strategy.recall]
+healthcare_title_markers = ["healthcare", "health", "patient", "clinical", "medical", "care", "member", "provider", "payer", "credentialing"]
+role_markers = ["operations", "enrollment", "access", "registration", "engagement", "onboarding", "intake", "verification", "authorization", "referral", "records", "information", "documentation", "quality", "data", "implementation", "project", "program", "coordinator", "specialist", "analyst"]
+transferable_title_patterns = ["data operations specialist", "data quality specialist", "data integrity specialist", "data validation specialist", "operations coordinator", "operations specialist", "implementation coordinator", "implementation specialist", "project coordinator"]
+recall_exclusion_terms = ["engineering", "software", "security", "finance", "accounting", "sales", "marketing", "warehouse", "construction"]
+
+[strategy.signals]
+strong_positive = ["healthcare", "digital health", "telehealth", "remote patient monitoring", "RPM", "patient", "member", "provider", "payer", "health information", "medical records", "credentialing", "HIPAA", "PHI", "bilingual", "Spanish"]
+career_accelerators = ["quality improvement", "data quality", "process improvement", "implementation", "project coordination", "program operations", "workflow improvement", "reporting", "analytics", "audit", "compliance", "SOP"]
+bilingual_bonus = ["Spanish", "bilingual", "English/Spanish"]
+
+[[lanes]]
+id = "HEALTHCARE_OPS_ACCESS"
+label = "Healthcare operations / access"
+core = true
+enabled = true
+allocation_percent = 35
+priority = 0
+profile = "P0-healthcare-operations-access"
+domain = "healthcare"
+fast_days = 7
+deep_days = 30
+resume_variant = "enrollment_operations"
+generic_title_patterns = ["healthcare operations specialist", "healthcare operations coordinator", "patient operations specialist", "patient enrollment specialist", "patient access specialist", "patient services coordinator", "care coordinator", "credentialing coordinator"]
+domain_markers = ["healthcare", "patient", "clinical", "medical", "member", "provider", "payer", "health plan", "HIPAA", "PHI"]
+responsibility_markers = ["enrollment", "patient access", "intake", "registration", "verification", "authorization", "referral", "onboarding", "care coordination", "documentation"]
+titles = [
+  "Healthcare Operations Specialist", "Healthcare Operations Coordinator", "Clinical Operations Specialist", "Clinical Operations Coordinator", "Medical Operations Specialist", "Medical Operations Coordinator", "Care Operations Specialist", "Care Operations Coordinator", "Patient Operations Specialist", "Patient Operations Coordinator",
+  "Patient Enrollment Specialist", "Patient Enrollment Coordinator", "Healthcare Enrollment Specialist", "Healthcare Enrollment Coordinator", "Member Enrollment Specialist", "Member Enrollment Coordinator", "Provider Enrollment Specialist", "Provider Enrollment Coordinator", "Provider Enrollment Representative", "Payer Enrollment Specialist",
+  "Patient Access Specialist", "Patient Access Representative", "Patient Access Associate", "Patient Registration Specialist", "Patient Registration Coordinator",
+  "Patient Engagement Specialist", "Member Engagement Specialist", "Patient Support Specialist", "Patient Services Specialist", "Patient Services Coordinator", "Member Support Specialist", "Member Services Specialist",
+  "Patient Onboarding Specialist", "Clinical Onboarding Specialist", "Healthcare Intake Specialist", "Patient Intake Specialist", "Behavioral Health Intake Coordinator",
+  "Insurance Verification Specialist", "Benefits Verification Specialist", "Authorization Specialist", "Prior Authorization Specialist", "Authorization & Verification Specialist", "Referral Coordinator", "Referral Specialist",
+  "Credentialing Associate", "Credentialing Specialist", "Credentialing Coordinator", "Credentialing & Enrollment Coordinator",
+  "Care Coordinator", "Care Partner", "Care Navigator", "Care Advocate", "Patient Care Coordinator", "Care Management Coordinator", "Healthcare Coordinator",
+  "Remote Patient Monitoring Coordinator", "RPM Coordinator",
+  "Customer Operations Coordinator — Healthcare", "Customer Operations Specialist — Healthcare", "Provider Services Representative", "Provider Services Coordinator", "Provider Relations Representative"
+]
+
+[[lanes]]
+id = "HEALTHCARE_INFO_QA"
+label = "Healthcare information / records / documentation / QA"
+core = true
+enabled = true
+allocation_percent = 15
+priority = 0
+profile = "P0-health-information-quality-access"
+domain = "healthcare"
+fast_days = 7
+deep_days = 30
+resume_variant = "healthcare_qa"
+generic_title_patterns = ["medical records specialist", "health information specialist", "documentation specialist", "quality coordinator", "quality specialist"]
+domain_markers = ["healthcare", "patient", "clinical", "medical", "health information", "medical records", "HIPAA", "PHI"]
+responsibility_markers = ["records", "release of information", "documentation", "quality review", "quality improvement", "audit", "data accuracy", "compliance"]
+titles = ["Medical Records Specialist", "Medical Records Coordinator", "ROI Medical Records Specialist", "Health Information Specialist", "Health Information Coordinator", "Healthcare Documentation Specialist", "Clinical Documentation Specialist", "Documentation Quality Specialist", "Documentation Coordinator — Healthcare", "Quality Improvement Coordinator", "Quality Coordinator — Healthcare", "Healthcare Quality Specialist", "Quality Management Specialist — Healthcare"]
+
+[[lanes]]
+id = "HEALTHCARE_QUALITY_DATA"
+label = "Healthcare quality / data / analytics"
+core = true
+enabled = true
+allocation_percent = 20
+priority = 1
+profile = "P1-healthcare-quality-data"
+domain = "healthcare"
+fast_days = 7
+deep_days = 30
+resume_variant = "healthcare_data_quality"
+generic_title_patterns = ["quality analyst", "quality specialist", "data quality specialist", "operations analyst", "health information analyst", "data operations specialist"]
+domain_markers = ["healthcare", "patient", "clinical", "medical", "provider", "payer", "health plan", "EHR", "EMR", "HIPAA", "PHI"]
+responsibility_markers = ["data quality", "quality improvement", "reporting", "analytics", "audit", "process improvement", "data validation", "operations"]
+covered_titles = ["Healthcare Quality Specialist"]
+titles = ["Healthcare Quality Analyst", "Quality Improvement Specialist", "Quality Operations Specialist — Healthcare", "Quality Operations Coordinator — Healthcare", "Healthcare Data Quality Specialist", "Data Quality Specialist — Healthcare", "Healthcare Data Operations Specialist", "Healthcare Data Operations Coordinator", "Healthcare Operations Analyst", "Clinical Operations Analyst", "Care Operations Analyst", "Health Information Analyst", "Healthcare Reporting Analyst", "Business Process Analyst — Healthcare", "Healthcare Data Analyst", "Clinical Data Analyst"]
+
+[[lanes]]
+id = "HEALTHCARE_IMPLEMENTATION"
+label = "Healthcare implementation / project / program"
+core = true
+enabled = true
+allocation_percent = 10
+priority = 1
+profile = "P1-healthcare-implementation-project"
+domain = "healthcare"
+fast_days = 7
+deep_days = 30
+resume_variant = "healthcare_data_quality"
+generic_title_patterns = ["implementation coordinator", "implementation specialist", "project coordinator", "program coordinator"]
+domain_markers = ["healthcare", "healthtech", "patient", "clinical", "medical", "provider", "payer", "health plan", "telehealth", "EHR", "EMR"]
+responsibility_markers = ["implementation", "onboarding", "configuration", "go-live", "project", "workflow", "training", "integration", "program operations"]
+titles = ["Healthcare Implementation Coordinator", "Healthcare Implementation Specialist", "HealthTech Implementation Coordinator", "HealthTech Implementation Specialist", "Clinical Implementation Coordinator", "Implementation Coordinator — Healthcare", "Implementation Specialist — Healthcare", "Program Implementation Coordinator — Healthcare", "Healthcare Project Coordinator", "Project Coordinator — Healthcare", "Operations Project Coordinator — Healthcare", "Implementation & Compliance Specialist — Healthcare", "Healthcare Program Coordinator", "Healthcare Program Specialist"]
+
+[[lanes]]
+id = "HIGHER_ED_EDTECH"
+label = "Higher education / EdTech operations hedge"
+core = true
+enabled = true
+allocation_percent = 15
+priority = 2
+profile = "P2-higher-ed-edtech"
+domain = "higher_ed"
+fast_days = 7
+deep_days = 45
+resume_variant = "higher_ed_records"
+generic_title_patterns = ["enrollment specialist", "enrollment coordinator", "admissions specialist", "admissions coordinator", "records specialist", "credential analyst", "registrar coordinator", "student services coordinator"]
+domain_markers = ["university", "college", "higher education", "student", "admissions", "registrar", "academic", "education", "EdTech"]
+responsibility_markers = ["enrollment", "admissions", "student records", "transcript", "SIS", "registration", "application review", "credential"]
+titles = ["Enrollment Operations Specialist", "Enrollment Coordinator — Higher Education", "Enrollment Specialist — Higher Education", "Admissions Operations Specialist", "Admissions Specialist", "Admissions Coordinator", "Application Review Specialist", "Application Processor — Higher Education", "Academic Records Specialist", "Academic Records Coordinator", "Student Records Specialist", "Student Records Coordinator", "Credential Analyst", "Credential Evaluator", "Transcript Specialist", "Transcript Evaluator", "Registrar Specialist", "Registrar Coordinator", "Student Services Operations Specialist", "Student Services Coordinator", "Learning Operations Specialist", "EdTech Project Coordinator", "EdTech Implementation Coordinator", "EdTech Implementation Specialist"]
+
+[[lanes]]
+id = "CONTENT_AI_QUALITY"
+label = "Content / bilingual / AI quality opportunistic"
+core = true
+enabled = true
+allocation_percent = 5
+priority = 3
+profile = "P3-content-ai-quality"
+domain = "content"
+fast_days = 7
+deep_days = 21
+resume_variant = "content_quality"
+generic_title_patterns = ["content reviewer", "content quality", "AI evaluator", "language reviewer"]
+domain_markers = ["content", "language", "education", "AI", "evaluation", "review"]
+responsibility_markers = ["review", "quality", "rubric", "bilingual", "Spanish", "content", "evaluation"]
+titles = ["Content Quality Specialist", "Content Quality Analyst", "Content Reviewer", "Bilingual Content Reviewer", "Spanish Content Reviewer", "Spanish Language Reviewer", "Language Quality Analyst", "AI Quality Analyst", "AI Evaluator", "Education Content Reviewer"]
+
+[[lanes]]
+id = "FALLBACK_TRANSFERABLE"
+label = "Fallback transferable data / operations"
+core = false
+enabled = true
+allocation_percent = 0
+priority = 4
+profile = "P1-transferable-data-ops"
+domain = "transferable"
+fast_days = 7
+deep_days = 30
+resume_variant = "healthcare_data_quality"
+activation = "qualified_active_unapplied_reservoir_below_minimum"
+generic_title_patterns = ["data operations specialist", "data quality specialist", "data integrity specialist", "data validation specialist", "operations data specialist"]
+domain_markers = []
+responsibility_markers = ["data quality", "data validation", "records", "documentation", "data accuracy", "data cleanup", "data integrity", "spreadsheets"]
+titles = ["Data Operations Specialist", "Data Quality Specialist", "Data Integrity Specialist", "Data Validation Specialist", "Operations Data Specialist", "Documentation Quality Specialist"]

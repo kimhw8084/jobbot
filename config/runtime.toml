@@ -1,0 +1,74 @@
+[runtime]
+database_path = "data/jobs.sqlite3"
+output_dir = "out"
+cache_dir = "cache"
+cache_minutes = 0
+log_dir = "logs"
+bridge_host = "127.0.0.1"
+bridge_port = 0
+dashboard_host = "127.0.0.1"
+dashboard_port = 8765
+heartbeat_seconds = 20
+lease_seconds = 180
+watchdog_stall_seconds = 180
+watchdog_retries = 3
+challenge_cooldown_hours = 12
+bridge_restart_limit = 3
+sqlite_busy_timeout_ms = 10000
+sqlite_synchronous = "FULL"
+http_timeout_seconds = 25
+user_agent = "ElizabethJobBot/3.2 (personal read-only career research)"
+safety_max_jobs_per_source = 50000
+
+[ledger]
+ats_close_after_complete_misses = 2
+auto_backup_before_migration = true
+backup_dir = "data/backups"
+
+[daily_planner]
+minimum = 10
+target = 15
+maximum = 20
+reservoir_fallback_threshold = 50
+max_same_company = 2
+max_same_title_family = 4
+
+[sources.remotive]
+enabled = true
+url = "https://remotive.com/api/remote-jobs"
+
+[sources.jobicy]
+enabled = true
+url = "https://jobicy.com/api/v2/remote-jobs?count=200&geo=usa"
+minimum_poll_minutes = 60
+
+[sources.remoteok]
+enabled = true
+url = "https://remoteok.com/api"
+
+[sources.remotelanders]
+enabled = true
+url = "https://remotelanders.com/api/jobs"
+page_size = 100
+safety_max_pages = 250
+
+[ats_runtime]
+max_workers = 6
+board_timeout_seconds = 10
+restart_cache_minutes = 60
+
+[ats_discovery]
+enabled = true
+file = "data/discovered_ats.json"
+max_boards = 1000
+minimum_relevance = 75
+seed_minimum_relevance = 65
+
+[enrichment]
+public_ats = true
+recall_first = true
+jsonld_fallback = true
+safety_max_enrichments_per_run = 5000
+
+[coverage]
+primary_platforms = ["linkedin", "indeed", "glassdoor"]
