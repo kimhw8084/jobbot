@@ -1,0 +1,249 @@
+# Remote Career Job Search Automation v2.1 — exhaustive ledger + precision + throughput
+
+[app]
+strategy_file = "strategy.toml"
+db_path = "data/jobs.sqlite3"
+output_dir = "out"
+cache_dir = "cache"
+cache_minutes = 0
+# 0 = fetch live every manual run. Cached responses are still retained only as stale fallback after a network/source failure.
+http_timeout_seconds = 25
+user_agent = "ElizabethRemoteCareerSearch/2.1 (personal job-search research)"
+safety_max_jobs_per_source = 50000
+# Safety ceiling only: this is NOT a strategic top-N limit. Raise intentionally if a legitimate source exceeds it.
+
+[candidate]
+name = "Elizabeth Kim-Ortiz"
+country = "US"
+state = "TX"
+metro = "Austin Metropolitan Area"
+metro_terms = ["Austin", "Round Rock", "Cedar Park", "Pflugerville", "Georgetown"]
+remote_only = true
+work_authorization = "unknown"
+minimum_salary_annual = 0
+preferred_salary_annual = 65000
+max_travel_percent = -1
+primary_employment = "full_time_stable"
+include_fixed_term_review = true
+include_contract_review = false
+include_part_time_review = false
+# -1 = no hard travel cap yet. Travel is still extracted/ranked and shown for review.
+relevant_operations_years = 4.0
+direct_healthcare_years = 3.0
+enrollment_years = 2.0
+higher_ed_years = 1.7
+remote_operations_years = 4.0
+people_management_years = 0.0
+professional_data_analytics_years = 0.0
+professional_implementation_years = 0.0
+
+education = [
+  "Master of Arts, Clinical Mental Health Counseling",
+  "Bachelor of Arts, Psychology",
+]
+credentials = [
+  "Google Data Analytics Professional Certificate",
+  "HIPAA Compliance Training",
+  "Crisis Intervention Training",
+]
+languages = ["English native", "Spanish fluent written and verbal"]
+
+# Structured capability graph. level = proven | strong_transfer | training | not_evidenced
+[[candidate.capabilities]]
+name = "healthcare enrollment"
+level = "proven"
+aliases = ["healthcare enrollment", "patient enrollment", "RPM enrollment", "remote patient monitoring enrollment"]
+
+[[candidate.capabilities]]
+name = "patient intake and onboarding"
+level = "proven"
+aliases = ["patient intake", "intake coordination", "patient onboarding", "patient access", "patient engagement"]
+
+[[candidate.capabilities]]
+name = "documentation and records"
+level = "proven"
+aliases = ["documentation", "records", "documentation accuracy", "record accuracy", "verification", "data accuracy"]
+
+[[candidate.capabilities]]
+name = "HIPAA and PHI workflows"
+level = "proven"
+aliases = ["HIPAA", "PHI", "confidentiality", "compliance-sensitive records"]
+
+[[candidate.capabilities]]
+name = "higher education enrollment"
+level = "proven"
+aliases = ["higher education", "admissions", "student enrollment", "student records", "transcripts", "SIS", "registration"]
+
+[[candidate.capabilities]]
+name = "remote workflow coordination"
+level = "proven"
+aliases = ["remote workflow", "cross-functional", "handoff", "Microsoft Teams", "workflow coordination"]
+
+[[candidate.capabilities]]
+name = "Spanish"
+level = "proven"
+aliases = ["Spanish", "bilingual", "English/Spanish"]
+
+[[candidate.capabilities]]
+name = "Excel"
+level = "proven"
+aliases = ["Excel", "Microsoft Excel", "spreadsheets"]
+
+[[candidate.capabilities]]
+name = "quality assurance"
+level = "strong_transfer"
+aliases = ["quality assurance", "quality improvement", "quality review", "audit", "documentation quality"]
+
+[[candidate.capabilities]]
+name = "process improvement"
+level = "strong_transfer"
+aliases = ["process improvement", "workflow improvement", "SOP", "root cause", "process mapping"]
+
+[[candidate.capabilities]]
+name = "project coordination"
+level = "strong_transfer"
+aliases = ["project coordination", "program coordination", "implementation coordination", "cross-functional project"]
+
+[[candidate.capabilities]]
+name = "implementation"
+level = "strong_transfer"
+aliases = ["implementation", "go-live", "configuration", "client onboarding", "system implementation"]
+
+[[candidate.capabilities]]
+name = "data analytics"
+level = "training"
+aliases = ["data analytics", "analytics", "reporting", "dashboard", "data visualization"]
+
+[[candidate.capabilities]]
+name = "SQL"
+level = "training"
+aliases = ["SQL"]
+
+[[candidate.capabilities]]
+name = "Power BI"
+level = "not_evidenced"
+aliases = ["Power BI"]
+
+[[candidate.capabilities]]
+name = "Tableau"
+level = "training"
+aliases = ["Tableau"]
+
+[[candidate.capabilities]]
+name = "EHR interoperability"
+level = "not_evidenced"
+aliases = ["HL7", "FHIR", "CCDA", "ADT", "TEFCA", "QHIN", "interoperability"]
+
+[[candidate.capabilities]]
+name = "HEDIS Stars NCQA"
+level = "not_evidenced"
+aliases = ["HEDIS", "Stars", "NCQA"]
+
+[[candidate.capabilities]]
+name = "people management"
+level = "not_evidenced"
+aliases = ["people management", "manage a team", "direct reports", "manage managers", "hiring and coaching"]
+
+[[candidate.capabilities]]
+name = "software engineering"
+level = "not_evidenced"
+aliases = ["software engineering", "Java", "Apex", "React", "TypeScript", "Kubernetes", "AWS architecture"]
+
+[[candidate.capabilities]]
+name = "finance accounting"
+level = "not_evidenced"
+aliases = ["accounting", "financial analysis", "FP&A", "CPA", "revenue recognition", "ASC 606"]
+
+[[candidate.capabilities]]
+name = "cybersecurity"
+level = "not_evidenced"
+aliases = ["cybersecurity", "penetration testing", "vulnerability management", "OWASP", "Burp Suite"]
+
+[sources.remotive]
+enabled = true
+url = "https://remotive.com/api/remote-jobs"
+
+[sources.jobicy]
+enabled = true
+url = "https://jobicy.com/api/v2/remote-jobs?count=200&geo=usa"
+minimum_poll_minutes = 60
+# Jobicy's public API asks automated integrations not to poll more frequently than hourly.
+# Other sources still fetch live on each run; Jobicy reuses its last successful response inside this interval.
+# Targeted API queries dramatically improve daily volume while precision filtering remains local.
+tags = [
+  "patient enrollment", "healthcare enrollment", "patient access", "patient onboarding",
+  "patient engagement", "healthcare operations", "clinical operations", "medical records",
+  "health information", "healthcare quality", "quality improvement", "data quality",
+  "data operations", "healthcare implementation", "project coordinator", "provider enrollment",
+  "admissions", "student records", "bilingual Spanish", "credentialing", "insurance verification",
+  "care coordinator", "member services", "authorization", "scheduling coordinator",
+  "operations coordinator", "operations specialist", "implementation specialist", "onboarding specialist"
+]
+include_unfiltered_latest = true
+
+[sources.remoteok]
+enabled = true
+url = "https://remoteok.com/api"
+
+[sources.remotelanders]
+enabled = true
+url = "https://remotelanders.com/api/jobs"
+page_size = 100
+safety_max_pages = 250
+# v2 continues until the source returns no more rows; safety_max_pages only prevents runaway loops.
+
+
+
+[ats_runtime]
+# Runtime-only controls. These do NOT limit how many employer boards are searched.
+# Boards are scanned concurrently so a few slow/broken employers cannot make a deep run appear frozen.
+max_workers = 6
+board_timeout_seconds = 10
+# Successful ATS responses are reused for one hour if you interrupt/restart the same run.
+restart_cache_minutes = 60
+
+[ats_discovery]
+enabled = true
+file = "data/discovered_ats.json"
+max_boards = 1000
+minimum_relevance = 75
+seed_minimum_relevance = 65
+
+[enrichment]
+public_ats = true
+# v2.1 enriches broad-title recall candidates BEFORE final classification.
+# This fixes the v2 circular bug: missing description -> no profile -> no enrichment.
+recall_first = true
+jsonld_fallback = true
+safety_max_enrichments_per_run = 5000
+# Direct ATS canonicalization is attempted broadly; this is only a runaway/network safety ceiling.
+
+[browser]
+profile_dir = ".browser-profile"
+headed = true
+navigation_timeout_ms = 35000
+require_https = true
+
+[manual_platforms]
+indeed = true
+linkedin = true
+glassdoor = true
+ziprecruiter = true
+builtin = true
+flexjobs = true
+higheredjobs = true
+herc = true
+insidehighered = true
+
+[ledger]
+ats_close_after_complete_misses = 2
+auto_backup_before_strategy_migration = true
+backup_dir = "data/backups"
+# A direct ATS job is only auto-closed after it is absent from two successful complete scans.
+
+[coverage]
+primary_platforms = ["linkedin", "indeed", "glassdoor"]
+boolean_bundle_size = 4
+windows_days = [1, 7, 30]
+# These are user-assisted search coverage segments, not autonomous scraping.
+# 1d and 7d segments recur daily; 30d backfill recurs weekly.

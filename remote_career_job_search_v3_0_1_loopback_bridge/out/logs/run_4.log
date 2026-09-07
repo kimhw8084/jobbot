@@ -1,0 +1,448 @@
+2026-09-07T18:42:27+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T18:42:27+00:00 event=task_started task=10 linkedin: authorization specialist healthcare
+2026-09-07T18:42:32+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T18:42:32+00:00 event=navigation task=10 open search https://www.linkedin.com/jobs/search/?keywords=authorization+specialist+healthcare&location=United+States&f_WT=2&f_TPR=r2592000&sortBy=DD
+2026-09-07T18:42:38+00:00 event=result_discovered task=10 linkedin: 4427419356
+2026-09-07T18:42:38+00:00 event=navigation task=10 open detail 4427419356
+2026-09-07T18:42:41+00:00 event=detail_read task=10 linkedin: 4427419356
+2026-09-07T18:42:41+00:00 event=result_discovered task=10 linkedin: 4462209725
+2026-09-07T18:42:41+00:00 event=navigation task=10 open detail 4462209725
+2026-09-07T18:42:42+00:00 event=detail_read task=10 linkedin: 4462209725
+2026-09-07T18:42:43+00:00 event=result_discovered task=10 linkedin: 4460397819
+2026-09-07T18:42:43+00:00 event=navigation task=10 open detail 4460397819
+2026-09-07T18:42:45+00:00 event=detail_read task=10 linkedin: 4460397819
+2026-09-07T18:42:46+00:00 event=result_discovered task=10 linkedin: 4455271645
+2026-09-07T18:42:46+00:00 event=navigation task=10 open detail 4455271645
+2026-09-07T18:42:48+00:00 event=detail_read task=10 linkedin: 4455271645
+2026-09-07T18:42:49+00:00 event=result_discovered task=10 linkedin: 4441935913
+2026-09-07T18:42:49+00:00 event=navigation task=10 open detail 4441935913
+2026-09-07T18:42:50+00:00 event=detail_read task=10 linkedin: 4441935913
+2026-09-07T18:42:50+00:00 event=result_discovered task=10 linkedin: 4414359334
+2026-09-07T18:42:50+00:00 event=navigation task=10 open detail 4414359334
+2026-09-07T18:42:51+00:00 event=detail_read task=10 linkedin: 4414359334
+2026-09-07T18:42:51+00:00 event=result_discovered task=10 linkedin: 4456355577
+2026-09-07T18:42:51+00:00 event=navigation task=10 open detail 4456355577
+2026-09-07T18:42:53+00:00 event=detail_read task=10 linkedin: 4456355577
+2026-09-07T18:42:53+00:00 event=navigation task=10 advance search result batch/page
+2026-09-07T18:42:59+00:00 event=result_discovered task=10 linkedin: 4462213111
+2026-09-07T18:42:59+00:00 event=navigation task=10 open detail 4462213111
+2026-09-07T18:43:00+00:00 event=detail_read task=10 linkedin: 4462213111
+2026-09-07T18:43:00+00:00 event=result_discovered task=10 linkedin: 4414064022
+2026-09-07T18:43:00+00:00 event=navigation task=10 open detail 4414064022
+2026-09-07T18:43:02+00:00 event=detail_read task=10 linkedin: 4414064022
+2026-09-07T18:43:02+00:00 event=result_discovered task=10 linkedin: 4460566714
+2026-09-07T18:43:02+00:00 event=navigation task=10 open detail 4460566714
+2026-09-07T18:43:03+00:00 event=detail_read task=10 linkedin: 4460566714
+2026-09-07T18:43:04+00:00 event=result_discovered task=10 linkedin: 4464068494
+2026-09-07T18:43:04+00:00 event=navigation task=10 open detail 4464068494
+2026-09-07T18:43:05+00:00 event=detail_read task=10 linkedin: 4464068494
+2026-09-07T18:43:06+00:00 event=result_discovered task=10 linkedin: 4445211895
+2026-09-07T18:43:06+00:00 event=navigation task=10 open detail 4445211895
+2026-09-07T18:43:08+00:00 event=detail_read task=10 linkedin: 4445211895
+2026-09-07T18:43:09+00:00 event=result_discovered task=10 linkedin: 4463774742
+2026-09-07T18:43:09+00:00 event=navigation task=10 open detail 4463774742
+2026-09-07T18:43:10+00:00 event=detail_read task=10 linkedin: 4463774742
+2026-09-07T18:43:11+00:00 event=result_discovered task=10 linkedin: 4463647981
+2026-09-07T18:43:11+00:00 event=navigation task=10 open detail 4463647981
+2026-09-07T18:43:13+00:00 event=detail_read task=10 linkedin: 4463647981
+2026-09-07T18:43:14+00:00 event=navigation task=10 advance search result batch/page
+2026-09-07T18:43:21+00:00 event=result_discovered task=10 linkedin: 4460572204
+2026-09-07T18:43:21+00:00 event=navigation task=10 open detail 4460572204
+2026-09-07T18:43:22+00:00 event=detail_read task=10 linkedin: 4460572204
+2026-09-07T18:43:22+00:00 event=run_finished task=- stopped
+2026-09-07T18:45:32+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T18:45:32+00:00 event=task_started task=10 linkedin: authorization specialist healthcare
+2026-09-07T18:45:35+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T18:45:35+00:00 event=navigation task=10 open search https://www.linkedin.com/jobs/search/?currentJobId=4427419356&f_TPR=r2592000&f_WT=2&keywords=authorization%20specialist%20healthcare&location=United%20States&sortBy=DD&start=50
+2026-09-07T18:45:41+00:00 event=result_discovered task=10 linkedin: 4463601544
+2026-09-07T18:45:41+00:00 event=navigation task=10 open detail 4463601544
+2026-09-07T18:45:42+00:00 event=detail_read task=10 linkedin: 4463601544
+2026-09-07T18:45:42+00:00 event=extraction_miss task=10 detail payload missing title or canonical URL for 4463601544
+2026-09-07T18:45:42+00:00 event=result_discovered task=10 linkedin: 4458761345
+2026-09-07T18:45:42+00:00 event=navigation task=10 open detail 4458761345
+2026-09-07T18:45:44+00:00 event=detail_read task=10 linkedin: 4458761345
+2026-09-07T18:45:44+00:00 event=extraction_miss task=10 detail payload missing title or canonical URL for 4458761345
+2026-09-07T18:45:44+00:00 event=result_discovered task=10 linkedin: 4443406102
+2026-09-07T18:45:44+00:00 event=navigation task=10 open detail 4443406102
+2026-09-07T18:45:45+00:00 event=detail_read task=10 linkedin: 4443406102
+2026-09-07T18:45:45+00:00 event=extraction_miss task=10 detail payload missing title or canonical URL for 4443406102
+2026-09-07T18:45:46+00:00 event=result_discovered task=10 linkedin: 4462316074
+2026-09-07T18:45:46+00:00 event=navigation task=10 open detail 4462316074
+2026-09-07T18:45:47+00:00 event=detail_read task=10 linkedin: 4462316074
+2026-09-07T18:45:47+00:00 event=extraction_miss task=10 detail payload missing title or canonical URL for 4462316074
+2026-09-07T18:45:48+00:00 event=result_discovered task=10 linkedin: 4461987928
+2026-09-07T18:45:48+00:00 event=navigation task=10 open detail 4461987928
+2026-09-07T18:45:49+00:00 event=detail_read task=10 linkedin: 4461987928
+2026-09-07T18:45:49+00:00 event=extraction_miss task=10 detail payload missing title or canonical URL for 4461987928
+2026-09-07T18:45:49+00:00 event=result_discovered task=10 linkedin: 4463388597
+2026-09-07T18:45:49+00:00 event=navigation task=10 open detail 4463388597
+2026-09-07T18:45:52+00:00 event=detail_read task=10 linkedin: 4463388597
+2026-09-07T18:45:52+00:00 event=extraction_miss task=10 detail payload missing title or canonical URL for 4463388597
+2026-09-07T18:45:53+00:00 event=result_discovered task=10 linkedin: 4463380455
+2026-09-07T18:45:53+00:00 event=navigation task=10 open detail 4463380455
+2026-09-07T18:45:54+00:00 event=detail_read task=10 linkedin: 4463380455
+2026-09-07T18:45:54+00:00 event=extraction_miss task=10 detail payload missing title or canonical URL for 4463380455
+2026-09-07T18:45:55+00:00 event=task_failed task=10 Local bridge unavailable: parameters are of unsupported type
+2026-09-07T18:45:56+00:00 event=task_started task=11 linkedin: clinical documentation specialist
+2026-09-07T18:45:56+00:00 event=navigation task=11 open search https://www.linkedin.com/jobs/search/?keywords=clinical+documentation+specialist&location=United+States&f_WT=2&f_TPR=r2592000&sortBy=DD
+2026-09-07T18:46:02+00:00 event=result_discovered task=11 linkedin: 4464378547
+2026-09-07T18:46:02+00:00 event=navigation task=11 open detail 4464378547
+2026-09-07T18:46:03+00:00 event=detail_read task=11 linkedin: 4464378547
+2026-09-07T18:46:03+00:00 event=extraction_miss task=11 detail payload missing title or canonical URL for 4464378547
+2026-09-07T18:46:04+00:00 event=result_discovered task=11 linkedin: 4445671528
+2026-09-07T18:46:04+00:00 event=navigation task=11 open detail 4445671528
+2026-09-07T18:46:06+00:00 event=detail_read task=11 linkedin: 4445671528
+2026-09-07T18:46:06+00:00 event=extraction_miss task=11 detail payload missing title or canonical URL for 4445671528
+2026-09-07T18:46:06+00:00 event=result_discovered task=11 linkedin: 4464369484
+2026-09-07T18:46:06+00:00 event=navigation task=11 open detail 4464369484
+2026-09-07T18:46:07+00:00 event=detail_read task=11 linkedin: 4464369484
+2026-09-07T18:46:07+00:00 event=extraction_miss task=11 detail payload missing title or canonical URL for 4464369484
+2026-09-07T18:46:08+00:00 event=result_discovered task=11 linkedin: 4427231915
+2026-09-07T18:46:08+00:00 event=navigation task=11 open detail 4427231915
+2026-09-07T18:46:09+00:00 event=detail_read task=11 linkedin: 4427231915
+2026-09-07T18:46:09+00:00 event=extraction_miss task=11 detail payload missing title or canonical URL for 4427231915
+2026-09-07T18:46:10+00:00 event=result_discovered task=11 linkedin: 4398857962
+2026-09-07T18:46:10+00:00 event=navigation task=11 open detail 4398857962
+2026-09-07T18:46:12+00:00 event=detail_read task=11 linkedin: 4398857962
+2026-09-07T18:46:12+00:00 event=extraction_miss task=11 detail payload missing title or canonical URL for 4398857962
+2026-09-07T18:46:13+00:00 event=result_discovered task=11 linkedin: 4453382678
+2026-09-07T18:46:13+00:00 event=navigation task=11 open detail 4453382678
+2026-09-07T18:46:15+00:00 event=detail_read task=11 linkedin: 4453382678
+2026-09-07T18:46:15+00:00 event=extraction_miss task=11 detail payload missing title or canonical URL for 4453382678
+2026-09-07T18:46:16+00:00 event=result_discovered task=11 linkedin: 4460109770
+2026-09-07T18:46:16+00:00 event=navigation task=11 open detail 4460109770
+2026-09-07T18:46:16+00:00 event=task_failed task=11 Tabs cannot be edited right now (user may be dragging a tab).
+2026-09-07T18:46:16+00:00 event=task_started task=12 linkedin: credentialing specialist healthcare
+2026-09-07T18:46:16+00:00 event=navigation task=12 open search https://www.linkedin.com/jobs/search/?keywords=credentialing+specialist+healthcare&location=United+States&f_WT=2&f_TPR=r2592000&sortBy=DD
+2026-09-07T18:46:22+00:00 event=result_discovered task=12 linkedin: 4463666471
+2026-09-07T18:46:22+00:00 event=navigation task=12 open detail 4463666471
+2026-09-07T18:46:24+00:00 event=detail_read task=12 linkedin: 4463666471
+2026-09-07T18:46:24+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4463666471
+2026-09-07T18:46:25+00:00 event=result_discovered task=12 linkedin: 4461402778
+2026-09-07T18:46:25+00:00 event=navigation task=12 open detail 4461402778
+2026-09-07T18:46:27+00:00 event=detail_read task=12 linkedin: 4461402778
+2026-09-07T18:46:27+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4461402778
+2026-09-07T18:46:28+00:00 event=result_discovered task=12 linkedin: 4463646811
+2026-09-07T18:46:28+00:00 event=navigation task=12 open detail 4463646811
+2026-09-07T18:46:29+00:00 event=detail_read task=12 linkedin: 4463646811
+2026-09-07T18:46:29+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4463646811
+2026-09-07T18:46:29+00:00 event=result_discovered task=12 linkedin: 4462300249
+2026-09-07T18:46:29+00:00 event=navigation task=12 open detail 4462300249
+2026-09-07T18:46:31+00:00 event=detail_read task=12 linkedin: 4462300249
+2026-09-07T18:46:31+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4462300249
+2026-09-07T18:46:31+00:00 event=result_discovered task=12 linkedin: 4461263302
+2026-09-07T18:46:31+00:00 event=navigation task=12 open detail 4461263302
+2026-09-07T18:46:32+00:00 event=detail_read task=12 linkedin: 4461263302
+2026-09-07T18:46:32+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4461263302
+2026-09-07T18:46:33+00:00 event=result_discovered task=12 linkedin: 4444016356
+2026-09-07T18:46:33+00:00 event=navigation task=12 open detail 4444016356
+2026-09-07T18:46:34+00:00 event=detail_read task=12 linkedin: 4444016356
+2026-09-07T18:46:34+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4444016356
+2026-09-07T18:46:35+00:00 event=result_discovered task=12 linkedin: 4461116189
+2026-09-07T18:46:35+00:00 event=navigation task=12 open detail 4461116189
+2026-09-07T18:46:37+00:00 event=detail_read task=12 linkedin: 4461116189
+2026-09-07T18:46:37+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4461116189
+2026-09-07T18:46:37+00:00 event=navigation task=12 advance search result batch/page
+2026-09-07T18:46:44+00:00 event=result_discovered task=12 linkedin: 4461272148
+2026-09-07T18:46:44+00:00 event=navigation task=12 open detail 4461272148
+2026-09-07T18:46:45+00:00 event=detail_read task=12 linkedin: 4461272148
+2026-09-07T18:46:45+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4461272148
+2026-09-07T18:46:46+00:00 event=result_discovered task=12 linkedin: 4452532361
+2026-09-07T18:46:46+00:00 event=navigation task=12 open detail 4452532361
+2026-09-07T18:46:47+00:00 event=detail_read task=12 linkedin: 4452532361
+2026-09-07T18:46:47+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4452532361
+2026-09-07T18:46:48+00:00 event=result_discovered task=12 linkedin: 4453721791
+2026-09-07T18:46:48+00:00 event=navigation task=12 open detail 4453721791
+2026-09-07T18:46:49+00:00 event=detail_read task=12 linkedin: 4453721791
+2026-09-07T18:46:49+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4453721791
+2026-09-07T18:46:49+00:00 event=result_discovered task=12 linkedin: 4454349696
+2026-09-07T18:46:49+00:00 event=navigation task=12 open detail 4454349696
+2026-09-07T18:46:50+00:00 event=detail_read task=12 linkedin: 4454349696
+2026-09-07T18:46:50+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4454349696
+2026-09-07T18:46:51+00:00 event=result_discovered task=12 linkedin: 4453236101
+2026-09-07T18:46:51+00:00 event=navigation task=12 open detail 4453236101
+2026-09-07T18:46:52+00:00 event=detail_read task=12 linkedin: 4453236101
+2026-09-07T18:46:52+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4453236101
+2026-09-07T18:46:53+00:00 event=result_discovered task=12 linkedin: 4453071949
+2026-09-07T18:46:53+00:00 event=navigation task=12 open detail 4453071949
+2026-09-07T18:46:54+00:00 event=detail_read task=12 linkedin: 4453071949
+2026-09-07T18:46:54+00:00 event=extraction_miss task=12 detail payload missing title or canonical URL for 4453071949
+2026-09-07T18:46:55+00:00 event=task_failed task=12 Local bridge unavailable: parameters are of unsupported type
+2026-09-07T18:46:56+00:00 event=task_started task=13 linkedin: documentation quality specialist
+2026-09-07T18:46:56+00:00 event=navigation task=13 open search https://www.linkedin.com/jobs/search/?keywords=documentation+quality+specialist&location=United+States&f_WT=2&f_TPR=r2592000&sortBy=DD
+2026-09-07T18:47:01+00:00 event=result_discovered task=13 linkedin: 4462249075
+2026-09-07T18:47:01+00:00 event=navigation task=13 open detail 4462249075
+2026-09-07T18:47:02+00:00 event=detail_read task=13 linkedin: 4462249075
+2026-09-07T18:47:02+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4462249075
+2026-09-07T18:47:03+00:00 event=result_discovered task=13 linkedin: 4427231915
+2026-09-07T18:47:03+00:00 event=navigation task=13 open detail 4427231915
+2026-09-07T18:47:04+00:00 event=detail_read task=13 linkedin: 4427231915
+2026-09-07T18:47:04+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4427231915
+2026-09-07T18:47:04+00:00 event=result_discovered task=13 linkedin: 4398857962
+2026-09-07T18:47:04+00:00 event=navigation task=13 open detail 4398857962
+2026-09-07T18:47:06+00:00 event=detail_read task=13 linkedin: 4398857962
+2026-09-07T18:47:06+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4398857962
+2026-09-07T18:47:06+00:00 event=result_discovered task=13 linkedin: 4462957807
+2026-09-07T18:47:06+00:00 event=navigation task=13 open detail 4462957807
+2026-09-07T18:47:07+00:00 event=detail_read task=13 linkedin: 4462957807
+2026-09-07T18:47:07+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4462957807
+2026-09-07T18:47:08+00:00 event=result_discovered task=13 linkedin: 4461332968
+2026-09-07T18:47:08+00:00 event=navigation task=13 open detail 4461332968
+2026-09-07T18:47:09+00:00 event=detail_read task=13 linkedin: 4461332968
+2026-09-07T18:47:09+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4461332968
+2026-09-07T18:47:10+00:00 event=result_discovered task=13 linkedin: 4408591798
+2026-09-07T18:47:10+00:00 event=navigation task=13 open detail 4408591798
+2026-09-07T18:47:11+00:00 event=detail_read task=13 linkedin: 4408591798
+2026-09-07T18:47:11+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4408591798
+2026-09-07T18:47:11+00:00 event=result_discovered task=13 linkedin: 4462965499
+2026-09-07T18:47:11+00:00 event=navigation task=13 open detail 4462965499
+2026-09-07T18:47:12+00:00 event=detail_read task=13 linkedin: 4462965499
+2026-09-07T18:47:13+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4462965499
+2026-09-07T18:47:13+00:00 event=navigation task=13 advance search result batch/page
+2026-09-07T18:47:18+00:00 event=result_discovered task=13 linkedin: 4427226993
+2026-09-07T18:47:18+00:00 event=navigation task=13 open detail 4427226993
+2026-09-07T18:47:19+00:00 event=detail_read task=13 linkedin: 4427226993
+2026-09-07T18:47:19+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4427226993
+2026-09-07T18:47:20+00:00 event=result_discovered task=13 linkedin: 4398876035
+2026-09-07T18:47:20+00:00 event=navigation task=13 open detail 4398876035
+2026-09-07T18:47:22+00:00 event=detail_read task=13 linkedin: 4398876035
+2026-09-07T18:47:22+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4398876035
+2026-09-07T18:47:22+00:00 event=result_discovered task=13 linkedin: 4460620130
+2026-09-07T18:47:22+00:00 event=navigation task=13 open detail 4460620130
+2026-09-07T18:47:24+00:00 event=detail_read task=13 linkedin: 4460620130
+2026-09-07T18:47:24+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4460620130
+2026-09-07T18:47:24+00:00 event=result_discovered task=13 linkedin: 4445341561
+2026-09-07T18:47:24+00:00 event=navigation task=13 open detail 4445341561
+2026-09-07T18:47:25+00:00 event=detail_read task=13 linkedin: 4445341561
+2026-09-07T18:47:25+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4445341561
+2026-09-07T18:47:26+00:00 event=result_discovered task=13 linkedin: 4464353173
+2026-09-07T18:47:26+00:00 event=navigation task=13 open detail 4464353173
+2026-09-07T18:47:27+00:00 event=detail_read task=13 linkedin: 4464353173
+2026-09-07T18:47:27+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4464353173
+2026-09-07T18:47:28+00:00 event=result_discovered task=13 linkedin: 4455252072
+2026-09-07T18:47:28+00:00 event=navigation task=13 open detail 4455252072
+2026-09-07T18:47:29+00:00 event=detail_read task=13 linkedin: 4455252072
+2026-09-07T18:47:29+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4455252072
+2026-09-07T18:47:29+00:00 event=result_discovered task=13 linkedin: 4462950297
+2026-09-07T18:47:29+00:00 event=navigation task=13 open detail 4462950297
+2026-09-07T18:47:30+00:00 event=detail_read task=13 linkedin: 4462950297
+2026-09-07T18:47:31+00:00 event=extraction_miss task=13 detail payload missing title or canonical URL for 4462950297
+2026-09-07T18:47:32+00:00 event=task_failed task=13 Local bridge unavailable: parameters are of unsupported type
+2026-09-07T18:47:32+00:00 event=task_started task=14 linkedin: documentation specialist healthcare
+2026-09-07T18:47:32+00:00 event=navigation task=14 open search https://www.linkedin.com/jobs/search/?keywords=documentation+specialist+healthcare&location=United+States&f_WT=2&f_TPR=r2592000&sortBy=DD
+2026-09-07T18:47:37+00:00 event=result_discovered task=14 linkedin: 4427228464
+2026-09-07T18:47:37+00:00 event=navigation task=14 open detail 4427228464
+2026-09-07T18:47:39+00:00 event=detail_read task=14 linkedin: 4427228464
+2026-09-07T18:47:39+00:00 event=extraction_miss task=14 detail payload missing title or canonical URL for 4427228464
+2026-09-07T18:47:39+00:00 event=result_discovered task=14 linkedin: 4427419356
+2026-09-07T18:47:39+00:00 event=navigation task=14 open detail 4427419356
+2026-09-07T18:47:40+00:00 event=detail_read task=14 linkedin: 4427419356
+2026-09-07T18:47:40+00:00 event=extraction_miss task=14 detail payload missing title or canonical URL for 4427419356
+2026-09-07T18:47:41+00:00 event=run_finished task=- stopped
+2026-09-07T18:49:17+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T18:49:17+00:00 event=task_started task=14 linkedin: documentation specialist healthcare
+2026-09-07T18:49:20+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T18:49:21+00:00 event=navigation task=14 open search https://www.linkedin.com/jobs/search/?currentJobId=4427228464&f_TPR=r2592000&f_WT=2&keywords=documentation%20specialist%20healthcare&location=United%20States&sortBy=DD
+2026-09-07T18:49:30+00:00 event=task_failed task=14 Local bridge unavailable: parameters are of unsupported type
+2026-09-07T18:49:30+00:00 event=task_started task=15 linkedin: health information coordinator
+2026-09-07T18:49:30+00:00 event=navigation task=15 open search https://www.linkedin.com/jobs/search/?keywords=health+information+coordinator&location=United+States&f_WT=2&f_TPR=r2592000&sortBy=DD
+2026-09-07T18:49:39+00:00 event=result_discovered task=15 linkedin: 4464383277
+2026-09-07T18:49:39+00:00 event=navigation task=15 open detail 4464383277
+2026-09-07T18:49:47+00:00 event=detail_read task=15 linkedin: 4464383277
+2026-09-07T18:49:47+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4464383277
+2026-09-07T18:49:49+00:00 event=result_discovered task=15 linkedin: 4378072511
+2026-09-07T18:49:49+00:00 event=navigation task=15 open detail 4378072511
+2026-09-07T18:49:54+00:00 event=detail_read task=15 linkedin: 4378072511
+2026-09-07T18:49:54+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4378072511
+2026-09-07T18:49:55+00:00 event=result_discovered task=15 linkedin: 4462250061
+2026-09-07T18:49:55+00:00 event=navigation task=15 open detail 4462250061
+2026-09-07T18:50:01+00:00 event=detail_read task=15 linkedin: 4462250061
+2026-09-07T18:50:02+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4462250061
+2026-09-07T18:50:03+00:00 event=result_discovered task=15 linkedin: 4462237109
+2026-09-07T18:50:03+00:00 event=navigation task=15 open detail 4462237109
+2026-09-07T18:50:06+00:00 event=detail_read task=15 linkedin: 4462237109
+2026-09-07T18:50:06+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4462237109
+2026-09-07T18:50:06+00:00 event=result_discovered task=15 linkedin: 4462228196
+2026-09-07T18:50:06+00:00 event=navigation task=15 open detail 4462228196
+2026-09-07T18:50:08+00:00 event=detail_read task=15 linkedin: 4462228196
+2026-09-07T18:50:08+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4462228196
+2026-09-07T18:50:09+00:00 event=run_finished task=- stopped
+2026-09-07T18:50:28+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T18:50:28+00:00 event=task_started task=15 linkedin: health information coordinator
+2026-09-07T18:50:30+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T18:50:30+00:00 event=navigation task=15 open search https://www.linkedin.com/jobs/search/?currentJobId=4464383277&f_TPR=r2592000&f_WT=2&keywords=health%20information%20coordinator&location=United%20States&sortBy=DD
+2026-09-07T18:50:37+00:00 event=result_discovered task=15 linkedin: 4464383277
+2026-09-07T18:50:37+00:00 event=navigation task=15 open detail 4464383277
+2026-09-07T18:50:39+00:00 event=detail_read task=15 linkedin: 4464383277
+2026-09-07T18:50:39+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4464383277
+2026-09-07T18:50:39+00:00 event=result_discovered task=15 linkedin: 4378072511
+2026-09-07T18:50:39+00:00 event=navigation task=15 open detail 4378072511
+2026-09-07T18:50:40+00:00 event=detail_read task=15 linkedin: 4378072511
+2026-09-07T18:50:40+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4378072511
+2026-09-07T18:50:41+00:00 event=result_discovered task=15 linkedin: 4462250061
+2026-09-07T18:50:41+00:00 event=navigation task=15 open detail 4462250061
+2026-09-07T18:50:41+00:00 event=detail_read task=15 linkedin: 4462250061
+2026-09-07T18:50:41+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4462250061
+2026-09-07T18:50:42+00:00 event=result_discovered task=15 linkedin: 4462237109
+2026-09-07T18:50:42+00:00 event=navigation task=15 open detail 4462237109
+2026-09-07T18:50:43+00:00 event=detail_read task=15 linkedin: 4462237109
+2026-09-07T18:50:43+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4462237109
+2026-09-07T18:50:43+00:00 event=result_discovered task=15 linkedin: 4462228196
+2026-09-07T18:50:43+00:00 event=navigation task=15 open detail 4462228196
+2026-09-07T18:50:45+00:00 event=detail_read task=15 linkedin: 4462228196
+2026-09-07T18:50:45+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4462228196
+2026-09-07T18:50:45+00:00 event=result_discovered task=15 linkedin: 4455287936
+2026-09-07T18:50:45+00:00 event=navigation task=15 open detail 4455287936
+2026-09-07T18:50:46+00:00 event=detail_read task=15 linkedin: 4455287936
+2026-09-07T18:50:46+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4455287936
+2026-09-07T18:50:47+00:00 event=result_discovered task=15 linkedin: 4409546095
+2026-09-07T18:50:47+00:00 event=navigation task=15 open detail 4409546095
+2026-09-07T18:50:49+00:00 event=detail_read task=15 linkedin: 4409546095
+2026-09-07T18:50:49+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4409546095
+2026-09-07T18:50:49+00:00 event=navigation task=15 advance search result batch/page
+2026-09-07T18:50:57+00:00 event=result_discovered task=15 linkedin: 4378066619
+2026-09-07T18:50:57+00:00 event=navigation task=15 open detail 4378066619
+2026-09-07T18:50:58+00:00 event=detail_read task=15 linkedin: 4378066619
+2026-09-07T18:50:58+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4378066619
+2026-09-07T18:50:59+00:00 event=result_discovered task=15 linkedin: 4464328000
+2026-09-07T18:50:59+00:00 event=navigation task=15 open detail 4464328000
+2026-09-07T18:51:01+00:00 event=detail_read task=15 linkedin: 4464328000
+2026-09-07T18:51:01+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4464328000
+2026-09-07T18:51:01+00:00 event=result_discovered task=15 linkedin: 4462925470
+2026-09-07T18:51:01+00:00 event=navigation task=15 open detail 4462925470
+2026-09-07T18:51:02+00:00 event=detail_read task=15 linkedin: 4462925470
+2026-09-07T18:51:02+00:00 event=extraction_miss task=15 detail payload missing title or canonical URL for 4462925470
+2026-09-07T18:51:03+00:00 event=run_finished task=- stopped
+2026-09-07T18:51:24+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T18:51:24+00:00 event=task_started task=15 linkedin: health information coordinator
+2026-09-07T18:51:26+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T18:51:26+00:00 event=navigation task=15 open search https://www.linkedin.com/jobs/search/?currentJobId=4464383277&f_TPR=r2592000&f_WT=2&keywords=health%20information%20coordinator&location=United%20States&sortBy=DD&start=25
+2026-09-07T18:51:33+00:00 event=result_discovered task=15 linkedin: 4464058345
+2026-09-07T18:51:33+00:00 event=navigation task=15 open detail 4464058345
+2026-09-07T18:51:35+00:00 event=detail_read task=15 linkedin: 4464058345
+2026-09-07T18:51:35+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464058345/ page=https://www.linkedin.com/jobs/view/4464058345/ source=4464058345
+2026-09-07T18:51:36+00:00 event=result_discovered task=15 linkedin: 4461857019
+2026-09-07T18:51:36+00:00 event=navigation task=15 open detail 4461857019
+2026-09-07T18:51:37+00:00 event=detail_read task=15 linkedin: 4461857019
+2026-09-07T18:51:37+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4461857019/ page=https://www.linkedin.com/jobs/view/4461857019/ source=4461857019
+2026-09-07T18:51:37+00:00 event=result_discovered task=15 linkedin: 4461843538
+2026-09-07T18:51:37+00:00 event=navigation task=15 open detail 4461843538
+2026-09-07T18:51:38+00:00 event=detail_read task=15 linkedin: 4461843538
+2026-09-07T18:51:38+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4461843538/ page=https://www.linkedin.com/jobs/view/4461843538/ source=4461843538
+2026-09-07T18:51:39+00:00 event=result_discovered task=15 linkedin: 4442183360
+2026-09-07T18:51:39+00:00 event=navigation task=15 open detail 4442183360
+2026-09-07T18:51:41+00:00 event=detail_read task=15 linkedin: 4442183360
+2026-09-07T18:51:41+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4442183360/ page=https://www.linkedin.com/jobs/view/4442183360/ source=4442183360
+2026-09-07T18:51:41+00:00 event=result_discovered task=15 linkedin: 4445246523
+2026-09-07T18:51:41+00:00 event=navigation task=15 open detail 4445246523
+2026-09-07T18:51:43+00:00 event=detail_read task=15 linkedin: 4445246523
+2026-09-07T18:51:43+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4445246523/ page=https://www.linkedin.com/jobs/view/4445246523/ source=4445246523
+2026-09-07T18:51:43+00:00 event=result_discovered task=15 linkedin: 4427101120
+2026-09-07T18:51:43+00:00 event=navigation task=15 open detail 4427101120
+2026-09-07T18:51:45+00:00 event=detail_read task=15 linkedin: 4427101120
+2026-09-07T18:51:45+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4427101120/ page=https://www.linkedin.com/jobs/view/4427101120/ source=4427101120
+2026-09-07T18:51:45+00:00 event=result_discovered task=15 linkedin: 4464022959
+2026-09-07T18:51:45+00:00 event=navigation task=15 open detail 4464022959
+2026-09-07T18:51:47+00:00 event=detail_read task=15 linkedin: 4464022959
+2026-09-07T18:51:47+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464022959/ page=https://www.linkedin.com/jobs/view/4464022959/ source=4464022959
+2026-09-07T18:51:47+00:00 event=result_discovered task=15 linkedin: 4464383277
+2026-09-07T18:51:47+00:00 event=navigation task=15 open detail 4464383277
+2026-09-07T18:51:48+00:00 event=detail_read task=15 linkedin: 4464383277
+2026-09-07T18:51:48+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464383277/ page=https://www.linkedin.com/jobs/view/4464383277/ source=4464383277
+2026-09-07T18:51:49+00:00 event=navigation task=15 advance search result batch/page
+2026-09-07T18:51:54+00:00 event=result_discovered task=15 linkedin: 4464328000
+2026-09-07T18:51:54+00:00 event=navigation task=15 open detail 4464328000
+2026-09-07T18:51:56+00:00 event=detail_read task=15 linkedin: 4464328000
+2026-09-07T18:51:56+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464328000/ page=https://www.linkedin.com/jobs/view/4464328000/ source=4464328000
+2026-09-07T18:51:56+00:00 event=result_discovered task=15 linkedin: 4464081477
+2026-09-07T18:51:56+00:00 event=navigation task=15 open detail 4464081477
+2026-09-07T18:51:58+00:00 event=detail_read task=15 linkedin: 4464081477
+2026-09-07T18:51:58+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464081477/ page=https://www.linkedin.com/jobs/view/4464081477/ source=4464081477
+2026-09-07T18:51:58+00:00 event=result_discovered task=15 linkedin: 4464047403
+2026-09-07T18:51:58+00:00 event=navigation task=15 open detail 4464047403
+2026-09-07T18:51:59+00:00 event=detail_read task=15 linkedin: 4464047403
+2026-09-07T18:51:59+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464047403/ page=https://www.linkedin.com/jobs/view/4464047403/ source=4464047403
+2026-09-07T18:52:00+00:00 event=result_discovered task=15 linkedin: 4444686032
+2026-09-07T18:52:00+00:00 event=navigation task=15 open detail 4444686032
+2026-09-07T18:52:00+00:00 event=detail_read task=15 linkedin: 4444686032
+2026-09-07T18:52:01+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4444686032/ page=https://www.linkedin.com/jobs/view/4444686032/ source=4444686032
+2026-09-07T18:52:01+00:00 event=result_discovered task=15 linkedin: 4409053570
+2026-09-07T18:52:01+00:00 event=navigation task=15 open detail 4409053570
+2026-09-07T18:52:03+00:00 event=detail_read task=15 linkedin: 4409053570
+2026-09-07T18:52:03+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4409053570/ page=https://www.linkedin.com/jobs/view/4409053570/ source=4409053570
+2026-09-07T18:52:03+00:00 event=result_discovered task=15 linkedin: 4426643511
+2026-09-07T18:52:03+00:00 event=navigation task=15 open detail 4426643511
+2026-09-07T18:52:06+00:00 event=detail_read task=15 linkedin: 4426643511
+2026-09-07T18:52:06+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4426643511/ page=https://www.linkedin.com/jobs/view/4426643511/ source=4426643511
+2026-09-07T18:52:06+00:00 event=result_discovered task=15 linkedin: 4462413065
+2026-09-07T18:52:06+00:00 event=navigation task=15 open detail 4462413065
+2026-09-07T18:52:07+00:00 event=detail_read task=15 linkedin: 4462413065
+2026-09-07T18:52:07+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4462413065/ page=https://www.linkedin.com/jobs/view/4462413065/ source=4462413065
+2026-09-07T18:52:07+00:00 event=result_discovered task=15 linkedin: 4464383277
+2026-09-07T18:52:07+00:00 event=navigation task=15 open detail 4464383277
+2026-09-07T18:52:10+00:00 event=detail_read task=15 linkedin: 4464383277
+2026-09-07T18:52:10+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464383277/ page=https://www.linkedin.com/jobs/view/4464383277/ source=4464383277
+2026-09-07T18:52:11+00:00 event=navigation task=15 advance search result batch/page
+2026-09-07T18:52:16+00:00 event=result_discovered task=15 linkedin: 4464309900
+2026-09-07T18:52:16+00:00 event=navigation task=15 open detail 4464309900
+2026-09-07T18:52:16+00:00 event=detail_read task=15 linkedin: 4464309900
+2026-09-07T18:52:16+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464309900/ page=https://www.linkedin.com/jobs/view/4464309900/ source=4464309900
+2026-09-07T18:52:17+00:00 event=result_discovered task=15 linkedin: 4464079443
+2026-09-07T18:52:17+00:00 event=navigation task=15 open detail 4464079443
+2026-09-07T18:52:19+00:00 event=detail_read task=15 linkedin: 4464079443
+2026-09-07T18:52:19+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464079443/ page=https://www.linkedin.com/jobs/view/4464079443/ source=4464079443
+2026-09-07T18:52:20+00:00 event=result_discovered task=15 linkedin: 4464041476
+2026-09-07T18:52:20+00:00 event=navigation task=15 open detail 4464041476
+2026-09-07T18:52:21+00:00 event=detail_read task=15 linkedin: 4464041476
+2026-09-07T18:52:21+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464041476/ page=https://www.linkedin.com/jobs/view/4464041476/ source=4464041476
+2026-09-07T18:52:21+00:00 event=result_discovered task=15 linkedin: 4462620620
+2026-09-07T18:52:21+00:00 event=navigation task=15 open detail 4462620620
+2026-09-07T18:52:24+00:00 event=detail_read task=15 linkedin: 4462620620
+2026-09-07T18:52:24+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4462620620/ page=https://www.linkedin.com/jobs/view/4462620620/ source=4462620620
+2026-09-07T18:52:24+00:00 event=run_finished task=- stopped
+2026-09-07T18:53:44+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T18:53:44+00:00 event=task_started task=15 linkedin: health information coordinator
+2026-09-07T18:53:48+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T18:53:48+00:00 event=navigation task=15 open search https://www.linkedin.com/jobs/search/?currentJobId=4464383277&f_TPR=r2592000&f_WT=2&keywords=health%20information%20coordinator&location=United%20States&sortBy=DD&start=75
+2026-09-07T18:53:54+00:00 event=result_discovered task=15 linkedin: 4464309900
+2026-09-07T18:53:54+00:00 event=navigation task=15 open detail 4464309900
+2026-09-07T18:53:57+00:00 event=detail_read task=15 linkedin: 4464309900
+2026-09-07T18:53:59+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464309900/ page=https://www.linkedin.com/jobs/view/4464309900/ source=4464309900
+2026-09-07T18:54:01+00:00 event=result_discovered task=15 linkedin: 4464079443
+2026-09-07T18:54:01+00:00 event=navigation task=15 open detail 4464079443
+2026-09-07T18:54:06+00:00 event=detail_read task=15 linkedin: 4464079443
+2026-09-07T18:54:10+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464079443/ page=https://www.linkedin.com/jobs/view/4464079443/ source=4464079443
+2026-09-07T18:54:16+00:00 event=result_discovered task=15 linkedin: 4464041476
+2026-09-07T18:54:16+00:00 event=navigation task=15 open detail 4464041476
+2026-09-07T18:54:20+00:00 event=detail_read task=15 linkedin: 4464041476
+2026-09-07T18:54:21+00:00 event=extraction_miss task=15 detail payload incomplete type=job title=none canonical=https://www.linkedin.com/jobs/view/4464041476/ page=https://www.linkedin.com/jobs/view/4464041476/ source=4464041476
+2026-09-07T18:54:34+00:00 event=run_finished task=- stopped
+2026-09-07T18:55:44+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T18:55:44+00:00 event=task_started task=15 linkedin: health information coordinator
+2026-09-07T18:55:46+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T18:55:47+00:00 event=navigation task=15 open search https://www.linkedin.com/jobs/search/?currentJobId=4464383277&f_TPR=r2592000&f_WT=2&keywords=health%20information%20coordinator&location=United%20States&sortBy=DD&start=75
+2026-09-07T18:55:52+00:00 event=result_discovered task=15 linkedin: 4464309900
+2026-09-07T18:55:52+00:00 event=navigation task=15 open detail 4464309900
+2026-09-07T18:56:01+00:00 event=detail_read task=15 linkedin: 4464309900
+2026-09-07T18:56:01+00:00 event=job_recorded task=15 new: Program Manager IV - Clinical Technology Operations — Centene Corporation
+2026-09-07T18:56:04+00:00 event=result_discovered task=15 linkedin: 4464079443
+2026-09-07T18:56:04+00:00 event=navigation task=15 open detail 4464079443
+2026-09-07T18:56:18+00:00 event=detail_read task=15 linkedin: 4464079443
+2026-09-07T18:56:18+00:00 event=job_recorded task=15 new: Population Health Informaticist — Alignerr
+2026-09-07T18:56:18+00:00 event=result_discovered task=15 linkedin: 4464041476
+2026-09-07T18:56:18+00:00 event=navigation task=15 open detail 4464041476
+2026-09-07T18:56:31+00:00 event=detail_read task=15 linkedin: 4464041476
+2026-09-07T18:56:31+00:00 event=job_recorded task=15 new: Application Support Specialist - Weekend Days — Sirona Medical
+2026-09-07T18:56:31+00:00 event=result_discovered task=15 linkedin: 4462620620
+2026-09-07T18:56:31+00:00 event=navigation task=15 open detail 4462620620
+2026-09-07T18:56:45+00:00 event=detail_read task=15 linkedin: 4462620620
+2026-09-07T18:56:45+00:00 event=job_recorded task=15 new: Intake Specialist — Float Health Brasil
+2026-09-07T18:56:45+00:00 event=result_discovered task=15 linkedin: 4444327309
+2026-09-07T18:56:45+00:00 event=navigation task=15 open detail 4444327309
+2026-09-07T18:57:00+00:00 event=detail_read task=15 linkedin: 4444327309
+2026-09-07T18:57:08+00:00 event=job_recorded task=15 new: Practice Manager - Implementation Services (Remote) — Veeva Systems
+2026-09-07T18:57:16+00:00 event=result_discovered task=15 linkedin: 4441555465
+2026-09-07T18:57:16+00:00 event=navigation task=15 open detail 4441555465
+2026-09-07T18:58:08+00:00 event=detail_read task=15 linkedin: 4441555465
+2026-09-07T18:58:08+00:00 event=job_recorded task=15 new: Senior Clinical Study Manager — Leica Biosystems
+2026-09-07T18:58:10+00:00 event=run_finished task=- stopped

@@ -1,0 +1,27 @@
+JOBBOT v3.1.0 — MAC QUICK START
+
+1) If preserving an older ledger, run:
+   ./IMPORT_EXISTING_DB.command
+
+2) Install once:
+   chmod +x *.command
+   ./INSTALL_MAC.command
+
+3) In chrome://extensions:
+   - Developer mode ON
+   - REMOVE older JobBot v3 unpacked extension
+   - Load unpacked -> THIS package's extension/ folder
+   - expected ID: jfdlmelgonjhgnabpbipjefgamedpgfb
+
+4) In that same normal Chrome profile, sign into LinkedIn, Indeed and Glassdoor.
+
+5) Prove the bridge + Indeed traversal:
+   ./RUN_ACCEPTANCE_INDEED.command
+
+   Terminal should print: Local bridge ready on 127.0.0.1:<port>
+   This build does NOT use Chrome Native Messaging.
+
+6) If acceptance passes:
+   ./RUN_FULL_SEARCH.command
+
+Production discovery is platform-first and has no strategic result-count cap.

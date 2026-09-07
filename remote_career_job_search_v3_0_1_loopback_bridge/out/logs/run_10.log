@@ -1,0 +1,203 @@
+2026-09-07T19:22:22+00:00 event=run_started task=- normal Chrome platform-first run started
+2026-09-07T19:22:22+00:00 event=task_started task=346 linkedin: authorization specialist healthcare
+2026-09-07T19:22:25+00:00 event=auth_verified task=- linkedin: LinkedIn session authenticated
+2026-09-07T19:22:26+00:00 event=navigation task=346 open search https://www.linkedin.com/jobs/search/?keywords=authorization+specialist+healthcare&location=United+States&f_WT=2&f_TPR=r2592000&sortBy=DD
+2026-09-07T19:22:32+00:00 event=result_discovered task=346 linkedin: 4427228464
+2026-09-07T19:22:32+00:00 event=navigation task=346 open detail 4427228464
+2026-09-07T19:22:34+00:00 event=detail_read task=346 linkedin: 4427228464
+2026-09-07T19:22:34+00:00 event=job_recorded task=346 unchanged: Technical Specialist - Active Medical Devices — BSI
+2026-09-07T19:22:35+00:00 event=result_discovered task=346 linkedin: 4455245512
+2026-09-07T19:22:35+00:00 event=navigation task=346 open detail 4455245512
+2026-09-07T19:22:37+00:00 event=detail_read task=346 linkedin: 4455245512
+2026-09-07T19:22:37+00:00 event=job_recorded task=346 new: Associate Chief Medical Officer, Fresenius Kidney Care — Fresenius Medical Care
+2026-09-07T19:22:37+00:00 event=result_discovered task=346 linkedin: 4462209725
+2026-09-07T19:22:37+00:00 event=navigation task=346 open detail 4462209725
+2026-09-07T19:22:40+00:00 event=detail_read task=346 linkedin: 4462209725
+2026-09-07T19:22:40+00:00 event=job_recorded task=346 new: Senior Medical Affairs Director - Cardiology — Warman O'Brien
+2026-09-07T19:22:40+00:00 event=result_discovered task=346 linkedin: 4460397819
+2026-09-07T19:22:40+00:00 event=navigation task=346 open detail 4460397819
+2026-09-07T19:22:43+00:00 event=detail_read task=346 linkedin: 4460397819
+2026-09-07T19:22:43+00:00 event=job_recorded task=346 new: Vascular Therapy Development Specialist - San Antonio, TX — Medtronic
+2026-09-07T19:22:43+00:00 event=result_discovered task=346 linkedin: 4425350488
+2026-09-07T19:22:43+00:00 event=navigation task=346 open detail 4425350488
+2026-09-07T19:22:46+00:00 event=detail_read task=346 linkedin: 4425350488
+2026-09-07T19:22:46+00:00 event=job_recorded task=346 new: Manager, MN Physician Compensation — Cedars-Sinai
+2026-09-07T19:22:47+00:00 event=result_discovered task=346 linkedin: 4456355577
+2026-09-07T19:22:47+00:00 event=navigation task=346 open detail 4456355577
+2026-09-07T19:22:48+00:00 event=detail_read task=346 linkedin: 4456355577
+2026-09-07T19:22:48+00:00 event=job_recorded task=346 new: Medical Case Manager I — CorVel Corporation
+2026-09-07T19:22:49+00:00 event=result_discovered task=346 linkedin: 4440866187
+2026-09-07T19:22:49+00:00 event=navigation task=346 open detail 4440866187
+2026-09-07T19:22:52+00:00 event=detail_read task=346 linkedin: 4440866187
+2026-09-07T19:22:52+00:00 event=job_recorded task=346 new: Senior Manager, Commercial Services – Diagnostics — Resmed
+2026-09-07T19:22:52+00:00 event=navigation task=346 advance search result batch/page
+2026-09-07T19:22:58+00:00 event=result_discovered task=346 linkedin: 4462213111
+2026-09-07T19:22:58+00:00 event=navigation task=346 open detail 4462213111
+2026-09-07T19:23:00+00:00 event=detail_read task=346 linkedin: 4462213111
+2026-09-07T19:23:01+00:00 event=job_recorded task=346 new: Senior Medical Director — Warman O'Brien
+2026-09-07T19:23:01+00:00 event=result_discovered task=346 linkedin: 4462727051
+2026-09-07T19:23:01+00:00 event=navigation task=346 open detail 4462727051
+2026-09-07T19:23:03+00:00 event=detail_read task=346 linkedin: 4462727051
+2026-09-07T19:23:03+00:00 event=job_recorded task=346 new: Clinical Specialist, Interventional Solutions - Honolulu, HI — Boston Scientific
+2026-09-07T19:23:04+00:00 event=result_discovered task=346 linkedin: 4460572204
+2026-09-07T19:23:04+00:00 event=navigation task=346 open detail 4460572204
+2026-09-07T19:23:06+00:00 event=detail_read task=346 linkedin: 4460572204
+2026-09-07T19:23:06+00:00 event=job_recorded task=346 new: Principal Clinical Specialist, Coronary Renal Denervation - Dallas, TX — Medtronic
+2026-09-07T19:23:07+00:00 event=result_discovered task=346 linkedin: 4464077475
+2026-09-07T19:23:07+00:00 event=navigation task=346 open detail 4464077475
+2026-09-07T19:23:09+00:00 event=detail_read task=346 linkedin: 4464077475
+2026-09-07T19:23:09+00:00 event=job_recorded task=346 new: Hospital Health Data Governance Lead — Alignerr
+2026-09-07T19:23:10+00:00 event=result_discovered task=346 linkedin: 4463781716
+2026-09-07T19:23:10+00:00 event=navigation task=346 open detail 4463781716
+2026-09-07T19:23:12+00:00 event=detail_read task=346 linkedin: 4463781716
+2026-09-07T19:23:13+00:00 event=job_recorded task=346 new: Medical Director (WA) — Molina Healthcare
+2026-09-07T19:23:13+00:00 event=result_discovered task=346 linkedin: 4454595957
+2026-09-07T19:23:13+00:00 event=navigation task=346 open detail 4454595957
+2026-09-07T19:23:16+00:00 event=detail_read task=346 linkedin: 4454595957
+2026-09-07T19:23:16+00:00 event=job_recorded task=346 new: Remote Medical Director, Inpatient Medicare — Centene Corporation
+2026-09-07T19:23:17+00:00 event=result_discovered task=346 linkedin: 4451713896
+2026-09-07T19:23:17+00:00 event=navigation task=346 open detail 4451713896
+2026-09-07T19:23:20+00:00 event=detail_read task=346 linkedin: 4451713896
+2026-09-07T19:23:20+00:00 event=job_recorded task=346 new: Medical Director - Inpatient Review — Humana
+2026-09-07T19:23:20+00:00 event=result_discovered task=346 linkedin: 4461981858
+2026-09-07T19:23:20+00:00 event=navigation task=346 open detail 4461981858
+2026-09-07T19:23:23+00:00 event=detail_read task=346 linkedin: 4461981858
+2026-09-07T19:23:23+00:00 event=job_recorded task=346 unchanged: Associate Clinical Implementation Specialist (Remote) — Stryker
+2026-09-07T19:23:24+00:00 event=result_discovered task=346 linkedin: 4427228464
+2026-09-07T19:23:24+00:00 event=navigation task=346 open detail 4427228464
+2026-09-07T19:23:27+00:00 event=detail_read task=346 linkedin: 4427228464
+2026-09-07T19:23:27+00:00 event=job_recorded task=346 unchanged: Technical Specialist - Active Medical Devices — BSI
+2026-09-07T19:23:27+00:00 event=navigation task=346 advance search result batch/page
+2026-09-07T19:23:33+00:00 event=result_discovered task=346 linkedin: 4464085492
+2026-09-07T19:23:33+00:00 event=navigation task=346 open detail 4464085492
+2026-09-07T19:23:35+00:00 event=detail_read task=346 linkedin: 4464085492
+2026-09-07T19:23:35+00:00 event=job_recorded task=346 new: Health Informatics Analyst — Alignerr
+2026-09-07T19:23:36+00:00 event=result_discovered task=346 linkedin: 4457658994
+2026-09-07T19:23:36+00:00 event=navigation task=346 open detail 4457658994
+2026-09-07T19:23:38+00:00 event=detail_read task=346 linkedin: 4457658994
+2026-09-07T19:23:38+00:00 event=job_recorded task=346 new: Sr. Vascular Clinical Specialist - Cleveland, OH — Medtronic
+2026-09-07T19:23:39+00:00 event=result_discovered task=346 linkedin: 4461980877
+2026-09-07T19:23:39+00:00 event=navigation task=346 open detail 4461980877
+2026-09-07T19:23:40+00:00 event=detail_read task=346 linkedin: 4461980877
+2026-09-07T19:23:40+00:00 event=job_recorded task=346 unchanged: Associate Clinical Implementation Specialist (Remote) — Stryker
+2026-09-07T19:23:41+00:00 event=result_discovered task=346 linkedin: 4454800985
+2026-09-07T19:23:41+00:00 event=navigation task=346 open detail 4454800985
+2026-09-07T19:23:43+00:00 event=detail_read task=346 linkedin: 4454800985
+2026-09-07T19:23:43+00:00 event=job_recorded task=346 new: Remote Inpatient Medicare Medical Director — Centene Corporation
+2026-09-07T19:23:44+00:00 event=result_discovered task=346 linkedin: 4461188934
+2026-09-07T19:23:44+00:00 event=navigation task=346 open detail 4461188934
+2026-09-07T19:23:45+00:00 event=detail_read task=346 linkedin: 4461188934
+2026-09-07T19:23:45+00:00 event=job_recorded task=346 new: Hospital - CDI Specialist, Associate — UT Health San Antonio
+2026-09-07T19:23:46+00:00 event=result_discovered task=346 linkedin: 4458761345
+2026-09-07T19:23:46+00:00 event=navigation task=346 open detail 4458761345
+2026-09-07T19:23:48+00:00 event=detail_read task=346 linkedin: 4458761345
+2026-09-07T19:23:48+00:00 event=job_recorded task=346 new: Healthcare Authorization Specialist — Daley And Associates, LLC
+2026-09-07T19:23:49+00:00 event=result_discovered task=346 linkedin: 4461987928
+2026-09-07T19:23:49+00:00 event=navigation task=346 open detail 4461987928
+2026-09-07T19:23:55+00:00 event=detail_read task=346 linkedin: 4461987928
+2026-09-07T19:23:55+00:00 event=job_recorded task=346 new: Epic Healthy Planet Analyst — GHR Healthcare
+2026-09-07T19:23:55+00:00 event=result_discovered task=346 linkedin: 4427228464
+2026-09-07T19:23:55+00:00 event=navigation task=346 open detail 4427228464
+2026-09-07T19:23:58+00:00 event=detail_read task=346 linkedin: 4427228464
+2026-09-07T19:23:58+00:00 event=job_recorded task=346 unchanged: Technical Specialist - Active Medical Devices — BSI
+2026-09-07T19:23:59+00:00 event=navigation task=346 advance search result batch/page
+2026-09-07T19:24:05+00:00 event=result_discovered task=346 linkedin: 4460396652
+2026-09-07T19:24:05+00:00 event=navigation task=346 open detail 4460396652
+2026-09-07T19:24:08+00:00 event=detail_read task=346 linkedin: 4460396652
+2026-09-07T19:24:09+00:00 event=job_recorded task=346 new: Surgical Onsite Specialist (Dallas TX) — Medtronic
+2026-09-07T19:24:11+00:00 event=result_discovered task=346 linkedin: 4461979794
+2026-09-07T19:24:11+00:00 event=navigation task=346 open detail 4461979794
+2026-09-07T19:24:13+00:00 event=detail_read task=346 linkedin: 4461979794
+2026-09-07T19:24:13+00:00 event=job_recorded task=346 unchanged: Associate Clinical Implementation Specialist (Remote) — Stryker
+2026-09-07T19:24:13+00:00 event=result_discovered task=346 linkedin: 4446810734
+2026-09-07T19:24:14+00:00 event=navigation task=346 open detail 4446810734
+2026-09-07T19:24:15+00:00 event=detail_read task=346 linkedin: 4446810734
+2026-09-07T19:24:15+00:00 event=job_recorded task=346 new: Lead Healthcare Integration Specialist — TimeDoc Health
+2026-09-07T19:24:16+00:00 event=result_discovered task=346 linkedin: 4413603288
+2026-09-07T19:24:16+00:00 event=navigation task=346 open detail 4413603288
+2026-09-07T19:24:17+00:00 event=detail_read task=346 linkedin: 4413603288
+2026-09-07T19:24:17+00:00 event=job_recorded task=346 unchanged: Principal Consultant - Health Information Management — Oracle
+2026-09-07T19:24:18+00:00 event=result_discovered task=346 linkedin: 4460796187
+2026-09-07T19:24:18+00:00 event=navigation task=346 open detail 4460796187
+2026-09-07T19:24:20+00:00 event=detail_read task=346 linkedin: 4460796187
+2026-09-07T19:24:21+00:00 event=job_recorded task=346 new: National Director, US Field Medical Cardiomyopathy — Jobgether
+2026-09-07T19:24:21+00:00 event=result_discovered task=346 linkedin: 4461936755
+2026-09-07T19:24:21+00:00 event=navigation task=346 open detail 4461936755
+2026-09-07T19:24:23+00:00 event=detail_read task=346 linkedin: 4461936755
+2026-09-07T19:24:24+00:00 event=job_recorded task=346 new: Application Analyst - Maestro Care Beaker - Level 2 - Remote — Duke University Health System
+2026-09-07T19:24:24+00:00 event=result_discovered task=346 linkedin: 4462896248
+2026-09-07T19:24:24+00:00 event=navigation task=346 open detail 4462896248
+2026-09-07T19:24:27+00:00 event=detail_read task=346 linkedin: 4462896248
+2026-09-07T19:24:27+00:00 event=job_recorded task=346 new: Sr Clinical Solutions MD — CVS Health
+2026-09-07T19:24:28+00:00 event=result_discovered task=346 linkedin: 4427228464
+2026-09-07T19:24:28+00:00 event=navigation task=346 open detail 4427228464
+2026-09-07T19:24:30+00:00 event=detail_read task=346 linkedin: 4427228464
+2026-09-07T19:24:30+00:00 event=job_recorded task=346 unchanged: Technical Specialist - Active Medical Devices — BSI
+2026-09-07T19:24:31+00:00 event=navigation task=346 advance search result batch/page
+2026-09-07T19:24:36+00:00 event=result_discovered task=346 linkedin: 4456444258
+2026-09-07T19:24:36+00:00 event=navigation task=346 open detail 4456444258
+2026-09-07T19:24:38+00:00 event=detail_read task=346 linkedin: 4456444258
+2026-09-07T19:24:38+00:00 event=job_recorded task=346 new: Clinical Specialist CRM - Sacramento — Medtronic
+2026-09-07T19:24:39+00:00 event=result_discovered task=346 linkedin: 4462301825
+2026-09-07T19:24:39+00:00 event=navigation task=346 open detail 4462301825
+2026-09-07T19:24:41+00:00 event=detail_read task=346 linkedin: 4462301825
+2026-09-07T19:24:41+00:00 event=job_recorded task=346 new: Director of Patient Access — Lorven Technologies Inc.
+2026-09-07T19:24:42+00:00 event=result_discovered task=346 linkedin: 4461169868
+2026-09-07T19:24:42+00:00 event=navigation task=346 open detail 4461169868
+2026-09-07T19:24:45+00:00 event=detail_read task=346 linkedin: 4461169868
+2026-09-07T19:24:45+00:00 event=job_recorded task=346 new: Healthcare Policy Consultant - Indianapolis Health (Remote) — Milliman
+2026-09-07T19:24:45+00:00 event=result_discovered task=346 linkedin: 4461980872
+2026-09-07T19:24:45+00:00 event=navigation task=346 open detail 4461980872
+2026-09-07T19:24:48+00:00 event=detail_read task=346 linkedin: 4461980872
+2026-09-07T19:24:48+00:00 event=job_recorded task=346 unchanged: Associate Clinical Implementation Specialist (Remote) — Stryker
+2026-09-07T19:24:49+00:00 event=result_discovered task=346 linkedin: 4463105491
+2026-09-07T19:24:49+00:00 event=navigation task=346 open detail 4463105491
+2026-09-07T19:24:53+00:00 event=detail_read task=346 linkedin: 4463105491
+2026-09-07T19:24:53+00:00 event=job_recorded task=346 unchanged: Clinical Applications Specialist Women's Health (West Coast) — GE HealthCare
+2026-09-07T19:24:54+00:00 event=result_discovered task=346 linkedin: 4453377636
+2026-09-07T19:24:54+00:00 event=navigation task=346 open detail 4453377636
+2026-09-07T19:24:56+00:00 event=detail_read task=346 linkedin: 4453377636
+2026-09-07T19:24:56+00:00 event=job_recorded task=346 new: Healthcare Data and Analytics Specialist - Remote - USA — FullStack
+2026-09-07T19:24:57+00:00 event=result_discovered task=346 linkedin: 4462803453
+2026-09-07T19:24:57+00:00 event=navigation task=346 open detail 4462803453
+2026-09-07T19:24:59+00:00 event=detail_read task=346 linkedin: 4462803453
+2026-09-07T19:24:59+00:00 event=job_recorded task=346 new: Medical Director - Clinical Advocacy and Support - Remote - PST preferred — Ladders
+2026-09-07T19:25:00+00:00 event=result_discovered task=346 linkedin: 4427228464
+2026-09-07T19:25:00+00:00 event=navigation task=346 open detail 4427228464
+2026-09-07T19:25:03+00:00 event=detail_read task=346 linkedin: 4427228464
+2026-09-07T19:25:03+00:00 event=job_recorded task=346 unchanged: Technical Specialist - Active Medical Devices — BSI
+2026-09-07T19:25:04+00:00 event=navigation task=346 advance search result batch/page
+2026-09-07T19:25:11+00:00 event=result_discovered task=346 linkedin: 4456330047
+2026-09-07T19:25:11+00:00 event=navigation task=346 open detail 4456330047
+2026-09-07T19:25:16+00:00 event=detail_read task=346 linkedin: 4456330047
+2026-09-07T19:25:16+00:00 event=job_recorded task=346 unchanged: Prin Health E​conomics, Policy and Reimbursement Generalist — Medtronic
+2026-09-07T19:25:17+00:00 event=result_discovered task=346 linkedin: 4463647981
+2026-09-07T19:25:17+00:00 event=navigation task=346 open detail 4463647981
+2026-09-07T19:25:21+00:00 event=detail_read task=346 linkedin: 4463647981
+2026-09-07T19:25:21+00:00 event=job_recorded task=346 unchanged: Associate Clinical Implementation Specialist (Remote) — Stryker
+2026-09-07T19:25:22+00:00 event=result_discovered task=346 linkedin: 4461978794
+2026-09-07T19:25:22+00:00 event=navigation task=346 open detail 4461978794
+2026-09-07T19:25:24+00:00 event=detail_read task=346 linkedin: 4461978794
+2026-09-07T19:25:24+00:00 event=job_recorded task=346 new: Associate Medical Director Imaging — Imaging Endpoints
+2026-09-07T19:25:25+00:00 event=result_discovered task=346 linkedin: 4463104548
+2026-09-07T19:25:25+00:00 event=navigation task=346 open detail 4463104548
+2026-09-07T19:25:27+00:00 event=detail_read task=346 linkedin: 4463104548
+2026-09-07T19:25:27+00:00 event=job_recorded task=346 new: Ultrasound Applications Specialist — GE HealthCare
+2026-09-07T19:25:28+00:00 event=result_discovered task=346 linkedin: 4453374699
+2026-09-07T19:25:28+00:00 event=navigation task=346 open detail 4453374699
+2026-09-07T19:25:30+00:00 event=detail_read task=346 linkedin: 4453374699
+2026-09-07T19:25:31+00:00 event=job_recorded task=346 unchanged: Healthcare Data and Analytics Specialist - Remote - USA — FullStack
+2026-09-07T19:25:31+00:00 event=result_discovered task=346 linkedin: 4462800477
+2026-09-07T19:25:31+00:00 event=navigation task=346 open detail 4462800477
+2026-09-07T19:25:36+00:00 event=detail_read task=346 linkedin: 4462800477
+2026-09-07T19:25:36+00:00 event=job_recorded task=346 new: Medical Director, Clinical Informatics (Remote) — Ladders
+2026-09-07T19:25:37+00:00 event=result_discovered task=346 linkedin: 4462719136
+2026-09-07T19:25:37+00:00 event=navigation task=346 open detail 4462719136
+2026-09-07T19:25:42+00:00 event=platform_paused task=- linkedin: just a moment
+2026-09-07T19:25:43+00:00 event=task_started task=508 indeed: authorization specialist healthcare
+2026-09-07T19:25:45+00:00 event=auth_verified task=- indeed: Indeed session authenticated
+2026-09-07T19:25:45+00:00 event=navigation task=508 open search https://www.indeed.com/jobs?q=authorization+specialist+healthcare&l=Remote&fromage=30&sort=date
+2026-09-07T19:25:47+00:00 event=platform_paused task=- indeed: security check
+2026-09-07T19:25:47+00:00 event=task_started task=670 glassdoor: authorization specialist healthcare
+2026-09-07T19:25:49+00:00 event=auth_failed task=- glassdoor: Glassdoor sign-in required
+2026-09-07T19:25:50+00:00 event=run_finished task=- partial

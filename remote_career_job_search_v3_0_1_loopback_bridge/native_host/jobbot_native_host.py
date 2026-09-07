@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import json
+import sqlite3
+import struct
+import sys
+import traceback
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+
+BASE=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(BASE))
+import jobbot as j
+import jobbot_v3 as v3
+j.VERSION=v3.V3_VERSION; j.c.VERSION=v3.V3_VERSION
+
+
+def log(msg:str)->None: print(f"[jobbot-native] {msg}",file=sys.stderr,flush=True)
+
+def lease_time()->str:
+    return (datetime.now(timezone.utc)+timedelta(minutes=3)).isoformat(timespec='seconds')
+
+def read_message()->dict[str,Any]|None:
+    raw_len=sys.stdin.buffer.read(4)
+    if not raw_len:return None
+    if len(raw_len)!=4:raise RuntimeError('truncated native message length')
+    n=struct.unpack('=I',raw_len)[0]
+    if n<=0 or n>64*1024*1024:raise RuntimeError(f'invalid inbound message size: {n}')
+    raw=sys.stdin.buffer.read(n)
+    if len(raw)!=n:raise RuntimeError('truncated native message body')
+    obj=json.loads(raw.decode('utf-8'));return obj if isinstance(obj,dict) else {'action':'invalid'}
+
+def write_message(obj:dict[str,Any])->None:
+    raw=json.dumps(obj,ensure_ascii=False,separators=(',',':')).encode('utf-8')
+    if len(raw)>1024*1024:raise RuntimeError('outbound native message exceeds 1 MiB')
+    sys.stdout.buffer.write(struct.pack('=I',len(raw)));sys.stdout.buffer.write(raw);sys.stdout.buffer.flush()
+
+def open_store():
+    db,out,_,cfg,strategy=v3.paths(BASE);store=j.PrecisionStore(db);v3.init_browser_schema(store.conn);return store,cfg,strategy,out
+
+def run_log(out:Path,run_id:int|None,message:str)->None:
+    if not run_id:return
+    try:
+        p=out/'logs'/f'run_{run_id}.log'; p.parent.mkdir(parents=True,exist_ok=True)
+        with p.open('a',encoding='utf-8') as f:f.write(f"{j.now_iso()} {j.clean_text(message)}\n")
+    except Exception as e: log(f'run log warning: {e}')
+
+def event(conn,run_id,task_id,typ,msg='',payload=None,out=None):
+    now=j.now_iso(); clean=j.clean_text(msg); data=payload or {}
+    conn.execute("INSERT INTO browser_events(browser_run_id,task_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?,?)",(run_id,task_id,now,typ,clean,json.dumps(data,ensure_ascii=False)))
+    run_log(out,run_id,f"event={typ} task={task_id or '-'} {clean}")
+
+def get_run(conn,rid):return conn.execute("SELECT * FROM browser_runs WHERE browser_run_id=?",(rid,)).fetchone()
+
+def platform_order_sql()->str:return "CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 WHEN 'glassdoor' THEN 2 ELSE 99 END"
+
+def handle(msg:dict[str,Any])->dict[str,Any]:
+    action=str(msg.get('action') or '')
+    store,cfg,strategy,out=open_store();conn=store.conn
+    try:
+        if action=='ping': return {'ok':True,'version':v3.V3_VERSION,'bridge':'loopback'}
+        if action=='begin_run':
+            rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
+            if not r:return {'ok':False,'error':'run_not_found'}
+            if int(r['stop_requested'] or 0):return {'ok':False,'error':'stop_requested'}
+            now=j.now_iso(); expired=now
+            conn.execute("""UPDATE browser_search_tasks SET status='queued',lease_owner='',lease_until=NULL,last_error=CASE WHEN last_error='' THEN 'reclaimed after stale bridge/extension lease' ELSE last_error END
+               WHERE browser_run_id=? AND status='running' AND (lease_until IS NULL OR lease_until<?)""",(rid,expired))
+            conn.execute("UPDATE browser_runs SET status='running',started_at=COALESCE(started_at,?),completed_at=NULL,last_progress_at=?,last_error='' WHERE browser_run_id=?",(now,now,rid));event(conn,rid,None,'run_started','normal Chrome platform-first run started',msg,out);conn.commit();return {'ok':True}
+        if action=='platform_auth_result':
+            rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform'));ok=bool(msg.get('authenticated'));reason=j.clean_text(msg.get('reason') or '')
+            conn.execute("UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=? WHERE browser_run_id=? AND platform=?",('verified' if ok else 'not_authenticated',reason,j.now_iso(),rid,platform))
+            if not ok:
+                conn.execute("UPDATE browser_search_tasks SET status='auth_required',completed_at=?,last_error=?,lease_owner='',lease_until=NULL WHERE browser_run_id=? AND platform=? AND status IN ('queued','running')",(j.now_iso(),reason,rid,platform))
+            states=[x['auth_status'] for x in conn.execute("SELECT auth_status FROM browser_platform_runs WHERE browser_run_id=?",(rid,))]
+            overall='verified' if states and all(x=='verified' for x in states) else ('partial' if any(x=='verified' for x in states) else 'not_authenticated')
+            conn.execute("UPDATE browser_runs SET auth_status=?,last_progress_at=? WHERE browser_run_id=?",(overall,j.now_iso(),rid));event(conn,rid,None,'auth_verified' if ok else 'auth_failed',f'{platform}: {reason}',msg,out);conn.commit();return {'ok':True}
+        if action=='pause_platform':
+            rid=int(msg.get('run_id') or 0); platform=j.clean_text(msg.get('platform')); reason=j.clean_text(msg.get('reason') or 'platform challenge')
+            conn.execute("UPDATE browser_platform_runs SET auth_reason=? WHERE browser_run_id=? AND platform=?",(reason,rid,platform))
+            rows=conn.execute("SELECT task_id,status FROM browser_search_tasks WHERE browser_run_id=? AND platform=? AND status IN ('queued','running')",(rid,platform)).fetchall()
+            for rr in rows:
+                conn.execute("UPDATE browser_search_tasks SET status='challenged',completed_at=?,challenge_reason=? WHERE task_id=?",(j.now_iso(),reason,rr['task_id']))
+            if rows:
+                conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=?",(len(rows),rid))
+                conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=? AND platform=?",(len(rows),rid,platform))
+            event(conn,rid,None,'platform_paused',f'{platform}: {reason}',msg,out);conn.commit();return {'ok':True,'tasks_paused':len(rows)}
+        if action=='next_task':
+            rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
+            if not r:return {'ok':False,'error':'run_not_found'}
+            if int(r['stop_requested'] or 0):return {'ok':True,'stop':True}
+            now=j.now_iso(); owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
+            conn.execute("UPDATE browser_search_tasks SET status='queued',lease_owner='',lease_until=NULL WHERE browser_run_id=? AND status='running' AND lease_until IS NOT NULL AND lease_until<?",(rid,now))
+            t=conn.execute(f"""SELECT * FROM browser_search_tasks
+              WHERE browser_run_id=? AND status IN ('running','queued')
+                AND (status='queued' OR lease_owner=? OR lease_until IS NULL OR lease_until<?)
+              ORDER BY CASE status WHEN 'running' THEN 0 ELSE 1 END,{platform_order_sql()},priority,task_id LIMIT 1""",(rid,owner,now)).fetchone()
+            if not t:return {'ok':True,'done':True}
+            if t['status']=='queued':
+                conn.execute("UPDATE browser_search_tasks SET status='running',started_at=COALESCE(started_at,?),attempts=attempts+1,lease_owner=?,lease_until=?,current_search_url=COALESCE(NULLIF(current_search_url,''),search_url),last_progress_at=? WHERE task_id=?",(now,owner,lease_time(),now,t['task_id']));event(conn,rid,t['task_id'],'task_started',f"{t['platform']}: {t['query_text']}",msg,out);conn.commit();t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(t['task_id'],)).fetchone()
+            conn.execute("UPDATE browser_runs SET current_task_id=?,last_progress_at=? WHERE browser_run_id=?",(t['task_id'],now,rid));conn.commit()
+            return {'ok':True,'task':{k:t[k] for k in t.keys()}}
+        if action=='record_result':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
+            if not source or not (sid or url):return {'ok':False,'error':'insufficient_result_identity'}
+            now=j.now_iso(); row=conn.execute("SELECT result_id FROM search_task_results WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(tid,source,sid,url)).fetchone()
+            if row:
+                conn.execute("UPDATE search_task_results SET last_seen_at=?,sighting_count=sighting_count+1 WHERE result_id=?",(now,row['result_id'])); duplicate=True
+            else:
+                conn.execute("INSERT INTO search_task_results(task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?)",(tid,source,sid,url,now,now)); duplicate=False
+            if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
+            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True,'duplicate':duplicate}
+        if action=='detail_read':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''));now=j.now_iso()
+            conn.execute("UPDATE browser_search_tasks SET detail_count_read=detail_count_read+1,last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(),tid,rid))
+            conn.execute("UPDATE search_task_results SET detail_read=1,last_seen_at=? WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(now,tid,source,sid,url))
+            event(conn,rid,tid,'detail_read',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True}
+        if action=='record_job':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);raw=msg.get('job') or {}
+            if not isinstance(raw,dict):return {'ok':False,'error':'invalid_job'}
+            task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
+            if not task:return {'ok':False,'error':'task_not_found'}
+            title=j.clean_text(raw.get('title'));company=j.clean_text(raw.get('company'));desc=j.strip_html(raw.get('description') or '')[:180000]
+            url=j.canonical_url(j.clean_text(raw.get('canonical_url') or raw.get('url') or ''));sid=j.clean_text(raw.get('source_job_id') or '')
+            if not title or not url:return {'ok':False,'error':'insufficient_job_identity'}
+            source_site=j.clean_text(task['platform'])
+            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=j.canonical_url(j.clean_text(raw.get('apply_url') or url)),title=title,company=company,location_raw=j.clean_text(raw.get('location') or 'Remote'),remote_status=j.clean_text(raw.get('remote_status') or 'unknown'),employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'source_payload':raw})
+            setattr(job,'_mode','deep');j.score_job(job,strategy,cfg.get('candidate',{}));ledger_status=store.upsert(job,commit=False)
+            fields={'new':'jobs_new','updated':'jobs_updated','unchanged':'jobs_unchanged'}
+            if ledger_status in fields:
+                f=fields[ledger_status];conn.execute(f"UPDATE browser_search_tasks SET jobs_recorded=jobs_recorded+1,{f}={f}+1 WHERE task_id=?",(tid,));conn.execute(f"UPDATE browser_runs SET jobs_recorded=jobs_recorded+1,{f}={f}+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET jobs_recorded=jobs_recorded+1 WHERE browser_run_id=? AND platform=?",(rid,source_site))
+            if ledger_status=='new': conn.execute("UPDATE browser_search_tasks SET unique_jobs_recorded=unique_jobs_recorded+1 WHERE task_id=?",(tid,))
+            else: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
+            jid=store.resolve_job_id(job);conn.execute("UPDATE search_task_results SET canonical_job_id=?,detail_read=1 WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(jid,tid,source_site,sid,url))
+            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation},out);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company}
+        if action=='job_error':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);event(conn,rid,tid,'job_error',j.clean_text(msg.get('message') or ''),msg,out);conn.commit();return {'ok':True}
+        if action=='task_progress':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);seen=max(0,int(msg.get('results_seen') or 0));pages=max(0,int(msg.get('pages_visited') or 0));cp=msg.get('checkpoint') or {}
+            now=j.now_iso(); conn.execute("UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(seen,pages,json.dumps(cp,ensure_ascii=False),j.clean_text(cp.get('search_url') or ''),int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
+        if action=='heartbeat':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);now=j.now_iso();conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
+        if action=='browser_event':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);message=j.clean_text(msg.get('message') or msg.get('event_type') or 'browser event');event(conn,rid,tid,j.clean_text(msg.get('event_type') or 'browser_event'),message,msg,out);conn.commit();return {'ok':True}
+        if action=='complete_task':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);status=j.clean_text(msg.get('status') or 'completed');reason=j.clean_text(msg.get('reason') or '');exhausted=1 if bool(msg.get('exhausted')) else 0
+            if status=='completed': status='exhausted' if exhausted else 'incomplete'
+            if status=='test_limit': status='incomplete'
+            allowed={'exhausted','incomplete','challenged','failed','stopped','auth_required','paused'};status=status if status in allowed else 'incomplete'
+            t=conn.execute("SELECT platform,status FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
+            if not t:return {'ok':False,'error':'task_not_found'}
+            if t['status'] not in {'queued','running'}:
+                return {'ok':True,'already_terminal':True,'status':t['status']}
+            now=j.now_iso();conn.execute("UPDATE browser_search_tasks SET status=?,completed_at=?,challenge_reason=?,last_error=?,exhausted=?,exhaustion_reason=?,safety_stop_reason=?,lease_owner='',lease_until=NULL,last_progress_at=? WHERE task_id=?",(status,now,reason if status=='challenged' else '',reason if status in {'failed','auth_required'} else '',1 if status=='exhausted' else 0,reason if status=='exhausted' else '',reason if status=='incomplete' else '',now,tid))
+            platform=t['platform']
+            if status=='exhausted':
+                conn.execute("UPDATE browser_runs SET tasks_completed=tasks_completed+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET tasks_completed=tasks_completed+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
+            elif status=='incomplete':
+                conn.execute("UPDATE browser_runs SET tasks_incomplete=tasks_incomplete+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET tasks_incomplete=tasks_incomplete+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
+            elif status=='challenged':
+                conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
+            elif status=='failed':conn.execute("UPDATE browser_platform_runs SET tasks_failed=tasks_failed+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
+            event(conn,rid,tid,'task_'+status,reason,msg,out);conn.commit();return {'ok':True}
+        if action=='should_stop':
+            rid=int(msg.get('run_id') or 0);r=get_run(conn,rid);return {'ok':True,'stop':bool(r and int(r['stop_requested'] or 0)),'stop_after_current':bool(r and int(r['stop_after_current'] or 0))}
+        if action in {'request_stop','emergency_stop'}:
+            rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
+            if not r:return {'ok':False,'error':'run_not_found'}
+            now=j.now_iso(); immediate=action=='emergency_stop'
+            if immediate:
+                active=conn.execute("SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND status='running'",(rid,)).fetchall()
+                conn.execute("""UPDATE browser_search_tasks SET status='incomplete',completed_at=?,lease_owner='',lease_until=NULL,
+                    safety_stop_reason='manual_emergency_stop',last_error='manual emergency stop',last_progress_at=?
+                    WHERE browser_run_id=? AND status='running'""",(now,now,rid))
+                conn.execute("UPDATE browser_runs SET status='stopped',stop_requested=1,stop_after_current=0,completed_at=?,current_task_id=NULL,tasks_incomplete=(SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND status='incomplete'),last_progress_at=?,last_error='manual emergency stop' WHERE browser_run_id=?",(now,rid,now,rid))
+                for active_task in active: event(conn,rid,active_task['task_id'],'task_incomplete','manual emergency stop',msg,out)
+            else:
+                conn.execute("UPDATE browser_runs SET stop_after_current=1,last_error=? WHERE browser_run_id=?",('stop after current job requested',rid))
+            event(conn,rid,None,action,'stop requested',msg,out);conn.commit();return {'ok':True,'immediate':immediate}
+        if action=='finish_run':
+            rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
+            if not r:return {'ok':False,'error':'run_not_found'}
+            pending=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('queued','running')",(rid,)).fetchone()['n']
+            bad=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('challenged','failed','auth_required')",(rid,)).fetchone()['n']
+            final='stopped' if int(r['stop_requested'] or 0) else ('partial' if pending or bad else 'completed')
+            conn.execute("UPDATE browser_runs SET status=?,completed_at=?,last_progress_at=?,current_task_id=NULL WHERE browser_run_id=?",(final,j.now_iso(),j.now_iso(),rid));event(conn,rid,None,'run_finished',final,{},out);conn.commit()
+            try:j.export_all(store,out,strategy,cfg,'deep')
+            except Exception as e:log(f'export warning: {e}')
+            return {'ok':True,'status':final}
+        if action=='run_status':
+            rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
+            if not r:return {'ok':False,'error':'run_not_found'}
+            tasks=conn.execute("SELECT task_id,platform,query_text,status,results_seen,detail_count_read,jobs_recorded,unique_jobs_recorded,duplicate_sightings,jobs_new,jobs_updated,jobs_unchanged,pages_visited,current_search_url,page_number,scroll_generation,last_page_fingerprint,last_source_job_id,challenge_reason,last_error,exhaustion_reason,safety_stop_reason FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",(rid,)).fetchall();plats=conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=? ORDER BY CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END",(rid,)).fetchall();return {'ok':True,'run':{k:r[k] for k in r.keys()},'platforms':[{k:p[k] for k in p.keys()} for p in plats],'tasks':[{k:t[k] for k in t.keys()} for t in tasks]}
+        if action=='run_error':
+            rid=int(msg.get('run_id') or 0);message=j.clean_text(msg.get('message') or 'extension error');conn.execute("UPDATE browser_runs SET last_error=?,last_progress_at=? WHERE browser_run_id=?",(message,j.now_iso(),rid));event(conn,rid,None,'run_error',message,msg,out);conn.commit();return {'ok':True}
+        return {'ok':False,'error':'unknown_action','action':action}
+    finally:store.close()
+
+def main()->int:
+    log(f'started {v3.V3_VERSION}')
+    try:
+        while True:
+            msg=read_message()
+            if msg is None:break
+            try:resp=handle(msg)
+            except Exception as e:log(traceback.format_exc());resp={'ok':False,'error':type(e).__name__,'message':str(e)[:700]}
+            if msg.get('request_id'):resp['request_id']=msg.get('request_id')
+            write_message(resp)
+    except Exception:log(traceback.format_exc());return 1
+    return 0
+if __name__=='__main__':raise SystemExit(main())
