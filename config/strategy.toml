@@ -23,10 +23,11 @@ include_core_only = true
 # These are the fastest-door searches for the first live results; every other
 # configured title remains in the plan after this explicit prefix.
 fast_first_queries = [
-  "Patient Enrollment Specialist", "Patient Enrollment Coordinator",
-  "Healthcare Enrollment Specialist", "Healthcare Enrollment Coordinator",
-  "Member Enrollment Specialist", "Member Enrollment Coordinator",
-  "Patient Access Specialist", "Patient Access Representative",
+  "Patient Enrollment Specialist", "Patient Access Specialist",
+  "Healthcare Operations Coordinator",
+  "Patient Enrollment Coordinator", "Healthcare Enrollment Specialist",
+  "Healthcare Enrollment Coordinator", "Member Enrollment Specialist",
+  "Member Enrollment Coordinator", "Patient Access Representative",
   "Patient Access Associate", "Patient Registration Specialist",
   "Patient Registration Coordinator", "Insurance Verification Specialist",
   "Benefits Verification Specialist", "Provider Enrollment Specialist",
@@ -34,7 +35,7 @@ fast_first_queries = [
   "Credentialing Associate", "Credentialing Specialist", "Credentialing Coordinator",
   "Credentialing & Enrollment Coordinator", "Patient Services Specialist",
   "Patient Services Coordinator", "Patient Support Specialist", "Member Services Specialist",
-  "Member Support Specialist", "Healthcare Operations Coordinator",
+  "Member Support Specialist",
   "Healthcare Operations Specialist", "Patient Operations Coordinator",
   "Patient Operations Specialist", "Care Operations Coordinator", "Care Operations Specialist",
   "Healthcare Intake Specialist", "Patient Intake Specialist", "Patient Onboarding Specialist",

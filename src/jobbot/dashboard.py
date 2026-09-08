@@ -4,9 +4,12 @@ import json
 import hashlib
 import os
 import sqlite3
+import subprocess
+import sys
 import threading
 import urllib.parse
 import webbrowser
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -151,6 +154,131 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
         (run["current_task_id"],),
     ).fetchone() if run["current_task_id"] else None
     return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms]}
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _control_run_id(conn: sqlite3.Connection, requested: Any) -> int:
+    if requested not in (None, "", 0, "0"):
+        run_id = int(requested)
+        if conn.execute("SELECT 1 FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone() is None:
+            raise ValueError(f"browser run not found: {run_id}")
+        return run_id
+    row = conn.execute(
+        """SELECT browser_run_id FROM browser_runs
+           WHERE status IN ('queued','running','partial','stopped')
+              OR EXISTS (SELECT 1 FROM browser_search_tasks t
+                         WHERE t.browser_run_id=browser_runs.browser_run_id
+                           AND t.status IN ('queued','running','stopped','incomplete'))
+           ORDER BY browser_run_id DESC LIMIT 1"""
+    ).fetchone()
+    if row is None:
+        raise ValueError("no resumable browser run found")
+    return int(row[0])
+
+
+def control_run(conn: sqlite3.Connection, action: str, requested_run_id: Any = None) -> dict[str, Any]:
+    """Apply a dashboard run control to durable state and commit immediately."""
+    run_id = _control_run_id(conn, requested_run_id)
+    run = conn.execute("SELECT status FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()
+    if run is None:
+        raise ValueError(f"browser run not found: {run_id}")
+    current_status = str(run[0])
+    now = _utc_now()
+    if action == "stop":
+        if current_status in {"completed", "partial", "failed"}:
+            raise ValueError(f"run {run_id} is already terminal ({current_status})")
+        conn.execute(
+            "UPDATE browser_runs SET stop_after_current=1,last_error=?,last_progress_at=? WHERE browser_run_id=?",
+            ("stop after current job requested from dashboard", now, run_id),
+        )
+        message = "Stop requested; the current atomic job will finish before acquisition stops."
+    elif action == "emergency":
+        conn.execute(
+            """UPDATE search_task_results
+               SET detail_status='RETRYABLE',detail_error='requeued after dashboard emergency stop',
+                   detail_lease_owner='',detail_lease_until=NULL
+               WHERE browser_run_id=? AND detail_status='RUNNING'""",
+            (run_id,),
+        )
+        conn.execute(
+            """UPDATE browser_search_tasks
+               SET status='incomplete',completed_at=?,lease_owner='',lease_until=NULL,
+                   safety_stop_reason='manual_emergency_stop',last_error='manual emergency stop',last_progress_at=?
+               WHERE browser_run_id=? AND status='running'""",
+            (now, now, run_id),
+        )
+        conn.execute(
+            """UPDATE browser_runs
+               SET status='stopped',stop_requested=1,stop_after_current=0,completed_at=?,current_task_id=NULL,
+                   tasks_incomplete=(SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND status='incomplete'),
+                   last_progress_at=?,last_error='manual emergency stop'
+               WHERE browser_run_id=?""",
+            (now, run_id, now, run_id),
+        )
+        message = "Emergency stop persisted; unfinished task and detail work remain resumable."
+    elif action == "resume":
+        conn.execute(
+            """UPDATE browser_search_tasks
+               SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,last_error='',safety_stop_reason=''
+               WHERE browser_run_id=? AND (status IN ('running','stopped') OR
+                 (status='incomplete' AND safety_stop_reason NOT LIKE 'Acceptance limit reached%'))""",
+            (run_id,),
+        )
+        conn.execute(
+            """UPDATE search_task_results
+               SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL,
+                   detail_error=CASE WHEN detail_error='' THEN 'requeued after dashboard resume' ELSE detail_error END
+               WHERE browser_run_id=? AND detail_status='RUNNING'""",
+            (run_id,),
+        )
+        conn.execute(
+            """UPDATE browser_search_tasks
+               SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
+                   challenge_reason='',last_error=''
+               WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform')
+                 AND platform IN (SELECT platform FROM browser_platform_runs
+                                  WHERE browser_run_id=? AND auth_status='not_authenticated')""",
+            (run_id, run_id),
+        )
+        conn.execute(
+            """UPDATE browser_search_tasks
+               SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
+                   challenge_reason='',last_error=''
+               WHERE browser_run_id=? AND status IN ('challenged','deferred_by_platform')
+                 AND platform IN (SELECT platform FROM browser_platform_runs
+                                  WHERE browser_run_id=? AND COALESCE(cooldown_until,'')<=?)""",
+            (run_id, run_id, now),
+        )
+        conn.execute(
+            """UPDATE search_task_results SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL
+               WHERE browser_run_id=? AND detail_status='EXTERNAL_BLOCKED' AND task_id IN
+                 (SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')""",
+            (run_id, run_id),
+        )
+        conn.execute(
+            """UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason=''
+               WHERE browser_run_id=? AND platform IN
+                 (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')""",
+            (run_id, run_id),
+        )
+        conn.execute(
+            """UPDATE browser_runs SET status='queued',completed_at=NULL,stop_requested=0,
+                   stop_after_current=0,last_error='',last_progress_at=? WHERE browser_run_id=?""",
+            (now, run_id),
+        )
+        message = "Run re-queued from durable checkpoints; completed details remain complete."
+    else:
+        raise ValueError(f"unsupported run control: {action}")
+    conn.execute(
+        "INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)",
+        (run_id, now, f"dashboard_{action}", message, json.dumps({"action": action})),
+    )
+    conn.commit()
+    refreshed = conn.execute("SELECT status FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()
+    return {"ok": True, "run_id": run_id, "status": str(refreshed[0]), "action": action, "message": message}
 
 
 def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "") -> dict[str, Any]:
@@ -333,6 +461,27 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._json(400, {"error": str(exc)}); return
         conn = self._conn()
         try:
+            if self.path == "/api/run/control":
+                try:
+                    action = str(payload.get("action", "")).strip().lower()
+                    if action == "emergency_stop":
+                        action = "emergency"
+                    result = control_run(conn, action, payload.get("run_id"))
+                    if action == "resume":
+                        log_path = self.bundle.output_dir / "logs" / f"run_{result['run_id']}_dashboard_resume.log"
+                        log_path.parent.mkdir(parents=True, exist_ok=True)
+                        with log_path.open("ab") as log_handle:
+                            subprocess.Popen(
+                                [sys.executable, "-m", "jobbot", "resume", "--run-id", str(result["run_id"])],
+                                cwd=self.bundle.root, stdout=log_handle, stderr=subprocess.STDOUT,
+                                start_new_session=True,
+                            )
+                        result["launcher_started"] = True
+                        result["message"] += " Browser resume launcher started; this dashboard will update from SQLite."
+                    self._json(200, result)
+                except (TypeError, ValueError) as exc:
+                    self._json(400, {"ok": False, "error": str(exc)})
+                return
             if self.path.startswith("/api/jobs/") and self.path.endswith("/application"):
                 job_id = urllib.parse.unquote(self.path.removeprefix("/api/jobs/").removesuffix("/application"))
                 try:
@@ -372,7 +521,12 @@ def serve(bundle: ConfigBundle, *, host: str | None = None, port: int | None = N
     url = f"http://127.0.0.1:{server.server_port}/"
     print(url, flush=True)
     if open_browser:
-        threading.Timer(0.25, lambda: webbrowser.open(url)).start()
+        def open_dashboard() -> None:
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", "-g", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                webbrowser.open(url)
+        threading.Timer(0.25, open_dashboard).start()
     try:
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:

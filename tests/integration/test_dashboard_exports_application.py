@@ -8,6 +8,7 @@ import threading
 import unittest
 import urllib.request
 from pathlib import Path
+from unittest.mock import patch
 
 from jobbot.application import add_note, history, mark
 from jobbot.dashboard import create_server, live_discoveries
@@ -112,6 +113,9 @@ class DashboardExportApplicationTests(unittest.TestCase):
                 with urllib.request.urlopen(base + "/", timeout=5) as response: html = response.read().decode()
                 self.assertIn('/static/dashboard.js', html)
                 self.assertIn('id="identity"', html)
+                self.assertNotIn('export.onclick', html)
+                self.assertNotIn('<script>', html)
+                self.assertIn('id="stopRunButton"', html)
             finally:
                 server.shutdown(); server.server_close(); thread.join(timeout=3)
 
@@ -124,6 +128,38 @@ class DashboardExportApplicationTests(unittest.TestCase):
             self.assertEqual(conn.execute("SELECT application_status FROM jobs WHERE job_id='J000000'").fetchone()[0], "SHORTLIST")
             self.assertEqual(conn.execute("SELECT event_type FROM application_events WHERE job_id='J000000' ORDER BY event_id DESC LIMIT 1").fetchone()[0], "NOTE")
             conn.close()
+
+    def test_dashboard_run_controls_preserve_resumable_work(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); bundle = bundle_with_database(root / "jobs.sqlite3", root / "out"); Database(bundle).migrate()
+            conn = Database(bundle).connect(); now = "2026-09-07T12:00:00+00:00"
+            run_id = conn.execute("INSERT INTO browser_runs(version,mode,platform,status,created_at) VALUES('3.2.1','test','linkedin','running',?)", (now,)).lastrowid
+            task_id = conn.execute("INSERT INTO browser_search_tasks(browser_run_id,platform,query_text,window_days,search_url,status,created_at) VALUES(?,?,?,?,?,'running',?)", (run_id, "linkedin", "patient access specialist", 7, "https://www.linkedin.com/jobs/search/", now)).lastrowid
+            conn.execute("INSERT INTO search_task_results(task_id,browser_run_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,detail_status,detail_lease_owner) VALUES(?,?,?,?,?,?,?,?,?)", (task_id, run_id, "linkedin", "abc", "https://www.linkedin.com/jobs/view/abc", now, now, "RUNNING", "worker"))
+            conn.commit(); conn.close()
+            server = create_server(bundle, port=0); thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            try:
+                base = f"http://127.0.0.1:{server.server_port}"
+                def control(action: str) -> dict[str, object]:
+                    request = urllib.request.Request(base + "/api/run/control", data=json.dumps({"action": action, "run_id": run_id}).encode(), headers={"Content-Type": "application/json"}, method="POST")
+                    with urllib.request.urlopen(request, timeout=5) as response: return json.loads(response.read())
+                self.assertEqual(control("stop")["status"], "running")
+                conn = Database(bundle).connect(); self.assertEqual(conn.execute("SELECT stop_after_current FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()[0], 1); conn.close()
+                self.assertEqual(control("emergency")["status"], "stopped")
+                conn = Database(bundle).connect()
+                self.assertEqual(conn.execute("SELECT status FROM browser_search_tasks WHERE task_id=?", (task_id,)).fetchone()[0], "incomplete")
+                self.assertEqual(conn.execute("SELECT detail_status FROM search_task_results WHERE result_id=1").fetchone()[0], "RETRYABLE")
+                conn.close()
+                with patch("jobbot.dashboard.subprocess.Popen") as launch:
+                    self.assertEqual(control("resume")["status"], "queued")
+                    launch.assert_called_once()
+                conn = Database(bundle).connect()
+                self.assertEqual(conn.execute("SELECT status FROM browser_search_tasks WHERE task_id=?", (task_id,)).fetchone()[0], "queued")
+                self.assertEqual(conn.execute("SELECT detail_status FROM search_task_results WHERE result_id=1").fetchone()[0], "RETRYABLE")
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_events WHERE browser_run_id=? AND event_type LIKE 'dashboard_%'", (run_id,)).fetchone()[0], 3)
+                conn.close()
+            finally:
+                server.shutdown(); server.server_close(); thread.join(timeout=3)
 
 
 if __name__ == "__main__": unittest.main()

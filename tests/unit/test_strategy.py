@@ -79,9 +79,9 @@ class StrategyTests(unittest.TestCase):
     def test_fast_execution_order_is_explicit_fastest_door(self) -> None:
         first = [task.query for task in compile_plan(self.bundle, "fast", ["linkedin"])[:6]]
         self.assertEqual(first, [
-            "patient enrollment specialist", "patient enrollment coordinator",
+            "patient enrollment specialist", "patient access specialist",
+            "healthcare operations coordinator", "patient enrollment coordinator",
             "healthcare enrollment specialist", "healthcare enrollment coordinator",
-            "member enrollment specialist", "member enrollment coordinator",
         ])
         self.assertNotEqual(first[0], "clinical documentation specialist")
 
