@@ -67,6 +67,37 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
             finally:
                 rpc.BASE = previous
 
+    def test_bridge_derives_reconciliation_without_card_stats(self) -> None:
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td); rpc.BASE = root
+            try:
+                run_id = browser_tasks.enqueue_gate(root, "linkedin", 7, 20)
+                self.assertTrue(rpc.handle({"action": "begin_run", "run_id": run_id})["ok"])
+                task = rpc.handle({"action": "next_task", "run_id": run_id, "worker_id": "stale-extension"})["task"]
+                task_id = int(task["task_id"])
+                for index in range(3):
+                    payload = {
+                        "action": "record_result", "run_id": run_id, "task_id": task_id,
+                        "source_site": "linkedin", "source_job_id": f"reconcile-{index}",
+                        "source_url": f"https://www.linkedin.com/jobs/view/reconcile-{index}",
+                        "card": {"source_job_id": f"reconcile-{index}", "title": "Patient Access Specialist"},
+                    }
+                    self.assertTrue(rpc.handle(payload)["ok"])
+                    if index == 0:
+                        self.assertTrue(rpc.handle(payload)["duplicate"])
+                conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+                counters = conn.execute(
+                    """SELECT cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,
+                              cards_persistence_failed,duplicate_cards,pending_details
+                       FROM browser_search_tasks WHERE task_id=?""",
+                    (task_id,),
+                ).fetchone()
+                self.assertEqual(tuple(counters), (3, 3, 3, 0, 1, 3))
+                conn.close()
+            finally:
+                rpc.BASE = previous
+
     def test_rich_card_queue_stop_resume_and_cross_platform_isolation(self) -> None:
         previous = rpc.BASE
         with tempfile.TemporaryDirectory() as td:

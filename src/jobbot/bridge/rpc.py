@@ -63,6 +63,51 @@ def refresh_task_counters(conn, rid:int)->None:
           WHERE browser_run_id=? AND platform=?""",
           (values['completed'],values['incomplete'],values['challenged'],values['failed'],rid,platform))
 
+def refresh_result_reconciliation(conn, rid:int, tid:int)->None:
+    """Derive card/detail counters from committed SQLite state.
+
+    Older unpacked extension workers can persist cards while omitting the
+    newer card_stats checkpoint payload. The bridge is the authoritative write
+    boundary, so dashboard reconciliation cannot depend on that payload.
+    Client-reported counters remain monotonic maxima; pending work is derived
+    directly because it can decrease as details complete.
+    """
+    if not tid:
+        return
+    unique_cards = int(conn.execute(
+        "SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND task_id=?",
+        (rid, tid),
+    ).fetchone()[0] or 0)
+    failed_persistence = int(conn.execute(
+        "SELECT COUNT(*) FROM browser_events WHERE browser_run_id=? AND task_id=? AND event_type='result_persistence_failed'",
+        (rid, tid),
+    ).fetchone()[0] or 0)
+    duplicate_cards = int(conn.execute(
+        "SELECT COALESCE(SUM(CASE WHEN sighting_count>1 THEN sighting_count-1 ELSE 0 END),0) FROM search_task_results WHERE browser_run_id=? AND task_id=?",
+        (rid, tid),
+    ).fetchone()[0] or 0)
+    pending_details = int(conn.execute(
+        "SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",
+        (rid, tid),
+    ).fetchone()[0] or 0)
+    detail_failures = int(conn.execute(
+        "SELECT COUNT(*) FROM browser_events WHERE browser_run_id=? AND task_id=? AND event_type='job_error'",
+        (rid, tid),
+    ).fetchone()[0] or 0)
+    conn.execute(
+        """UPDATE browser_search_tasks SET
+             cards_extracted=MAX(cards_extracted,?),
+             cards_persistence_attempted=MAX(cards_persistence_attempted,?+?),
+             cards_persistence_succeeded=MAX(cards_persistence_succeeded,?),
+             cards_persistence_failed=MAX(cards_persistence_failed,?),
+             duplicate_cards=MAX(duplicate_cards,?),
+             pending_details=?,
+             details_failed=MAX(details_failed,?)
+           WHERE browser_run_id=? AND task_id=?""",
+        (unique_cards, unique_cards, failed_persistence, unique_cards, failed_persistence,
+         duplicate_cards, pending_details, detail_failures, rid, tid),
+    )
+
 def handle(msg:dict[str,Any])->dict[str,Any]:
     action=str(msg.get('action') or '')
     store,cfg,strategy,out=open_store();conn=store.conn
@@ -133,13 +178,13 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)))
             if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
             pending_count=conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",(tid,)).fetchone()[0]
-            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status,'pending_count':int(pending_count)}
+            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status,'pending_count':int(pending_count)}
         if action=='next_pending_detail':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
             lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
             discovery=claim_next_detail(conn,run_id=rid,task_id=tid,worker_id=owner,lease_seconds=lease_seconds)
             pending_count=conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",(tid,)).fetchone()[0]
-            conn.commit()
+            refresh_result_reconciliation(conn,rid,tid);conn.commit()
             return {'ok':True,'done':discovery is None,'pending_count':int(pending_count),'detail':None if discovery is None else discovery.__dict__}
         if action=='detail_read':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''));now=j.now_iso()
@@ -166,24 +211,24 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             jid=store.resolve_job_id(job)
             if result_id: finish_detail(conn,result_id,jid)
             else: conn.execute("UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status='COMPLETE',detail_completed_at=? WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(jid,j.now_iso(),tid,source_site,sid,url))
-            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation},out);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company}
+            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation},out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company}
         if action=='job_error':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);message=j.clean_text(msg.get('message') or '')
             detail_status='FAILED'
             if result_id: detail_status=fail_detail(conn,result_id,message,max_attempts=int(cfg.get('runtime',{}).get('watchdog_retries',3) or 3))
-            event(conn,rid,tid,'job_error',message,msg,out);conn.commit();return {'ok':True,'detail_status':detail_status}
+            event(conn,rid,tid,'job_error',message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'detail_status':detail_status}
         if action=='detail_external_blocked':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);message=j.clean_text(msg.get('message') or 'platform challenge')
             if result_id:block_detail(conn,result_id,message)
-            event(conn,rid,tid,'detail_external_blocked',message,msg,out);conn.commit();return {'ok':True}
+            event(conn,rid,tid,'detail_external_blocked',message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True}
         if action=='task_progress':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);seen=max(0,int(msg.get('results_seen') or 0));pages=max(0,int(msg.get('pages_visited') or 0));cp=msg.get('checkpoint') or {}
             stats=cp.get('card_stats') if isinstance(cp.get('card_stats'),dict) else {}
-            now=j.now_iso(); conn.execute("""UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=?,cards_extracted=MAX(cards_extracted,?),cards_persistence_attempted=MAX(cards_persistence_attempted,?),cards_persistence_succeeded=MAX(cards_persistence_succeeded,?),cards_persistence_failed=MAX(cards_persistence_failed,?),duplicate_cards=MAX(duplicate_cards,?),pending_details=MAX(pending_details,?),details_failed=MAX(details_failed,?) WHERE task_id=? AND browser_run_id=?""",(seen,pages,json.dumps(cp,ensure_ascii=False),j.clean_text(cp.get('search_url') or ''),int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(),int(stats.get('extracted_cards') or 0),int(stats.get('persistence_attempted') or 0),int(stats.get('persistence_succeeded') or 0),int(stats.get('persistence_failed') or 0),int(stats.get('duplicate_cards') or 0),int(stats.get('pending_details') or 0),int(stats.get('details_failed') or 0),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True,'card_stats':stats}
+            now=j.now_iso(); conn.execute("""UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=?,cards_extracted=MAX(cards_extracted,?),cards_persistence_attempted=MAX(cards_persistence_attempted,?),cards_persistence_succeeded=MAX(cards_persistence_succeeded,?),cards_persistence_failed=MAX(cards_persistence_failed,?),duplicate_cards=MAX(duplicate_cards,?),pending_details=MAX(pending_details,?),details_failed=MAX(details_failed,?) WHERE task_id=? AND browser_run_id=?""",(seen,pages,json.dumps(cp,ensure_ascii=False),j.clean_text(cp.get('search_url') or ''),int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(),int(stats.get('extracted_cards') or 0),int(stats.get('persistence_attempted') or 0),int(stats.get('persistence_succeeded') or 0),int(stats.get('persistence_failed') or 0),int(stats.get('duplicate_cards') or 0),int(stats.get('pending_details') or 0),int(stats.get('details_failed') or 0),tid,rid));refresh_result_reconciliation(conn,rid,tid);conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True,'card_stats':stats}
         if action=='heartbeat':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);now=j.now_iso();conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
         if action=='browser_event':
-            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);message=j.clean_text(msg.get('message') or msg.get('event_type') or 'browser event');event(conn,rid,tid,j.clean_text(msg.get('event_type') or 'browser_event'),message,msg,out);conn.commit();return {'ok':True}
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);message=j.clean_text(msg.get('message') or msg.get('event_type') or 'browser event');event(conn,rid,tid,j.clean_text(msg.get('event_type') or 'browser_event'),message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True}
         if action=='complete_task':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);status=j.clean_text(msg.get('status') or 'completed');reason=j.clean_text(msg.get('reason') or '');exhausted=1 if bool(msg.get('exhausted')) else 0
             if status=='completed': status='exhausted' if exhausted else 'incomplete'
