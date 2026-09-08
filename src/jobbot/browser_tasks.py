@@ -163,6 +163,35 @@ def enqueue_gate(base: Path, platform: str = "indeed", days: int = 7, max_result
     store.conn.commit(); store.close(); return rid
 
 
+def enqueue_validation(base: Path, platforms: list[str] | None = None, *, max_results: int | None = None, bundle=None) -> int:
+    """Create a tiny all-primary live proof run; never used by production RUN NOW."""
+    chosen = platforms or list(PLATFORMS)
+    bad = [p for p in chosen if p not in PLATFORMS]
+    if bad:
+        raise ValueError(f"unsupported platform(s): {', '.join(bad)}")
+    active_bundle = bundle or load_bundle(base)
+    db = active_bundle.database_path
+    Database(active_bundle).migrate()
+    store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
+    rid = int(store.conn.execute(
+        "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
+        (V3_VERSION, "validation_micro", ",".join(chosen), "queued", now, "Bounded <=5 minute production proof; runtime bounds the validation; production retrieval remains uncapped."),
+    ).lastrowid)
+    store.conn.executemany("INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,1)", [(rid, p) for p in chosen])
+    for platform in chosen:
+        query = "patient enrollment specialist"
+        store.conn.execute(
+            """INSERT INTO browser_search_tasks(
+              browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (rid, platform, query, 1, 7, "date", search_url(platform, query, 7), max_results, "queued", now,
+             "validation-micro", "HEALTHCARE_OPS_ACCESS", "enrollment_operations", 0, 1, 1,
+             f"VALIDATION|{platform}|patient enrollment specialist", "A_FASTEST_DOOR_RECENT"),
+        )
+    store.conn.commit(); store.close(); return rid
+
+
 def resume_run(base: Path, rid: int | None = None) -> int:
     """Re-queue only unfinished tasks while retaining every task checkpoint."""
     db, _, _, _, _ = paths(base)

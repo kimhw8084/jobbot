@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from jobbot.browser_tasks import enqueue_gate
 from jobbot.config import load_bundle
 from jobbot.db import Database
 from jobbot.watch import WatchScheduler
@@ -25,19 +24,35 @@ class WatchSchedulerTests(unittest.TestCase):
             try:
                 Database(bundle).migrate()
                 now = [datetime(2026, 1, 1, tzinfo=timezone.utc)]
-                scheduler = WatchScheduler(conn, clock=lambda: now[0], recent_hours=6, deep_hours=24)
-                self.assertEqual(scheduler.due_mode(), "staged")
-                scheduler.start("staged", 10)
+                scheduler = WatchScheduler(conn, clock=lambda: now[0], recent_hours=6, deep_hours=24, supplemental_hours=60)
+                self.assertEqual(scheduler.due_plan(), "RECENT+DEEP+SUPPLEMENTAL")
+                scheduler.start("RECENT+DEEP+SUPPLEMENTAL", 10)
                 self.assertEqual(scheduler.state()["status"], "RUNNING")
-                scheduler.finish(success=True)
+                scheduler.finish("RECENT+DEEP+SUPPLEMENTAL", success=True, supplemental_ran=True)
                 self.assertEqual(scheduler.state()["status"], "WAITING")
-                self.assertIsNone(scheduler.due_mode())
                 now[0] += timedelta(hours=6)
-                self.assertEqual(scheduler.due_mode(), "staged_recent")
-                now[0] += timedelta(hours=18)
-                self.assertEqual(scheduler.due_mode(), "staged")
+                self.assertEqual(scheduler.due_plan(), "RECENT")
+                scheduler.start("RECENT", 11); scheduler.finish("RECENT", success=True)
+                now[0] += timedelta(hours=6)
+                self.assertEqual(scheduler.due_plan(), "RECENT")
+                scheduler.start("RECENT", 12); scheduler.finish("RECENT", success=True)
+                now[0] += timedelta(hours=6)
+                self.assertEqual(scheduler.due_plan(), "RECENT")
+                scheduler.start("RECENT", 13); scheduler.finish("RECENT", success=True)
+                self.assertEqual(scheduler.state()["next_deep_due_at"], "2026-01-02T00:00:00+00:00")
+                now[0] += timedelta(hours=6)
+                self.assertEqual(scheduler.due_plan(), "RECENT+DEEP")
+                scheduler.start("RECENT+DEEP", 14); scheduler.finish("RECENT+DEEP", success=True)
+                self.assertEqual(scheduler.state()["next_supplemental_due_at"], "2026-01-03T12:00:00+00:00")
+                scheduler.finish("SUPPLEMENTAL", success=False, supplemental_ran=True, supplemental_success=True)
+                self.assertEqual(scheduler.state()["next_supplemental_due_at"], "2026-01-04T12:00:00+00:00")
                 scheduler.stop("test stop")
-                self.assertEqual(scheduler.state()["status"], "STOPPED")
+                self.assertIsNone(scheduler.due_plan())
+                self.assertTrue(scheduler.stopped())
+                scheduler.resume()
+                self.assertFalse(scheduler.stopped())
+                now[0] += timedelta(hours=6)
+                self.assertIsNotNone(scheduler.due_plan())
             finally:
                 conn.close()
 

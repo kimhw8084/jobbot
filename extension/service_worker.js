@@ -1,6 +1,7 @@
 'use strict';
 
 let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTaskId=null, runPromise=null, heartbeatTimer=null;
+const JOBBOT_EXTENSION_BUILD='3.2.2-prod-ready';
 let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
 const MAX_IDENTICAL_FINGERPRINTS=3;
 const AUTH_URLS={
@@ -139,6 +140,7 @@ async function processTask(runId,task){
       page=await gatherStableSearch(searchTab.id,page);
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge'});return;}
       if(page.extraction_scope_missing){const message=`${platform} search extraction scope missing at ${page.page_url}; diagnostics=${JSON.stringify(page.extraction_diagnostics||{})}`;await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_scope_missing',message});await finishIncomplete(`SAFETY_STOP: ${message}`);return;}
+      if(page.extraction_diagnostics){await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'scope_diagnostics',message:`${platform} scoped result diagnostics`,payload:page.extraction_diagnostics}).catch(()=>{});}
       const items=page.result_links||[], pageFp=fp(items);
       if(pageFp){
         const count=(fingerprintCounts.get(pageFp)||0)+1;fingerprintCounts.set(pageFp,count);
@@ -222,6 +224,7 @@ async function runProduction(runId){
   startHeartbeat();
   try{
     await requiredRequest('begin_run',{run_id:activeRunId});
+    await nativeRequest('browser_event',{run_id:activeRunId,event_type:'extension_build',message:JOBBOT_EXTENSION_BUILD,payload:{build:JOBBOT_EXTENSION_BUILD}});
     const authChecked=new Map();
     while(true){
       const n=await requiredRequest('next_task',{run_id:activeRunId,worker_id:`extension-run-${activeRunId}`}); if(n.stop||n.done)break; if(!n.task)break;

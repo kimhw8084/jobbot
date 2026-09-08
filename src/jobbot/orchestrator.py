@@ -76,7 +76,10 @@ def _run_status(bundle: ConfigBundle, run_id: int) -> str:
         conn.close()
 
 
-def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, open_browser: bool = True) -> RunOutcome:
+def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, open_browser: bool = True,
+                       timeout_seconds: float | None = None, stop_after_seconds: float | None = None,
+                       test_bridge_restart_after: float | None = None,
+                       startup_timeout_seconds: float | None = None) -> RunOutcome:
     runtime = bundle.runtime["runtime"]
     restarts_allowed = int(runtime["bridge_restart_limit"])
     token = secrets.token_urlsafe(48)
@@ -85,6 +88,9 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
     log_path = bundle.output_dir / "logs" / f"run_{run_id}_bridge.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     restart_count = 0
+    started_monotonic = time.monotonic()
+    stop_sent = False
+    bridge_restart_sent = False
     process: subprocess.Popen[bytes] | None = None
     ready_dir = tempfile.TemporaryDirectory(prefix="jobbot-bridge-")
     ready_path = Path(ready_dir.name) / "ready.json"
@@ -125,6 +131,24 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
             status = _run_status(bundle, run_id)
             if status in {"completed", "partial", "stopped", "failed", "missing"}:
                 return RunOutcome(run_id, status, restart_count)
+            elapsed = time.monotonic() - started_monotonic
+            if startup_timeout_seconds is not None and elapsed >= max(1, startup_timeout_seconds) and status == "queued":
+                browser_tasks.emergency_stop(bundle.root, run_id)
+                return RunOutcome(run_id, "extension_unresponsive", restart_count)
+            if stop_after_seconds is not None and not stop_sent and elapsed >= max(0, stop_after_seconds):
+                browser_tasks.request_stop(bundle.root, run_id)
+                stop_sent = True
+            if test_bridge_restart_after is not None and not bridge_restart_sent and elapsed >= max(0, test_bridge_restart_after):
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                bridge_restart_sent = True
+            if timeout_seconds is not None and elapsed >= max(1, timeout_seconds):
+                browser_tasks.emergency_stop(bundle.root, run_id)
+                return RunOutcome(run_id, "timed_out", restart_count)
             if process.poll() is not None:
                 if restart_count >= restarts_allowed:
                     return RunOutcome(run_id, "bridge_failed", restart_count)

@@ -23,6 +23,10 @@ Requirements: macOS, Python 3.11 or newer, normal Google Chrome, and enough disk
    ./RUN_ACCEPTANCE_INDEED.command
    ```
 
+For a final release proof after reloading the unpacked extension, run
+`./VALIDATE_PRODUCTION.command`. It creates timestamped isolated validation,
+soak, and semi-production databases; it never opens `data/jobs.sqlite3`.
+
 A site challenge or authentication page is an external incomplete state, not a pass. Clear it manually through normal browsing, wait for the configured cooldown when challenged, then resume.
 
 ## Today’s fast path
@@ -70,6 +74,7 @@ After installation, run commands from the repository root:
 .venv/bin/python -m jobbot run-now
 .venv/bin/python -m jobbot watch
 .venv/bin/python -m jobbot watch --once
+.venv/bin/python -m jobbot validate-production
 .venv/bin/python -m jobbot resume
 .venv/bin/python -m jobbot stop
 .venv/bin/python -m jobbot stop --emergency
@@ -96,6 +101,7 @@ do not point unattended tests at `data/jobs.sqlite3`.
 - `RUN_PLATFORM_LINKEDIN.command`, `RUN_PLATFORM_INDEED.command`, `RUN_PLATFORM_GLASSDOOR.command` — isolate one primary platform.
 - `RESUME_SEARCH.command` — resumes persistent unfinished checkpoints.
 - `STOP_SEARCH.command` — requests an orderly stop after the current job; use `python -m jobbot stop --emergency` only when immediate checkpointing is necessary.
+- `VALIDATE_PRODUCTION.command` — runs the bounded micro-validation, 15-minute soak, and 30–60-minute isolated semi-production proof; it never uses the production database.
 - `OPEN_DASHBOARD.command`, `AUDIT.command`, `DOCTOR.command`, `IMPORT_EXISTING_DB.command` — local operations.
 
 ## Configuration and data safety

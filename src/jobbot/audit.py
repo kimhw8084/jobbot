@@ -58,25 +58,40 @@ def _global(conn: sqlite3.Connection, run_id: int | None, strategy: dict[str, An
     where, args = _scope("t", run_id)
     relevance, qualification = _thresholds(strategy)
     def result_count(condition: str) -> int:
+        if run_id is None:
+            return _n(conn, f"SELECT COUNT(*) FROM search_task_results r WHERE {condition}")
         return _n(conn, f"SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id{where} AND {condition}", args)
+    def canonical_count() -> int:
+        if run_id is None:
+            return _n(conn, "SELECT COUNT(DISTINCT canonical_job_id) FROM search_task_results WHERE canonical_job_id IS NOT NULL")
+        return _n(conn, f"SELECT COUNT(DISTINCT r.canonical_job_id) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id{where} AND r.canonical_job_id IS NOT NULL", args)
+    if run_id is None:
+        job_where, job_args = " WHERE 1", ()
+    else:
+        job_where, job_args = (" WHERE j.job_id IN (SELECT DISTINCT r.canonical_job_id FROM search_task_results r "
+                               "JOIN browser_search_tasks t ON t.task_id=r.task_id "
+                               "WHERE t.browser_run_id=? AND r.canonical_job_id IS NOT NULL)", (run_id,))
+    def job_count(condition: str) -> int:
+        return _n(conn, f"SELECT COUNT(*) FROM jobs j{job_where} AND {condition}", job_args)
     return {
         "sightings": result_count("1=1"),
-        "canonical_jobs": result_count("r.canonical_job_id IS NOT NULL"),
+        "canonical_jobs": canonical_count(),
         "detail_pending": result_count("r.detail_status='PENDING'"),
         "detail_running": result_count("r.detail_status='RUNNING'"),
         "detail_complete": result_count("r.detail_status='COMPLETE'"),
         "detail_retryable": result_count("r.detail_status='RETRYABLE'"),
         "detail_failed": result_count("r.detail_status='FAILED'"),
         "detail_external_blocked": result_count("r.detail_status='EXTERNAL_BLOCKED'"),
-        "relevant": _n(conn, "SELECT COUNT(*) FROM jobs WHERE COALESCE(relevance_score,0)>=?", (relevance,)),
-        "qualified": _n(conn, "SELECT COUNT(*) FROM jobs WHERE COALESCE(qualification_score,0)>=? AND COALESCE(relevance_score,0)>=?", (qualification, relevance)),
-        "apply_now": _n(conn, "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='APPLY_NOW'"),
-        "apply_volume": _n(conn, "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='APPLY_VOLUME'"),
-        "stretch": _n(conn, "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='HIGH_VALUE_STRETCH'"),
-        "description_complete": _n(conn, "SELECT COUNT(*) FROM jobs WHERE description_state='COMPLETE'"),
-        "description_missing": _n(conn, "SELECT COUNT(*) FROM jobs WHERE description_state='MISSING'"),
-        "description_partial": _n(conn, "SELECT COUNT(*) FROM jobs WHERE description_state='PARTIAL_TOO_SHORT'"),
-        "applied": _n(conn, "SELECT COUNT(*) FROM jobs WHERE upper(application_status) IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED')"),
+        "relevant": job_count(f"COALESCE(j.relevance_score,0)>={relevance}"),
+        "qualified": job_count(f"COALESCE(j.qualification_score,0)>={qualification} AND COALESCE(j.relevance_score,0)>={relevance}"),
+        "apply_now": job_count("j.is_active=1 AND j.recommendation='APPLY_NOW'"),
+        "apply_volume": job_count("j.is_active=1 AND j.recommendation='APPLY_VOLUME'"),
+        "stretch": job_count("j.is_active=1 AND j.recommendation='HIGH_VALUE_STRETCH'"),
+        "out_of_scope": job_count("j.recommendation='OUT_OF_SCOPE'"),
+        "description_complete": job_count("j.description_state='COMPLETE'"),
+        "description_missing": job_count("j.description_state='MISSING'"),
+        "description_partial": job_count("j.description_state='PARTIAL_TOO_SHORT'"),
+        "applied": job_count("upper(j.application_status) IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED')"),
     }
 
 
@@ -115,11 +130,7 @@ def collect(conn: sqlite3.Connection, run_id: int | None = None, strategy: dict[
         diagnosis.append("Search coverage is internally incomplete: planned tasks remain non-terminal.")
     if any(v["challenged"] or v["auth_required"] or v["deferred_by_platform"] for v in platforms.values()):
         diagnosis.append("At least one primary platform is externally blocked; its work is isolated and checkpointed.")
-    cumulative = {
-        "sightings": _n(conn, "SELECT COUNT(*) FROM source_occurrences"),
-        "canonical_jobs": _n(conn, "SELECT COUNT(*) FROM jobs"),
-        "detail_complete": _n(conn, "SELECT COUNT(*) FROM search_task_results WHERE detail_status='COMPLETE'"),
-    }
+    cumulative = _global(conn, None, strategy)
     return {
         "current_run_id": current_id,
         "terminal_classification": _classification(conn, current_id),

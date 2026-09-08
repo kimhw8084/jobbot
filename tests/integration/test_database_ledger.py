@@ -18,7 +18,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 12)))
+            self.assertEqual(result.applied, tuple(range(1, 13)))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
