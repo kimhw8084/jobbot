@@ -47,11 +47,15 @@ class WatchScheduler:
     def due_mode(self, now: datetime | None = None) -> str | None:
         moment = now or self.clock()
         row = self.state()
-        if due(moment, row["next_recent_due_at"]) and not row["last_cycle_at"]:
+        recent_due = due(moment, row["next_recent_due_at"])
+        deep_due = due(moment, row["next_deep_due_at"])
+        if recent_due and not row["last_cycle_at"]:
             return "staged"
-        if due(moment, row["next_deep_due_at"]):
+        if recent_due and deep_due:
+            return "staged"
+        if deep_due:
             return "staged_deep"
-        if due(moment, row["next_recent_due_at"]):
+        if recent_due:
             return "staged_recent"
         return None
 

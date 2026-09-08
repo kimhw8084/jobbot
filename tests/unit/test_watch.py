@@ -35,7 +35,7 @@ class WatchSchedulerTests(unittest.TestCase):
                 now[0] += timedelta(hours=6)
                 self.assertEqual(scheduler.due_mode(), "staged_recent")
                 now[0] += timedelta(hours=18)
-                self.assertEqual(scheduler.due_mode(), "staged_deep")
+                self.assertEqual(scheduler.due_mode(), "staged")
                 scheduler.stop("test stop")
                 self.assertEqual(scheduler.state()["status"], "STOPPED")
             finally:
@@ -51,4 +51,3 @@ class WatchSchedulerTests(unittest.TestCase):
             bundle = load_bundle(root)
             Database(bundle).migrate()
             self.assertNotEqual(bundle.database_path, Path("data/jobs.sqlite3").resolve())
-

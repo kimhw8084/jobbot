@@ -135,8 +135,8 @@ def command_watch(args: argparse.Namespace) -> int:
                 time.sleep(max(1, args.poll_seconds))
                 continue
             preflight(bundle, args.platform or None)
-            scheduler.start(mode)
             run_id = enqueue(bundle, mode, args.platform or None)
+            scheduler.start(mode, run_id)
             scheduler.bind_run(run_id)
             if args.enqueue_only:
                 return 0
