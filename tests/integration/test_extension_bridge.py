@@ -30,6 +30,8 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertEqual(dashboard_js.returncode, 0, dashboard_js.stderr)
         scope = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_linkedin_scope_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(scope.returncode, 0, scope.stderr or scope.stdout)
+        primary_scope = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_primary_scope_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(primary_scope.returncode, 0, primary_scope.stderr or primary_scope.stdout)
         dashboard = (PROJECT_ROOT / "extension" / "dashboard.html").read_text(encoding="utf-8")
         self.assertIn('src="dashboard.js"', dashboard)
         self.assertNotIn('src="start.js"', dashboard)

@@ -16,6 +16,8 @@
       posted: ['.job-details-jobs-unified-top-card__tertiary-description-container time','time'],
     }),
     indeed: Object.freeze({
+      searchContainers: ['[data-testid="jobsearch-ResultsList"]','#mosaic-jobResults','.jobsearch-ResultsList','[class*="jobsearch-ResultsList"]','main[role="main"]'],
+      resultCards: ['.job_seen_beacon','li[data-jk]','div[data-jk]','[data-testid="slider_item"]','[data-testid="result"]'],
       searchLinks: ['a[href*="/viewjob?jk="]','a[href*="/rc/clk?jk="]','h2.jobTitle a[href]','a[data-jk][href]','a[id^="job_"][href]'],
       nextLinks: ['a[data-testid="pagination-page-next"][href]','a[aria-label="Next Page"][href]','a[aria-label="Next"][href]','nav a[aria-label*="Next"][href]'],
       nextButtons: ['button[aria-label="Next Page"]:not([disabled])','button[aria-label="Next"]:not([disabled])'],
@@ -29,6 +31,8 @@
       posted: ['[data-testid="jobsearch-JobMetadataFooter"]','.jobsearch-JobMetadataFooter'],
     }),
     glassdoor: Object.freeze({
+      searchContainers: ['[data-test="job-listings"]','[class*="JobsList_jobList"]','[class*="JobsList_jobsList"]','main[role="main"]'],
+      resultCards: ['[data-test="jobListing"]','[data-test="job-card"]','[class*="JobCard_jobCard"]','[class*="jobCard"]'],
       searchLinks: ['a[href*="/job-listing/"]','a[data-test="job-link"][href]','a[class*="JobCard_jobTitle"][href]','a[class*="jobTitle"][href]'],
       nextLinks: ['a[data-test="pagination-next"][href]','a[aria-label="Next"][href]','a[aria-label="Next Page"][href]','nav a[href][aria-label*="Next"]'],
       authPositive: [],
