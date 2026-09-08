@@ -15,6 +15,7 @@ from jobbot.validator import (
     _classify_supplemental,
     _record_validation_cutoff,
     _scope_diagnostics,
+    _phase_coverage_pass,
     _stage_pass,
     _write_report,
 )
@@ -90,6 +91,95 @@ class ValidatorIntegrationTests(unittest.TestCase):
                 self.assertEqual(contaminated["contamination_persisted"], 1)
             finally:
                 conn.close()
+
+    def test_cross_query_in_scope_identity_cancels_outside_observation(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "config").mkdir()
+            for item in (PROJECT_ROOT / "config").iterdir():
+                (root / "config" / item.name).write_bytes(item.read_bytes())
+            bundle = load_bundle(root)
+            run_id = enqueue_validation(root, ["linkedin"], bundle=bundle)
+            conn = Database(bundle).connect()
+            try:
+                first_task = conn.execute(
+                    "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id LIMIT 1", (run_id,)
+                ).fetchone()[0]
+                second_task = conn.execute(
+                    "INSERT INTO browser_search_tasks(browser_run_id,platform,query_text,window_days,search_url,created_at) "
+                    "VALUES(?,?,?,?,?,?) RETURNING task_id",
+                    (run_id, "linkedin", "query B", 7, "https://www.linkedin.com/jobs/search/?keywords=query+b", "now"),
+                ).fetchone()[0]
+                for task_id, payload in (
+                    (first_task, {"in_scope_source_ids": ["X"], "in_scope_urls": ["https://jobs.example/x"],
+                                  "outside_scope_source_ids": [], "outside_scope_urls": []}),
+                    (second_task, {"in_scope_source_ids": [], "in_scope_urls": [],
+                                   "outside_scope_source_ids": ["X", "Y"],
+                                   "outside_scope_urls": ["https://jobs.example/x", "https://jobs.example/y"]}),
+                ):
+                    conn.execute(
+                        "INSERT INTO browser_events(browser_run_id,task_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?,?)",
+                        (run_id, task_id, "now", "scope_diagnostics", "scope", json.dumps({"payload": {
+                            "candidate_links_total": 1, "candidate_links_in_scope": len(payload["in_scope_source_ids"]),
+                            "candidate_links_outside_scope": len(payload["outside_scope_source_ids"]), **payload,
+                        }})),
+                    )
+                conn.execute(
+                    "INSERT INTO search_task_results(browser_run_id,task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,detail_status) VALUES(?,?,?,?,?,?,?,?)",
+                    (run_id, first_task, "linkedin", "X", "https://jobs.example/x", "now", "now", "PENDING"),
+                )
+                conn.execute(
+                    "INSERT INTO search_task_results(browser_run_id,task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,detail_status) VALUES(?,?,?,?,?,?,?,?)",
+                    (run_id, second_task, "linkedin", "Y", "https://jobs.example/y", "now", "now", "PENDING"),
+                )
+                conn.commit()
+                values = _scope_diagnostics(bundle, run_id)["linkedin"]
+                self.assertNotIn("X", values["outside_only_ids"])
+                self.assertIn("Y", values["outside_only_ids"])
+                self.assertEqual(values["contamination_persisted"], 1)
+            finally:
+                conn.close()
+
+    def test_bounded_natural_terminal_is_valid_but_internal_incomplete_is_not(self) -> None:
+        def stage(classification: str) -> dict:
+            return {
+                "validation_classification": classification,
+                "validation_cutoff": False,
+                "validation_metrics": {
+                    "integrity": "ok", "reconciliation": {"ok": True}, "unexplained": 0,
+                    "extracted": 2, "persistence_attempted": 2, "persisted": 2, "persistence_failed": 0,
+                    "attempted_tasks": 1, "progress_tasks": 1, "untouched_exhausted": 0,
+                    "attempted_incomplete": 0, "attempted_failed": 0, "attempted_running": 0,
+                    "task_states": {"queued": 0, "running": 0, "exhausted": 1, "incomplete": 0,
+                                     "challenged": 0, "auth_required": 0, "deferred_by_platform": 0,
+                                     "failed": 0, "paused": 0, "stopped": 0},
+                },
+                "scope": {"linkedin": {"contamination_persisted": 0, "scope_missing_events": 0,
+                                         "attempted_pages": 1, "scope_found_events": 1}},
+                "extension_build_pass": True,
+            }
+        self.assertTrue(_stage_pass(stage("COMPLETED_FULL"), bounded=True))
+        self.assertTrue(_stage_pass(stage("COMPLETED_PARTIAL_EXTERNAL"), bounded=True))
+        failed = stage("COMPLETED_FULL")
+        failed["validation_metrics"]["attempted_incomplete"] = 1
+        self.assertFalse(_stage_pass(failed, bounded=True))
+        contaminated = stage("COMPLETED_FULL")
+        contaminated["scope"]["linkedin"]["contamination_persisted"] = 1
+        self.assertFalse(_stage_pass(contaminated, bounded=True))
+
+    def test_phase_coverage_rejects_queued_only_b_and_c_and_accepts_progress(self) -> None:
+        phases = {
+            phase: {"linkedin": {"sampled_queued": 2, "started_tasks": 0, "progress_tasks": 0,
+                                  "all_external_blocked": False}}
+            for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL")
+        }
+        phases["A_FASTEST_DOOR_RECENT"]["linkedin"]["started_tasks"] = 2
+        phases["A_FASTEST_DOOR_RECENT"]["linkedin"]["progress_tasks"] = 2
+        self.assertFalse(_phase_coverage_pass(phases))
+        for phase in ("B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"):
+            phases[phase]["linkedin"]["started_tasks"] = 1
+            phases[phase]["linkedin"]["progress_tasks"] = 1
+        self.assertTrue(_phase_coverage_pass(phases))
 
     def test_bounded_cutoff_allows_untouched_queued_work_but_not_internal_incomplete(self) -> None:
         stage = {

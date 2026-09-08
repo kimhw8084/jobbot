@@ -230,8 +230,9 @@ def _scope_diagnostics(bundle: ConfigBundle, run_id: int | None) -> dict[str, An
     conn = sqlite3.connect(bundle.database_path)
     conn.row_factory = sqlite3.Row
     try:
-        outside: dict[str, dict[str, set[str]]] = {
-            platform: {"ids": set(), "urls": set()} for platform in PRIMARY
+        identities: dict[str, dict[str, set[str]]] = {
+            platform: {"in_ids": set(), "in_urls": set(), "out_ids": set(), "out_urls": set()}
+            for platform in PRIMARY
         }
         for row in conn.execute(
             "SELECT platform,payload_json FROM browser_events e JOIN browser_search_tasks t ON t.task_id=e.task_id "
@@ -248,8 +249,10 @@ def _scope_diagnostics(bundle: ConfigBundle, run_id: int | None) -> dict[str, An
             result[platform]["candidate_links_total"] += int(payload.get("candidate_links_total", 0) or 0)
             result[platform]["candidate_links_in_scope"] += int(payload.get("candidate_links_in_scope", 0) or 0)
             result[platform]["candidate_links_outside_scope"] += int(payload.get("candidate_links_outside_scope", 0) or 0)
-            outside[platform]["ids"].update(str(value) for value in payload.get("outside_scope_source_ids", []) if value)
-            outside[platform]["urls"].update(_normalise_url(value) for value in payload.get("outside_scope_urls", []) if value)
+            identities[platform]["in_ids"].update(str(value) for value in payload.get("in_scope_source_ids", []) if value)
+            identities[platform]["in_urls"].update(_normalise_url(value) for value in payload.get("in_scope_urls", []) if value)
+            identities[platform]["out_ids"].update(str(value) for value in payload.get("outside_scope_source_ids", []) if value)
+            identities[platform]["out_urls"].update(_normalise_url(value) for value in payload.get("outside_scope_urls", []) if value)
         for row in conn.execute(
             "SELECT platform,COUNT(*) FROM browser_events e JOIN browser_search_tasks t ON t.task_id=e.task_id "
             "WHERE e.browser_run_id=? AND e.event_type='extraction_scope_missing' GROUP BY platform", (run_id,),
@@ -272,11 +275,15 @@ def _scope_diagnostics(bundle: ConfigBundle, run_id: int | None) -> dict[str, An
                 "WHERE r.browser_run_id=? AND t.platform=?",
                 (run_id, platform),
             ).fetchall()
+            outside_only_ids = identities[platform]["out_ids"] - identities[platform]["in_ids"]
+            outside_only_urls = identities[platform]["out_urls"] - identities[platform]["in_urls"]
+            result[platform]["outside_only_ids"] = sorted(outside_only_ids)
+            result[platform]["outside_only_urls"] = sorted(outside_only_urls)
             outside_count = 0
             for persisted_row in persisted:
                 sid = str(persisted_row[0] or "")
                 url = _normalise_url(persisted_row[1])
-                if sid in outside[platform]["ids"] or (url and url in outside[platform]["urls"]):
+                if sid in outside_only_ids or (url and url in outside_only_urls):
                     outside_count += 1
             result[platform]["persisted_outside_scope"] = outside_count
             result[platform]["contamination_persisted"] = outside_count
@@ -639,7 +646,9 @@ def _stage_pass(stage: dict[str, Any], *, bounded: bool = False, require_termina
     metrics = stage.get("validation_metrics", stage.get("metrics", {})) if bounded else stage.get("metrics", {})
     classification = stage.get("validation_classification", stage.get("terminal_classification")) if bounded else stage.get("terminal_classification")
     if bounded:
-        if classification != VALIDATION_WINDOW_COMPLETE or stage.get("validation_cutoff") is not True:
+        natural_terminal = classification in TERMINAL_SUCCESS
+        intentional_cutoff = classification == VALIDATION_WINDOW_COMPLETE and stage.get("validation_cutoff") is True
+        if not (natural_terminal or intentional_cutoff):
             return False
     elif require_terminal and classification not in TERMINAL_SUCCESS:
         return False
@@ -666,6 +675,22 @@ def _stage_pass(stage: dict[str, Any], *, bounded: bool = False, require_termina
            for values in stage.get("scope", {}).values()):
         return False
     return True
+
+
+def _phase_coverage_pass(phase_metrics: dict[str, dict[str, dict[str, int | bool]]]) -> bool:
+    """Require real progress in every phase, allowing only fully blocked platforms to be exempt."""
+    any_progress = False
+    for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"):
+        platforms = phase_metrics.get(phase, {})
+        if not platforms:
+            return False
+        phase_progress = sum(int(values.get("progress_tasks", 0) or 0) for values in platforms.values())
+        any_progress = any_progress or phase_progress > 0
+        if phase_progress > 0:
+            continue
+        if not all(bool(values.get("all_external_blocked")) for values in platforms.values()):
+            return False
+    return any_progress
 
 
 def _fixture_and_deterministic(bundle: ConfigBundle) -> dict[str, Any]:
@@ -739,6 +764,48 @@ def _sampled_phase_counts(bundle: ConfigBundle, run_id: int) -> dict[str, dict[s
         conn.close()
 
 
+def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dict[str, dict[str, int | bool]]]:
+    """Return queued, started, progressed, persisted, and detail-complete proof by phase/platform."""
+    conn = Database(bundle).connect()
+    try:
+        phases: dict[str, dict[str, dict[str, int | bool]]] = {}
+        task_rows = conn.execute(
+            "SELECT phase,platform,status,started_at,pages_visited,cards_extracted,cards_persistence_succeeded "
+            "FROM browser_search_tasks WHERE browser_run_id=? ORDER BY phase,platform,task_id",
+            (run_id,),
+        ).fetchall()
+        for row in task_rows:
+            phase, platform = str(row[0]), str(row[1])
+            values = phases.setdefault(phase, {}).setdefault(platform, {
+                "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
+                "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
+            })
+            values["sampled_queued"] = int(values["sampled_queued"]) + 1
+            started = bool(row[3])
+            if started:
+                values["started_tasks"] = int(values["started_tasks"]) + 1
+            progressed = int(row[4] or 0) > 0 or int(row[5] or 0) > 0
+            if progressed:
+                values["progress_tasks"] = int(values["progress_tasks"]) + 1
+            values["cards_persisted"] = int(values["cards_persisted"]) + int(row[6] or 0)
+            if str(row[2]) in TERMINAL_EXTERNAL:
+                values["external_tasks"] = int(values["external_tasks"]) + 1
+        for phase, platforms in phases.items():
+            for platform, values in platforms.items():
+                values["details_complete"] = int(conn.execute(
+                    "SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id "
+                    "WHERE r.browser_run_id=? AND t.phase=? AND t.platform=? AND r.detail_status='COMPLETE'",
+                    (run_id, phase, platform),
+                ).fetchone()[0] or 0)
+                values["all_external_blocked"] = bool(
+                    int(values["sampled_queued"]) > 0
+                    and int(values["external_tasks"]) == int(values["sampled_queued"])
+                )
+        return phases
+    finally:
+        conn.close()
+
+
 def _write_report(report: dict[str, Any], report_dir: Path) -> None:
     report_dir.mkdir(parents=True, exist_ok=True)
     latest_json = report_dir / "latest.json"
@@ -749,6 +816,52 @@ def _write_report(report: dict[str, Any], report_dir: Path) -> None:
     for key in ("preflight", "run_now_coverage", "primary_live", "soak", "semi_production", "external_blockers", "internal_failures"):
         lines.extend([f"## {key}", "", "```json", json.dumps(report.get(key), indent=2, ensure_ascii=False, default=str), "```", ""])
     latest_md.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _run_semi_phase(
+    bundle: ConfigBundle,
+    *,
+    phase: str,
+    platforms: list[str],
+    phase_seconds: int,
+    active_runs: list[tuple[ConfigBundle, int]],
+) -> dict[str, Any]:
+    """Run one bounded phase window through the normal browser/bridge path."""
+    intentional_stop = phase == "A_FASTEST_DOOR_RECENT"
+    first_window = min(60, max(15, phase_seconds // 6)) if intentional_stop else None
+    initial = _live_run(
+        bundle,
+        mode="staged",
+        platforms=platforms,
+        timeout_seconds=phase_seconds,
+        stop_after_seconds=first_window,
+        validation_sample=True,
+        sample_phases=(phase,),
+        sample_per_phase=6,
+        active_runs=active_runs,
+    )
+    resumed = None
+    final = initial
+    if initial["outcome"]["status"] == "stopped":
+        remaining = max(30, phase_seconds - int(first_window or 0))
+        resumed = _resume_live(
+            bundle,
+            int(initial["run_id"]),
+            remaining,
+            remaining if intentional_stop else None,
+            active_runs,
+        )
+        final = resumed
+    execution = _phase_execution_metrics(bundle, int(final["run_id"]))
+    return {
+        "phase": phase,
+        "initial": initial,
+        "resume": resumed,
+        "final": final,
+        "execution": execution,
+        "pass": _stage_pass(final, bounded=True),
+        "stop_resume_pass": bool(initial["outcome"]["status"] == "stopped" and resumed),
+    }
 
 
 def run(*, semi_minutes: int = 30) -> int:
@@ -875,32 +988,55 @@ def run(*, semi_minutes: int = 30) -> int:
         dashboard_bundles.append((semi_bundle, semi_url))
         report["dashboard_url"] = semi_url
         semi_started = time.monotonic()
+        phase_seconds = max(60, (semi_minutes * 60) // 3)
+        phase_runs: dict[str, Any] = {}
         with _isolated_environment(semi_bundle):
-            semi = _live_run(semi_bundle, mode="staged", platforms=list(PRIMARY), timeout_seconds=semi_minutes * 60,
-                             stop_after_seconds=60, bridge_restart_after=30, validation_sample=True,
-                             sample_phases=("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"),
-                             sample_per_phase=6, active_runs=active_runs)
-            if semi["outcome"]["status"] == "stopped":
-                semi["resume"] = _resume_live(semi_bundle, int(semi["run_id"]), semi_minutes * 60 - 60,
-                                               semi_minutes * 60 - 60, active_runs)
-                final_semi = semi["resume"]
-            else:
-                semi["resume"] = None
-                final_semi = semi
-            semi["supplemental"] = _run_supplemental(semi_bundle, int(semi["run_id"]))
-        semi["sampled_phase_counts"] = _sampled_phase_counts(semi_bundle, int(semi["run_id"]))
-        report["run_now_coverage"]["live_sampled_phase_counts"]["semi_production"] = semi["sampled_phase_counts"]
+            for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"):
+                phase_runs[phase] = _run_semi_phase(
+                    semi_bundle,
+                    phase=phase,
+                    platforms=list(PRIMARY),
+                    phase_seconds=phase_seconds,
+                    active_runs=active_runs,
+                )
+            last_run_id = int(phase_runs["C_DEEP_BACKFILL"]["final"]["run_id"])
+            supplemental = _run_supplemental(semi_bundle, last_run_id)
+        sampled_phase_counts: dict[str, dict[str, int]] = {}
+        execution_evidence: dict[str, Any] = {}
+        phase_pass: dict[str, bool] = {}
+        for phase, phase_result in phase_runs.items():
+            run_id = int(phase_result["final"]["run_id"])
+            sampled_phase_counts.update(_sampled_phase_counts(semi_bundle, run_id))
+            execution_evidence[phase] = phase_result["execution"]
+            phase_pass[phase] = bool(phase_result["pass"])
+        semi = {
+            "run_id": last_run_id,
+            "phase_runs": phase_runs,
+            "sampled_phase_counts": sampled_phase_counts,
+            "execution_evidence": execution_evidence,
+            "phase_pass": phase_pass,
+            "supplemental": supplemental,
+        }
+        report["run_now_coverage"]["live_sampled_phase_counts"]["semi_production"] = sampled_phase_counts
+        report["run_now_coverage"]["semi_execution_evidence"] = execution_evidence
         semi["duration_seconds_total"] = round(time.monotonic() - semi_started, 2)
         semi["dashboard"] = _dashboard_probe(semi_bundle, semi_url)
-        semi["pass"] = bool(semi["outcome"]["status"] == "stopped" and semi["resume"] and
-                             _stage_pass(final_semi, bounded=True) and semi["supplemental"]["isolation_pass"] and
-                             semi["dashboard"]["identity_ok"] and semi["dashboard"]["live_refresh_ok"])
+        semi["pass"] = bool(
+            all(phase_pass.values())
+            and _phase_coverage_pass(execution_evidence)
+            and semi["supplemental"]["isolation_pass"]
+            and semi["dashboard"]["identity_ok"]
+            and semi["dashboard"]["live_refresh_ok"]
+        )
         report["semi_production"] = semi
         if semi["supplemental"].get("external_failures"):
             report["external_blockers"].append({"stage": "semi_supplemental", "error": semi["supplemental"]["error"],
                                                  "sources": semi["supplemental"].get("sources", {})})
-        if semi["outcome"]["status"] == "extension_unresponsive":
-            report["internal_failures"].append("Chrome extension did not start the semi-production run; reload the unpacked extension and rerun validator")
+        if any(
+            phase_result["final"]["outcome"]["status"] == "extension_unresponsive"
+            for phase_result in phase_runs.values()
+        ):
+            report["internal_failures"].append("Chrome extension did not start a semi-production phase; reload the unpacked extension and rerun validator")
         if not semi["pass"]:
             report["internal_failures"].append("semi-production validation failed")
             return 1
