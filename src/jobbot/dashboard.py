@@ -196,6 +196,8 @@ def control_run(conn: sqlite3.Connection, action: str, requested_run_id: Any = N
         )
         message = "Stop requested; the current atomic job will finish before acquisition stops."
     elif action == "emergency":
+        if current_status == "completed":
+            raise ValueError(f"run {run_id} is already terminal (completed)")
         conn.execute(
             """UPDATE search_task_results
                SET detail_status='RETRYABLE',detail_error='requeued after dashboard emergency stop',
