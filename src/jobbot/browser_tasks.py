@@ -11,7 +11,7 @@ from typing import Any
 from . import legacy_engine as j
 from .config import PROJECT_ROOT, load_bundle
 from .db import Database, apply_pending
-from .search_plan import build_search_url, compile_plan, normalize_search_query
+from .search_plan import build_search_url, compile_plan, compile_staged_plan, normalize_search_query
 
 V3_VERSION = "3.2.1"
 EXTENSION_ID = "jfdlmelgonjhgnabpbipjefgamedpgfb"
@@ -102,13 +102,21 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
     chosen = platforms or list(PLATFORMS)
     bad = [p for p in chosen if p not in PLATFORMS]
     if bad: raise ValueError(f"unsupported platform(s): {', '.join(bad)}")
+    if mode == "staged":
+        planned = compile_staged_plan(bundle, chosen)
+    elif mode == "staged_recent":
+        planned = compile_staged_plan(bundle, chosen, ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT"))
+    elif mode == "staged_deep":
+        planned = compile_staged_plan(bundle, chosen, ("C_DEEP_BACKFILL",))
+    else:
+        planned = compile_plan(bundle, mode, chosen)
     tasks = [{
         "task_key": task.task_key, "platform": task.platform, "query_text": task.query,
         "window_days": task.age_days, "search_profile": task.profile,
         "career_lane": task.lane, "resume_variant": task.resume_variant,
         "priority": task.priority, "search_url": task.search_url,
-        "execution_rank": task.execution_rank,
-    } for task in compile_plan(bundle, mode, chosen)]
+        "execution_rank": task.execution_rank, "phase": task.phase,
+    } for task in planned]
     store = j.PrecisionStore(db); init_browser_schema(store.conn)
     now = j.now_iso()
     cur = store.conn.execute(
@@ -127,10 +135,10 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, t["platform"], t["query_text"], 1, t["window_days"], "date", t["search_url"], None, "queued", now,
-             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"]),
+             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"]),
         )
     store.conn.commit(); store.close()
     return rid

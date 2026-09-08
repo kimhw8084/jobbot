@@ -12,6 +12,9 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0006_diff_backfill",
     "jobbot.migrations.m0007_durable_discoveries",
     "jobbot.migrations.m0008_page_reconciliation",
+    "jobbot.migrations.m0009_task_phases",
+    "jobbot.migrations.m0010_description_state",
+    "jobbot.migrations.m0011_watch_state",
 )
 
 

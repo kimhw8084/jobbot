@@ -1,7 +1,8 @@
 'use strict';
 
 let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTaskId=null, runPromise=null, heartbeatTimer=null;
-const HEARTBEAT_MS=20000, WATCHDOG_MS=180000, MAX_IDENTICAL_FINGERPRINTS=3;
+let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
+const MAX_IDENTICAL_FINGERPRINTS=3;
 const AUTH_URLS={
   linkedin:'https://www.linkedin.com/jobs/',
   indeed:'https://www.indeed.com/',
@@ -23,6 +24,7 @@ async function configureBridge(port,token){
   await chrome.storage.local.set({jobbot_bridge_config:bridgeConfig});
   const health=await nativeRequest('ping',{},10000);
   if(!health?.ok)throw new Error(health?.error||'Local bridge ping failed');
+  runtimeConfig=await requiredRequest('runtime_config',{},10000);
   return health;
 }
 function transientBridgeError(error){
@@ -70,7 +72,7 @@ function fp(items){return (items||[]).map(x=>x.source_job_id||x.url).filter(Bool
 function parseCheckpoint(raw){try{return typeof raw==='string'?JSON.parse(raw||'{}'):(raw||{});}catch(_){return {};}}
 function startHeartbeat(){
   if(heartbeatTimer)clearInterval(heartbeatTimer);
-  heartbeatTimer=setInterval(()=>{if(activeRunId)nativeRequest('heartbeat',{run_id:activeRunId,task_id:activeTaskId||0},10000).catch(()=>{});},HEARTBEAT_MS);
+  heartbeatTimer=setInterval(()=>{if(activeRunId)nativeRequest('heartbeat',{run_id:activeRunId,task_id:activeTaskId||0},10000).catch(()=>{});},Math.max(1,Number(runtimeConfig.heartbeat_seconds||20))*1000);
 }
 function stopHeartbeat(){if(heartbeatTimer)clearInterval(heartbeatTimer);heartbeatTimer=null;}
 
@@ -127,7 +129,8 @@ async function processTask(runId,task){
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open search ${searchUrl}`});
     searchTab=await chrome.tabs.create({url:searchUrl,active:false});
     while(true){
-      if(Date.now()-lastMeaningfulAt>WATCHDOG_MS){await finishIncomplete('SAFETY_STOP: watchdog observed no meaningful progress for 180 seconds');return;}
+      const watchdogMs=Math.max(1,Number(runtimeConfig.watchdog_stall_seconds||180))*1000;
+      if(Date.now()-lastMeaningfulAt>watchdogMs){await finishIncomplete(`SAFETY_STOP: watchdog observed no meaningful progress for ${runtimeConfig.watchdog_stall_seconds||180} seconds`);return;}
       const stop=await requiredRequest('should_stop',{run_id:runId}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
       let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH');
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge'});return;}
@@ -215,6 +218,7 @@ async function processTask(runId,task){
 
 async function runProduction(runId){
   activeRunId=Number(runId); await chrome.storage.local.set({jobbot_active_run_id:activeRunId});
+  runtimeConfig=await requiredRequest('runtime_config',{},10000);
   startHeartbeat();
   try{
     await requiredRequest('begin_run',{run_id:activeRunId});

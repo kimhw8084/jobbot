@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import sqlite3
 import tempfile
 import unittest
@@ -8,7 +9,9 @@ from argparse import Namespace
 from pathlib import Path
 from unittest.mock import patch
 
+from jobbot import browser_tasks
 from jobbot.cli import command_acceptance, parser
+from jobbot.config import PROJECT_ROOT
 from jobbot import run_now
 from jobbot.run_now import preflight
 
@@ -22,7 +25,7 @@ class RunNowIntegrationTests(unittest.TestCase):
             bundle = bundle_with_database(root / "jobs.sqlite3", root / "out")
             self.assertFalse(bundle.database_path.exists())
             result = preflight(bundle, ["linkedin"])
-            self.assertEqual(result.task_count, 105)
+            self.assertEqual(result.task_count, 278)
             self.assertTrue(result.database_path.is_file())
             self.assertTrue((root / "out" / "search_plan.json").is_file())
         args = parser().parse_args(["run-now", "--platform", "linkedin", "--enqueue-only", "--no-open"])
@@ -53,6 +56,24 @@ class RunNowIntegrationTests(unittest.TestCase):
             try:
                 self.assertEqual(conn.execute("SELECT mode FROM browser_runs").fetchone()[0], "acceptance")
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks").fetchone()[0], 3)
+            finally:
+                conn.close()
+
+    def test_staged_run_now_persists_all_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            shutil.copytree(PROJECT_ROOT / "config", root / "config")
+            run_id = browser_tasks.enqueue_production(root, "staged")
+            conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+            try:
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 834)
+                phases = dict(conn.execute("SELECT phase,COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? GROUP BY phase", (run_id,)).fetchall())
+                self.assertEqual(phases, {
+                    "A_FASTEST_DOOR_RECENT": 315,
+                    "B_REMAINING_CORE_RECENT": 102,
+                    "C_DEEP_BACKFILL": 417,
+                })
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND max_results IS NOT NULL", (run_id,)).fetchone()[0], 0)
             finally:
                 conn.close()
 

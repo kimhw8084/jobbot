@@ -24,7 +24,7 @@ TABLE_COLUMNS = (
     "job_id", "recommendation", "title", "company", "career_lane", "sources", "posted_at",
     "first_seen", "last_seen", "salary_text", "employment_class", "remote_gate", "eligible_states_json", "location_raw",
     "relevance_score", "qualification_score", "landing_score", "career_score", "door_score",
-    "resume_variant", "application_status", "change_status",
+    "resume_variant", "application_status", "change_status", "description_state",
 )
 
 
@@ -129,9 +129,10 @@ def coverage(conn: sqlite3.Connection) -> dict[str, Any]:
 
 
 def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
+    watch = conn.execute("SELECT * FROM watch_state WHERE watch_id=1").fetchone()
     run = conn.execute("SELECT * FROM browser_runs ORDER BY browser_run_id DESC LIMIT 1").fetchone()
     if run is None:
-        return {"run": None, "platforms": []}
+        return {"run": None, "platforms": [], "watch": _dict(watch)}
     run_id = int(run["browser_run_id"])
     platforms = conn.execute(
         """SELECT p.*,
@@ -147,13 +148,13 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
           ORDER BY CASE p.platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END""", (run_id,),
     ).fetchall()
     current = conn.execute(
-        """SELECT task_id,platform,query_text,status,page_number,results_seen,detail_count_read,
+        """SELECT task_id,platform,phase,career_lane,window_days,execution_rank,priority,query_text,status,page_number,results_seen,detail_count_read,
           cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,
           duplicate_cards,pending_details,details_failed,current_search_url,last_progress_at,last_error
           FROM browser_search_tasks WHERE task_id=?""",
         (run["current_task_id"],),
     ).fetchone() if run["current_task_id"] else None
-    return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms]}
+    return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms], "watch": _dict(watch)}
 
 
 def _utc_now() -> str:
@@ -350,7 +351,7 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
       COALESCE((SELECT group_concat(DISTINCT source_site) FROM source_occurrences o WHERE o.job_id=j.job_id),'') sources,
       j.posted_at,j.first_seen,j.last_seen,j.salary_text,j.employment_class,j.remote_gate,j.eligible_states_json,j.location_raw,
       j.relevance_score,j.qualification_score,j.landing_score,j.career_score,j.door_score,
-      j.resume_variant,j.application_status,j.change_status
+      j.resume_variant,j.application_status,j.change_status,j.description_state
       FROM jobs j WHERE {where} ORDER BY COALESCE(j.application_priority_score,j.door_score,0) DESC,j.last_seen DESC
       LIMIT ? OFFSET ?""", [*args, page_size, (page - 1) * page_size]).fetchall()
     return {"page": page, "page_size": page_size, "total": total, "columns": TABLE_COLUMNS, "jobs": [_dict(row) for row in rows]}

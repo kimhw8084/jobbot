@@ -43,6 +43,9 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertNotIn("active:true", worker)
         self.assertIn("active:false", worker)
         self.assertIn("jobbot_bridge_state", worker)
+        self.assertIn("runtime_config", worker)
+        self.assertNotIn("const HEARTBEAT_MS", worker)
+        self.assertNotIn("const WATCHDOG_MS", worker)
 
 
 if __name__ == "__main__": unittest.main()

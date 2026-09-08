@@ -5,7 +5,7 @@ import unittest
 import urllib.parse
 
 from jobbot.config import ConfigBundle, PROJECT_ROOT, load_bundle, validate_strategy
-from jobbot.search_plan import build_search_url, compile_plan, normalize_search_query, plan_counts
+from jobbot.search_plan import build_search_url, compile_plan, compile_staged_plan, normalize_search_query, plan_counts
 
 
 class StrategyTests(unittest.TestCase):
@@ -84,6 +84,19 @@ class StrategyTests(unittest.TestCase):
             "healthcare enrollment specialist", "healthcare enrollment coordinator",
         ])
         self.assertNotEqual(first[0], "clinical documentation specialist")
+
+    def test_staged_plan_covers_recent_and_deep_core_universe(self) -> None:
+        staged = compile_staged_plan(self.bundle)
+        self.assertEqual(plan_counts(staged)["by_platform"], {"linkedin": 278, "indeed": 278, "glassdoor": 278})
+        self.assertEqual({task.phase for task in staged}, {
+            "A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL",
+        })
+        for platform in ("linkedin", "indeed", "glassdoor"):
+            phases = [task for task in staged if task.platform == platform]
+            self.assertEqual(len([task for task in phases if task.phase == "A_FASTEST_DOOR_RECENT"]), 105)
+            self.assertEqual(len([task for task in phases if task.phase == "B_REMAINING_CORE_RECENT"]), 34)
+            self.assertEqual(len([task for task in phases if task.phase == "C_DEEP_BACKFILL"]), 139)
+        self.assertTrue(all(task.max_results is None for task in staged))
 
     def test_strategy_validator_rejects_allocation_drift(self) -> None:
         strategy = copy.deepcopy(self.bundle.strategy)

@@ -12,7 +12,7 @@ from .config import ConfigBundle
 from .db import Database
 from .dashboard import database_identity
 from .orchestrator import chrome_path
-from .search_plan import compile_and_write
+from .search_plan import compile_staged_and_write
 
 
 @dataclass(frozen=True)
@@ -36,9 +36,9 @@ def preflight(bundle: ConfigBundle, platforms: list[str] | None = None) -> Prefl
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise RuntimeError(f"extension files missing: {', '.join(missing)}")
-    tasks, _ = compile_and_write(bundle, "fast", platforms)
+    tasks, _ = compile_staged_and_write(bundle, platforms)
     if not tasks or any(task.max_results is not None for task in tasks):
-        raise RuntimeError("fast production search plan is empty or contains a result cap")
+        raise RuntimeError("staged production search plan is empty or contains a result cap")
     port = int(bundle.runtime["runtime"]["dashboard_port"])
     return PreflightResult(len(tasks), bundle.database_path, f"http://127.0.0.1:{port}/")
 

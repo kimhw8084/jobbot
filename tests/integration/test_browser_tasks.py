@@ -177,6 +177,25 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
             finally:
                 rpc.BASE = previous
 
+    def test_ready_platforms_receive_bounded_deterministic_waves(self) -> None:
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td); rpc.BASE = root
+            try:
+                run_id = browser_tasks.enqueue_production(root, "staged")
+                self.assertTrue(rpc.handle({"action": "begin_run", "run_id": run_id})["ok"])
+                selected = []
+                for _ in range(9):
+                    task = rpc.handle({"action": "next_task", "run_id": run_id, "worker_id": "wave-worker"})["task"]
+                    selected.append((task["platform"], task["phase"]))
+                    rpc.handle({"action": "complete_task", "run_id": run_id, "task_id": task["task_id"], "status": "exhausted", "reason": "fairness fixture"})
+                self.assertEqual([platform for platform, _ in selected], [
+                    "linkedin", "linkedin", "linkedin", "indeed", "indeed", "indeed", "glassdoor", "glassdoor", "glassdoor",
+                ])
+                self.assertEqual({phase for _, phase in selected}, {"A_FASTEST_DOOR_RECENT"})
+            finally:
+                rpc.BASE = previous
+
     def test_resume_does_not_repeat_completed_acceptance_cap(self) -> None:
         previous = rpc.BASE
         with tempfile.TemporaryDirectory() as td:

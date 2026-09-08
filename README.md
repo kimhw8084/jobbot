@@ -68,6 +68,8 @@ After installation, run commands from the repository root:
 .venv/bin/python -m jobbot run --mode fast
 .venv/bin/python -m jobbot run --mode deep
 .venv/bin/python -m jobbot run-now
+.venv/bin/python -m jobbot watch
+.venv/bin/python -m jobbot watch --once
 .venv/bin/python -m jobbot resume
 .venv/bin/python -m jobbot stop
 .venv/bin/python -m jobbot stop --emergency
@@ -81,6 +83,11 @@ After installation, run commands from the repository root:
 ```
 
 Linux and Windows wrappers are available as `scripts/jobbot.sh`, `scripts/jobbot.ps1`, and `scripts/jobbot.bat`. The Python module is authoritative.
+
+`./RUN_CONTINUOUS.command` runs the durable local watch loop. It executes due
+recent/deep phases, checkpoints the cycle in SQLite, waits conservatively, and
+resumes only due work. `--once` is useful for an isolated acceptance database;
+do not point unattended tests at `data/jobs.sqlite3`.
 
 ## macOS launchers
 
