@@ -18,6 +18,31 @@ include_core_only = true
 max_priority = 3
 include_core_only = true
 
+[strategy.execution]
+# Retrieval order is independent of portfolio allocation and qualification.
+# These are the fastest-door searches for the first live results; every other
+# configured title remains in the plan after this explicit prefix.
+fast_first_queries = [
+  "Patient Enrollment Specialist", "Patient Enrollment Coordinator",
+  "Healthcare Enrollment Specialist", "Healthcare Enrollment Coordinator",
+  "Member Enrollment Specialist", "Member Enrollment Coordinator",
+  "Patient Access Specialist", "Patient Access Representative",
+  "Patient Access Associate", "Patient Registration Specialist",
+  "Patient Registration Coordinator", "Insurance Verification Specialist",
+  "Benefits Verification Specialist", "Provider Enrollment Specialist",
+  "Provider Enrollment Coordinator", "Provider Enrollment Representative",
+  "Credentialing Associate", "Credentialing Specialist", "Credentialing Coordinator",
+  "Credentialing & Enrollment Coordinator", "Patient Services Specialist",
+  "Patient Services Coordinator", "Patient Support Specialist", "Member Services Specialist",
+  "Member Support Specialist", "Healthcare Operations Coordinator",
+  "Healthcare Operations Specialist", "Patient Operations Coordinator",
+  "Patient Operations Specialist", "Care Operations Coordinator", "Care Operations Specialist",
+  "Healthcare Intake Specialist", "Patient Intake Specialist", "Patient Onboarding Specialist",
+  "Clinical Onboarding Specialist", "Behavioral Health Intake Coordinator", "Care Coordinator",
+  "Care Navigator", "Care Advocate", "Care Partner", "Patient Care Coordinator",
+  "Care Management Coordinator"
+]
+
 [strategy.scoring]
 minimum_relevance_for_apply = 80
 minimum_qualification_for_apply = 72
@@ -99,6 +124,7 @@ core = true
 enabled = true
 allocation_percent = 35
 priority = 0
+execution_rank = 10
 profile = "P0-healthcare-operations-access"
 domain = "healthcare"
 fast_days = 7
@@ -127,6 +153,7 @@ core = true
 enabled = true
 allocation_percent = 15
 priority = 0
+execution_rank = 20
 profile = "P0-health-information-quality-access"
 domain = "healthcare"
 fast_days = 7
@@ -144,6 +171,7 @@ core = true
 enabled = true
 allocation_percent = 20
 priority = 1
+execution_rank = 30
 profile = "P1-healthcare-quality-data"
 domain = "healthcare"
 fast_days = 7
@@ -162,6 +190,7 @@ core = true
 enabled = true
 allocation_percent = 10
 priority = 1
+execution_rank = 40
 profile = "P1-healthcare-implementation-project"
 domain = "healthcare"
 fast_days = 7
@@ -179,6 +208,7 @@ core = true
 enabled = true
 allocation_percent = 15
 priority = 2
+execution_rank = 50
 profile = "P2-higher-ed-edtech"
 domain = "higher_ed"
 fast_days = 7
@@ -196,6 +226,7 @@ core = true
 enabled = true
 allocation_percent = 5
 priority = 3
+execution_rank = 60
 profile = "P3-content-ai-quality"
 domain = "content"
 fast_days = 7
@@ -213,6 +244,7 @@ core = false
 enabled = true
 allocation_percent = 0
 priority = 4
+execution_rank = 90
 profile = "P1-transferable-data-ops"
 domain = "transferable"
 fast_days = 7

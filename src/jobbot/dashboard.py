@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import os
 import sqlite3
 import threading
 import urllib.parse
@@ -25,6 +27,22 @@ TABLE_COLUMNS = (
 
 def _dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
     return None if row is None else {key: row[key] for key in row.keys()}
+
+
+def database_identity(conn: sqlite3.Connection, bundle: ConfigBundle) -> str:
+    versions = ",".join(str(row[0]) for row in conn.execute("SELECT version FROM schema_migrations ORDER BY version"))
+    value = f"{bundle.database_path.resolve()}|{versions}"
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+
+
+def identity(conn: sqlite3.Connection, bundle: ConfigBundle) -> dict[str, Any]:
+    return {
+        "jobbot_version": "3.2.1",
+        "workspace_root": str(bundle.root.resolve()),
+        "resolved_database_path": str(bundle.database_path.resolve()),
+        "database_identity": database_identity(conn, bundle),
+        "pid": os.getpid(),
+    }
 
 
 def summary(conn: sqlite3.Connection) -> dict[str, int]:
@@ -80,13 +98,19 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
           COALESCE((SELECT COUNT(*) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND t.status='running'),0) running,
           COALESCE((SELECT COUNT(*) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND t.status='deferred_by_platform'),0) deferred,
           COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) discoveries,
-          COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND r.detail_status='COMPLETE'),0) details_complete
+          COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND r.detail_status='COMPLETE'),0) details_complete,
+          COALESCE((SELECT SUM(t.cards_extracted) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) cards_extracted,
+          COALESCE((SELECT SUM(t.cards_persistence_succeeded) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) cards_persisted,
+          COALESCE((SELECT SUM(t.cards_persistence_failed) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) cards_failed,
+          COALESCE((SELECT SUM(t.duplicate_cards) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) duplicate_cards
           FROM browser_platform_runs p WHERE p.browser_run_id=?
           ORDER BY CASE p.platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END""", (run_id,),
     ).fetchall()
     current = conn.execute(
         """SELECT task_id,platform,query_text,status,page_number,results_seen,detail_count_read,
-          current_search_url,last_progress_at,last_error FROM browser_search_tasks WHERE task_id=?""",
+          cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,
+          duplicate_cards,pending_details,details_failed,current_search_url,last_progress_at,last_error
+          FROM browser_search_tasks WHERE task_id=?""",
         (run["current_task_id"],),
     ).fetchone() if run["current_task_id"] else None
     return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms]}
@@ -113,6 +137,11 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
     page_size = min(200, max(10, int(one("page_size", "50") or 50)))
     conditions = ["1=1"]
     args: list[Any] = []
+    view = one("view")
+    if view == "actionable":
+        conditions.append("j.is_active=1 AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
+    elif view not in {"", "all"}:
+        raise ValueError(f"unsupported jobs view: {view}")
     mappings = {
         "recommendation": "j.recommendation", "lane": "j.career_lane", "remote": "j.remote_gate",
         "employment": "j.employment_class", "resume": "j.resume_variant",
@@ -184,7 +213,7 @@ class DashboardServer(ThreadingHTTPServer):
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    server_version = "JobBotDashboard/3.2.0"
+    server_version = "JobBotDashboard/3.2.1"
 
     def log_message(self, fmt: str, *args: Any) -> None:
         return
@@ -211,10 +240,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urllib.parse.urlsplit(self.path)
         if parsed.path == "/":
-            self._send(200, DASHBOARD_HTML.encode("utf-8"), "text/html; charset=utf-8")
+            self._static("dashboard.html", "text/html; charset=utf-8")
+            return
+        if parsed.path in {"/static/dashboard.js", "/static/dashboard.css"}:
+            name = parsed.path.rsplit("/", 1)[-1]
+            content_type = "application/javascript; charset=utf-8" if name.endswith(".js") else "text/css; charset=utf-8"
+            self._static(name, content_type)
             return
         conn = self._conn()
         try:
+            if parsed.path == "/api/identity":
+                self._json(200, identity(conn, self.bundle)); return
             if parsed.path == "/api/summary":
                 self._json(200, summary(conn)); return
             if parsed.path == "/api/coverage":
@@ -234,6 +270,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._json(404, {"error": "not_found"})
         finally:
             conn.close()
+
+    def _static(self, name: str, content_type: str) -> None:
+        path = self.bundle.root / "src" / "jobbot" / "web" / name
+        if not path.is_file():
+            self._json(404, {"ok": False, "error": f"static asset missing: {name}"}); return
+        self._send(200, path.read_bytes(), content_type)
 
     def do_POST(self) -> None:
         if not self.path.startswith("/api/"):

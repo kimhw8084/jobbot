@@ -2,6 +2,8 @@
   'use strict';
   globalThis.JobBotSelectors = Object.freeze({
     linkedin: Object.freeze({
+      searchContainers: ['ul.jobs-search-results__list','div.jobs-search-results-list','[aria-label="Search results"]','[data-view-name="search-results-container"]'],
+      resultCards: ['li.jobs-search-results__list-item','li[data-occludable-job-id]','.job-card-container','.base-card'],
       searchLinks: ['a[href*="/jobs/view/"]','a.job-card-list__title','a.job-card-container__link'],
       nextLinks: ['a[aria-label="View next page"][href]','a[aria-label*="Next"][href]','button[aria-label="View next page"] + a[href]'],
       nextButtons: ['button[aria-label="View next page"]:not([disabled])','button[aria-label*="Next"]:not([disabled])'],

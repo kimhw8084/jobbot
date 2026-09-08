@@ -100,6 +100,14 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                                 "location": claimed["location_hint"], "employment_type": "Full-time permanent",
                                 "description": "Fully remote healthcare enrollment. Required Qualifications: 2 years relevant experience."}})
                     self.assertTrue(saved["ok"])
+                self.assertTrue(rpc.handle({
+                    "action": "task_progress", "run_id": run_id, "task_id": task_id,
+                    "results_seen": 10, "pages_visited": 1,
+                    "checkpoint": {"search_url": "https://www.linkedin.com/jobs/search/", "page_number": 1,
+                                    "card_stats": {"extracted_cards": 10, "persistence_attempted": 10,
+                                                   "persistence_succeeded": 10, "persistence_failed": 0,
+                                                   "duplicate_cards": 0, "pending_details": 5, "details_failed": 0}},
+                })["ok"])
                 self.assertEqual(browser_tasks.request_stop(root, run_id), 0)
                 self.assertTrue(rpc.handle({"action": "should_stop", "run_id": run_id})["stop"])
                 rpc.handle({"action": "complete_task", "run_id": run_id, "task_id": task_id,
@@ -111,6 +119,8 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND detail_status='PENDING'", (run_id,)).fetchone()[0], 5)
                 rich = conn.execute("SELECT title_hint,company_hint,card_json FROM search_task_results WHERE browser_run_id=? LIMIT 1", (run_id,)).fetchone()
                 self.assertTrue(rich["title_hint"]); self.assertEqual(rich["company_hint"], "Example Health"); self.assertIn("posted_text", rich["card_json"])
+                counters = conn.execute("SELECT cards_extracted,cards_persistence_succeeded,pending_details FROM browser_search_tasks WHERE task_id=?", (task_id,)).fetchone()
+                self.assertEqual(tuple(counters), (10, 10, 5))
                 conn.close()
 
                 # A challenge on the current LinkedIn task defers untouched LinkedIn

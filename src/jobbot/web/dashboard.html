@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JobBot Dashboard</title>
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+  <header>
+    <h1>JobBot <span id="versionLabel">3.2.1</span></h1>
+    <p>Read-only discovery ledger · human application control</p>
+    <p id="identity" class="identity">Database: loading…</p>
+  </header>
+  <div id="diagnostic" class="diagnostic" role="alert" hidden></div>
+  <section class="summary" id="summary" aria-label="Warehouse summary"></section>
+  <section class="panel"><h2>Active run</h2><pre id="runState">Loading run status…</pre></section>
+  <section class="panel"><h2>Coverage</h2><pre id="coverage">Loading coverage…</pre></section>
+  <section class="panel">
+    <h2>Live discoveries <small id="pendingCount"></small></h2>
+    <p class="muted">Card-level results are durable before detail navigation. Click a row to open its source.</p>
+    <div class="table-wrap compact"><table><thead><tr id="discoveryHead"></tr></thead><tbody id="discoveryBody"></tbody></table></div>
+  </section>
+  <section class="panel">
+    <div class="toolbar"><h2>Jobs</h2><div class="views" role="group" aria-label="Job view"><button id="actionableView" class="selected" type="button">ACTIONABLE</button><button id="allView" type="button">ALL DISCOVERIES</button></div></div>
+    <form class="filters" id="filters">
+      <input name="q" placeholder="Title, company, description">
+      <select name="recommendation"><option value="">Recommendation</option><option>APPLY_NOW</option><option>APPLY_VOLUME</option><option>HIGH_VALUE_STRETCH</option><option>REVIEW</option><option>REVIEW_REMOTE</option><option>CONTRACT_REVIEW</option><option>OUT_OF_SCOPE</option></select>
+      <input name="lane" placeholder="Career lane"><input name="source" placeholder="Source">
+      <select name="remote"><option value="">Remote</option><option value="pass">pass</option><option value="review">review</option><option value="reject">reject</option></select>
+      <select name="application_status"><option value="">Application status</option><option>NEW</option><option>SHORTLIST</option><option>PREPARED</option><option>APPLIED</option><option>SCREEN</option><option>INTERVIEW</option><option>FINAL</option><option>OFFER</option><option>REJECTED</option><option>SKIP</option><option>CLOSED</option></select>
+      <button type="submit">Filter</button><button id="resetFilters" type="button">Reset</button>
+    </form>
+    <div class="actions"><button id="exportButton" type="button">Export selected</button><span id="message" class="muted"></span></div>
+    <div class="table-wrap"><table><thead><tr id="head"></tr></thead><tbody id="body"></tbody></table></div>
+    <div class="pager"><button id="prev" type="button">Previous</button> <span id="page"></span> <button id="next" type="button">Next</button></div>
+    <div class="actions" id="statusActions"></div>
+    <pre class="detail" id="detail">Select a canonical job to inspect its description, evidence, versions, sources, and application history.</pre>
+  </section>
+  <script src="/static/dashboard.js" defer></script>
+</body>
+</html>

@@ -89,9 +89,10 @@ def iter_strategy_tasks(strategy: dict[str, Any], mode: str, platforms: list[str
                     "career_lane": j.clean_text(lane.get("id")),
                     "resume_variant": j.clean_text(lane.get("resume_variant")),
                     "priority": pri,
+                    "execution_rank": int(lane.get("execution_rank", 1000)),
                     "search_url": search_url(platform, query, days),
                 })
-    tasks.sort(key=lambda x: (PLATFORM_PRIORITY.get(x["platform"], 99), x["priority"], x["search_profile"], x["query_text"].lower()))
+    tasks.sort(key=lambda x: (PLATFORM_PRIORITY.get(x["platform"], 99), x["execution_rank"], x["priority"], x["search_profile"], x["query_text"].lower()))
     return tasks
 
 
@@ -106,6 +107,7 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         "window_days": task.age_days, "search_profile": task.profile,
         "career_lane": task.lane, "resume_variant": task.resume_variant,
         "priority": task.priority, "search_url": task.search_url,
+        "execution_rank": task.execution_rank,
     } for task in compile_plan(bundle, mode, chosen)]
     store = j.PrecisionStore(db); init_browser_schema(store.conn)
     now = j.now_iso()
@@ -125,10 +127,10 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,skip_old_cards,task_key
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, t["platform"], t["query_text"], 1, t["window_days"], "date", t["search_url"], None, "queued", now,
-             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], 1, t["task_key"]),
+             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"]),
         )
     store.conn.commit(); store.close()
     return rid

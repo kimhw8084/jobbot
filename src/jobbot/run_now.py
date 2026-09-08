@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .config import ConfigBundle
 from .db import Database
+from .dashboard import database_identity
 from .orchestrator import chrome_path
 from .search_plan import compile_and_write
 
@@ -42,20 +43,52 @@ def preflight(bundle: ConfigBundle, platforms: list[str] | None = None) -> Prefl
     return PreflightResult(len(tasks), bundle.database_path, f"http://127.0.0.1:{port}/")
 
 
-def _dashboard_healthy(url: str) -> bool:
+def _dashboard_json(url: str, endpoint: str) -> dict[str, object] | None:
     try:
-        with urllib.request.urlopen(url + "api/summary", timeout=1.5) as response:
+        with urllib.request.urlopen(url + endpoint, timeout=1.5) as response:
             payload = json.loads(response.read().decode("utf-8"))
-            return response.status == 200 and "total" in payload
+            return payload if isinstance(payload, dict) else None
     except Exception:
-        return False
+        return None
+
+
+def _dashboard_identity(url: str) -> dict[str, object] | None:
+    return _dashboard_json(url, "api/identity")
+
+
+def _legacy_dashboard_detected(url: str) -> bool:
+    payload = _dashboard_json(url, "api/summary")
+    return bool(payload is not None and "total" in payload)
 
 
 def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tuple[str, bool]:
     port = int(bundle.runtime["runtime"]["dashboard_port"])
     url = f"http://127.0.0.1:{port}/"
     started = False
-    if not _dashboard_healthy(url):
+    with Database(bundle).connect() as conn:
+        expected = {
+            "jobbot_version": "3.2.1", "workspace_root": str(bundle.root.resolve()),
+            "resolved_database_path": str(bundle.database_path.resolve()),
+            "database_identity": database_identity(conn, bundle),
+        }
+    actual = _dashboard_identity(url)
+    if actual is not None:
+        mismatch = [key for key, value in expected.items() if str(actual.get(key, "")) != value]
+        if mismatch:
+            raise RuntimeError(
+                "dashboard identity mismatch; refusing to reuse it. "
+                f"expected_db={expected['resolved_database_path']} expected_workspace={expected['workspace_root']} "
+                f"actual_db={actual.get('resolved_database_path','unknown')} actual_workspace={actual.get('workspace_root','unknown')} "
+                f"actual_version={actual.get('jobbot_version','unknown')} pid={actual.get('pid','unknown')}. "
+                f"Stop the known JobBot dashboard and restart with: {sys.executable} -m jobbot dashboard --port {port}"
+            )
+    elif _legacy_dashboard_detected(url):
+        raise RuntimeError(
+            "a dashboard-like process occupies the requested port but does not expose identity; "
+            f"refusing to reuse or kill it. expected_db={expected['resolved_database_path']} port={port}. "
+            f"Restart a known JobBot dashboard with: {sys.executable} -m jobbot dashboard --port {port}"
+        )
+    else:
         log_path = bundle.output_dir / "logs" / "dashboard.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
         with log_path.open("ab") as log_handle:
@@ -64,10 +97,14 @@ def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tupl
                 cwd=bundle.root, stdout=log_handle, stderr=subprocess.STDOUT, start_new_session=True,
             )
         deadline = time.monotonic() + 8
-        while time.monotonic() < deadline and not _dashboard_healthy(url):
+        while time.monotonic() < deadline and _dashboard_identity(url) is None:
             time.sleep(0.15)
-        if not _dashboard_healthy(url):
+        actual = _dashboard_identity(url)
+        if actual is None:
             raise RuntimeError(f"dashboard did not start; see {log_path}")
+        mismatch = [key for key, value in expected.items() if str(actual.get(key, "")) != value]
+        if mismatch:
+            raise RuntimeError(f"new dashboard identity mismatch: expected {expected}, actual {actual}; see {log_path}")
         started = True
     if open_browser:
         if sys.platform == "darwin":

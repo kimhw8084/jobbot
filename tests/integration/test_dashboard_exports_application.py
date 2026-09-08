@@ -96,5 +96,24 @@ class DashboardExportApplicationTests(unittest.TestCase):
             finally:
                 writer.close(); server.shutdown(); server.server_close(); thread.join(timeout=3)
 
+    def test_dashboard_identity_and_actionable_view(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); bundle = bundle_with_database(root / "acceptance.sqlite3", root / "out"); Database(bundle).migrate()
+            conn = Database(bundle).connect(); self.seed(conn, 2)
+            conn.execute("UPDATE jobs SET recommendation='OUT_OF_SCOPE' WHERE job_id='J000001'"); conn.commit(); conn.close()
+            server = create_server(bundle, port=0); thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            try:
+                base = f"http://127.0.0.1:{server.server_port}"
+                with urllib.request.urlopen(base + "/api/identity", timeout=5) as response: identity = json.loads(response.read())
+                self.assertEqual(identity["resolved_database_path"], str((root / "acceptance.sqlite3").resolve()))
+                self.assertEqual(identity["workspace_root"], str(bundle.root.resolve()))
+                with urllib.request.urlopen(base + "/api/jobs?view=actionable", timeout=5) as response: actionable = json.loads(response.read())
+                self.assertEqual(actionable["total"], 1)
+                with urllib.request.urlopen(base + "/", timeout=5) as response: html = response.read().decode()
+                self.assertIn('/static/dashboard.js', html)
+                self.assertIn('id="identity"', html)
+            finally:
+                server.shutdown(); server.server_close(); thread.join(timeout=3)
+
 
 if __name__ == "__main__": unittest.main()

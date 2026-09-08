@@ -113,7 +113,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             t=conn.execute(f"""SELECT * FROM browser_search_tasks
               WHERE browser_run_id=? AND status IN ('running','queued')
                 AND (status='queued' OR lease_owner=? OR lease_until IS NULL OR lease_until<?)
-              ORDER BY CASE status WHEN 'running' THEN 0 ELSE 1 END,{platform_order_sql()},priority,task_id LIMIT 1""",(rid,owner,now)).fetchone()
+                ORDER BY CASE status WHEN 'running' THEN 0 ELSE 1 END,{platform_order_sql()},execution_rank,priority,task_id LIMIT 1""",(rid,owner,now)).fetchone()
             if not t:return {'ok':True,'done':True}
             if t['status']=='queued':
                 conn.execute("UPDATE browser_search_tasks SET status='running',started_at=COALESCE(started_at,?),attempts=attempts+1,lease_owner=?,lease_until=?,current_search_url=COALESCE(NULLIF(current_search_url,''),search_url),last_progress_at=? WHERE task_id=?",(now,owner,lease_time(),now,t['task_id']));event(conn,rid,t['task_id'],'task_started',f"{t['platform']}: {t['query_text']}",msg,out);conn.commit();t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(t['task_id'],)).fetchone()
@@ -132,13 +132,15 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 location_hint=j.clean_text(msg.get('location_hint') or card.get('location')),posted_text=j.clean_text(msg.get('posted_text') or card.get('posted_text')),
                 posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)))
             if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
-            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status}
+            pending_count=conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",(tid,)).fetchone()[0]
+            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status,'pending_count':int(pending_count)}
         if action=='next_pending_detail':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
             lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
             discovery=claim_next_detail(conn,run_id=rid,task_id=tid,worker_id=owner,lease_seconds=lease_seconds)
+            pending_count=conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",(tid,)).fetchone()[0]
             conn.commit()
-            return {'ok':True,'done':discovery is None,'detail':None if discovery is None else discovery.__dict__}
+            return {'ok':True,'done':discovery is None,'pending_count':int(pending_count),'detail':None if discovery is None else discovery.__dict__}
         if action=='detail_read':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''));now=j.now_iso()
             conn.execute("UPDATE browser_search_tasks SET detail_count_read=detail_count_read+1,last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(),tid,rid))
@@ -176,7 +178,8 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             event(conn,rid,tid,'detail_external_blocked',message,msg,out);conn.commit();return {'ok':True}
         if action=='task_progress':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);seen=max(0,int(msg.get('results_seen') or 0));pages=max(0,int(msg.get('pages_visited') or 0));cp=msg.get('checkpoint') or {}
-            now=j.now_iso(); conn.execute("UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(seen,pages,json.dumps(cp,ensure_ascii=False),j.clean_text(cp.get('search_url') or ''),int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
+            stats=cp.get('card_stats') if isinstance(cp.get('card_stats'),dict) else {}
+            now=j.now_iso(); conn.execute("""UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=?,cards_extracted=MAX(cards_extracted,?),cards_persistence_attempted=MAX(cards_persistence_attempted,?),cards_persistence_succeeded=MAX(cards_persistence_succeeded,?),cards_persistence_failed=MAX(cards_persistence_failed,?),duplicate_cards=MAX(duplicate_cards,?),pending_details=MAX(pending_details,?),details_failed=MAX(details_failed,?) WHERE task_id=? AND browser_run_id=?""",(seen,pages,json.dumps(cp,ensure_ascii=False),j.clean_text(cp.get('search_url') or ''),int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(),int(stats.get('extracted_cards') or 0),int(stats.get('persistence_attempted') or 0),int(stats.get('persistence_succeeded') or 0),int(stats.get('persistence_failed') or 0),int(stats.get('duplicate_cards') or 0),int(stats.get('pending_details') or 0),int(stats.get('details_failed') or 0),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True,'card_stats':stats}
         if action=='heartbeat':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);now=j.now_iso();conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
         if action=='browser_event':
@@ -231,7 +234,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
             refresh_task_counters(conn,rid);conn.commit();r=get_run(conn,rid)
-            tasks=conn.execute("SELECT task_id,platform,query_text,status,results_seen,detail_count_read,jobs_recorded,unique_jobs_recorded,duplicate_sightings,jobs_new,jobs_updated,jobs_unchanged,pages_visited,current_search_url,page_number,scroll_generation,last_page_fingerprint,last_source_job_id,challenge_reason,last_error,exhaustion_reason,safety_stop_reason FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",(rid,)).fetchall();plats=conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=? ORDER BY CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END",(rid,)).fetchall();return {'ok':True,'run':{k:r[k] for k in r.keys()},'platforms':[{k:p[k] for k in p.keys()} for p in plats],'tasks':[{k:t[k] for k in t.keys()} for t in tasks]}
+            tasks=conn.execute("SELECT task_id,platform,query_text,status,results_seen,detail_count_read,jobs_recorded,unique_jobs_recorded,duplicate_sightings,jobs_new,jobs_updated,jobs_unchanged,pages_visited,current_search_url,page_number,scroll_generation,last_page_fingerprint,last_source_job_id,challenge_reason,last_error,exhaustion_reason,safety_stop_reason,execution_rank,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,duplicate_cards,pending_details,details_failed FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",(rid,)).fetchall();plats=conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=? ORDER BY CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END",(rid,)).fetchall();return {'ok':True,'run':{k:r[k] for k in r.keys()},'platforms':[{k:p[k] for k in p.keys()} for p in plats],'tasks':[{k:t[k] for k in t.keys()} for t in tasks]}
         if action=='task_status':
             tid=int(msg.get('task_id') or 0);t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(tid,)).fetchone()
             if not t:return {'ok':False,'error':'task_not_found'}

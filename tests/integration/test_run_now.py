@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from jobbot.cli import command_acceptance, parser
+from jobbot import run_now
 from jobbot.run_now import preflight
 
 from tests.helpers import bundle_with_database
@@ -52,6 +53,21 @@ class RunNowIntegrationTests(unittest.TestCase):
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks").fetchone()[0], 3)
             finally:
                 conn.close()
+
+    def test_dashboard_database_mismatch_is_not_silently_reused(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            bundle = bundle_with_database(Path(td) / "jobs.sqlite3", Path(td) / "out")
+            run_now.Database(bundle).migrate()
+            other = {
+                "jobbot_version": "3.2.1",
+                "workspace_root": str(bundle.root.resolve()),
+                "resolved_database_path": str((Path(td) / "other.sqlite3").resolve()),
+                "database_identity": "different-db",
+                "pid": 12345,
+            }
+            with patch.object(run_now, "_dashboard_identity", return_value=other), patch.object(run_now, "_legacy_dashboard_detected", return_value=False):
+                with self.assertRaisesRegex(RuntimeError, "dashboard identity mismatch"):
+                    run_now.ensure_dashboard(bundle, open_browser=False)
 
 
 if __name__ == "__main__":

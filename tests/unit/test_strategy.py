@@ -76,6 +76,15 @@ class StrategyTests(unittest.TestCase):
         glassdoor = build_search_url("glassdoor", "patient access specialist", 7)
         self.assertIn("/Job/remote-patient-access-specialist-jobs-", glassdoor)
 
+    def test_fast_execution_order_is_explicit_fastest_door(self) -> None:
+        first = [task.query for task in compile_plan(self.bundle, "fast", ["linkedin"])[:6]]
+        self.assertEqual(first, [
+            "patient enrollment specialist", "patient enrollment coordinator",
+            "healthcare enrollment specialist", "healthcare enrollment coordinator",
+            "member enrollment specialist", "member enrollment coordinator",
+        ])
+        self.assertNotEqual(first[0], "clinical documentation specialist")
+
     def test_strategy_validator_rejects_allocation_drift(self) -> None:
         strategy = copy.deepcopy(self.bundle.strategy)
         strategy["lanes"][0]["allocation_percent"] = 34

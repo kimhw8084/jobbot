@@ -26,10 +26,18 @@ class ExtensionBridgeTests(unittest.TestCase):
             with self.subTest(path=path.name):
                 checked = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
                 self.assertEqual(checked.returncode, 0, checked.stderr)
+        dashboard_js = subprocess.run(["node", "--check", str(PROJECT_ROOT / "src/jobbot/web/dashboard.js")], capture_output=True, text=True)
+        self.assertEqual(dashboard_js.returncode, 0, dashboard_js.stderr)
+        scope = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_linkedin_scope_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(scope.returncode, 0, scope.stderr or scope.stdout)
         dashboard = (PROJECT_ROOT / "extension" / "dashboard.html").read_text(encoding="utf-8")
         self.assertIn('src="dashboard.js"', dashboard)
         self.assertNotIn('src="start.js"', dashboard)
         self.assertTrue((PROJECT_ROOT / "extension" / "dashboard.js").is_file())
+        worker = (PROJECT_ROOT / "extension" / "service_worker.js").read_text(encoding="utf-8")
+        self.assertIn("function requireRpcOk", worker)
+        self.assertIn("requiredRequest('record_result'", worker)
+        self.assertNotIn("if(rec.ok)", worker)
 
 
 if __name__ == "__main__": unittest.main()

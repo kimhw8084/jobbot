@@ -25,6 +25,7 @@ class SearchTask:
     allocation_percent: int
     profile: str
     priority: int
+    execution_rank: int
     query: str
     remote_required: bool
     age_days: int
@@ -79,6 +80,11 @@ def compile_plan(
     max_priority = int(mode_cfg["max_priority"])
     seen: set[tuple[str, str, int, bool]] = set()
     tasks: list[SearchTask] = []
+    execution_cfg = bundle.strategy.get("strategy", {}).get("execution", {})
+    fast_prefix = {
+        normalize_search_query(title): index
+        for index, title in enumerate(execution_cfg.get("fast_first_queries", []), start=1)
+    }
     for lane in bundle.strategy.get("lanes", []):
         if not lane.get("enabled", True):
             continue
@@ -99,11 +105,12 @@ def compile_plan(
                     lane=str(lane["id"]), lane_label=str(lane["label"]),
                     allocation_percent=int(lane["allocation_percent"]), profile=str(lane["profile"]),
                     priority=int(lane["priority"]), query=query, remote_required=True,
+                    execution_rank=(fast_prefix.get(query, 1000 + int(lane.get("execution_rank", 99)) * 100 + len(tasks))),
                     age_days=age_days, sort_mode="newest", enabled=True,
                     resume_variant=str(lane["resume_variant"]),
                     search_url=build_search_url(platform, query, age_days), max_results=None,
                 ))
-    tasks.sort(key=lambda x: (PLATFORM_ORDER[x.platform], x.priority, x.lane, x.query.casefold(), x.age_days))
+    tasks.sort(key=lambda x: (PLATFORM_ORDER[x.platform], x.execution_rank, x.priority, x.lane, x.query.casefold(), x.age_days))
     return tasks
 
 
@@ -141,7 +148,7 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
         "<tr>" + "".join(f"<td>{html.escape(str(value if value is not None else 'UNLIMITED'))}</td>" for value in (
             task.lane, f"{task.allocation_percent}%", task.profile, task.platform, task.query,
             "Remote" if task.remote_required else "Any", f"{task.age_days} days", task.priority,
-            "enabled" if task.enabled else "disabled", task.resume_variant, task.max_results,
+            task.execution_rank, "enabled" if task.enabled else "disabled", task.resume_variant, task.max_results,
         )) + "</tr>" for task in tasks
     )
     counts = plan_counts(tasks)
@@ -151,7 +158,7 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
     )
     html_path.write_text(f"""<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>JobBot Search Plan</title>
 <style>body{{font:14px system-ui;margin:24px;color:#14213d}}h1{{margin-bottom:4px}}.summary{{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}}.pill{{background:#edf4ff;border-radius:999px;padding:8px 12px}}table{{border-collapse:collapse;width:100%}}th,td{{border-bottom:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}}th{{position:sticky;top:0;background:#fff}}tr:nth-child(even){{background:#fafafa}}</style></head><body><h1>JobBot v3.2 Search Plan — {html.escape(mode)}</h1><p>Every production task is remote-only and unlimited by result count. Total tasks: <strong>{counts['total']}</strong>.</p><div class=\"summary\">{platform_pills}</div>
-<table><thead><tr><th>Lane</th><th>Allocation</th><th>Profile</th><th>Platform</th><th>Exact query</th><th>Condition</th><th>Age</th><th>Priority</th><th>State</th><th>Resume</th><th>Max results</th></tr></thead><tbody>{rows}</tbody></table></body></html>""", encoding="utf-8")
+<table><thead><tr><th>Lane</th><th>Allocation</th><th>Profile</th><th>Platform</th><th>Exact query</th><th>Condition</th><th>Age</th><th>Priority</th><th>Execution rank</th><th>State</th><th>Resume</th><th>Max results</th></tr></thead><tbody>{rows}</tbody></table></body></html>""", encoding="utf-8")
     return {"json": json_path, "csv": csv_path, "html": html_path}
 
 

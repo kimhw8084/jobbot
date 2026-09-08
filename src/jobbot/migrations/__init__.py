@@ -11,6 +11,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0005_structured_evidence",
     "jobbot.migrations.m0006_diff_backfill",
     "jobbot.migrations.m0007_durable_discoveries",
+    "jobbot.migrations.m0008_page_reconciliation",
 )
 
 

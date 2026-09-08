@@ -35,7 +35,7 @@ class BridgeServer(HTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "JobBotLoopback/3.2.0"
+    server_version = "JobBotLoopback/3.2.1"
     def log_message(self, fmt: str, *args: Any) -> None:
         log(fmt % args)
 
