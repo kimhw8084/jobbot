@@ -20,4 +20,6 @@ jobs:
       - run: python -m jobbot search-plan --mode deep
       - name: Validate extension JavaScript
         shell: bash
-        run: for file in extension/*.js; do node --check "$file"; done
+        run: |
+          for file in extension/*.js; do node --check "$file"; done
+          for file in src/jobbot/web/*.js; do node --check "$file"; done

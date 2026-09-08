@@ -65,12 +65,15 @@ def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tupl
     port = int(bundle.runtime["runtime"]["dashboard_port"])
     url = f"http://127.0.0.1:{port}/"
     started = False
-    with Database(bundle).connect() as conn:
+    conn = Database(bundle).connect()
+    try:
         expected = {
             "jobbot_version": "3.2.1", "workspace_root": str(bundle.root.resolve()),
             "resolved_database_path": str(bundle.database_path.resolve()),
             "database_identity": database_identity(conn, bundle),
         }
+    finally:
+        conn.close()
     actual = _dashboard_identity(url)
     if actual is not None:
         mismatch = [key for key, value in expected.items() if str(actual.get(key, "")) != value]
