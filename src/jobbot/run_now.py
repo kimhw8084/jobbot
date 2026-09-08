@@ -107,7 +107,7 @@ def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tupl
                 cwd=bundle.root, stdout=log_handle, stderr=subprocess.STDOUT, start_new_session=True,
                 env=child_env,
             )
-        deadline = time.monotonic() + 20
+        deadline = time.monotonic() + 8
         while time.monotonic() < deadline and _dashboard_identity(url) is None:
             time.sleep(0.15)
         actual = _dashboard_identity(url)

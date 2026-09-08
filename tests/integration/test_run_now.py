@@ -5,6 +5,7 @@ import shutil
 import socket
 import sqlite3
 import tempfile
+import threading
 import unittest
 from argparse import Namespace
 from pathlib import Path
@@ -13,6 +14,7 @@ from unittest.mock import patch
 from jobbot import browser_tasks
 from jobbot.cli import command_acceptance, parser
 from jobbot.config import PROJECT_ROOT
+from jobbot.dashboard import create_server
 from jobbot import run_now
 from jobbot.run_now import preflight
 
@@ -106,12 +108,23 @@ class RunNowIntegrationTests(unittest.TestCase):
                 sock.bind(("127.0.0.1", 0))
                 port = sock.getsockname()[1]
             bundle.runtime["runtime"]["dashboard_port"] = port
-            spawned: list[subprocess.Popen[bytes]] = []
-            original_popen = run_now.subprocess.Popen
-
+            spawned: list[tuple[object, object, object]] = []
             def spawn(*args, **kwargs):
-                process = original_popen(*args, **kwargs)
-                spawned.append(process)
+                captured_env = kwargs["env"]
+                server = create_server(bundle, host="127.0.0.1", port=port)
+                thread = threading.Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+
+                class FakeProcess:
+                    def terminate(self):
+                        server.shutdown()
+
+                    def wait(self, timeout=None):
+                        server.server_close()
+                        thread.join(timeout)
+
+                process = FakeProcess()
+                spawned.append((process, captured_env, args))
                 return process
 
             try:
@@ -125,10 +138,14 @@ class RunNowIntegrationTests(unittest.TestCase):
                 self.assertIsNotNone(identity)
                 self.assertEqual(identity["resolved_database_path"], str(expected_database.resolve()))
                 self.assertNotEqual(identity["resolved_database_path"], str(stale_database.resolve()))
+                _process, child_env, _args = spawned[0]
+                self.assertEqual(child_env["JOBBOT_DATABASE_PATH"], str(expected_database.resolve()))
+                self.assertEqual(child_env["JOBBOT_OUTPUT_DIR"], str(expected_output.resolve()))
+                self.assertEqual(child_env["JOBBOT_DASHBOARD_PORT"], str(port))
                 self.assertTrue((expected_output / "logs" / "dashboard.log").is_file())
                 self.assertFalse((stale_output / "logs" / "dashboard.log").exists())
             finally:
-                for process in spawned:
+                for process, _child_env, _args in spawned:
                     process.terminate()
                     process.wait(timeout=5)
 
