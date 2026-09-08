@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -94,10 +95,17 @@ def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tupl
     else:
         log_path = bundle.output_dir / "logs" / "dashboard.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
+        child_env = os.environ.copy()
+        child_env.update({
+            "JOBBOT_DATABASE_PATH": str(bundle.database_path),
+            "JOBBOT_OUTPUT_DIR": str(bundle.output_dir),
+            "JOBBOT_DASHBOARD_PORT": str(port),
+        })
         with log_path.open("ab") as log_handle:
             subprocess.Popen(
                 [sys.executable, "-m", "jobbot", "dashboard", "--no-open", "--port", str(port)],
                 cwd=bundle.root, stdout=log_handle, stderr=subprocess.STDOUT, start_new_session=True,
+                env=child_env,
             )
         deadline = time.monotonic() + 8
         while time.monotonic() < deadline and _dashboard_identity(url) is None:
