@@ -1,8 +1,21 @@
 # Troubleshooting
 
-## Extension says disconnected
+## Extension says disconnected or `Failed to fetch`
 
-Start the run through `python -m jobbot run`, `python -m jobbot resume`, or a `.command` launcher. Those commands generate the per-run port/token and open `dashboard.html` in normal Chrome. Reload the unpacked extension after source updates. Confirm the ID matches `config/EXTENSION_ID.txt`.
+Start the run through `python -m jobbot run-now`, `python -m jobbot resume`, or a `.command` launcher. Those commands generate the per-run port/token and open `dashboard.html` in normal Chrome. Reload the unpacked extension after source updates. Confirm the ID matches `config/EXTENSION_ID.txt`.
+
+The bridge is intentionally an ephemeral `127.0.0.1` process. When a run
+finishes or is stopped, the launcher tears it down; an extension dashboard
+that continues polling the old port can briefly show `Failed to fetch`. The
+updated extension records the last terminal run and renders that state instead
+of treating normal shutdown as an active-run failure. If the error appears
+while the run is active, the message includes the port and RPC action; inspect
+the matching `out/logs/run_<id>_bridge.log`, then use the local dashboard and
+`python -m jobbot audit`. The orchestrator retries a dead bridge with the same
+run checkpoint and bounded restart limit.
+
+On macOS, RUN NOW and the crawler use background Chrome opening (`open -g` and
+inactive tabs). They should not steal focus from the application you are using.
 
 ## Authentication or challenge
 

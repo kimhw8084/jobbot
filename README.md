@@ -25,6 +25,38 @@ Requirements: macOS, Python 3.11 or newer, normal Google Chrome, and enough disk
 
 A site challenge or authentication page is an external incomplete state, not a pass. Clear it manually through normal browsing, wait for the configured cooldown when challenged, then resume.
 
+## Today’s fast path
+
+After the extension is loaded and the desired sites are signed in, use the
+single production entry point:
+
+```bash
+./RUN_NOW.command
+```
+
+To start only the already-working LinkedIn path while leaving other platform
+tasks checkpointed:
+
+```bash
+./RUN_NOW.command --platform linkedin
+```
+
+RUN NOW opens the local dashboard and crawler tabs in the background on macOS,
+so Chrome does not take focus from the application you are using. The local
+dashboard is normally `http://127.0.0.1:8765/`; it reads SQLite while the
+crawler writes, so new cards, completed details, scores, and application
+status changes appear during the run. Use **Actionable** for the decision
+queue and **All discoveries** when auditing every genuine search-result card.
+The **Live discoveries** panel is the durable intake receipt: it can contain a
+card whose detail is still pending, while the Jobs table contains the
+deduplicated, enriched canonical record.
+
+The crawl intentionally reads details serially in a reused background detail
+tab and commits each observation immediately. This is slower than opening
+many tabs, but preserves normal-Chrome behavior, challenge safety, and
+write-through durability. Stop with `./STOP_SEARCH.command`; resume with
+`./RESUME_SEARCH.command` or the dashboard’s **Resume checkpoint** button.
+
 ## Canonical cross-platform CLI
 
 After installation, run commands from the repository root:
@@ -35,6 +67,7 @@ After installation, run commands from the repository root:
 .venv/bin/python -m jobbot search-plan --mode deep --open
 .venv/bin/python -m jobbot run --mode fast
 .venv/bin/python -m jobbot run --mode deep
+.venv/bin/python -m jobbot run-now
 .venv/bin/python -m jobbot resume
 .venv/bin/python -m jobbot stop
 .venv/bin/python -m jobbot stop --emergency
