@@ -3,19 +3,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sqlite3
 import time
-import urllib.parse
 from pathlib import Path
 from typing import Any
 
 from . import legacy_engine as j
 from .config import PROJECT_ROOT, load_bundle
 from .db import Database, apply_pending
-from .search_plan import compile_plan
+from .search_plan import build_search_url, compile_plan, normalize_search_query
 
-V3_VERSION = "3.2.0"
+V3_VERSION = "3.2.1"
 EXTENSION_ID = "jfdlmelgonjhgnabpbipjefgamedpgfb"
 PLATFORMS = ("linkedin", "indeed", "glassdoor")
 PLATFORM_PRIORITY = {"linkedin": 0, "indeed": 1, "glassdoor": 2}
@@ -46,41 +44,23 @@ def init_browser_schema(conn: sqlite3.Connection) -> None:
     apply_pending(conn)
 
 
-def slugify(s: str) -> str:
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", s.lower())).strip("-") or "jobs"
-
-
 def indeed_search_url(query: str, days: int) -> str:
-    q = urllib.parse.urlencode({"q": query, "l": "Remote", "fromage": str(max(1, days)), "sort": "date"})
-    return f"https://www.indeed.com/jobs?{q}"
+    return build_search_url("indeed", normalize_search_query(query), days)
 
 
 def linkedin_search_url(query: str, days: int) -> str:
-    secs = max(1, days) * 86400
-    params = {
-        "keywords": query,
-        "location": "United States",
-        "f_WT": "2",            # remote
-        "f_TPR": f"r{secs}",    # time posted range
-        "sortBy": "DD",         # most recent
-    }
-    return "https://www.linkedin.com/jobs/search/?" + urllib.parse.urlencode(params)
+    return build_search_url("linkedin", normalize_search_query(query), days)
 
 
 def glassdoor_search_url(query: str, days: int) -> str:
     # Glassdoor exposes Remote result pages with a stable URL family.  Date is
     # enforced from card/detail age by the extension because the public result
     # URL does not reliably preserve a date filter.
-    slug = slugify(query)
-    end = 7 + len(query)
-    return f"https://www.glassdoor.com/Job/remote-{slug}-jobs-SRCH_IL.0,6_IS11047_KO7,{end}.htm"
+    return build_search_url("glassdoor", normalize_search_query(query), days)
 
 
 def search_url(platform: str, query: str, days: int) -> str:
-    if platform == "indeed": return indeed_search_url(query, days)
-    if platform == "linkedin": return linkedin_search_url(query, days)
-    if platform == "glassdoor": return glassdoor_search_url(query, days)
-    raise ValueError(f"unsupported platform: {platform}")
+    return build_search_url(platform, normalize_search_query(query), days)
 
 
 def iter_strategy_tasks(strategy: dict[str, Any], mode: str, platforms: list[str]) -> list[dict[str, Any]]:
@@ -95,7 +75,7 @@ def iter_strategy_tasks(strategy: dict[str, Any], mode: str, platforms: list[str
             continue
         days = int(lane.get(f"{mode}_days", 30))
         for kw in lane.get("titles", []):
-            query = j.clean_text(kw)
+            query = normalize_search_query(j.clean_text(kw))
             if not query: continue
             for platform in platforms:
                 key = (platform, query.lower(), days)
@@ -182,7 +162,7 @@ def resume_run(base: Path, rid: int | None = None) -> int:
             """SELECT browser_run_id FROM browser_runs
                WHERE status IN ('queued','running','partial','stopped')
                   OR EXISTS (SELECT 1 FROM browser_search_tasks t WHERE t.browser_run_id=browser_runs.browser_run_id
-                    AND (t.status IN ('queued','running') OR (t.status='incomplete' AND t.safety_stop_reason NOT LIKE 'Acceptance limit reached%')))
+                    AND (t.status IN ('queued','running','stopped') OR (t.status='incomplete' AND t.safety_stop_reason NOT LIKE 'Acceptance limit reached%')))
                ORDER BY browser_run_id DESC LIMIT 1"""
         ).fetchone()
         if not row:
@@ -196,21 +176,34 @@ def resume_run(base: Path, rid: int | None = None) -> int:
         """UPDATE browser_search_tasks
            SET status='queued', completed_at=NULL, lease_owner='', lease_until=NULL,
                last_error='', safety_stop_reason=''
-           WHERE browser_run_id=? AND (status='running' OR
+           WHERE browser_run_id=? AND (status IN ('running','stopped') OR
              (status='incomplete' AND safety_stop_reason NOT LIKE 'Acceptance limit reached%'))""", (rid,)
     )
     store.conn.execute(
-        """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
-             challenge_reason='',last_error=''
-           WHERE browser_run_id=? AND status='auth_required'""", (rid,)
+        """UPDATE search_task_results SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL,
+             detail_error=CASE WHEN detail_error='' THEN 'requeued after run interruption' ELSE detail_error END
+           WHERE browser_run_id=? AND detail_status='RUNNING'""", (rid,)
     )
     store.conn.execute(
         """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
              challenge_reason='',last_error=''
-           WHERE browser_run_id=? AND status='challenged' AND platform IN (
+           WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform') AND platform IN (
+             SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND auth_status='not_authenticated'
+           )""", (rid, rid)
+    )
+    store.conn.execute(
+        """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
+             challenge_reason='',last_error=''
+           WHERE browser_run_id=? AND status IN ('challenged','deferred_by_platform') AND platform IN (
              SELECT platform FROM browser_platform_runs
              WHERE browser_run_id=? AND COALESCE(cooldown_until,'')<=?
            )""", (rid, rid, now)
+    )
+    store.conn.execute(
+        """UPDATE search_task_results SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL
+           WHERE browser_run_id=? AND detail_status='EXTERNAL_BLOCKED' AND task_id IN (
+             SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND status='queued'
+           )""", (rid, rid)
     )
     store.conn.execute(
         "UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='' WHERE browser_run_id=? AND platform IN (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')",

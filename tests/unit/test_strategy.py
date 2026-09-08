@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import copy
 import unittest
+import urllib.parse
 
 from jobbot.config import ConfigBundle, PROJECT_ROOT, load_bundle, validate_strategy
-from jobbot.search_plan import compile_plan, plan_counts
+from jobbot.search_plan import build_search_url, compile_plan, normalize_search_query, plan_counts
 
 
 class StrategyTests(unittest.TestCase):
@@ -54,8 +55,26 @@ class StrategyTests(unittest.TestCase):
         strategy["lanes"].append(second)
         clone = ConfigBundle(self.bundle.root, strategy, self.bundle.candidate, self.bundle.runtime)
         tasks = compile_plan(clone, "deep", ["indeed"], include_fallback=True)
-        windows = {x.age_days for x in tasks if x.query == "Patient Enrollment Specialist"}
+        windows = {x.age_days for x in tasks if x.query == "patient enrollment specialist"}
         self.assertEqual(windows, {30, 45})
+
+    def test_authoritative_primary_urls_and_query_normalization(self) -> None:
+        self.assertEqual(
+            normalize_search_query("Customer Operations Coordinator — Healthcare"),
+            "customer operations coordinator healthcare",
+        )
+        linkedin = urllib.parse.urlsplit(build_search_url("linkedin", "patient access specialist", 7))
+        linkedin_query = urllib.parse.parse_qs(linkedin.query)
+        self.assertEqual(linkedin_query["location"], ["United States"])
+        self.assertEqual(linkedin_query["f_WT"], ["2"])
+        self.assertEqual(linkedin_query["f_TPR"], ["r604800"])
+        self.assertEqual(linkedin_query["sortBy"], ["DD"])
+        indeed_query = urllib.parse.parse_qs(urllib.parse.urlsplit(build_search_url("indeed", "patient access specialist", 7)).query)
+        self.assertEqual(indeed_query["l"], ["Remote"])
+        self.assertEqual(indeed_query["fromage"], ["7"])
+        self.assertEqual(indeed_query["sort"], ["date"])
+        glassdoor = build_search_url("glassdoor", "patient access specialist", 7)
+        self.assertIn("/Job/remote-patient-access-specialist-jobs-", glassdoor)
 
     def test_strategy_validator_rejects_allocation_drift(self) -> None:
         strategy = copy.deepcopy(self.bundle.strategy)

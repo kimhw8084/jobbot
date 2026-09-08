@@ -1699,15 +1699,11 @@ def _bundle_queries(strategy:dict[str,Any],mode:str,bundle_size:int=4)->list[tup
 
 
 def platform_search_url(platform:str,query:str,window_days:int)->str:
-    q=urllib.parse.quote_plus(query)
-    if platform=="linkedin":
-        sec=86400 if window_days<=1 else 604800 if window_days<=7 else 2592000
-        return f"https://www.linkedin.com/jobs/search/?keywords={q}&location=United%20States&f_WT=2&f_TPR=r{sec}&sortBy=DD"
-    if platform=="indeed":
-        return f"https://www.indeed.com/jobs?q={q}&l=Remote&fromage={max(1,window_days)}&sort=date"
-    if platform=="glassdoor":
-        # Native Glassdoor search. The user should visually confirm its Remote filter remains selected.
-        return f"https://www.glassdoor.com/Job/jobs.htm?sc.keyword={q}&locKeyword=Remote"
+    if platform in {"linkedin","indeed","glassdoor"}:
+        # Compatibility dashboards use the same authoritative URL builder as
+        # production browser tasks; do not let legacy links drift.
+        from .search_plan import build_search_url, normalize_search_query
+        return build_search_url(platform,normalize_search_query(query),window_days)
     return c.search_url(platform,query)
 
 

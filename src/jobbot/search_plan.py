@@ -35,11 +35,19 @@ class SearchTask:
     max_results: None = None
 
 
+def normalize_search_query(title: str) -> str:
+    """Turn a canonical strategy title into natural platform search text."""
+    return " ".join(str(title).replace("—", " ").replace("–", " ").split()).casefold()
+
+
 def build_search_url(platform: str, query: str, age_days: int) -> str:
     encoded = urllib.parse.quote_plus(query)
     if platform == "linkedin":
         seconds = max(1, age_days) * 86400
-        return f"https://www.linkedin.com/jobs/search/?f_TPR=r{seconds}&f_WT=2&keywords={encoded}&sortBy=DD"
+        return (
+            "https://www.linkedin.com/jobs/search/?"
+            f"f_TPR=r{seconds}&f_WT=2&keywords={encoded}&location=United+States&sortBy=DD"
+        )
     if platform == "indeed":
         return f"https://www.indeed.com/jobs?q={encoded}&l=Remote&fromage={max(1, age_days)}&sort=date"
     if platform == "glassdoor":
@@ -80,7 +88,7 @@ def compile_plan(
             continue
         age_days = int(lane[f"{mode}_days"])
         for title in lane.get("titles", []):
-            query = str(title).strip()
+            query = normalize_search_query(str(title))
             for platform in selected:
                 identity = (platform, query.casefold(), age_days, True)
                 if identity in seen:
@@ -118,7 +126,7 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
     json_path = output_dir / "search_plan.json"
     csv_path = output_dir / "search_plan.csv"
     html_path = output_dir / "search_plan.html"
-    payload = {"version": "3.2.0", "mode": mode, "counts": plan_counts(tasks), "tasks": [asdict(t) for t in tasks]}
+    payload = {"version": "3.2.1", "mode": mode, "counts": plan_counts(tasks), "tasks": [asdict(t) for t in tasks]}
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     with csv_path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(asdict(tasks[0]).keys()) if tasks else list(SearchTask.__dataclass_fields__))
