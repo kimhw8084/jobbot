@@ -97,6 +97,8 @@ for (const spec of specs) {
   assert.strictEqual(inspected.extraction_diagnostics.candidate_links_total, 6);
   assert.strictEqual(inspected.extraction_diagnostics.candidate_links_in_scope, 3);
   assert.strictEqual(inspected.extraction_diagnostics.candidate_links_outside_scope, 3);
+  assert.strictEqual(inspected.extraction_diagnostics.in_scope_source_ids.length, 3);
+  assert.strictEqual(inspected.extraction_diagnostics.outside_scope_source_ids.length, 3);
   console.log(`${spec.platform} scope fixture passed: actual=3 outside_scope_excluded=3`);
 }
 

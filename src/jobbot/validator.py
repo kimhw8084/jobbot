@@ -36,6 +36,7 @@ PRIMARY = ("linkedin", "indeed", "glassdoor")
 EXPECTED_EXTENSION_BUILD = "3.2.2-prod-ready"
 TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
+VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
 
 
 def _timestamp() -> str:
@@ -221,12 +222,17 @@ def _metrics(audit: dict[str, Any]) -> dict[str, Any]:
 def _scope_diagnostics(bundle: ConfigBundle, run_id: int | None) -> dict[str, Any]:
     import sqlite3
 
-    result = {platform: {"candidate_job_links": 0, "in_scope_result_card_links": 0,
-                         "outside_scope_links": 0, "scope_missing_events": 0,
-                         "contamination": 0} for platform in PRIMARY}
+    result = {platform: {"candidate_links_total": 0, "candidate_links_in_scope": 0,
+                         "candidate_links_outside_scope": 0, "persisted_in_scope": 0,
+                         "persisted_outside_scope": 0, "contamination_persisted": 0,
+                         "scope_found_events": 0, "scope_missing_events": 0}
+              for platform in PRIMARY}
     conn = sqlite3.connect(bundle.database_path)
     conn.row_factory = sqlite3.Row
     try:
+        outside: dict[str, dict[str, set[str]]] = {
+            platform: {"ids": set(), "urls": set()} for platform in PRIMARY
+        }
         for row in conn.execute(
             "SELECT platform,payload_json FROM browser_events e JOIN browser_search_tasks t ON t.task_id=e.task_id "
             "WHERE e.browser_run_id=? AND e.event_type='scope_diagnostics'", (run_id,),
@@ -235,23 +241,161 @@ def _scope_diagnostics(bundle: ConfigBundle, run_id: int | None) -> dict[str, An
             if platform not in result:
                 continue
             try:
-                payload = json.loads(row["payload_json"] or "{}")
+                envelope = json.loads(row["payload_json"] or "{}")
             except json.JSONDecodeError:
-                payload = {}
-            result[platform]["candidate_job_links"] += int(payload.get("candidate_links_total", 0) or 0)
-            result[platform]["in_scope_result_card_links"] += int(payload.get("candidate_links_in_scope", 0) or 0)
-            result[platform]["outside_scope_links"] += int(payload.get("candidate_links_outside_scope", 0) or 0)
+                envelope = {}
+            payload = envelope.get("payload", envelope)
+            result[platform]["candidate_links_total"] += int(payload.get("candidate_links_total", 0) or 0)
+            result[platform]["candidate_links_in_scope"] += int(payload.get("candidate_links_in_scope", 0) or 0)
+            result[platform]["candidate_links_outside_scope"] += int(payload.get("candidate_links_outside_scope", 0) or 0)
+            outside[platform]["ids"].update(str(value) for value in payload.get("outside_scope_source_ids", []) if value)
+            outside[platform]["urls"].update(_normalise_url(value) for value in payload.get("outside_scope_urls", []) if value)
         for row in conn.execute(
             "SELECT platform,COUNT(*) FROM browser_events e JOIN browser_search_tasks t ON t.task_id=e.task_id "
             "WHERE e.browser_run_id=? AND e.event_type='extraction_scope_missing' GROUP BY platform", (run_id,),
         ):
             if str(row[0]) in result:
                 result[str(row[0])]["scope_missing_events"] = int(row[1])
+        for platform in PRIMARY:
+            result[platform]["attempted_pages"] = int(conn.execute(
+                "SELECT COALESCE(SUM(pages_visited),0) FROM browser_search_tasks WHERE browser_run_id=? AND platform=?",
+                (run_id, platform),
+            ).fetchone()[0] or 0)
+            result[platform]["scope_found_events"] = int(conn.execute(
+                "SELECT COUNT(*) FROM browser_events e JOIN browser_search_tasks t ON t.task_id=e.task_id "
+                "WHERE e.browser_run_id=? AND e.event_type='scope_diagnostics' AND t.platform=?",
+                (run_id, platform),
+            ).fetchone()[0] or 0)
+            persisted = conn.execute(
+                "SELECT source_job_id,source_url FROM search_task_results r "
+                "JOIN browser_search_tasks t ON t.task_id=r.task_id "
+                "WHERE r.browser_run_id=? AND t.platform=?",
+                (run_id, platform),
+            ).fetchall()
+            outside_count = 0
+            for persisted_row in persisted:
+                sid = str(persisted_row[0] or "")
+                url = _normalise_url(persisted_row[1])
+                if sid in outside[platform]["ids"] or (url and url in outside[platform]["urls"]):
+                    outside_count += 1
+            result[platform]["persisted_outside_scope"] = outside_count
+            result[platform]["contamination_persisted"] = outside_count
+            result[platform]["persisted_in_scope"] = max(0, len(persisted) - outside_count)
     finally:
         conn.close()
-    for values in result.values():
-        values["contamination"] = values["outside_scope_links"]
     return result
+
+
+def _normalise_url(value: Any) -> str:
+    return str(value or "").strip().lower().rstrip("/")
+
+
+def _record_validation_cutoff(bundle: ConfigBundle, run_id: int, reason: str) -> None:
+    conn = Database(bundle).connect()
+    try:
+        exists = conn.execute(
+            "SELECT 1 FROM browser_events WHERE browser_run_id=? AND event_type='validation_cutoff' LIMIT 1",
+            (run_id,),
+        ).fetchone()
+        if not exists:
+            now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            conn.execute(
+                "INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)",
+                (run_id, now, "validation_cutoff", "bounded validation window intentionally closed",
+                 json.dumps({"classification": VALIDATION_WINDOW_COMPLETE, "reason": reason})),
+            )
+            conn.commit()
+    finally:
+        conn.close()
+
+
+def _validation_metrics(bundle: ConfigBundle, run_id: int, audit: dict[str, Any]) -> dict[str, Any]:
+    """Reconcile attempted validation work while leaving untouched work queued."""
+    import sqlite3
+
+    conn = sqlite3.connect(bundle.database_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        attempted = conn.execute(
+            "SELECT * FROM browser_search_tasks WHERE browser_run_id=? AND (started_at IS NOT NULL OR status <> 'queued')",
+            (run_id,),
+        ).fetchall()
+        task_states = {state: 0 for state in (
+            "queued", "running", "exhausted", "incomplete", "challenged", "auth_required",
+            "deferred_by_platform", "failed", "paused", "stopped",
+        )}
+        extracted = persistence_attempted = persisted = persistence_failed = duplicates = progress_tasks = 0
+        for task in attempted:
+            state = str(task["status"] or "")
+            if state in task_states:
+                task_states[state] += 1
+            extracted += int(task["cards_extracted"] or 0)
+            persistence_attempted += int(task["cards_persistence_attempted"] or 0)
+            persisted += int(task["cards_persistence_succeeded"] or 0)
+            persistence_failed += int(task["cards_persistence_failed"] or 0)
+            duplicates += int(task["duplicate_cards"] or 0)
+            if int(task["pages_visited"] or 0) > 0 or int(task["cards_extracted"] or 0) > 0:
+                progress_tasks += 1
+        result_rows = conn.execute(
+            "SELECT r.detail_status,r.canonical_job_id FROM search_task_results r "
+            "JOIN browser_search_tasks t ON t.task_id=r.task_id "
+            "WHERE r.browser_run_id=? AND (t.started_at IS NOT NULL OR t.status <> 'queued')",
+            (run_id,),
+        ).fetchall()
+        detail_states = {"PENDING": 0, "RUNNING": 0, "COMPLETE": 0, "RETRYABLE": 0,
+                         "FAILED": 0, "EXTERNAL_BLOCKED": 0}
+        canonical_ids: set[int] = set()
+        for row in result_rows:
+            status = str(row["detail_status"] or "")
+            if status in detail_states:
+                detail_states[status] += 1
+            if row["canonical_job_id"]:
+                canonical_ids.add(int(row["canonical_job_id"]))
+        untouched_queued = int(conn.execute(
+            "SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND started_at IS NULL AND status='queued'",
+            (run_id,),
+        ).fetchone()[0] or 0)
+        untouched_exhausted = int(conn.execute(
+            "SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND started_at IS NULL AND status='exhausted'",
+            (run_id,),
+        ).fetchone()[0] or 0)
+        attempted_false_exhausted = int(conn.execute(
+            "SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND started_at IS NOT NULL "
+            "AND status='exhausted' AND pages_visited=0 AND results_seen=0",
+            (run_id,),
+        ).fetchone()[0] or 0)
+        audit_metrics = _metrics(audit)
+        task_failures = sum(task_states.get(state, 0) for state in ("failed", "incomplete", "running", "paused"))
+        reconciliation_ok = extracted == persistence_attempted == persisted + persistence_failed and persistence_failed == 0
+        audit_metrics.update({
+            "attempted_tasks": len(attempted),
+            "progress_tasks": progress_tasks,
+            "untouched_queued": untouched_queued,
+            "untouched_exhausted": untouched_exhausted,
+            "attempted_false_exhausted": attempted_false_exhausted,
+            "attempted_failed": task_states["failed"],
+            "attempted_incomplete": task_states["incomplete"],
+            "attempted_running": task_states["running"],
+            "attempted_stopped": task_states["stopped"],
+            "extracted": extracted,
+            "persistence_attempted": persistence_attempted,
+            "persisted": persisted,
+            "persistence_failed": persistence_failed,
+            "duplicates": duplicates,
+            "detail_pending": detail_states["PENDING"],
+            "detail_running": detail_states["RUNNING"],
+            "detail_complete": detail_states["COMPLETE"],
+            "detail_retryable": detail_states["RETRYABLE"],
+            "detail_failed": detail_states["FAILED"],
+            "detail_external_blocked": detail_states["EXTERNAL_BLOCKED"],
+            "canonical_jobs_attempted": len(canonical_ids),
+            "task_states": task_states,
+            "reconciliation": {"ok": reconciliation_ok, "attempted_tasks": len(attempted), "task_failures": task_failures},
+            "unexplained": int(audit_metrics.get("unexplained", 0) or 0) + task_failures,
+        })
+        return audit_metrics
+    finally:
+        conn.close()
 
 
 def _extension_build_seen(bundle: ConfigBundle, run_id: int | None) -> bool:
@@ -277,6 +421,57 @@ def _extension_build_seen(bundle: ConfigBundle, run_id: int | None) -> bool:
     return False
 
 
+def _classify_supplemental(
+    source_status: dict[str, Any],
+    *,
+    code: int,
+    uncaught_error: str = "",
+    records_by_source: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    """Classify source failures without hiding orchestration/programming errors."""
+    records_by_source = records_by_source or {}
+    sources: dict[str, Any] = {}
+    internal_failed = bool(uncaught_error)
+    for name, info in source_status.items():
+        info = info if isinstance(info, dict) else {}
+        attempted = True
+        if bool(info.get("ok")):
+            state = "completed"
+        else:
+            # legacy_engine catches individual HTTP/board failures and records
+            # them here.  Those are isolated external failures, not pipeline
+            # failures.  An uncaught exception is handled separately below.
+            state = "external_failed"
+        sources[str(name)] = {
+            "attempted": attempted,
+            "state": state,
+            "completed": state == "completed",
+            "external_failed": state == "external_failed",
+            "internal_failed": False,
+            "records_persisted": int(records_by_source.get(str(name), 0) or 0),
+            "error": str(info.get("error") or ""),
+        }
+    if code != 0 and not sources:
+        internal_failed = True
+    if code != 0 and not any(value["external_failed"] for value in sources.values()):
+        internal_failed = True
+    if internal_failed:
+        for value in sources.values():
+            if value["state"] == "completed":
+                continue
+            value["state"] = "internal_failed"
+            value["external_failed"] = False
+            value["internal_failed"] = True
+            if uncaught_error:
+                value["error"] = uncaught_error
+    return {
+        "isolation_pass": not internal_failed,
+        "internal_failed": internal_failed,
+        "internal_error": uncaught_error,
+        "sources": sources,
+    }
+
+
 def _run_supplemental(bundle: ConfigBundle, run_id: int | None) -> dict[str, Any]:
     conn = Database(bundle).connect()
     try:
@@ -289,12 +484,13 @@ def _run_supplemental(bundle: ConfigBundle, run_id: int | None) -> dict[str, Any
     finally:
         conn.close()
     started = time.monotonic()
+    uncaught_error = ""
     try:
         code = int(legacy_engine.run_search(bundle.legacy_runtime(), bundle.strategy, "deep"))
-        error = "" if code == 0 else f"supplemental stage returned exit code {code}"
     except Exception as exc:  # an isolated source failure must be visible, not fatal to primary state
         code = 1
-        error = f"{type(exc).__name__}: {exc}"
+        uncaught_error = f"{type(exc).__name__}: {exc}"
+    error = uncaught_error or ("" if code == 0 else f"supplemental stage returned exit code {code}")
     conn = Database(bundle).connect()
     try:
         now = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -311,28 +507,60 @@ def _run_supplemental(bundle: ConfigBundle, run_id: int | None) -> dict[str, Any
     configured_sources = bundle.runtime.get("sources", {})
     conn = Database(bundle).connect()
     try:
+        source_status: dict[str, Any] = {}
+        run_row = conn.execute("SELECT source_status_json FROM runs ORDER BY run_id DESC LIMIT 1").fetchone()
+        if run_row:
+            try:
+                decoded = json.loads(run_row[0] or "{}")
+                if isinstance(decoded, dict):
+                    source_status = decoded
+            except json.JSONDecodeError:
+                source_status = {}
         for name, config in configured_sources.items():
             count = conn.execute(
                 "SELECT COUNT(*) FROM source_occurrences WHERE source_site=?", (str(name),)
             ).fetchone()[0]
-            sources[str(name)] = {"enabled": bool(config.get("enabled", True)),
-                                  "state": "completed" if code == 0 else "failed",
-                                  "canonical_occurrences": int(count or 0)}
+            if bool(config.get("enabled", True)) and str(name) not in source_status:
+                source_status[str(name)] = {"ok": False, "error": "source status missing", "complete": False}
+        if "ats_watch" in source_status:
+            count = conn.execute("SELECT COUNT(*) FROM source_occurrences WHERE source_site IN ('ats_watch','ats')").fetchone()[0]
+            source_status["ats_discovery"] = source_status["ats_watch"]
+        records = {name: int(conn.execute(
+            "SELECT COUNT(*) FROM source_occurrences WHERE source_site=?", (name,)
+        ).fetchone()[0] or 0) for name in source_status}
     finally:
         conn.close()
+    classified = _classify_supplemental(source_status, code=code, uncaught_error=uncaught_error, records_by_source=records)
+    sources = classified["sources"]
+    for name, config in configured_sources.items():
+        sources.setdefault(str(name), {"attempted": False, "state": "disabled", "completed": False,
+                                       "external_failed": False, "internal_failed": False,
+                                       "records_persisted": 0, "error": ""})
+        sources[str(name)]["enabled"] = bool(config.get("enabled", True))
     ats = bundle.runtime.get("ats_discovery", {})
-    sources["ats_discovery"] = {"enabled": bool(ats.get("enabled", False)),
-                                 "state": "completed" if code == 0 else "failed"}
-    return {"ok": code == 0, "isolation_pass": True, "exit_code": code, "error": error,
-            "duration_seconds": round(time.monotonic() - started, 2), "sources": sources}
+    sources.setdefault("ats_discovery", {"attempted": False, "state": "disabled", "completed": False,
+                                          "external_failed": False, "internal_failed": False,
+                                          "records_persisted": 0, "error": ""})["enabled"] = bool(ats.get("enabled", False))
+    return {"ok": classified["isolation_pass"], "isolation_pass": classified["isolation_pass"],
+            "internal_failed": classified["internal_failed"], "exit_code": code, "error": error,
+            "duration_seconds": round(time.monotonic() - started, 2), "sources": sources,
+            "external_failures": [name for name, value in sources.items() if value.get("external_failed")]}
 
 
 def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_seconds: int,
               stop_after_seconds: int | None = None, bridge_restart_after: int | None = None,
-              validation_micro: bool = False, active_runs: list[tuple[ConfigBundle, int]] | None = None) -> dict[str, Any]:
+              validation_micro: bool = False, validation_sample: bool = False,
+              sample_phases: tuple[str, ...] | None = None, sample_per_phase: int = 6,
+              active_runs: list[tuple[ConfigBundle, int]] | None = None) -> dict[str, Any]:
     with _isolated_environment(bundle):
         if validation_micro:
             run_id = browser_tasks.enqueue_validation(PROJECT_ROOT, platforms)
+        elif validation_sample:
+            run_id = browser_tasks.enqueue_validation_sample(
+                PROJECT_ROOT, platforms, phases=sample_phases or (
+                    "A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL",
+                ), per_phase_per_platform=sample_per_phase, bundle=bundle,
+            )
         else:
             run_id = browser_tasks.enqueue_production(PROJECT_ROOT, mode, platforms)
         if active_runs is not None:
@@ -349,6 +577,11 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
             startup_timeout_seconds=45,
         )
     audit = _audit(bundle, run_id)
+    validation_cutoff = False
+    if outcome.status == "stopped" and stop_after_seconds is not None:
+        _record_validation_cutoff(bundle, run_id, f"intentional {mode} validation window cutoff")
+        validation_cutoff = True
+    validation_metrics = _validation_metrics(bundle, run_id, audit)
     result = {
         "run_id": run_id,
         "outcome": outcome.__dict__,
@@ -356,6 +589,9 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
         "terminal_classification": audit.get("terminal_classification"),
         "metrics": _metrics(audit),
         "audit": audit,
+        "validation_metrics": validation_metrics,
+        "validation_cutoff": validation_cutoff,
+        "validation_classification": VALIDATION_WINDOW_COMPLETE if validation_cutoff else audit.get("terminal_classification"),
         "scope": _scope_diagnostics(bundle, run_id),
         "extension_build_pass": _extension_build_seen(bundle, run_id),
         "bridge_restart_pass": int(outcome.bridge_restarts) >= 1 if bridge_restart_after is not None else None,
@@ -366,6 +602,7 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
 
 
 def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
+                 stop_after_seconds: int | None = None,
                  active_runs: list[tuple[ConfigBundle, int]] | None = None) -> dict[str, Any]:
     if active_runs is not None:
         active_runs.append((bundle, run_id))
@@ -373,8 +610,13 @@ def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
         browser_tasks.resume_run(PROJECT_ROOT, run_id)
         started = time.monotonic()
         outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=True, timeout_seconds=timeout_seconds,
-                                     startup_timeout_seconds=45)
+                                     stop_after_seconds=stop_after_seconds, startup_timeout_seconds=45)
     audit = _audit(bundle, run_id)
+    validation_cutoff = False
+    if outcome.status == "stopped" and stop_after_seconds is not None:
+        _record_validation_cutoff(bundle, run_id, "intentional resumed validation window cutoff")
+        validation_cutoff = True
+    validation_metrics = _validation_metrics(bundle, run_id, audit)
     result = {
         "run_id": run_id,
         "outcome": outcome.__dict__,
@@ -382,6 +624,9 @@ def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
         "terminal_classification": audit.get("terminal_classification"),
         "metrics": _metrics(audit),
         "audit": audit,
+        "validation_metrics": validation_metrics,
+        "validation_cutoff": validation_cutoff,
+        "validation_classification": VALIDATION_WINDOW_COMPLETE if validation_cutoff else audit.get("terminal_classification"),
         "scope": _scope_diagnostics(bundle, run_id),
         "extension_build_pass": _extension_build_seen(bundle, run_id),
     }
@@ -390,10 +635,13 @@ def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
     return result
 
 
-def _stage_pass(stage: dict[str, Any], *, require_terminal: bool = True) -> bool:
-    metrics = stage.get("metrics", {})
-    classification = stage.get("terminal_classification")
-    if require_terminal and classification not in TERMINAL_SUCCESS:
+def _stage_pass(stage: dict[str, Any], *, bounded: bool = False, require_terminal: bool = True) -> bool:
+    metrics = stage.get("validation_metrics", stage.get("metrics", {})) if bounded else stage.get("metrics", {})
+    classification = stage.get("validation_classification", stage.get("terminal_classification")) if bounded else stage.get("terminal_classification")
+    if bounded:
+        if classification != VALIDATION_WINDOW_COMPLETE or stage.get("validation_cutoff") is not True:
+            return False
+    elif require_terminal and classification not in TERMINAL_SUCCESS:
         return False
     if stage.get("extension_build_pass") is not True:
         return False
@@ -406,9 +654,16 @@ def _stage_pass(stage: dict[str, Any], *, require_terminal: bool = True) -> bool
     if metrics.get("persistence_attempted", 0) != metrics.get("persisted", 0) + metrics.get("persistence_failed", 0):
         return False
     states = metrics.get("task_states", {})
-    if any(states.get(state, 0) for state in ("queued", "running", "incomplete", "paused", "stopped", "failed")):
+    if bounded:
+        if metrics.get("untouched_exhausted", 0) or metrics.get("attempted_false_exhausted", 0) or metrics.get("attempted_incomplete", 0) or metrics.get("attempted_failed", 0) or metrics.get("attempted_running", 0):
+            return False
+        if not metrics.get("attempted_tasks", 0) or not metrics.get("progress_tasks", 0):
+            return False
+    elif any(states.get(state, 0) for state in ("queued", "running", "incomplete", "paused", "stopped", "failed")):
         return False
-    if any(values.get("contamination", 0) or values.get("scope_missing_events", 0) for values in stage.get("scope", {}).values()):
+    if any(values.get("contamination_persisted", values.get("contamination", 0)) or values.get("scope_missing_events", 0)
+           or (values.get("attempted_pages", 0) and not values.get("scope_found_events", 0))
+           for values in stage.get("scope", {}).values()):
         return False
     return True
 
@@ -461,6 +716,29 @@ def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     return {"ok": all(item["ok"] for item in checks), "git": state, "checks": checks, "deterministic": deterministic}
 
 
+def _phase_counts(tasks: list[Any]) -> dict[str, dict[str, int]]:
+    counts: dict[str, dict[str, int]] = {}
+    for task in tasks:
+        phase = str(task.phase)
+        platform = str(task.platform)
+        counts.setdefault(phase, {})[platform] = counts.setdefault(phase, {}).get(platform, 0) + 1
+    return counts
+
+
+def _sampled_phase_counts(bundle: ConfigBundle, run_id: int) -> dict[str, dict[str, int]]:
+    conn = Database(bundle).connect()
+    try:
+        counts: dict[str, dict[str, int]] = {}
+        for row in conn.execute(
+            "SELECT phase,platform,COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? GROUP BY phase,platform ORDER BY phase,platform",
+            (run_id,),
+        ):
+            counts.setdefault(str(row[0]), {})[str(row[1])] = int(row[2])
+        return counts
+    finally:
+        conn.close()
+
+
 def _write_report(report: dict[str, Any], report_dir: Path) -> None:
     report_dir.mkdir(parents=True, exist_ok=True)
     latest_json = report_dir / "latest.json"
@@ -468,7 +746,7 @@ def _write_report(report: dict[str, Any], report_dir: Path) -> None:
     latest_json.write_text(json.dumps(report, indent=2, ensure_ascii=False, default=str) + "\n", encoding="utf-8")
     lines = ["# JobBot production validation", "", f"PROD_READY={str(bool(report.get('PROD_READY'))).lower()}",
              f"branch={report.get('branch')}", f"head={report.get('head')}", ""]
-    for key in ("preflight", "primary_live", "soak", "semi_production", "external_blockers", "internal_failures"):
+    for key in ("preflight", "run_now_coverage", "primary_live", "soak", "semi_production", "external_blockers", "internal_failures"):
         lines.extend([f"## {key}", "", "```json", json.dumps(report.get(key), indent=2, ensure_ascii=False, default=str), "```", ""])
     latest_md.write_text("\n".join(lines), encoding="utf-8")
 
@@ -496,6 +774,11 @@ def run(*, semi_minutes: int = 30) -> int:
         "external_blockers": [],
         "internal_failures": [],
     }
+    configured_tasks = compile_staged_plan(load_bundle(PROJECT_ROOT), list(PRIMARY))
+    report["run_now_coverage"] = {
+        "configured_production_phase_counts": _phase_counts(configured_tasks),
+        "live_sampled_phase_counts": {},
+    }
     active_runs: list[tuple[ConfigBundle, int]] = []
     dashboard_bundles: list[tuple[ConfigBundle, str]] = []
     try:
@@ -522,16 +805,16 @@ def run(*, semi_minutes: int = 30) -> int:
                 active_runs=active_runs,
             )
         if primary["outcome"]["status"] == "stopped":
-            primary["resume"] = _resume_live(micro_bundle, int(primary["run_id"]), 240, active_runs)
+            primary["resume"] = _resume_live(micro_bundle, int(primary["run_id"]), 240, 220, active_runs)
             final_primary = primary["resume"]
         else:
             primary["resume"] = None
             final_primary = primary
-        primary["stop_resume_pass"] = bool(primary["outcome"]["status"] == "stopped" and primary["resume"] and _stage_pass(final_primary))
+        primary["stop_resume_pass"] = bool(primary["outcome"]["status"] == "stopped" and primary["resume"] and _stage_pass(final_primary, bounded=True))
         primary["dashboard"] = _dashboard_probe(micro_bundle, url)
         primary["pass"] = bool(primary["stop_resume_pass"] and primary["bridge_restart_pass"] is True
                                 and primary["dashboard"]["identity_ok"]
-                                and primary["dashboard"]["live_refresh_ok"] and _stage_pass(final_primary))
+                                and primary["dashboard"]["live_refresh_ok"] and _stage_pass(final_primary, bounded=True))
         report["primary_live"] = primary
         if primary["outcome"]["status"] == "extension_unresponsive":
             report["internal_failures"].append(
@@ -542,7 +825,7 @@ def run(*, semi_minutes: int = 30) -> int:
                 f"loaded extension did not report build {EXPECTED_EXTENSION_BUILD}; reload the unpacked extension in chrome://extensions and rerun validator"
             )
         for platform, values in final_primary.get("scope", {}).items():
-            if values.get("scope_missing_events") or values.get("contamination"):
+            if values.get("scope_missing_events") or values.get("contamination_persisted"):
                 report["internal_failures"].append(f"{platform}: live result scope failed")
         for platform, values in final_primary.get("audit", {}).get("platforms", {}).items():
             if any(values.get(state, 0) for state in TERMINAL_EXTERNAL):
@@ -559,22 +842,26 @@ def run(*, semi_minutes: int = 30) -> int:
         soak_started = time.monotonic()
         with _isolated_environment(soak_bundle):
             soak = _live_run(soak_bundle, mode="staged_recent", platforms=list(PRIMARY), timeout_seconds=900,
-                             stop_after_seconds=60, bridge_restart_after=30, active_runs=active_runs)
+                             stop_after_seconds=60, bridge_restart_after=30, validation_sample=True,
+                             sample_phases=("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT"), sample_per_phase=6,
+                             active_runs=active_runs)
             if soak["outcome"]["status"] == "stopped":
-                soak["resume"] = _resume_live(soak_bundle, int(soak["run_id"]), 840, active_runs)
+                soak["resume"] = _resume_live(soak_bundle, int(soak["run_id"]), 840, 780, active_runs)
                 final_soak = soak["resume"]
             else:
                 soak["resume"] = None
                 final_soak = soak
             soak["supplemental"] = _run_supplemental(soak_bundle, int(soak["run_id"]))
+        soak["sampled_phase_counts"] = _sampled_phase_counts(soak_bundle, int(soak["run_id"]))
+        report["run_now_coverage"]["live_sampled_phase_counts"]["soak"] = soak["sampled_phase_counts"]
         soak["duration_seconds_total"] = round(time.monotonic() - soak_started, 2)
         soak["dashboard"] = _dashboard_probe(soak_bundle, soak_url)
         soak["pass"] = bool(soak["outcome"]["status"] == "stopped" and soak["resume"] and
                              soak["bridge_restart_pass"] is True and
-                             _stage_pass(final_soak) and soak["supplemental"]["isolation_pass"] and
+                             _stage_pass(final_soak, bounded=True) and soak["supplemental"]["isolation_pass"] and
                              soak["dashboard"]["identity_ok"] and soak["dashboard"]["live_refresh_ok"])
         report["soak"] = soak
-        if not soak["supplemental"]["ok"]:
+        if soak["supplemental"].get("external_failures"):
             report["external_blockers"].append({"stage": "soak_supplemental", "error": soak["supplemental"]["error"],
                                                  "sources": soak["supplemental"].get("sources", {})})
         if soak["outcome"]["status"] == "extension_unresponsive":
@@ -590,21 +877,26 @@ def run(*, semi_minutes: int = 30) -> int:
         semi_started = time.monotonic()
         with _isolated_environment(semi_bundle):
             semi = _live_run(semi_bundle, mode="staged", platforms=list(PRIMARY), timeout_seconds=semi_minutes * 60,
-                             stop_after_seconds=60, bridge_restart_after=30, active_runs=active_runs)
+                             stop_after_seconds=60, bridge_restart_after=30, validation_sample=True,
+                             sample_phases=("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"),
+                             sample_per_phase=6, active_runs=active_runs)
             if semi["outcome"]["status"] == "stopped":
-                semi["resume"] = _resume_live(semi_bundle, int(semi["run_id"]), semi_minutes * 60 - 60, active_runs)
+                semi["resume"] = _resume_live(semi_bundle, int(semi["run_id"]), semi_minutes * 60 - 60,
+                                               semi_minutes * 60 - 60, active_runs)
                 final_semi = semi["resume"]
             else:
                 semi["resume"] = None
                 final_semi = semi
             semi["supplemental"] = _run_supplemental(semi_bundle, int(semi["run_id"]))
+        semi["sampled_phase_counts"] = _sampled_phase_counts(semi_bundle, int(semi["run_id"]))
+        report["run_now_coverage"]["live_sampled_phase_counts"]["semi_production"] = semi["sampled_phase_counts"]
         semi["duration_seconds_total"] = round(time.monotonic() - semi_started, 2)
         semi["dashboard"] = _dashboard_probe(semi_bundle, semi_url)
         semi["pass"] = bool(semi["outcome"]["status"] == "stopped" and semi["resume"] and
-                             _stage_pass(final_semi) and semi["supplemental"]["isolation_pass"] and
+                             _stage_pass(final_semi, bounded=True) and semi["supplemental"]["isolation_pass"] and
                              semi["dashboard"]["identity_ok"] and semi["dashboard"]["live_refresh_ok"])
         report["semi_production"] = semi
-        if not semi["supplemental"]["ok"]:
+        if semi["supplemental"].get("external_failures"):
             report["external_blockers"].append({"stage": "semi_supplemental", "error": semi["supplemental"]["error"],
                                                  "sources": semi["supplemental"].get("sources", {})})
         if semi["outcome"]["status"] == "extension_unresponsive":

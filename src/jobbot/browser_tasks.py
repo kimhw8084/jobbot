@@ -144,6 +144,68 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
     return rid
 
 
+def enqueue_validation_sample(
+    base: Path,
+    platforms: list[str] | None = None,
+    *,
+    phases: tuple[str, ...] = (
+        "A_FASTEST_DOOR_RECENT",
+        "B_REMAINING_CORE_RECENT",
+        "C_DEEP_BACKFILL",
+    ),
+    per_phase_per_platform: int = 6,
+    bundle=None,
+) -> int:
+    """Queue a bounded representative sample of the real staged plan.
+
+    This is only for the final validator.  It uses the same compiled production
+    definitions and URL builders, but deliberately leaves the rest of the
+    production universe queued so a short validation window never pretends to
+    have exhausted it.
+    """
+    if per_phase_per_platform < 1:
+        raise ValueError("per_phase_per_platform must be positive")
+    chosen = platforms or list(PLATFORMS)
+    bad = [p for p in chosen if p not in PLATFORMS]
+    if bad:
+        raise ValueError(f"unsupported platform(s): {', '.join(bad)}")
+    active_bundle = bundle or load_bundle(base)
+    planned = compile_staged_plan(active_bundle, chosen, phases)
+    selected: list[Any] = []
+    counts: dict[tuple[str, str], int] = {}
+    for task in planned:
+        key = (task.phase, task.platform)
+        if counts.get(key, 0) >= per_phase_per_platform:
+            continue
+        selected.append(task)
+        counts[key] = counts.get(key, 0) + 1
+    db = active_bundle.database_path
+    Database(active_bundle).migrate()
+    store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
+    rid = int(store.conn.execute(
+        "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
+        (V3_VERSION, "validation_sample", ",".join(chosen), "queued", now,
+         f"Bounded representative A/B/C validation sample; {len(selected)} of the uncapped production definitions."),
+    ).lastrowid)
+    for platform in chosen:
+        n = sum(1 for task in selected if task.platform == platform)
+        store.conn.execute(
+            "INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,?)",
+            (rid, platform, n),
+        )
+    for task in selected:
+        store.conn.execute(
+            """INSERT INTO browser_search_tasks(
+              browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (rid, task.platform, task.query, 1, task.age_days, task.sort_mode, task.search_url, None, "queued", now,
+             task.profile, task.lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase),
+        )
+    store.conn.commit(); store.close()
+    return rid
+
+
 def enqueue_gate(base: Path, platform: str = "indeed", days: int = 7, max_results: int = 20) -> int:
     queries = ["patient enrollment specialist", "patient access specialist", "healthcare operations coordinator"]
     db, _, _, _, _ = paths(base)

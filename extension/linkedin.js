@@ -17,22 +17,29 @@
       }
     }
     const allLinks=[...document.querySelectorAll('a[href*="/jobs/view/"]')];
-    return{root:null,cards:[],attempts,candidate_links_total:allLinks.length,candidate_links_outside_scope:allLinks.length};
+    return{root:null,cards:[],attempts,candidate_links_total:allLinks.length,candidate_links_in_scope:0,candidate_links_outside_scope:allLinks.length,outside_scope_urls:allLinks.map((a)=>C.absoluteUrl(a.getAttribute('href')||a.href||'')).filter(Boolean)};
   }
   function collect(){
     const scope=locateSearchResults();
     if(!scope.root)return{links:[],extraction_scope_missing:true,extraction_diagnostics:scope};
     const seen=new Map(),scopedAnchors=new Set();
     for(const card of scope.cards)for(const selector of S.searchLinks)for(const anchor of card.querySelectorAll(selector))scopedAnchors.add(anchor);
+    const allAnchors=[...new Set(document.querySelectorAll('a[href*="/jobs/view/"]'))];
+    const inScopeIds=new Set(),inScopeUrls=new Set(),outsideIds=new Set(),outsideUrls=new Set();
     for(const anchor of scopedAnchors){
       const raw=C.absoluteUrl(anchor.getAttribute('href')||anchor.href||''),id=sid(raw),url=canon(raw);
       if(!id||!url)continue;
+      inScopeIds.add(id);inScopeUrls.add(url);
       const card=scope.cards.find((candidate)=>candidate.contains(anchor))||anchor.parentElement;
       const posted=C.clean(card?.querySelector?.('time,.job-search-card__listdate,.job-card-container__listed-time,[class*="listed-time"]')?.innerText||card?.querySelector?.('time')?.getAttribute?.('datetime')||'');
       seen.set(id,{source_job_id:id,url,title:C.clean(anchor.innerText||anchor.getAttribute('aria-label')||''),company:C.clean(card?.querySelector?.('.job-card-container__primary-description,.artdeco-entity-lockup__subtitle,.base-search-card__subtitle')?.innerText||''),location:C.clean(card?.querySelector?.('.job-card-container__metadata-item,.job-search-card__location,.base-search-card__metadata')?.innerText||''),posted_text:posted,posted_age_days:C.parseAgeDays(posted)});
     }
-    const allLinks=[...document.querySelectorAll('a[href*="/jobs/view/"]')];
-    return{links:[...seen.values()],extraction_scope_missing:false,extraction_diagnostics:{attempts:scope.attempts,matched_containers:1,candidate_links_total:allLinks.length,candidate_links_in_scope:scopedAnchors.size,candidate_links_outside_scope:Math.max(0,allLinks.length-scopedAnchors.size)}};
+    for(const anchor of allAnchors){
+      if(scopedAnchors.has(anchor))continue;
+      const raw=C.absoluteUrl(anchor.getAttribute('href')||anchor.href||''),id=sid(raw),url=canon(raw);if(!id||!url)continue;
+      if(!inScopeIds.has(id))outsideIds.add(id);if(!inScopeUrls.has(url))outsideUrls.add(url);
+    }
+    return{links:[...seen.values()],extraction_scope_missing:false,extraction_diagnostics:{attempts:scope.attempts,matched_containers:1,candidate_links_total:allAnchors.length,candidate_links_in_scope:scopedAnchors.size,candidate_links_outside_scope:Math.max(0,allAnchors.length-scopedAnchors.size),in_scope_source_ids:[...inScopeIds],in_scope_urls:[...inScopeUrls],outside_scope_source_ids:[...outsideIds],outside_scope_urls:[...outsideUrls]}};
   }
   function nextUrl(){
     for(const selector of S.nextLinks){const anchor=document.querySelector(selector);if(anchor?.href)return C.absoluteUrl(anchor.href);}
