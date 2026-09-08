@@ -73,7 +73,20 @@ def add_note(conn: sqlite3.Connection, job_id: str, note: str, *, source: str = 
     row = conn.execute("SELECT application_status FROM jobs WHERE job_id=?", (job_id,)).fetchone()
     if row is None:
         raise ApplicationError(f"unknown job id: {job_id}")
-    return mark(conn, job_id, str(row[0] or "NEW"), notes=note.strip(), source=source)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    normalized_note = note.strip()
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        conn.execute("UPDATE jobs SET notes=? WHERE job_id=?", (normalized_note, job_id))
+        cursor = conn.execute(
+            "INSERT INTO application_events(job_id,event_type,event_at,notes,source) VALUES(?,?,?,?,?)",
+            (job_id, "NOTE", now, normalized_note, source),
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    return ApplicationEvent(int(cursor.lastrowid), job_id, "NOTE", now, source, normalized_note)
 
 
 def history(conn: sqlite3.Connection, job_id: str) -> list[ApplicationEvent]:

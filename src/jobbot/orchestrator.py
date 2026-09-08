@@ -43,7 +43,9 @@ def chrome_path() -> str | None:
 
 def _open_chrome(url: str) -> None:
     if sys.platform == "darwin":
-        subprocess.Popen(["open", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # LaunchServices' background flag prevents a long read-only crawl from
+        # activating Chrome and stealing the user's current workspace.
+        subprocess.Popen(["open", "-g", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return
     executable = chrome_path()
     if not executable:

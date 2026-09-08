@@ -44,10 +44,11 @@ async function nativeRequest(action,payload={},timeoutMs=60000){
       });
       let obj=null; try{obj=await r.json();}catch(_){throw new Error(`Local bridge returned HTTP ${r.status} with invalid JSON`);}
       if(!r.ok)throw new Error(obj?.message||obj?.error||`Local bridge HTTP ${r.status}`);
+      await chrome.storage.local.set({jobbot_bridge_state:{status:'connected',port:b.port,action,at:new Date().toISOString(),error:''}});
       return obj;
     }catch(e){
-      last=e?.name==='AbortError'?new Error(`local bridge request timed out: ${action}`):new Error(`Local bridge unavailable: ${e?.message||e}`);
-      if(!transientBridgeError(last)||attempt===2)throw last;
+      last=e?.name==='AbortError'?new Error(`Local bridge timed out at 127.0.0.1:${b.port} during ${action}`):new Error(`Local bridge unavailable at 127.0.0.1:${b.port} during ${action}: ${e?.message||e}`);
+      if(!transientBridgeError(last)||attempt===2){await chrome.storage.local.set({jobbot_bridge_state:{status:'error',port:b.port,action,at:new Date().toISOString(),error:last.message}}).catch(()=>{});throw last;}
       await sleep(350*(attempt+1));
     }finally{clearTimeout(timer);}
   }
@@ -75,7 +76,7 @@ function stopHeartbeat(){if(heartbeatTimer)clearInterval(heartbeatTimer);heartbe
 
 async function checkAuth(platform,runId,taskId){
   const url=AUTH_URLS[platform]; if(!url)return {authenticated:true,page:{reason:'no auth check configured'}};
-  const tab=await chrome.tabs.create({url,active:true});
+  const tab=await chrome.tabs.create({url,active:false});
   try{
     const p=await inspectTab(tab.id,'JOBBOT_INSPECT_AUTH',{},5);
     if(p.challenged){
@@ -90,9 +91,9 @@ async function checkAuth(platform,runId,taskId){
 
 async function gatherStableSearch(tabId,initial){
   let page=initial; const merged=new Map((page.result_links||[]).map(x=>[x.source_job_id||x.url,x])); let stable=0;
-  for(let i=0;i<6&&stable<2;i++){
+  for(let i=0;i<4&&stable<1;i++){
     const before=merged.size;
-    const after=await inspectTab(tabId,'JOBBOT_SCROLL_AND_INSPECT',{wait_ms:1200+i*150});
+    const after=await inspectTab(tabId,'JOBBOT_SCROLL_AND_INSPECT',{wait_ms:800+i*150});
     if(after.challenged||after.extraction_scope_missing)return after;
     for(const x of (after.result_links||[]))merged.set(x.source_job_id||x.url,x);
     page.next_url=page.next_url||after.next_url||'';
@@ -103,10 +104,10 @@ async function gatherStableSearch(tabId,initial){
 }
 
 async function advanceSearch(tabId,page){
-  if(page.next_url){await chrome.tabs.update(tabId,{url:page.next_url,active:true});await sleep(900);return {advanced:true,url:page.next_url};}
+  if(page.next_url){await chrome.tabs.update(tabId,{url:page.next_url});await sleep(600);return {advanced:true,url:page.next_url};}
   try{
     const r=await inspectTab(tabId,'JOBBOT_ADVANCE_SEARCH',{},3);
-    if(r?.advanced){await sleep(1200);return {advanced:true,url:r.page_url||''};}
+    if(r?.advanced){await sleep(800);return {advanced:true,url:r.page_url||''};}
   }catch(_){}
   return {advanced:false,url:''};
 }
@@ -124,7 +125,7 @@ async function processTask(runId,task){
   const finishIncomplete=async(reason)=>{try{await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'incomplete',reason});}catch(_){/* preserve the original failure when the bridge is unavailable */}};
   try{
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open search ${searchUrl}`});
-    searchTab=await chrome.tabs.create({url:searchUrl,active:true});
+    searchTab=await chrome.tabs.create({url:searchUrl,active:false});
     while(true){
       if(Date.now()-lastMeaningfulAt>WATCHDOG_MS){await finishIncomplete('SAFETY_STOP: watchdog observed no meaningful progress for 180 seconds');return;}
       const stop=await requiredRequest('should_stop',{run_id:runId}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
@@ -179,9 +180,9 @@ async function processTask(runId,task){
         const work=pending.detail,link={...(work.card||{}),source_job_id:work.source_job_id,url:work.source_url,title:work.title_hint,company:work.company_hint,location:work.location_hint,posted_text:work.posted_text,posted_age_days:work.posted_age_days};
         await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open detail ${link.source_job_id||link.url}`});
         if(!detailTab)detailTab=await chrome.tabs.create({url:'about:blank',active:false});
-        await chrome.tabs.update(detailTab.id,{url:link.url,active:true});
+        await chrome.tabs.update(detailTab.id,{url:link.url,active:false});
         let detail;
-        try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:String(e?.message||e),url:link.url});await chrome.tabs.update(searchTab.id,{active:true}).catch(()=>{});continue;}
+        try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:String(e?.message||e),url:link.url});continue;}
         if(detail.challenged){const reason=detail.challenge_reason||'challenge on job detail';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason});return;}
         lastMeaningfulAt=Date.now();
         if(detail.job?.title&&detail.job?.canonical_url){
@@ -189,12 +190,12 @@ async function processTask(runId,task){
           try{await requiredRequest('record_job',{run_id:runId,task_id:taskId,result_id:work.result_id,job:{...detail.job,search_card:link,page_url:detail.page_url||link.url}},90000);processed+=1;recordedThisPage+=1;}
           catch(error){detailsFailed+=1;const message=`record_job rejected (${detail.job.title}): ${error.message}`;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}
         } else {const message=`detail payload incomplete type=${detail?.page_type||'none'} title=${detail?.job?.title||'none'} canonical=${detail?.job?.canonical_url||'none'} page=${detail?.page_url||'none'} source=${link.source_job_id||link.url}`;detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}
-        await chrome.tabs.update(searchTab.id,{active:true}).catch(()=>{});
+        // Do not activate the search tab; preserve the user's foreground tab.
         pendingDetails=Math.max(0,pendingDetails-1); const detailCheckpoint=progressPayload(page,pageFp); detailCheckpoint.checkpoint.last_job_key=link.source_job_id||link.url; detailCheckpoint.checkpoint.last_result_id=work.result_id; detailCheckpoint.checkpoint.processed=processed;
         await requiredRequest('task_progress',detailCheckpoint);
         const stopAfter=await requiredRequest('should_stop',{run_id:runId});
         if(stopAfter.stop||stopAfter.stop_after_current){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:stopAfter.stop?'emergency stop requested':'stop after current job requested'});return;}
-        await sleep(350);
+        await sleep(150);
       }
       await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'result_batch',message:`query=${task.query_text} page=${pagesVisited} extracted=${items.length} persisted=${pagePersisted} failed=${pagePersistenceFailed} duplicates=${pageDuplicates} pending=${pendingDetails} details=${detailRead} canonical=${processed}`,payload:{page:pagesVisited,...cardStats(),canonical_jobs:processed,recorded_this_page:recordedThisPage,page_persisted:pagePersisted,page_persistence_failed:pagePersistenceFailed,page_duplicates:pageDuplicates}});
       if(maxResults!==null&&processed>=maxResults){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'test_limit',reason:`Acceptance limit reached (${maxResults}); production has no count limit`});return;}
@@ -206,7 +207,7 @@ async function processTask(runId,task){
         else{await finishIncomplete('SAFETY_STOP: no next page/batch and no verified platform end state');}
         return;
       }
-      searchUrl=adv.url||page.next_url||searchUrl; await sleep(700);
+      searchUrl=adv.url||page.next_url||searchUrl; await sleep(400);
     }
   }catch(e){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'failed',reason:String(e?.message||e).slice(0,700)}).catch(()=>{});}
   finally{activeTaskId=null;if(detailTab?.id)try{await chrome.tabs.remove(detailTab.id);}catch(_){} if(searchTab?.id)try{await chrome.tabs.remove(searchTab.id);}catch(_){} }
@@ -229,6 +230,7 @@ async function runProduction(runId){
       await processTask(activeRunId,n.task);
     }
     const fin=await requiredRequest('finish_run',{run_id:activeRunId});
+    await chrome.storage.local.set({jobbot_last_run_state:{run_id:activeRunId,status:fin.status,at:new Date().toISOString()}});
     await chrome.storage.local.remove('jobbot_active_run_id'); activeRunId=null; stopHeartbeat(); return {ok:true,status:fin.status};
   }catch(e){
     await nativeRequest('run_error',{run_id:activeRunId,message:String(e?.message||e).slice(0,700)}).catch(()=>{});

@@ -3,171 +3,122 @@
 const summaryEl = document.getElementById('summary');
 const identityEl = document.getElementById('identity');
 const diagnosticEl = document.getElementById('diagnostic');
+const connectionBadgeEl = document.getElementById('connectionBadge');
+const refreshButton = document.getElementById('refreshButton');
 const runStateEl = document.getElementById('runState');
-const coverageEl = document.getElementById('coverage');
+const runStatusBadgeEl = document.getElementById('runStatusBadge');
+const platformGridEl = document.getElementById('platformGrid');
+const coverageGridEl = document.getElementById('coverageGrid');
+const coverageNoteEl = document.getElementById('coverageNote');
+const positioningEl = document.getElementById('positioning');
+const thesisEl = document.getElementById('thesis');
+const governingSentenceEl = document.getElementById('governingSentence');
+const portfolioEl = document.getElementById('portfolio');
+const recommendationHelpEl = document.getElementById('recommendationHelp');
+const guideToggleButton = document.getElementById('guideToggle');
+const guideContentEl = document.getElementById('guideContent');
 const discoveryHeadEl = document.getElementById('discoveryHead');
 const discoveryBodyEl = document.getElementById('discoveryBody');
 const pendingCountEl = document.getElementById('pendingCount');
+const pendingOnlyButton = document.getElementById('pendingOnlyButton');
 const filtersEl = document.getElementById('filters');
 const headEl = document.getElementById('head');
 const bodyEl = document.getElementById('body');
 const pageEl = document.getElementById('page');
+const jobCountEl = document.getElementById('jobCount');
+const tableHintEl = document.getElementById('tableHint');
 const prevButton = document.getElementById('prev');
 const nextButton = document.getElementById('next');
 const exportButton = document.getElementById('exportButton');
 const messageEl = document.getElementById('message');
-const detailEl = document.getElementById('detail');
-const statusActionsEl = document.getElementById('statusActions');
 const actionableViewButton = document.getElementById('actionableView');
 const allViewButton = document.getElementById('allView');
-const resetFiltersButton = document.getElementById('resetFilters');
+const quickQualifiedButton = document.getElementById('quickQualified');
+const quickNowButton = document.getElementById('quickNow');
+const quickNewButton = document.getElementById('quickNew');
+const quickAppliedButton = document.getElementById('quickApplied');
+const quickResetButton = document.getElementById('quickReset');
+const jobDrawerEl = document.getElementById('jobDrawer');
+const detailBackdropEl = document.getElementById('detailBackdrop');
+const detailCloseButton = document.getElementById('detailClose');
+const detailLoadingEl = document.getElementById('detailLoading');
+const detailContentEl = document.getElementById('detailContent');
+const detailTitleEl = document.getElementById('detailTitle');
+const detailCompanyEl = document.getElementById('detailCompany');
+const detailMetaEl = document.getElementById('detailMeta');
+const detailBadgesEl = document.getElementById('detailBadges');
+const detailApplyEl = document.getElementById('detailApply');
+const detailScoresEl = document.getElementById('detailScores');
+const detailWhyEl = document.getElementById('detailWhy');
+const detailRemoteEl = document.getElementById('detailRemote');
+const detailResumeEl = document.getElementById('detailResume');
+const detailRequirementsEl = document.getElementById('detailRequirements');
+const detailPreferredEl = document.getElementById('detailPreferred');
+const detailMatchesEl = document.getElementById('detailMatches');
+const detailGapsEl = document.getElementById('detailGaps');
+const detailBlockersEl = document.getElementById('detailBlockers');
+const detailDescriptionEl = document.getElementById('detailDescription');
+const detailSourcesEl = document.getElementById('detailSources');
+const detailHistoryEl = document.getElementById('detailHistory');
+const detailDiffsEl = document.getElementById('detailDiffs');
+const detailTimelineEl = document.getElementById('detailTimeline');
+const detailNoteEl = document.getElementById('detailNote');
+const saveNoteButton = document.getElementById('saveNoteButton');
+const detailNoteStatusEl = document.getElementById('detailNoteStatus');
+const statusActionsEl = document.getElementById('statusActions');
 
-const state = { page: 1, view: 'actionable', selectedJob: '', selectedIds: new Set(), lastRefresh: 'never' };
-const discoveryColumns = ['result_id','platform','title_hint','company_hint','location_hint','posted_text','detail_status','detail_attempts','observed_at'];
-const escapeText = (value) => String(value ?? '');
+const state = { page: 1, view: 'actionable', selectedJob: '', selectedIds: new Set(), pendingOnly: false, lastRefresh: 'never' };
+const discoveryColumns = [['title_hint', 'Discovery'], ['platform', 'Source'], ['company_hint', 'Company'], ['location_hint', 'Location'], ['posted_text', 'Posted'], ['detail_status', 'Detail'], ['observed_at', 'Seen']];
+const displayColumns = [['recommendation', 'Decision'], ['title', 'Role'], ['career_lane', 'Lane'], ['sources', 'Source'], ['posted_at', 'Posted'], ['salary_text', 'Salary'], ['remote_gate', 'Remote'], ['door_score', 'Door'], ['application_status', 'Application']];
+const kpis = [
+  ['reservoir', 'Qualified reservoir', 'Active, remote, qualified, unapplied'], ['apply_now', 'Apply now', 'Highest-confidence next actions'],
+  ['apply_volume', 'Apply volume', 'Legitimate qualified roles'], ['stretch', 'Strategic stretch', 'High career value, review gaps'],
+  ['detail_pending', 'Detail pending', 'Saved cards still waiting to be read'], ['applications', 'Applications', 'Funnel events recorded'],
+  ['active', 'Active jobs', 'Canonical postings still open'], ['updated', 'Updated', 'Meaningful content changes'],
+  ['remote_confirmed', 'Remote confirmed', 'Description-backed remote pass'], ['descriptions_complete', 'Descriptions complete', 'Enough content for qualification'],
+  ['discoveries', 'Card discoveries', 'Durable source observations'], ['details_complete', 'Details complete', 'Full detail observations saved'],
+];
+const text = (value) => String(value ?? '');
+const titleCase = (value) => text(value).replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const safeJson = (value, fallback = []) => { if (Array.isArray(value)) return value; if (value && typeof value === 'object') return value; try { return JSON.parse(value || JSON.stringify(fallback)); } catch (_) { return fallback; } };
+const listValue = (value) => { const parsed = safeJson(value, []); if (Array.isArray(parsed)) return parsed.filter(Boolean).map(text); if (parsed && typeof parsed === 'object') return Object.entries(parsed).map(([key, item]) => `${key}: ${text(item)}`); return text(value).trim() ? [text(value)] : []; };
 
-function noteError(section, error) {
-  const message = error instanceof Error ? error.message : String(error);
-  state.lastRefresh = new Date().toLocaleString();
-  diagnosticEl.hidden = false;
-  diagnosticEl.textContent = `Dashboard error · ${section}\n${message}\nLast refresh attempt: ${state.lastRefresh}`;
-}
+function noteError(section, error) { const message = error instanceof Error ? error.message : text(error); state.lastRefresh = new Date().toLocaleString(); diagnosticEl.hidden = false; diagnosticEl.textContent = `Dashboard error · ${section}\n${message}\nLast refresh attempt: ${state.lastRefresh}`; connectionBadgeEl.textContent = 'Data error'; connectionBadgeEl.className = 'status-pill bad'; }
+function clearErrorIfHealthy() { diagnosticEl.hidden = true; diagnosticEl.textContent = ''; connectionBadgeEl.textContent = `Live · refreshed ${state.lastRefresh}`; connectionBadgeEl.className = 'status-pill ok'; }
+async function api(path, options) { const response = await fetch(path, { cache: 'no-store', ...options }); let payload; try { payload = await response.json(); } catch (_) { throw new Error(`${path}: invalid JSON (HTTP ${response.status})`); } if (!response.ok || payload?.ok === false) throw new Error(`${path}: ${payload?.error || payload?.message || `HTTP ${response.status}`}`); return payload; }
+function addCell(row, value, className = '') { const cell = document.createElement('td'); cell.textContent = text(value); if (className) cell.className = className; row.append(cell); return cell; }
+function setChildren(element, children) { element.replaceChildren(...children); }
+function makeBadge(label, kind = '') { const badge = document.createElement('span'); badge.className = `state-badge ${kind}`; badge.textContent = label; return badge; }
+function makeList(items, empty = 'None recorded') { const values = listValue(items); const box = document.createElement('div'); if (!values.length) { box.textContent = empty; return box; } const list = document.createElement('ul'); values.forEach((item) => { const li = document.createElement('li'); li.textContent = item; list.append(li); }); box.append(list); return box; }
+function setDetailCopy(element, value, empty = 'Not recorded') { element.replaceChildren(); const values = listValue(value); if (values.length > 1) element.append(makeList(values, empty)); else element.textContent = values[0] || empty; }
+function runGuarded(section, action) { return action().catch((error) => { noteError(section, error); throw error; }); }
 
-function clearErrorIfHealthy() {
-  diagnosticEl.hidden = true;
-  diagnosticEl.textContent = '';
-}
-
-async function api(path, options) {
-  const response = await fetch(path, { cache: 'no-store', ...options });
-  let payload;
-  try { payload = await response.json(); } catch (_) { throw new Error(`${path}: invalid JSON (HTTP ${response.status})`); }
-  if (!response.ok || payload?.ok === false) throw new Error(`${path}: ${payload?.error || payload?.message || `HTTP ${response.status}`}`);
-  return payload;
-}
-
-function cells(row, columns) {
-  return columns.map((column) => { const cell = document.createElement('td'); cell.textContent = escapeText(row[column]); return cell; });
-}
-
-async function refreshIdentity() {
-  const value = await api('/api/identity');
-  identityEl.textContent = `Database: ${value.resolved_database_path} · identity ${value.database_identity} · pid ${value.pid}`;
-}
-
-async function refreshSummary() {
-  const value = await api('/api/summary');
-  summaryEl.replaceChildren();
-  for (const [key, number] of Object.entries(value)) {
-    const card = document.createElement('div'); card.className = 'card';
-    const label = document.createElement('span'); label.textContent = key.replaceAll('_', ' ');
-    const total = document.createElement('b'); total.textContent = escapeText(number);
-    card.append(label, total); summaryEl.append(card);
-  }
-}
-
-async function refreshRun() {
-  const value = await api('/api/run');
-  if (!value.run) { runStateEl.textContent = 'No browser run yet.'; return; }
-  const run = value.run;
-  const lines = [`RUN #${run.browser_run_id} · ${run.status} · last progress ${run.last_progress_at || 'never'}`];
-  if (value.current_task) {
-    const task = value.current_task;
-    lines.push(`ACTIVE ${task.platform} · ${task.query_text} · page ${task.page_number || 0} · results ${task.results_seen || 0} · details ${task.detail_count_read || 0}`);
-    lines.push(`cards extracted ${task.cards_extracted || 0} · persisted ${task.cards_persistence_succeeded || 0}/${task.cards_persistence_attempted || 0} · failed ${task.cards_persistence_failed || 0} · duplicates ${task.duplicate_cards || 0} · pending ${task.pending_details || 0} · detail errors ${task.details_failed || 0}`);
-  }
-  for (const platform of value.platforms || []) {
-    lines.push(`${platform.platform}: auth=${platform.auth_status} running=${platform.running} exhausted=${platform.tasks_completed}/${platform.tasks_total} deferred=${platform.deferred} discoveries=${platform.discoveries} cards=${platform.cards_persisted || 0}/${platform.cards_extracted || 0} card_errors=${platform.cards_failed || 0} duplicates=${platform.duplicate_cards || 0} details=${platform.details_complete}`);
-  }
-  runStateEl.textContent = lines.join('\n');
-}
-
-async function refreshCoverage() {
-  const value = await api('/api/coverage');
-  const lines = ['PRIMARY COVERAGE'];
-  for (const [site, item] of Object.entries(value.primary || {})) lines.push(`${site}: tasks ${item.total} · exhausted ${item.exhausted} · incomplete ${item.incomplete} · challenged ${item.challenged} · auth ${item.auth_required} · deferred ${item.deferred} · failed ${item.failed} · results ${item.results} · details ${item.details}`);
-  lines.push('', `SUPPLEMENTAL: ${Object.entries(value.supplemental || {}).map(([key, number]) => `${key} ${number}`).join(' · ') || 'none recorded'}`);
-  coverageEl.textContent = lines.join('\n');
-}
-
-async function refreshDiscoveries() {
-  const value = await api('/api/discoveries?limit=100');
-  pendingCountEl.textContent = `(${value.pending} pending)`;
-  discoveryHeadEl.replaceChildren(...discoveryColumns.map((column) => { const th = document.createElement('th'); th.textContent = column; return th; }));
-  discoveryBodyEl.replaceChildren();
-  for (const row of value.discoveries || []) {
-    const tr = document.createElement('tr'); tr.append(...cells(row, discoveryColumns));
-    tr.addEventListener('click', () => { if (row.source_url) window.open(row.source_url, '_blank', 'noopener'); });
-    discoveryBodyEl.append(tr);
-  }
-}
-
-function queryParams() {
-  const params = new URLSearchParams(new FormData(filtersEl));
-  params.set('view', state.view); params.set('page', String(state.page)); params.set('page_size', '50');
-  return params;
-}
-
-async function refreshJobs() {
-  const checkedBefore = new Set([...bodyEl.querySelectorAll('input[type="checkbox"]:checked')].map((input) => input.dataset.id));
-  checkedBefore.forEach((id) => state.selectedIds.add(id));
-  const value = await api(`/api/jobs?${queryParams()}`);
-  headEl.replaceChildren(document.createElement('th'));
-  headEl.firstChild.textContent = 'Select';
-  headEl.append(...value.columns.map((column) => { const th = document.createElement('th'); th.textContent = column; return th; }));
-  bodyEl.replaceChildren();
-  if (!value.jobs.length && state.view === 'actionable') messageEl.textContent = 'No currently actionable jobs; choose ALL DISCOVERIES to inspect the full warehouse.';
-  for (const row of value.jobs || []) {
-    const tr = document.createElement('tr');
-    const selectCell = document.createElement('td'); const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox'; checkbox.dataset.id = row.job_id; checkbox.checked = state.selectedIds.has(row.job_id);
-    checkbox.addEventListener('change', () => checkbox.checked ? state.selectedIds.add(row.job_id) : state.selectedIds.delete(row.job_id));
-    selectCell.append(checkbox); tr.append(selectCell, ...cells(row, value.columns));
-    tr.addEventListener('click', (event) => { if (event.target !== checkbox) showJob(row.job_id); }); bodyEl.append(tr);
-  }
-  pageEl.textContent = `Page ${value.page} · ${value.total} jobs · view ${state.view}`;
-  prevButton.disabled = state.page <= 1; nextButton.disabled = state.page * value.page_size >= value.total;
-}
-
-async function showJob(jobId) {
-  state.selectedJob = jobId;
-  const value = await api(`/api/jobs/${encodeURIComponent(jobId)}`);
-  detailEl.textContent = JSON.stringify(value, null, 2);
-  statusActionsEl.replaceChildren();
-  for (const status of ['SHORTLIST','PREPARED','APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED','SKIP','CLOSED']) {
-    const button = document.createElement('button'); button.type = 'button'; button.textContent = status;
-    button.addEventListener('click', async () => {
-      try {
-        const notes = window.prompt('Optional note') || '';
-        await api(`/api/jobs/${encodeURIComponent(jobId)}/application`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({status, notes}) });
-        await Promise.all([refreshSummary(), refreshJobs(), showJob(jobId)]);
-      } catch (error) { noteError(`application ${status}`, error); }
-    }); statusActionsEl.append(button);
-  }
-}
-
-function guarded(section, action) { return action().catch((error) => { noteError(section, error); throw error; }); }
-async function refreshAll() {
-  const results = await Promise.allSettled([
-    guarded('identity', refreshIdentity), guarded('summary', refreshSummary), guarded('run status', refreshRun),
-    guarded('coverage', refreshCoverage), guarded('discoveries', refreshDiscoveries), guarded('jobs', refreshJobs),
-  ]);
-  if (results.every((result) => result.status === 'fulfilled')) clearErrorIfHealthy();
-  state.lastRefresh = new Date().toLocaleString();
-}
-
-actionableViewButton.addEventListener('click', () => { state.view = 'actionable'; state.page = 1; actionableViewButton.classList.add('selected'); allViewButton.classList.remove('selected'); refreshJobs().catch((error) => noteError('actionable jobs', error)); });
-allViewButton.addEventListener('click', () => { state.view = 'all'; state.page = 1; allViewButton.classList.add('selected'); actionableViewButton.classList.remove('selected'); refreshJobs().catch((error) => noteError('all jobs', error)); });
-filtersEl.addEventListener('submit', (event) => { event.preventDefault(); state.page = 1; refreshJobs().catch((error) => noteError('filtered jobs', error)); });
-resetFiltersButton.addEventListener('click', () => { filtersEl.reset(); state.page = 1; refreshJobs().catch((error) => noteError('reset jobs', error)); });
-prevButton.addEventListener('click', () => { if (state.page > 1) { state.page -= 1; refreshJobs().catch((error) => noteError('previous page', error)); } });
-nextButton.addEventListener('click', () => { state.page += 1; refreshJobs().catch((error) => noteError('next page', error)); });
-exportButton.addEventListener('click', async () => {
-  try {
-    const value = await api('/api/export-selected', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({job_ids: [...state.selectedIds]}) });
-    messageEl.textContent = `Exported ${value.count} jobs to ${value.path}`;
-  } catch (error) { noteError('export selected', error); }
-});
-
-refreshAll();
-window.setInterval(refreshAll, 10000);
+async function refreshIdentity() { const value = await api('/api/identity'); identityEl.replaceChildren(); const label = document.createElement('span'); label.className = 'identity-label'; label.textContent = 'DATABASE'; const path = document.createElement('strong'); path.textContent = value.resolved_database_path; const meta = document.createElement('span'); meta.className = 'identity-meta'; meta.textContent = `Identity ${value.database_identity} · JobBot ${value.jobbot_version} · dashboard PID ${value.pid}`; identityEl.append(label, path, meta); }
+async function refreshSummary() { const value = await api('/api/summary'); setChildren(summaryEl, kpis.map(([key, label, hint]) => { const card = document.createElement('article'); card.className = 'kpi'; const top = document.createElement('div'); top.className = 'kpi-label'; const name = document.createElement('span'); name.textContent = label; const help = document.createElement('span'); help.className = 'info-dot'; help.title = hint; help.textContent = '?'; top.append(name, help); const total = document.createElement('strong'); total.className = 'kpi-value'; total.textContent = text(value[key] ?? 0); const caption = document.createElement('span'); caption.className = 'kpi-caption'; caption.textContent = hint; card.append(top, total, caption); return card; })); }
+function platformStatus(item) { if (number(item.running)) return ['ok', 'RUNNING']; if (number(item.deferred)) return ['warn', 'DEFERRED']; if (number(item.tasks_challenged)) return ['warn', 'CHALLENGED']; if (text(item.auth_status) === 'not_authenticated') return ['bad', 'AUTH REQUIRED']; if (text(item.auth_status) === 'verified') return ['ok', 'READY']; return ['neutral', text(item.auth_status || 'READY').toUpperCase()]; }
+async function refreshRun() { const value = await api('/api/run'); platformGridEl.replaceChildren(); if (!value.run) { runStatusBadgeEl.textContent = 'No run'; runStatusBadgeEl.className = 'status-pill neutral'; runStateEl.textContent = 'No browser run yet.'; return; } const run = value.run; const status = text(run.status).toUpperCase(); runStatusBadgeEl.textContent = status; runStatusBadgeEl.className = `status-pill ${status === 'RUNNING' ? 'ok' : status === 'PARTIAL' ? 'warn' : 'neutral'}`; const lines = [`Run #${run.browser_run_id} · ${status} · mode ${run.mode} · last progress ${run.last_progress_at || 'never'}`, `Jobs ${run.jobs_recorded || 0} · new ${run.jobs_new || 0} · updated ${run.jobs_updated || 0} · unchanged ${run.jobs_unchanged || 0}`]; if (value.current_task) { const task = value.current_task; lines.push(`Active: ${task.platform} · “${task.query_text}” · page ${task.page_number || 0} · results ${task.results_seen || 0} · details ${task.detail_count_read || 0}`, `Cards: ${task.cards_persistence_succeeded || 0}/${task.cards_persistence_attempted || 0} persisted · ${task.duplicate_cards || 0} duplicates · ${task.pending_details || 0} pending · ${task.details_failed || 0} detail errors`); } runStateEl.textContent = lines.join('\n'); for (const item of value.platforms || []) { const card = document.createElement('div'); card.className = 'platform-card'; const top = document.createElement('div'); top.className = 'platform-top'; const name = document.createElement('span'); name.textContent = text(item.platform); const stateBadge = platformStatus(item); top.append(name, makeBadge(stateBadge[1], stateBadge[0] === 'ok' ? 'complete' : stateBadge[0] === 'bad' ? 'failed' : 'pending')); const stats = document.createElement('p'); stats.textContent = `${item.tasks_completed || 0}/${item.tasks_total || 0} exhausted · ${item.discoveries || 0} cards · ${item.details_complete || 0} details`; card.append(top, stats); platformGridEl.append(card); } }
+async function refreshCoverage() { const value = await api('/api/coverage'); coverageGridEl.replaceChildren(); const rows = Object.entries(value.primary || {}); const max = Math.max(1, ...rows.map(([, item]) => number(item.total))); rows.forEach(([site, item]) => { const row = document.createElement('div'); row.className = 'coverage-row'; const name = document.createElement('strong'); name.textContent = site; const bar = document.createElement('div'); bar.className = 'coverage-bar'; const fill = document.createElement('div'); fill.className = 'coverage-fill'; fill.style.width = `${Math.round(number(item.total) / max * 100)}%`; bar.append(fill); const count = document.createElement('span'); count.className = 'muted'; count.textContent = `${item.exhausted || 0}/${item.total || 0} done`; row.append(name, bar, count); coverageGridEl.append(row); }); const supplemental = Object.entries(value.supplemental || {}).map(([key, count]) => `${key} ${count}`).join(' · '); coverageNoteEl.textContent = supplemental ? `Supplemental canonical sightings: ${supplemental}` : 'A platform challenge defers that platform only; other ready sources continue.'; }
+async function refreshGuide() { const value = await api('/api/strategy'); positioningEl.textContent = value.positioning; thesisEl.textContent = value.thesis; governingSentenceEl.textContent = value.governing_sentence; portfolioEl.replaceChildren(); (value.portfolio || []).sort((a, b) => number(a.execution_rank) - number(b.execution_rank)).forEach((lane) => { const chip = document.createElement('span'); chip.className = 'allocation-chip'; const percent = document.createElement('b'); percent.textContent = `${lane.allocation_percent}%`; chip.append(percent, document.createTextNode(text(lane.label))); chip.title = `Execution rank ${lane.execution_rank} · resume ${lane.resume_variant}`; portfolioEl.append(chip); }); recommendationHelpEl.replaceChildren(); Object.entries(value.recommendations || {}).forEach(([key, explanation]) => { const p = document.createElement('p'); const strong = document.createElement('b'); strong.textContent = `${key}: `; p.append(strong, document.createTextNode(text(explanation))); recommendationHelpEl.append(p); }); }
+function renderDiscoveryHeader() { setChildren(discoveryHeadEl, discoveryColumns.map(([, label]) => { const th = document.createElement('th'); th.textContent = label; return th; })); }
+async function refreshDiscoveries() { const endpoint = state.pendingOnly ? '/api/discoveries?limit=100&status=PENDING' : '/api/discoveries?limit=100'; const value = await api(endpoint); pendingCountEl.textContent = `· ${value.pending || 0} pending`; renderDiscoveryHeader(); discoveryBodyEl.replaceChildren(); (value.discoveries || []).forEach((item) => { const row = document.createElement('tr'); const titleCell = document.createElement('td'); titleCell.className = 'discovery-title'; titleCell.textContent = text(item.title_hint) || 'Untitled discovery'; const sub = document.createElement('div'); sub.className = 'discovery-sub'; sub.textContent = `${item.source_job_id || 'no source id'} · ${item.query_text || ''}`; titleCell.append(sub); row.append(titleCell); addCell(row, text(item.platform).toUpperCase()); addCell(row, item.company_hint || 'Unknown company'); addCell(row, item.location_hint || '—'); addCell(row, item.posted_text || '—'); const detail = item.detail_status || 'PENDING'; const detailCell = document.createElement('td'); detailCell.append(makeBadge(detail, detail === 'COMPLETE' ? 'complete' : detail === 'FAILED' ? 'failed' : 'pending')); row.append(detailCell); addCell(row, item.observed_at || '—'); row.addEventListener('click', () => { if (item.source_url) window.open(item.source_url, '_blank', 'noopener'); }); discoveryBodyEl.append(row); }); }
+function queryParams() { const params = new URLSearchParams(new FormData(filtersEl)); params.set('view', state.view); params.set('page', String(state.page)); params.set('page_size', '50'); return params; }
+function renderJobRow(item) { const row = document.createElement('tr'); const selectCell = document.createElement('td'); const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.dataset.id = item.job_id; checkbox.checked = state.selectedIds.has(item.job_id); checkbox.addEventListener('click', (event) => event.stopPropagation()); checkbox.addEventListener('change', () => checkbox.checked ? state.selectedIds.add(item.job_id) : state.selectedIds.delete(item.job_id)); selectCell.append(checkbox); row.append(selectCell); const decision = document.createElement('td'); decision.append(makeBadge(item.recommendation || 'REVIEW', text(item.recommendation).toLowerCase().replaceAll('_', '-'))); row.append(decision); const role = document.createElement('td'); role.className = 'job-title-cell'; const title = document.createElement('strong'); title.textContent = item.title || 'Untitled job'; const company = document.createElement('span'); company.textContent = item.company || 'Unknown company'; role.append(title, company); row.append(role); const lane = document.createElement('td'); lane.className = 'lane-cell'; lane.textContent = titleCase(item.career_lane); row.append(lane); addCell(row, item.sources || '—'); addCell(row, item.posted_at || '—'); addCell(row, item.salary_text || '—'); const remote = document.createElement('td'); remote.className = `remote-${text(item.remote_gate)}`; remote.textContent = item.remote_gate === 'pass' ? 'Confirmed' : titleCase(item.remote_gate || 'review'); row.append(remote); const score = document.createElement('td'); score.className = 'score-cell'; score.title = 'Door Score = 70% Landing Fit + 30% Career Value'; score.textContent = number(item.door_score).toFixed(0); row.append(score); addCell(row, item.application_status || 'NEW'); row.addEventListener('click', () => showJob(item.job_id)); return row; }
+async function refreshJobs() { const checkedBefore = [...bodyEl.querySelectorAll('input[type="checkbox"]:checked')].map((input) => input.dataset.id); checkedBefore.forEach((id) => state.selectedIds.add(id)); const value = await api(`/api/jobs?${queryParams()}`); setChildren(headEl, [document.createElement('th'), ...displayColumns.map(([, label]) => { const th = document.createElement('th'); th.textContent = label; return th; })]); headEl.firstChild.textContent = 'Select'; bodyEl.replaceChildren(); (value.jobs || []).forEach((item) => bodyEl.append(renderJobRow(item))); jobCountEl.textContent = `· ${value.total || 0}`; pageEl.textContent = `Page ${value.page} · ${value.total || 0} records`; tableHintEl.textContent = state.view === 'actionable' ? 'Actionable view hides out-of-scope and hard-gated market records.' : 'All discoveries includes legitimate scoped results kept for audit.'; prevButton.disabled = state.page <= 1; nextButton.disabled = state.page * value.page_size >= value.total; if (!value.jobs?.length) tableHintEl.textContent = state.view === 'actionable' ? 'No actionable jobs yet. All card discoveries remain visible above while detail work continues.' : 'No jobs match these filters.'; }
+function renderTimeline(element, items, formatter) { element.replaceChildren(); const values = Array.isArray(items) ? items : []; if (!values.length) { element.textContent = 'None recorded'; return; } values.slice(0, 30).forEach((item) => { const row = document.createElement('div'); row.className = 'timeline-item'; formatter(row, item); element.append(row); }); }
+function renderScoreCards(job) { const scores = [['Relevance', job.relevance_score], ['Qualification', job.qualification_score], ['Landing Fit', job.landing_score], ['Career Value', job.career_score], ['Door Score', job.door_score]]; detailScoresEl.replaceChildren(...scores.map(([label, value]) => { const card = document.createElement('div'); card.className = 'detail-score'; const name = document.createElement('span'); name.textContent = label; name.title = label === 'Landing Fit' ? 'Not a probability; a configurable fit signal.' : label === 'Door Score' ? '70% Landing Fit + 30% Career Value.' : 'See the decision guide above.'; const total = document.createElement('b'); total.textContent = number(value).toFixed(0); card.append(name, total); return card; })); }
+function renderJobDetail(value) { const job = value.job || {}; detailTitleEl.textContent = job.title || 'Untitled job'; detailCompanyEl.textContent = job.company || 'Unknown company'; detailMetaEl.textContent = [job.location_raw, job.salary_text, job.employment_class || job.employment_type, job.posting_status].filter(Boolean).join(' · ') || 'Posting metadata unavailable'; detailBadgesEl.replaceChildren(makeBadge(job.recommendation || 'REVIEW', text(job.recommendation).toLowerCase().replaceAll('_', '-')), makeBadge(job.application_status || 'NEW', 'complete'), makeBadge(job.remote_gate === 'pass' ? 'REMOTE CONFIRMED' : titleCase(job.remote_gate || 'REMOTE REVIEW'), job.remote_gate === 'pass' ? 'complete' : 'pending')); detailApplyEl.href = job.apply_url || job.canonical_url || '#'; detailApplyEl.hidden = !(job.apply_url || job.canonical_url); renderScoreCards(job); setDetailCopy(detailWhyEl, job.score_reasons_json || job.score_reasons, 'No score reasons recorded'); setDetailCopy(detailRemoteEl, job.remote_evidence_json || job.remote_gate_reason, 'Remote evidence not recorded'); setDetailCopy(detailResumeEl, job.resume_variant, 'Use the unified healthcare operations/data quality positioning'); setDetailCopy(detailRequirementsEl, job.required_qualifications, 'Required section not extracted'); setDetailCopy(detailPreferredEl, job.preferred_qualifications, 'No preferred section extracted'); setDetailCopy(detailMatchesEl, job.requirement_matches_json || job.matched_evidence_json, 'No matched evidence recorded'); setDetailCopy(detailGapsEl, job.requirement_gaps_json, 'No qualification gaps recorded'); setDetailCopy(detailBlockersEl, job.hard_reject_reasons_json, 'No hard blockers recorded'); detailDescriptionEl.textContent = job.description || 'Description unavailable; detail enrichment is still pending.'; renderTimeline(detailSourcesEl, value.occurrences, (row, item) => { const strong = document.createElement('strong'); strong.textContent = `${item.source_site || 'source'} · ${item.sighting_count || 1} sighting(s)`; const link = document.createElement('a'); link.href = item.source_url || ''; link.target = '_blank'; link.rel = 'noopener'; link.textContent = item.source_url || 'URL unavailable'; row.append(strong, link); }); renderTimeline(detailHistoryEl, value.versions, (row, item) => { const strong = document.createElement('strong'); strong.textContent = `Version ${item.version_no || '—'} · ${item.created_at || ''}`; row.append(strong, document.createTextNode(item.content_hash || item.change_status || 'Immutable content snapshot')); }); renderTimeline(detailDiffsEl, value.diffs, (row, item) => { const strong = document.createElement('strong'); strong.textContent = item.field_name || 'Changed field'; row.append(strong, document.createTextNode(`${item.old_value || '—'} → ${item.new_value || '—'}`)); }); renderTimeline(detailTimelineEl, value.applications, (row, item) => { const strong = document.createElement('strong'); strong.textContent = `${item.event_type || 'EVENT'} · ${item.event_at || ''}`; row.append(strong, document.createTextNode(item.notes || item.source || '')); }); detailNoteEl.value = ''; detailNoteStatusEl.textContent = ''; renderStatusActions(job.job_id, job.application_status || 'NEW'); }
+function renderStatusActions(jobId, currentStatus) { statusActionsEl.replaceChildren(); ['SHORTLIST', 'PREPARED', 'APPLIED', 'SCREEN', 'INTERVIEW', 'FINAL', 'OFFER', 'REJECTED', 'SKIP', 'CLOSED'].forEach((status) => { const button = document.createElement('button'); button.type = 'button'; button.textContent = status === currentStatus ? `✓ ${status}` : status; button.addEventListener('click', async () => { button.disabled = true; try { await api(`/api/jobs/${encodeURIComponent(jobId)}/application`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status }) }); await Promise.allSettled([refreshSummary(), refreshJobs()]); await showJob(jobId); } catch (error) { noteError(`application ${status}`, error); } finally { button.disabled = false; } }); statusActionsEl.append(button); }); }
+async function showJob(jobId) { state.selectedJob = jobId; jobDrawerEl.classList.add('open'); jobDrawerEl.setAttribute('aria-hidden', 'false'); detailLoadingEl.hidden = false; detailContentEl.hidden = true; try { const value = await api(`/api/jobs/${encodeURIComponent(jobId)}`); renderJobDetail(value); detailContentEl.hidden = false; } catch (error) { noteError(`job ${jobId}`, error); } finally { detailLoadingEl.hidden = true; } }
+function closeDrawer() { jobDrawerEl.classList.remove('open'); jobDrawerEl.setAttribute('aria-hidden', 'true'); state.selectedJob = ''; }
+async function refreshAll() { const results = await Promise.allSettled([runGuarded('identity', refreshIdentity), runGuarded('summary', refreshSummary), runGuarded('run status', refreshRun), runGuarded('coverage', refreshCoverage), runGuarded('career guide', refreshGuide), runGuarded('live discoveries', refreshDiscoveries), runGuarded('jobs', refreshJobs)]); state.lastRefresh = new Date().toLocaleString(); if (results.every((result) => result.status === 'fulfilled')) clearErrorIfHealthy(); }
+function setView(view) { state.view = view; state.page = 1; actionableViewButton.classList.toggle('selected', view === 'actionable'); allViewButton.classList.toggle('selected', view !== 'actionable'); refreshJobs().catch((error) => noteError('job view', error)); }
+function clearFilters() { filtersEl.reset(); state.page = 1; setView('actionable'); }
+function setQuickFilter(kind) { filtersEl.reset(); state.page = 1; state.view = 'actionable'; actionableViewButton.classList.add('selected'); allViewButton.classList.remove('selected'); [quickQualifiedButton, quickNowButton, quickNewButton, quickAppliedButton].forEach((button) => button.classList.remove('active')); if (kind === 'now') { filtersEl.elements.recommendation.value = 'APPLY_NOW'; quickNowButton.classList.add('active'); } else if (kind === 'new') { filtersEl.elements.change_status.value = 'NEW'; quickNewButton.classList.add('active'); } else if (kind === 'applied') { filtersEl.elements.application_status.value = 'APPLIED'; quickAppliedButton.classList.add('active'); } else { quickQualifiedButton.classList.add('active'); } refreshJobs().catch((error) => noteError('quick filter', error)); }
+guideToggleButton.addEventListener('click', () => { const collapsed = guideContentEl.hidden; guideContentEl.hidden = !collapsed; guideToggleButton.textContent = collapsed ? 'Collapse guide' : 'Show guide'; guideToggleButton.setAttribute('aria-expanded', String(collapsed)); });
+pendingOnlyButton.addEventListener('click', () => { state.pendingOnly = !state.pendingOnly; pendingOnlyButton.textContent = state.pendingOnly ? 'Show all intake' : 'Pending only'; refreshDiscoveries().catch((error) => noteError('pending discoveries', error)); });
+actionableViewButton.addEventListener('click', () => setView('actionable')); allViewButton.addEventListener('click', () => setView('all')); quickQualifiedButton.addEventListener('click', () => setQuickFilter('qualified')); quickNowButton.addEventListener('click', () => setQuickFilter('now')); quickNewButton.addEventListener('click', () => setQuickFilter('new')); quickAppliedButton.addEventListener('click', () => setQuickFilter('applied')); quickResetButton.addEventListener('click', clearFilters);
+filtersEl.addEventListener('submit', (event) => { event.preventDefault(); state.page = 1; refreshJobs().catch((error) => noteError('filters', error)); }); prevButton.addEventListener('click', () => { if (state.page > 1) { state.page -= 1; refreshJobs().catch((error) => noteError('previous page', error)); } }); nextButton.addEventListener('click', () => { state.page += 1; refreshJobs().catch((error) => noteError('next page', error)); }); refreshButton.addEventListener('click', () => refreshAll().catch((error) => noteError('manual refresh', error))); detailCloseButton.addEventListener('click', closeDrawer); detailBackdropEl.addEventListener('click', closeDrawer); document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeDrawer(); });
+saveNoteButton.addEventListener('click', async () => { if (!state.selectedJob) return; const note = detailNoteEl.value.trim(); if (!note) { detailNoteStatusEl.textContent = 'Enter a note first.'; return; } saveNoteButton.disabled = true; try { await api(`/api/jobs/${encodeURIComponent(state.selectedJob)}/note`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ note }) }); detailNoteEl.value = ''; detailNoteStatusEl.textContent = 'Note saved.'; const value = await api(`/api/jobs/${encodeURIComponent(state.selectedJob)}`); renderJobDetail(value); } catch (error) { noteError('save note', error); detailNoteStatusEl.textContent = error.message; } finally { saveNoteButton.disabled = false; } });
+exportButton.addEventListener('click', async () => { const ids = [...state.selectedIds]; if (!ids.length) { messageEl.textContent = 'Select at least one job row first.'; return; } try { const value = await api('/api/export-selected', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ job_ids: ids }) }); messageEl.textContent = `Exported ${value.count} selected job(s) · ${value.path}`; } catch (error) { noteError('export selected', error); } });
+refreshAll(); window.setInterval(() => refreshAll(), 10000);

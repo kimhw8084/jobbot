@@ -9,7 +9,7 @@ import unittest
 import urllib.request
 from pathlib import Path
 
-from jobbot.application import history, mark
+from jobbot.application import add_note, history, mark
 from jobbot.dashboard import create_server, live_discoveries
 from jobbot.db import Database
 from jobbot.exports import export_all
@@ -114,6 +114,16 @@ class DashboardExportApplicationTests(unittest.TestCase):
                 self.assertIn('id="identity"', html)
             finally:
                 server.shutdown(); server.server_close(); thread.join(timeout=3)
+
+    def test_dashboard_note_is_not_a_fake_status_transition(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); bundle = bundle_with_database(root / "jobs.sqlite3", root / "out"); Database(bundle).migrate()
+            conn = Database(bundle).connect(); self.seed(conn, 1); mark(conn, "J000000", "SHORTLIST", source="test")
+            event = add_note(conn, "J000000", "Review benefits and follow up Friday", source="test")
+            self.assertEqual(event.event_type, "NOTE")
+            self.assertEqual(conn.execute("SELECT application_status FROM jobs WHERE job_id='J000000'").fetchone()[0], "SHORTLIST")
+            self.assertEqual(conn.execute("SELECT event_type FROM application_events WHERE job_id='J000000' ORDER BY event_id DESC LIMIT 1").fetchone()[0], "NOTE")
+            conn.close()
 
 
 if __name__ == "__main__": unittest.main()

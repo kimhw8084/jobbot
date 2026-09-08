@@ -38,6 +38,9 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("function requireRpcOk", worker)
         self.assertIn("requiredRequest('record_result'", worker)
         self.assertNotIn("if(rec.ok)", worker)
+        self.assertNotIn("active:true", worker)
+        self.assertIn("active:false", worker)
+        self.assertIn("jobbot_bridge_state", worker)
 
 
 if __name__ == "__main__": unittest.main()

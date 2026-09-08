@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from .application import ApplicationError, STATUSES, mark
+from .application import ApplicationError, STATUSES, add_note, mark
 from .config import ConfigBundle
 from .db import Database
 from .exports import export_selected
@@ -49,6 +49,14 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
     queries = {
         "total": "SELECT COUNT(*) FROM jobs", "active": "SELECT COUNT(*) FROM jobs WHERE is_active=1",
         "updated": "SELECT COUNT(*) FROM jobs WHERE change_status='UPDATED'",
+        "descriptions_complete": "SELECT COUNT(*) FROM jobs WHERE length(trim(COALESCE(description,''))) >= 250",
+        "remote_confirmed": "SELECT COUNT(*) FROM jobs WHERE remote_gate='pass'",
+        "remote_review": "SELECT COUNT(*) FROM jobs WHERE remote_gate='review'",
+        "remote_rejected": "SELECT COUNT(*) FROM jobs WHERE remote_gate='reject'",
+        "qualified": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')",
+        "apply_now": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='APPLY_NOW'",
+        "apply_volume": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='APPLY_VOLUME'",
+        "stretch": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='HIGH_VALUE_STRETCH'",
         "reservoir": """SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='pass'
           AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')
           AND upper(application_status) NOT IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED','WITHDRAWN','SKIP','CLOSED')""",
@@ -57,11 +65,40 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
         "interviews": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='INTERVIEW'",
         "finals": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='FINAL'",
         "offers": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='OFFER'",
+        "applications": "SELECT COUNT(*) FROM application_events",
         "discoveries": "SELECT COUNT(*) FROM search_task_results",
         "detail_pending": "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",
         "details_complete": "SELECT COUNT(*) FROM search_task_results WHERE detail_status='COMPLETE'",
     }
     return {key: int(conn.execute(sql).fetchone()[0] or 0) for key, sql in queries.items()}
+
+
+def strategy_info(bundle: ConfigBundle) -> dict[str, Any]:
+    strategy = bundle.strategy.get("strategy", {})
+    lanes = []
+    for lane in bundle.strategy.get("lanes", []):
+        lanes.append({
+            "id": lane.get("id", ""), "label": lane.get("label", ""),
+            "allocation_percent": lane.get("allocation_percent", 0),
+            "execution_rank": lane.get("execution_rank", 1000), "resume_variant": lane.get("resume_variant", ""),
+        })
+    scoring = strategy.get("scoring", {})
+    return {
+        "positioning": "Bilingual Healthcare Operations & Data Quality Specialist",
+        "thesis": "Bilingual regulated healthcare operations → health information, documentation, and data quality → QA, compliance, and process improvement → analytics, implementation, and project ownership → senior analyst, lead, program, quality, implementation, and operations paths.",
+        "governing_sentence": "Use enrollment to get the next job. Do not allow enrollment to define the next decade.",
+        "portfolio": lanes,
+        "score_weights": {"landing_qualification": scoring.get("landing_qualification_weight", 0.70), "door_landing": scoring.get("door_landing_weight", 0.70), "door_career": scoring.get("door_career_weight", 0.30)},
+        "recommendations": {
+            "APPLY_NOW": "Strong fit, confirmed remote, active, and worth applying to now.",
+            "APPLY_VOLUME": "Legitimate qualified role with lower strategic upside but worthwhile application value.",
+            "HIGH_VALUE_STRETCH": "Strong career direction with a real but potentially bridgeable qualification gap.",
+            "REVIEW": "Needs a human check before deciding.",
+            "REVIEW_REMOTE": "Remote or state eligibility is not resolved confidently.",
+            "CONTRACT_REVIEW": "Contract or fixed-term work is separated from the permanent reservoir.",
+            "OUT_OF_SCOPE": "Stored for audit, but occupation or career relevance is below the actionable bar.",
+        },
+    }
 
 
 def coverage(conn: sqlite3.Connection) -> dict[str, Any]:
@@ -116,13 +153,17 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
     return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms]}
 
 
-def live_discoveries(conn: sqlite3.Connection, limit: int = 100) -> dict[str, Any]:
+def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "") -> dict[str, Any]:
+    status_clause = ""
+    args: list[Any] = [max(1, min(500, int(limit)))]
+    if status:
+        status_clause = " WHERE r.detail_status=?"
+        args.insert(0, status.upper())
     rows = conn.execute(
         """SELECT r.result_id,r.browser_run_id,r.task_id,r.source_site platform,r.source_job_id,
           r.title_hint,r.company_hint,r.location_hint,r.posted_text,r.posted_age_days,r.observed_at,
           r.detail_status,r.detail_attempts,r.detail_error,r.source_url,r.canonical_job_id,t.query_text
-          FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id
-          ORDER BY r.result_id DESC LIMIT ?""", (max(1, min(500, int(limit))),),
+          FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id""" + status_clause + " ORDER BY r.result_id DESC LIMIT ?", args,
     ).fetchall()
     pending = int(conn.execute(
         "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')"
@@ -253,6 +294,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._json(200, identity(conn, self.bundle)); return
             if parsed.path == "/api/summary":
                 self._json(200, summary(conn)); return
+            if parsed.path == "/api/strategy":
+                self._json(200, strategy_info(self.bundle)); return
             if parsed.path == "/api/coverage":
                 self._json(200, coverage(conn)); return
             if parsed.path == "/api/run":
@@ -260,7 +303,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if parsed.path == "/api/discoveries":
                 query = urllib.parse.parse_qs(parsed.query)
                 limit = int((query.get("limit") or ["100"])[0])
-                self._json(200, live_discoveries(conn, limit)); return
+                status = str((query.get("status") or [""])[0])
+                self._json(200, live_discoveries(conn, limit, status)); return
             if parsed.path == "/api/jobs":
                 self._json(200, query_jobs(conn, urllib.parse.parse_qs(parsed.query))); return
             if parsed.path.startswith("/api/jobs/"):
@@ -293,6 +337,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 job_id = urllib.parse.unquote(self.path.removeprefix("/api/jobs/").removesuffix("/application"))
                 try:
                     event = mark(conn, job_id, str(payload.get("status", "")), notes=str(payload.get("notes", "")), source="dashboard")
+                    self._json(200, {"ok": True, "event": event.__dict__})
+                except ApplicationError as exc:
+                    self._json(400, {"ok": False, "error": str(exc)})
+                return
+            if self.path.startswith("/api/jobs/") and self.path.endswith("/note"):
+                job_id = urllib.parse.unquote(self.path.removeprefix("/api/jobs/").removesuffix("/note"))
+                try:
+                    event = add_note(conn, job_id, str(payload.get("note", "")), source="dashboard")
                     self._json(200, {"ok": True, "event": event.__dict__})
                 except ApplicationError as exc:
                     self._json(400, {"ok": False, "error": str(exc)})

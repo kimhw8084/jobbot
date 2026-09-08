@@ -108,7 +108,9 @@ def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tupl
         started = True
     if open_browser:
         if sys.platform == "darwin":
-            subprocess.Popen(["open", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # RUN NOW is a background worker; opening its local dashboard must
+            # not interrupt the user's active Mac application.
+            subprocess.Popen(["open", "-g", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
             subprocess.Popen([chrome_path() or "google-chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return url, started

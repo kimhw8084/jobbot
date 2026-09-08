@@ -11,7 +11,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -26,8 +26,9 @@ def log(msg: str) -> None:
     print(f"[jobbot-bridge] {msg}", file=sys.stderr, flush=True)
 
 
-class BridgeServer(HTTPServer):
+class BridgeServer(ThreadingHTTPServer):
     allow_reuse_address = True
+    daemon_threads = True
     def __init__(self, addr, handler, token: str):
         super().__init__(addr, handler)
         self.token = token
