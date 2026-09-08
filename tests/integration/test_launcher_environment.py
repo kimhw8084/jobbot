@@ -36,8 +36,11 @@ class LauncherEnvironmentTests(unittest.TestCase):
             "JOBBOT_DASHBOARD_PORT": "9999",
         })
         command = (
-            "source scripts/production_env.sh; "
-            "printf '%s\\n' \"$JOBBOT_DATABASE_PATH\" \"$JOBBOT_OUTPUT_DIR\" \"$JOBBOT_DASHBOARD_PORT\""
+            "BASE=\"$PWD\"; export BASE; source scripts/production_env.sh; "
+            "if command -v cygpath >/dev/null 2>&1; then "
+            "cygpath -w \"$JOBBOT_DATABASE_PATH\"; cygpath -w \"$JOBBOT_OUTPUT_DIR\"; "
+            "else printf '%s\\n' \"$JOBBOT_DATABASE_PATH\" \"$JOBBOT_OUTPUT_DIR\"; fi; "
+            "printf '%s\\n' \"$JOBBOT_DASHBOARD_PORT\""
         )
         values = subprocess.check_output(
             ["bash", "-c", command], cwd=PROJECT_ROOT, env=env, text=True
