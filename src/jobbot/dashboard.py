@@ -39,6 +39,9 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
         "interviews": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='INTERVIEW'",
         "finals": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='FINAL'",
         "offers": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='OFFER'",
+        "discoveries": "SELECT COUNT(*) FROM search_task_results",
+        "detail_pending": "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",
+        "details_complete": "SELECT COUNT(*) FROM search_task_results WHERE detail_status='COMPLETE'",
     }
     return {key: int(conn.execute(sql).fetchone()[0] or 0) for key, sql in queries.items()}
 
@@ -51,6 +54,7 @@ def coverage(conn: sqlite3.Connection) -> dict[str, Any]:
           COALESCE(SUM(status='incomplete'),0) incomplete,
           COALESCE(SUM(status='challenged'),0) challenged,
           COALESCE(SUM(status='auth_required'),0) auth_required,
+          COALESCE(SUM(status='deferred_by_platform'),0) deferred,
           COALESCE(SUM(status='failed'),0) failed,
           COALESCE(SUM(results_seen),0) results,
           COALESCE(SUM(detail_count_read),0) details,
@@ -64,6 +68,42 @@ def coverage(conn: sqlite3.Connection) -> dict[str, Any]:
           GROUP BY source_site ORDER BY jobs DESC""")
     }
     return {"primary": primary, "supplemental": supplemental}
+
+
+def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
+    run = conn.execute("SELECT * FROM browser_runs ORDER BY browser_run_id DESC LIMIT 1").fetchone()
+    if run is None:
+        return {"run": None, "platforms": []}
+    run_id = int(run["browser_run_id"])
+    platforms = conn.execute(
+        """SELECT p.*,
+          COALESCE((SELECT COUNT(*) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND t.status='running'),0) running,
+          COALESCE((SELECT COUNT(*) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND t.status='deferred_by_platform'),0) deferred,
+          COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) discoveries,
+          COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND r.detail_status='COMPLETE'),0) details_complete
+          FROM browser_platform_runs p WHERE p.browser_run_id=?
+          ORDER BY CASE p.platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END""", (run_id,),
+    ).fetchall()
+    current = conn.execute(
+        """SELECT task_id,platform,query_text,status,page_number,results_seen,detail_count_read,
+          current_search_url,last_progress_at,last_error FROM browser_search_tasks WHERE task_id=?""",
+        (run["current_task_id"],),
+    ).fetchone() if run["current_task_id"] else None
+    return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms]}
+
+
+def live_discoveries(conn: sqlite3.Connection, limit: int = 100) -> dict[str, Any]:
+    rows = conn.execute(
+        """SELECT r.result_id,r.browser_run_id,r.task_id,r.source_site platform,r.source_job_id,
+          r.title_hint,r.company_hint,r.location_hint,r.posted_text,r.posted_age_days,r.observed_at,
+          r.detail_status,r.detail_attempts,r.detail_error,r.source_url,r.canonical_job_id,t.query_text
+          FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id
+          ORDER BY r.result_id DESC LIMIT ?""", (max(1, min(500, int(limit))),),
+    ).fetchall()
+    pending = int(conn.execute(
+        "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')"
+    ).fetchone()[0])
+    return {"pending": pending, "discoveries": [_dict(row) for row in rows]}
 
 
 def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[str, Any]:
@@ -179,6 +219,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._json(200, summary(conn)); return
             if parsed.path == "/api/coverage":
                 self._json(200, coverage(conn)); return
+            if parsed.path == "/api/run":
+                self._json(200, active_run(conn)); return
+            if parsed.path == "/api/discoveries":
+                query = urllib.parse.parse_qs(parsed.query)
+                limit = int((query.get("limit") or ["100"])[0])
+                self._json(200, live_discoveries(conn, limit)); return
             if parsed.path == "/api/jobs":
                 self._json(200, query_jobs(conn, urllib.parse.parse_qs(parsed.query))); return
             if parsed.path.startswith("/api/jobs/"):
@@ -241,9 +287,14 @@ def serve(bundle: ConfigBundle, *, host: str | None = None, port: int | None = N
         server.server_close()
 
 
-DASHBOARD_HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JobBot v3.2 Dashboard</title><style>
+DISCOVERY_COLUMNS = ("result_id", "platform", "title_hint", "company_hint", "location_hint", "posted_text", "detail_status", "detail_attempts", "observed_at")
+
+
+DASHBOARD_HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JobBot v3.2.1 Dashboard</title><style>
 :root{font-family:system-ui,-apple-system,sans-serif;color:#172033;background:#f4f6f9}body{margin:0}header{padding:18px 24px;background:#16213e;color:white}header h1{margin:0}.summary{display:grid;grid-template-columns:repeat(9,minmax(90px,1fr));gap:8px;padding:14px}.card,.filters,.detail{background:white;border:1px solid #dce2ea;border-radius:10px;padding:10px}.card b{display:block;font-size:22px}.filters{margin:0 14px 12px;display:flex;gap:8px;flex-wrap:wrap}.filters input,.filters select,button{padding:7px;border:1px solid #bbc4d1;border-radius:7px;background:white}.table-wrap{margin:0 14px;overflow:auto;max-height:58vh;background:white;border:1px solid #dce2ea}table{border-collapse:collapse;min-width:2200px;width:100%}th,td{font-size:12px;text-align:left;padding:7px;border-bottom:1px solid #e5e7eb}th{position:sticky;top:0;background:#edf2f7}tr:hover{background:#f3f7ff}.pager{margin:10px 14px}.detail{margin:14px;white-space:pre-wrap;max-height:45vh;overflow:auto}.actions{display:flex;gap:5px;flex-wrap:wrap;margin:8px 14px}@media(max-width:900px){.summary{grid-template-columns:repeat(3,1fr)}}
-</style></head><body><header><h1>JobBot v3.2</h1><div>Permanent remote-career ledger · read-only discovery · human application control</div></header><section class="summary" id="summary"></section>
-<pre class="detail" id="coverage">Loading primary and supplemental source coverage…</pre><form class="filters" id="filters"><input name="q" placeholder="Title, company, description"><select name="recommendation"><option value="">Recommendation</option><option>APPLY_NOW</option><option>APPLY_VOLUME</option><option>HIGH_VALUE_STRETCH</option><option>REVIEW</option><option>REVIEW_REMOTE</option><option>CONTRACT_REVIEW</option><option>FIXED_TERM_REVIEW</option><option>PART_TIME_REVIEW</option><option>BRIDGE_ONLY</option><option>LOW_PRIORITY</option><option>OUT_OF_SCOPE</option><option>SKIP_HARD_GATE</option></select><input name="lane" placeholder="Career lane"><input name="source" placeholder="Source"><select name="remote"><option value="">Remote status</option><option value="pass">pass</option><option value="review">review</option><option value="reject">reject</option></select><input name="employment" placeholder="Employment type"><input name="salary_min" type="number" placeholder="Salary min"><input name="age_days" type="number" placeholder="Posting age days"><input name="resume" placeholder="Resume"><select name="application_status"><option value="">Application status</option>''' + ''.join(f'<option>{x}</option>' for x in STATUSES) + r'''</select><select name="change_status"><option value="">New/updated</option><option>NEW</option><option>UPDATED</option><option>CLOSED</option><option>REOPENED</option></select><input name="min_score" type="number" placeholder="Min Door"><input name="max_score" type="number" placeholder="Max Door"><button>Filter</button></form>
+</style></head><body><header><h1>JobBot v3.2.1</h1><div>Permanent remote-career ledger · read-only discovery · human application control</div></header><section class="summary" id="summary"></section>
+<pre class="detail" id="runState">No browser run yet.</pre><pre class="detail" id="coverage">Loading primary and supplemental source coverage…</pre>
+<h2 class="actions">Live discoveries <small id="pendingCount"></small></h2><div class="table-wrap" style="max-height:240px"><table style="min-width:1200px"><thead><tr id="discoveryHead"></tr></thead><tbody id="discoveryBody"></tbody></table></div>
+<form class="filters" id="filters"><input name="q" placeholder="Title, company, description"><select name="recommendation"><option value="">Recommendation</option><option>APPLY_NOW</option><option>APPLY_VOLUME</option><option>HIGH_VALUE_STRETCH</option><option>REVIEW</option><option>REVIEW_REMOTE</option><option>CONTRACT_REVIEW</option><option>FIXED_TERM_REVIEW</option><option>PART_TIME_REVIEW</option><option>BRIDGE_ONLY</option><option>LOW_PRIORITY</option><option>OUT_OF_SCOPE</option><option>SKIP_HARD_GATE</option></select><input name="lane" placeholder="Career lane"><input name="source" placeholder="Source"><select name="remote"><option value="">Remote status</option><option value="pass">pass</option><option value="review">review</option><option value="reject">reject</option></select><input name="employment" placeholder="Employment type"><input name="salary_min" type="number" placeholder="Salary min"><input name="age_days" type="number" placeholder="Posting age days"><input name="resume" placeholder="Resume"><select name="application_status"><option value="">Application status</option>''' + ''.join(f'<option>{x}</option>' for x in STATUSES) + r'''</select><select name="change_status"><option value="">New/updated</option><option>NEW</option><option>UPDATED</option><option>CLOSED</option><option>REOPENED</option></select><input name="min_score" type="number" placeholder="Min Door"><input name="max_score" type="number" placeholder="Max Door"><button>Filter</button></form>
 <div class="actions"><button id="export" type="button">Export selected</button><span id="message"></span></div><div class="table-wrap"><table><thead><tr id="head"></tr></thead><tbody id="body"></tbody></table></div><div class="pager"><button id="prev">Previous</button> <span id="page"></span> <button id="next">Next</button></div><div class="actions" id="statusActions"></div><pre class="detail" id="detail">Select a job row to inspect full description, requirements, evidence, gaps, versions, diffs, sources, and application timeline.</pre>
-<script>'use strict';let page=1,last=null,selectedJob='';const esc=s=>String(s??'');async function api(url,opt){const r=await fetch(url,opt);const x=await r.json();if(!r.ok)throw Error(x.error||r.status);return x}function params(){const p=new URLSearchParams(new FormData(document.querySelector('#filters')));p.set('page',page);p.set('page_size','50');return p}async function load(){last=await api('/api/jobs?'+params());head.innerHTML='<th>Select</th>'+last.columns.map(x=>'<th>'+esc(x)+'</th>').join('');body.replaceChildren();for(const j of last.jobs){const tr=document.createElement('tr');const check=document.createElement('input');check.type='checkbox';check.dataset.id=j.job_id;const td=document.createElement('td');td.append(check);tr.append(td);for(const c of last.columns){const cell=document.createElement('td');cell.textContent=esc(j[c]);tr.append(cell)}tr.onclick=e=>{if(e.target!==check)show(j.job_id)};body.append(tr)}document.querySelector('#page').textContent=`Page ${last.page} · ${last.total} jobs`;prev.disabled=page<=1;next.disabled=page*last.page_size>=last.total}async function cards(){const x=await api('/api/summary');summary.innerHTML=Object.entries(x).map(([k,v])=>`<div class="card"><span>${k}</span><b>${v}</b></div>`).join('')}async function sourceCoverage(){const x=await api('/api/coverage');const lines=['PRIMARY COVERAGE'];for(const [site,v] of Object.entries(x.primary))lines.push(`${site}: tasks ${v.total} · exhausted ${v.exhausted} · incomplete ${v.incomplete} · challenged ${v.challenged} · auth ${v.auth_required} · failed ${v.failed} · results ${v.results} · details ${v.details} · unique ${v.unique_jobs}`);lines.push('',`SUPPLEMENTAL: ${Object.entries(x.supplemental).map(([k,v])=>k+' '+v).join(' · ')||'none recorded'}`);coverage.textContent=lines.join('\n')}async function show(id){selectedJob=id;const x=await api('/api/jobs/'+encodeURIComponent(id));detail.textContent=JSON.stringify(x,null,2);statusActions.innerHTML='';for(const s of ''' + json.dumps(STATUSES) + r'''){const b=document.createElement('button');b.textContent=s;b.onclick=async()=>{const notes=prompt('Optional note')||'';await api('/api/jobs/'+encodeURIComponent(id)+'/application',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s,notes})});await Promise.all([load(),cards(),show(id)])};statusActions.append(b)}}filters.onsubmit=e=>{e.preventDefault();page=1;load()};prev.onclick=()=>{page--;load()};next.onclick=()=>{page++;load()};export.onclick=async()=>{const ids=[...document.querySelectorAll('tbody input:checked')].map(x=>x.dataset.id);const x=await api('/api/export-selected',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_ids:ids})});message.textContent=`Exported ${x.count} to ${x.path}`};Promise.all([cards(),sourceCoverage(),load()]);</script></body></html>'''
+<script>'use strict';let page=1,last=null,selectedJob='';const esc=s=>String(s??'');async function api(url,opt){const r=await fetch(url,opt);const x=await r.json();if(!r.ok)throw Error(x.error||r.status);return x}function params(){const p=new URLSearchParams(new FormData(document.querySelector('#filters')));p.set('page',page);p.set('page_size','50');return p}async function load(){const checked=new Set([...document.querySelectorAll('#body input:checked')].map(x=>x.dataset.id));last=await api('/api/jobs?'+params());head.innerHTML='<th>Select</th>'+last.columns.map(x=>'<th>'+esc(x)+'</th>').join('');body.replaceChildren();for(const j of last.jobs){const tr=document.createElement('tr');const check=document.createElement('input');check.type='checkbox';check.dataset.id=j.job_id;check.checked=checked.has(j.job_id);const td=document.createElement('td');td.append(check);tr.append(td);for(const c of last.columns){const cell=document.createElement('td');cell.textContent=esc(j[c]);tr.append(cell)}tr.onclick=e=>{if(e.target!==check)show(j.job_id)};body.append(tr)}document.querySelector('#page').textContent=`Page ${last.page} · ${last.total} jobs`;prev.disabled=page<=1;next.disabled=page*last.page_size>=last.total}async function cards(){const x=await api('/api/summary');summary.innerHTML=Object.entries(x).map(([k,v])=>`<div class="card"><span>${k}</span><b>${v}</b></div>`).join('')}async function sourceCoverage(){const x=await api('/api/coverage');const lines=['PRIMARY COVERAGE'];for(const [site,v] of Object.entries(x.primary))lines.push(`${site}: tasks ${v.total} · exhausted ${v.exhausted} · incomplete ${v.incomplete} · challenged ${v.challenged} · auth ${v.auth_required} · deferred ${v.deferred} · failed ${v.failed} · results ${v.results} · details ${v.details} · unique ${v.unique_jobs}`);lines.push('',`SUPPLEMENTAL: ${Object.entries(x.supplemental).map(([k,v])=>k+' '+v).join(' · ')||'none recorded'}`);coverage.textContent=lines.join('\n')}async function runProgress(){const x=await api('/api/run');if(!x.run){runState.textContent='No browser run yet.';return}const r=x.run,lines=[`RUN #${r.browser_run_id} · ${r.status} · last progress ${r.last_progress_at||'never'}`];if(x.current_task)lines.push(`ACTIVE ${x.current_task.platform} · ${x.current_task.query_text} · page ${x.current_task.page_number} · results ${x.current_task.results_seen} · details ${x.current_task.detail_count_read}`);for(const p of x.platforms)lines.push(`${p.platform}: auth=${p.auth_status} running=${p.running} exhausted=${p.tasks_completed}/${p.tasks_total} deferred=${p.deferred} discoveries=${p.discoveries} details=${p.details_complete}`);runState.textContent=lines.join('\n')}async function discoveries(){const x=await api('/api/discoveries?limit=100'),cols=''' + json.dumps(DISCOVERY_COLUMNS) + r''';pendingCount.textContent=`(${x.pending} pending)`;discoveryHead.innerHTML=cols.map(c=>'<th>'+esc(c)+'</th>').join('');discoveryBody.replaceChildren();for(const d of x.discoveries){const tr=document.createElement('tr');for(const c of cols){const td=document.createElement('td');td.textContent=esc(d[c]);tr.append(td)}tr.onclick=()=>{if(d.source_url)window.open(d.source_url,'_blank','noopener')};discoveryBody.append(tr)}}async function show(id){selectedJob=id;const x=await api('/api/jobs/'+encodeURIComponent(id));detail.textContent=JSON.stringify(x,null,2);statusActions.innerHTML='';for(const s of ''' + json.dumps(STATUSES) + r'''){const b=document.createElement('button');b.textContent=s;b.onclick=async()=>{const notes=prompt('Optional note')||'';await api('/api/jobs/'+encodeURIComponent(id)+'/application',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s,notes})});await Promise.all([load(),cards(),show(id)])};statusActions.append(b)}}filters.onsubmit=e=>{e.preventDefault();page=1;load()};prev.onclick=()=>{page--;load()};next.onclick=()=>{page++;load()};export.onclick=async()=>{const ids=[...document.querySelectorAll('#body input:checked')].map(x=>x.dataset.id);const x=await api('/api/export-selected',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({job_ids:ids})});message.textContent=`Exported ${x.count} to ${x.path}`};async function refresh(){await Promise.all([cards(),sourceCoverage(),runProgress(),discoveries(),load()])}refresh();setInterval(refresh,10000);</script></body></html>'''

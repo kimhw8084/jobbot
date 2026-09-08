@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jobbot-local"
-version = "3.2.0"
+version = "3.2.1"
 description = "Local, read-only, normal-Chrome remote career search ledger"
 readme = "README.md"
 requires-python = ">=3.11"

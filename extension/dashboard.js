@@ -1,5 +1,5 @@
 'use strict';
-const EXPECTED_EXTENSION_VERSION='3.2.0';
+const EXPECTED_EXTENSION_VERSION='3.2.1';
 const state=document.getElementById('state'),btn=document.getElementById('start'),stopBtn=document.getElementById('stop'),emergencyBtn=document.getElementById('emergency'),qs=new URLSearchParams(location.search),runId=Number(qs.get('run_id')||0);
 const bridgePort=Number(qs.get('bridge_port')||0),bridgeToken=String(qs.get('bridge_token')||'');
 let bridgeReady=false;

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import os
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -96,6 +97,12 @@ def load_bundle(root: Path | None = None) -> ConfigBundle:
     strategy["searches"] = _legacy_searches(strategy)
     candidate_raw = load_toml(base / "config" / "candidate.toml")
     runtime = load_toml(base / "config" / "runtime.toml")
+    if os.environ.get("JOBBOT_DATABASE_PATH"):
+        runtime["runtime"]["database_path"] = os.environ["JOBBOT_DATABASE_PATH"]
+    if os.environ.get("JOBBOT_OUTPUT_DIR"):
+        runtime["runtime"]["output_dir"] = os.environ["JOBBOT_OUTPUT_DIR"]
+    if os.environ.get("JOBBOT_DASHBOARD_PORT"):
+        runtime["runtime"]["dashboard_port"] = int(os.environ["JOBBOT_DASHBOARD_PORT"])
     validate_strategy(strategy)
     validate_candidate(candidate_raw)
     validate_runtime(runtime)

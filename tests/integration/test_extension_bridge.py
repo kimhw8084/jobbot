@@ -17,7 +17,7 @@ class ExtensionBridgeTests(unittest.TestCase):
     def test_manifest_and_javascript_syntax(self) -> None:
         manifest = json.loads((PROJECT_ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["manifest_version"], 3)
-        self.assertEqual(manifest["version"], "3.2.0")
+        self.assertEqual(manifest["version"], "3.2.1")
         self.assertNotIn("nativeMessaging", manifest["permissions"])
         self.assertIn("http://127.0.0.1/*", manifest["host_permissions"])
         node = subprocess.run(["node", "--version"], capture_output=True)

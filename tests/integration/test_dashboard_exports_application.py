@@ -10,7 +10,7 @@ import urllib.request
 from pathlib import Path
 
 from jobbot.application import history, mark
-from jobbot.dashboard import create_server
+from jobbot.dashboard import create_server, live_discoveries
 from jobbot.db import Database
 from jobbot.exports import export_all
 from jobbot.funnel import analyze
@@ -72,6 +72,29 @@ class DashboardExportApplicationTests(unittest.TestCase):
             with paths["all_jobs.csv"].open(encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
             self.assertTrue(rows[0]["company"].startswith("'="))
+
+    def test_dashboard_reads_rich_discoveries_while_writer_commits(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); bundle = bundle_with_database(root / "jobs.sqlite3", root / "out"); Database(bundle).migrate()
+            writer = Database(bundle).connect()
+            now = "2026-09-07T12:00:00+00:00"
+            run_id = writer.execute("INSERT INTO browser_runs(version,mode,platform,status,created_at) VALUES('3.2.1','test','linkedin','running',?)", (now,)).lastrowid
+            task_id = writer.execute("INSERT INTO browser_search_tasks(browser_run_id,platform,query_text,window_days,search_url,status,created_at) VALUES(?,?,?,?,?,'running',?)", (run_id,"linkedin","patient access specialist",7,"https://www.linkedin.com/jobs/search/",now)).lastrowid
+            writer.commit()
+            server = create_server(bundle, port=0); thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            try:
+                for index in range(3):
+                    writer.execute("""INSERT INTO search_task_results(task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,browser_run_id,title_hint,company_hint,observed_at,detail_status)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?)""", (task_id,"linkedin",str(index),f"https://linkedin.test/{index}",now,now,run_id,"Patient Access Specialist","Example Health",now,"PENDING"))
+                    writer.commit()
+                    with urllib.request.urlopen(f"http://127.0.0.1:{server.server_port}/api/discoveries", timeout=5) as response:
+                        payload = json.loads(response.read())
+                    self.assertEqual(payload["pending"], index + 1)
+                reader = Database(bundle).connect()
+                try: self.assertEqual(len(live_discoveries(reader)["discoveries"]), 3)
+                finally: reader.close()
+            finally:
+                writer.close(); server.shutdown(); server.server_close(); thread.join(timeout=3)
 
 
 if __name__ == "__main__": unittest.main()
