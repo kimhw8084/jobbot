@@ -63,13 +63,17 @@ function startHeartbeat(){
 }
 function stopHeartbeat(){if(heartbeatTimer)clearInterval(heartbeatTimer);heartbeatTimer=null;}
 
-async function checkAuth(platform,runId){
+async function checkAuth(platform,runId,taskId){
   const url=AUTH_URLS[platform]; if(!url)return {authenticated:true,page:{reason:'no auth check configured'}};
   const tab=await chrome.tabs.create({url,active:true});
   try{
     const p=await inspectTab(tab.id,'JOBBOT_INSPECT_AUTH',{},5);
+    if(p.challenged){
+      await nativeRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:p.challenge_reason||p.reason||'platform challenge'});
+      return {authenticated:false,page:p};
+    }
     const authenticated=!!p.authenticated&&!p.challenged;
-    await nativeRequest('platform_auth_result',{run_id:runId,platform,authenticated,reason:p.reason||p.challenge_reason||'',page_url:p.page_url||''});
+    await nativeRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated,reason:p.reason||p.challenge_reason||'',page_url:p.page_url||''});
     return {authenticated,page:p};
   }finally{try{await chrome.tabs.remove(tab.id);}catch(_){}}
 }
@@ -111,10 +115,10 @@ async function processTask(runId,task){
       if(Date.now()-lastMeaningfulAt>WATCHDOG_MS){await nativeRequest('complete_task',{run_id:runId,task_id:taskId,status:'incomplete',reason:'SAFETY_STOP: watchdog observed no meaningful progress for 180 seconds'});return;}
       const stop=await nativeRequest('should_stop',{run_id:runId}); if(stop.stop){await nativeRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
       let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH');
-      if(page.challenged){await nativeRequest('pause_platform',{run_id:runId,platform,reason:page.challenge_reason||'platform challenge'});return;}
-      if(page.login_required){await nativeRequest('platform_auth_result',{run_id:runId,platform,authenticated:false,reason:`${platform} session is no longer authenticated`,page_url:page.page_url||''});return;}
+      if(page.challenged){await nativeRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge'});return;}
+      if(page.login_required){await nativeRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,reason:`${platform} session is no longer authenticated`,page_url:page.page_url||''});return;}
       page=await gatherStableSearch(searchTab.id,page);
-      if(page.challenged){await nativeRequest('pause_platform',{run_id:runId,platform,reason:page.challenge_reason||'platform challenge'});return;}
+      if(page.challenged){await nativeRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge'});return;}
       const items=page.result_links||[], pageFp=fp(items);
       if(pageFp){
         const count=(fingerprintCounts.get(pageFp)||0)+1;fingerprintCounts.set(pageFp,count);
@@ -131,26 +135,40 @@ async function processTask(runId,task){
       let eligibleCards=0, recordedThisPage=0;
       for(let idx=0;idx<items.length;idx++){
         const link=items[idx]; const age=link.posted_age_days;
-        await nativeRequest('record_result',{run_id:runId,task_id:taskId,source_site:platform,source_job_id:link.source_job_id||'',source_url:link.url||''});
+        const eligible=age==null||age<=windowDays;
+        await nativeRequest('record_result',{
+          run_id:runId,task_id:taskId,source_site:platform,
+          source_job_id:link.source_job_id||'',source_url:link.url||'',
+          title_hint:link.title||'',company_hint:link.company||'',location_hint:link.location||'',
+          posted_text:link.posted_text||'',posted_age_days:age,eligible_for_detail:eligible,card:link,
+        });
         lastMeaningfulAt=Date.now();
-        if(age!=null&&age>windowDays)continue;
+        if(!eligible)continue;
         eligibleCards+=1;
+      }
+
+      // SQLite, not service-worker memory, owns the pending detail queue. All
+      // visible cards above are committed before the first detail navigation.
+      while(true){
         if(maxResults!==null&&processed>=maxResults){await nativeRequest('complete_task',{run_id:runId,task_id:taskId,status:'test_limit',reason:`Acceptance limit reached (${maxResults}); production has no count limit`});return;}
+        const pending=await nativeRequest('next_pending_detail',{run_id:runId,task_id:taskId,worker_id:`extension-run-${runId}`});
+        if(pending.done||!pending.detail)break;
+        const work=pending.detail,link={...(work.card||{}),source_job_id:work.source_job_id,url:work.source_url,title:work.title_hint,company:work.company_hint,location:work.location_hint,posted_text:work.posted_text,posted_age_days:work.posted_age_days};
         await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open detail ${link.source_job_id||link.url}`});
         if(!detailTab)detailTab=await chrome.tabs.create({url:'about:blank',active:false});
         await chrome.tabs.update(detailTab.id,{url:link.url,active:true});
         let detail;
-        try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){await nativeRequest('job_error',{run_id:runId,task_id:taskId,message:String(e?.message||e),url:link.url}).catch(()=>{});await chrome.tabs.update(searchTab.id,{active:true}).catch(()=>{});continue;}
-        if(detail.challenged){await nativeRequest('pause_platform',{run_id:runId,platform,reason:detail.challenge_reason||'challenge on job detail'});return;}
-        detailRead+=1; await nativeRequest('detail_read',{run_id:runId,task_id:taskId,source_site:platform,source_job_id:link.source_job_id||detail.job?.source_job_id||'',source_url:link.url||detail.job?.canonical_url||''});
+        try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){await nativeRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:String(e?.message||e),url:link.url});await chrome.tabs.update(searchTab.id,{active:true}).catch(()=>{});continue;}
+        if(detail.challenged){const reason=detail.challenge_reason||'challenge on job detail';await nativeRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await nativeRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason});return;}
         lastMeaningfulAt=Date.now();
         if(detail.job?.title&&detail.job?.canonical_url){
-          const rec=await nativeRequest('record_job',{run_id:runId,task_id:taskId,job:{...detail.job,search_card:link,page_url:detail.page_url||link.url}},90000);
+          detailRead+=1; await nativeRequest('detail_read',{run_id:runId,task_id:taskId,result_id:work.result_id,source_site:platform,source_job_id:link.source_job_id||detail.job?.source_job_id||'',source_url:link.url||detail.job?.canonical_url||''});
+          const rec=await nativeRequest('record_job',{run_id:runId,task_id:taskId,result_id:work.result_id,job:{...detail.job,search_card:link,page_url:detail.page_url||link.url}},90000);
           if(rec.ok){processed+=1;recordedThisPage+=1;}
-          else await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'job_rejected',message:`record_job rejected: ${rec.error||rec.message||'unknown reason'} (${detail.job.title})`}).catch(()=>{});
-        } else await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_miss',message:`detail payload incomplete type=${detail?.page_type||'none'} title=${detail?.job?.title||'none'} canonical=${detail?.job?.canonical_url||'none'} page=${detail?.page_url||'none'} source=${link.source_job_id||link.url}`}).catch(()=>{});
+          else{const message=`record_job rejected: ${rec.error||rec.message||'unknown reason'} (${detail.job.title})`;await nativeRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}
+        } else {const message=`detail payload incomplete type=${detail?.page_type||'none'} title=${detail?.job?.title||'none'} canonical=${detail?.job?.canonical_url||'none'} page=${detail?.page_url||'none'} source=${link.source_job_id||link.url}`;await nativeRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}
         await chrome.tabs.update(searchTab.id,{active:true}).catch(()=>{});
-        await nativeRequest('task_progress',{run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:page.page_url||searchUrl,page_fingerprint:pageFp,last_job_key:link.source_job_id||link.url,last_job_index:idx,processed}});
+        await nativeRequest('task_progress',{run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:page.page_url||searchUrl,page_fingerprint:pageFp,last_job_key:link.source_job_id||link.url,last_result_id:work.result_id,processed}});
         const stopAfter=await nativeRequest('should_stop',{run_id:runId});
         if(stopAfter.stop||stopAfter.stop_after_current){await nativeRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:stopAfter.stop?'emergency stop requested':'stop after current job requested'});return;}
         await sleep(350);
@@ -184,7 +202,7 @@ async function runProduction(runId){
       const n=await nativeRequest('next_task',{run_id:activeRunId,worker_id:`extension-run-${activeRunId}`}); if(n.stop||n.done)break; if(!n.task)break;
       const p=String(n.task.platform||'');
       if(!authChecked.has(p)){
-        try{const a=await checkAuth(p,activeRunId); authChecked.set(p,a.authenticated);}catch(e){authChecked.set(p,false);await nativeRequest('platform_auth_result',{run_id:activeRunId,platform:p,authenticated:false,reason:`auth probe failed: ${e?.message||e}`}).catch(()=>{});}
+        try{const a=await checkAuth(p,activeRunId,n.task.task_id); authChecked.set(p,a.authenticated);}catch(e){authChecked.set(p,false);await nativeRequest('platform_auth_result',{run_id:activeRunId,task_id:n.task.task_id,platform:p,authenticated:false,reason:`auth probe failed: ${e?.message||e}`}).catch(()=>{});}
         if(!authChecked.get(p))continue;
       }
       if(!authChecked.get(p))continue;
@@ -228,7 +246,9 @@ chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
   if(msg?.type==='JOBBOT_PING'){nativeRequest('ping').then(sendResponse).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;}
   return false;
 });
-chrome.runtime.onStartup.addListener(()=>{ensureResume();});
-chrome.runtime.onInstalled.addListener(()=>{chrome.alarms.create('jobbot-resume',{periodInMinutes:1});});
+function ensureResumeAlarm(){chrome.alarms.create('jobbot-resume',{periodInMinutes:1});}
+chrome.runtime.onStartup.addListener(()=>{ensureResumeAlarm();ensureResume();});
+chrome.runtime.onInstalled.addListener(()=>{ensureResumeAlarm();ensureResume();});
 chrome.alarms.onAlarm.addListener((a)=>{if(a.name==='jobbot-resume')ensureResume();});
+ensureResumeAlarm();
 ensureResume();

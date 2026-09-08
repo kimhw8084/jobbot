@@ -10,6 +10,7 @@ from typing import Any
 from ..config import PROJECT_ROOT
 from .. import legacy_engine as j
 from .. import browser_tasks as v3
+from ..discoveries import block_detail, claim_next_detail, fail_detail, finish_detail, upsert_card
 
 BASE = PROJECT_ROOT
 j.VERSION=v3.V3_VERSION; j.c.VERSION=v3.V3_VERSION
@@ -79,22 +80,30 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform'));ok=bool(msg.get('authenticated'));reason=j.clean_text(msg.get('reason') or '')
             conn.execute("UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=? WHERE browser_run_id=? AND platform=?",('verified' if ok else 'not_authenticated',reason,j.now_iso(),rid,platform))
             if not ok:
-                conn.execute("UPDATE browser_search_tasks SET status='auth_required',completed_at=?,last_error=?,lease_owner='',lease_until=NULL WHERE browser_run_id=? AND platform=? AND status IN ('queued','running')",(j.now_iso(),reason,rid,platform))
+                tid=int(msg.get('task_id') or 0)
+                conn.execute("""UPDATE browser_search_tasks SET status='auth_required',completed_at=?,last_error=?,lease_owner='',lease_until=NULL
+                  WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",(j.now_iso(),reason,rid,platform,tid,tid))
+                conn.execute("""UPDATE browser_search_tasks SET status='deferred_by_platform',completed_at=NULL,last_error=?,lease_owner='',lease_until=NULL
+                  WHERE browser_run_id=? AND platform=? AND status='queued'""",(reason,rid,platform))
             states=[x['auth_status'] for x in conn.execute("SELECT auth_status FROM browser_platform_runs WHERE browser_run_id=?",(rid,))]
             overall='verified' if states and all(x=='verified' for x in states) else ('partial' if any(x=='verified' for x in states) else 'not_authenticated')
             conn.execute("UPDATE browser_runs SET auth_status=?,last_progress_at=? WHERE browser_run_id=?",(overall,j.now_iso(),rid));event(conn,rid,None,'auth_verified' if ok else 'auth_failed',f'{platform}: {reason}',msg,out);conn.commit();return {'ok':True}
         if action=='pause_platform':
-            rid=int(msg.get('run_id') or 0); platform=j.clean_text(msg.get('platform')); reason=j.clean_text(msg.get('reason') or 'platform challenge')
+            rid=int(msg.get('run_id') or 0); platform=j.clean_text(msg.get('platform')); reason=j.clean_text(msg.get('reason') or 'platform challenge'); tid=int(msg.get('task_id') or 0)
             hours=float(cfg.get('runtime',{}).get('challenge_cooldown_hours',12) or 12)
             cooldown=(datetime.now(timezone.utc)+timedelta(hours=hours)).isoformat(timespec='seconds')
             conn.execute("UPDATE browser_platform_runs SET auth_status='challenged',auth_reason=?,cooldown_until=? WHERE browser_run_id=? AND platform=?",(reason,cooldown,rid,platform))
-            rows=conn.execute("SELECT task_id,status FROM browser_search_tasks WHERE browser_run_id=? AND platform=? AND status IN ('queued','running')",(rid,platform)).fetchall()
-            for rr in rows:
-                conn.execute("UPDATE browser_search_tasks SET status='challenged',completed_at=?,challenge_reason=? WHERE task_id=?",(j.now_iso(),reason,rr['task_id']))
-            if rows:
-                conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=?",(len(rows),rid))
-                conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=? AND platform=?",(len(rows),rid,platform))
-            event(conn,rid,None,'platform_paused',f'{platform}: {reason}',msg,out);conn.commit();return {'ok':True,'tasks_paused':len(rows)}
+            active=conn.execute("""SELECT task_id FROM browser_search_tasks
+              WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",(rid,platform,tid,tid)).fetchall()
+            deferred_count=int(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND platform=? AND status='queued'",(rid,platform)).fetchone()[0])
+            conn.execute("""UPDATE browser_search_tasks SET status='challenged',completed_at=?,challenge_reason=?,lease_owner='',lease_until=NULL
+              WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",(j.now_iso(),reason,rid,platform,tid,tid))
+            conn.execute("""UPDATE browser_search_tasks SET status='deferred_by_platform',completed_at=NULL,challenge_reason=?,lease_owner='',lease_until=NULL
+              WHERE browser_run_id=? AND platform=? AND status='queued'""",(reason,rid,platform))
+            if active:
+                conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=?",(len(active),rid))
+                conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=? AND platform=?",(len(active),rid,platform))
+            event(conn,rid,None,'platform_paused',f'{platform}: {reason}',msg,out);conn.commit();return {'ok':True,'tasks_paused':len(active)+deferred_count,'tasks_challenged':len(active),'tasks_deferred':deferred_count}
         if action=='next_task':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
@@ -113,20 +122,30 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='record_result':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
             if not source or not (sid or url):return {'ok':False,'error':'insufficient_result_identity'}
-            now=j.now_iso(); row=conn.execute("SELECT result_id FROM search_task_results WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(tid,source,sid,url)).fetchone()
-            if row:
-                conn.execute("UPDATE search_task_results SET last_seen_at=?,sighting_count=sighting_count+1 WHERE result_id=?",(now,row['result_id'])); duplicate=True
-            else:
-                conn.execute("INSERT INTO search_task_results(task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at) VALUES(?,?,?,?,?,?)",(tid,source,sid,url,now,now)); duplicate=False
+            task=conn.execute("SELECT 1 FROM browser_search_tasks WHERE task_id=? AND browser_run_id=? AND platform=?",(tid,rid,source)).fetchone()
+            if not task:return {'ok':False,'error':'task_not_found'}
+            try: posted_age=float(msg['posted_age_days']) if msg.get('posted_age_days') is not None else None
+            except (TypeError,ValueError): posted_age=None
+            card=msg.get('card') if isinstance(msg.get('card'),dict) else {}
+            discovery,duplicate=upsert_card(conn,run_id=rid,task_id=tid,platform=source,source_job_id=sid,source_url=url,
+                title_hint=j.clean_text(msg.get('title_hint') or card.get('title')),company_hint=j.clean_text(msg.get('company_hint') or card.get('company')),
+                location_hint=j.clean_text(msg.get('location_hint') or card.get('location')),posted_text=j.clean_text(msg.get('posted_text') or card.get('posted_text')),
+                posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)))
             if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
-            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True,'duplicate':duplicate}
+            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status}
+        if action=='next_pending_detail':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
+            lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
+            discovery=claim_next_detail(conn,run_id=rid,task_id=tid,worker_id=owner,lease_seconds=lease_seconds)
+            conn.commit()
+            return {'ok':True,'done':discovery is None,'detail':None if discovery is None else discovery.__dict__}
         if action=='detail_read':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''));now=j.now_iso()
             conn.execute("UPDATE browser_search_tasks SET detail_count_read=detail_count_read+1,last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(),tid,rid))
-            conn.execute("UPDATE search_task_results SET detail_read=1,last_seen_at=? WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(now,tid,source,sid,url))
+            conn.execute("UPDATE search_task_results SET last_seen_at=? WHERE result_id=? OR (task_id=? AND source_site=? AND source_job_id=? AND source_url=?)",(now,int(msg.get('result_id') or 0),tid,source,sid,url))
             event(conn,rid,tid,'detail_read',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True}
         if action=='record_job':
-            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);raw=msg.get('job') or {}
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);raw=msg.get('job') or {}
             if not isinstance(raw,dict):return {'ok':False,'error':'invalid_job'}
             task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
             if not task:return {'ok':False,'error':'task_not_found'}
@@ -142,10 +161,19 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 f=fields[ledger_status];conn.execute(f"UPDATE browser_search_tasks SET jobs_recorded=jobs_recorded+1,{f}={f}+1 WHERE task_id=?",(tid,));conn.execute(f"UPDATE browser_runs SET jobs_recorded=jobs_recorded+1,{f}={f}+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET jobs_recorded=jobs_recorded+1 WHERE browser_run_id=? AND platform=?",(rid,source_site))
             if ledger_status=='new': conn.execute("UPDATE browser_search_tasks SET unique_jobs_recorded=unique_jobs_recorded+1 WHERE task_id=?",(tid,))
             else: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
-            jid=store.resolve_job_id(job);conn.execute("UPDATE search_task_results SET canonical_job_id=?,detail_read=1 WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(jid,tid,source_site,sid,url))
+            jid=store.resolve_job_id(job)
+            if result_id: finish_detail(conn,result_id,jid)
+            else: conn.execute("UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status='COMPLETE',detail_completed_at=? WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(jid,j.now_iso(),tid,source_site,sid,url))
             event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation},out);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company}
         if action=='job_error':
-            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);event(conn,rid,tid,'job_error',j.clean_text(msg.get('message') or ''),msg,out);conn.commit();return {'ok':True}
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);message=j.clean_text(msg.get('message') or '')
+            detail_status='FAILED'
+            if result_id: detail_status=fail_detail(conn,result_id,message,max_attempts=int(cfg.get('runtime',{}).get('watchdog_retries',3) or 3))
+            event(conn,rid,tid,'job_error',message,msg,out);conn.commit();return {'ok':True,'detail_status':detail_status}
+        if action=='detail_external_blocked':
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);message=j.clean_text(msg.get('message') or 'platform challenge')
+            if result_id:block_detail(conn,result_id,message)
+            event(conn,rid,tid,'detail_external_blocked',message,msg,out);conn.commit();return {'ok':True}
         if action=='task_progress':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);seen=max(0,int(msg.get('results_seen') or 0));pages=max(0,int(msg.get('pages_visited') or 0));cp=msg.get('checkpoint') or {}
             now=j.now_iso(); conn.execute("UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(seen,pages,json.dumps(cp,ensure_ascii=False),j.clean_text(cp.get('search_url') or ''),int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
@@ -192,7 +220,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
             pending=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('queued','running')",(rid,)).fetchone()['n']
-            bad=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('incomplete','challenged','failed','auth_required','paused','stopped')",(rid,)).fetchone()['n']
+            bad=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('incomplete','challenged','failed','auth_required','deferred_by_platform','paused','stopped')",(rid,)).fetchone()['n']
             final='stopped' if int(r['stop_requested'] or 0) else ('partial' if pending or bad else 'completed')
             refresh_task_counters(conn,rid)
             conn.execute("UPDATE browser_runs SET status=?,completed_at=?,last_progress_at=?,current_task_id=NULL WHERE browser_run_id=?",(final,j.now_iso(),j.now_iso(),rid));event(conn,rid,None,'run_finished',final,{},out);conn.commit()
