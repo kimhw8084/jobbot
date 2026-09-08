@@ -28,6 +28,7 @@ PRODUCTION_LAUNCHERS = (
 
 
 class LauncherEnvironmentTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "posix", "production .command runtime is POSIX shell")
     def test_production_environment_helper_overrides_stale_parent_values(self) -> None:
         env = os.environ.copy()
         env.update({
