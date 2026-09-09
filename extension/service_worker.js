@@ -51,7 +51,17 @@ function ownedDashboardUrl(raw){try{const u=new URL(raw);u.searchParams.set(WORK
 function roleIds(workspace){return new Set(['anchor','dashboard','auth','search','detail'].map(role=>Number(workspace?.[`${role}_tab_id`]||0)).filter(Boolean));}
 function isExtensionWorkspaceTab(tab){const url=String(tab?.url||'');const origin=chrome.runtime.getURL('');return url.startsWith(origin)&&url.includes('jobbot_workspace=1');}
 function isOwnedDashboardTab(tab){try{const url=new URL(String(tab?.url||''));return url.protocol==='http:'&&url.hostname==='127.0.0.1'&&url.searchParams.get('jobbot_workspace')==='1'&&url.searchParams.get('jobbot_role')==='dashboard';}catch(_){return false;}}
-function isOwnedWorkspaceTab(tab,workspace){if(!tab)return false;const id=Number(tab.id||0);if(isExtensionWorkspaceTab(tab)||isOwnedDashboardTab(tab))return true;return roleIds(workspace).has(id);}
+function isPrimaryRoleUrl(tab){try{const url=new URL(String(tab?.url||''));return url.protocol==='about:'&&url.href==='about:blank'||url.protocol==='https:'&&/(^|\.)((linkedin|indeed|glassdoor)\.com)$/i.test(url.hostname);}catch(_){return false;}}
+function isOwnedWorkspaceTab(tab,workspace){
+  if(!tab)return false;
+  if(isExtensionWorkspaceTab(tab)||isOwnedDashboardTab(tab))return true;
+  const id=Number(tab.id||0);
+  // A saved numeric tab id is not ownership proof by itself: Chrome/user
+  // activity can leave that id pointing at a personal tab after a restart.
+  // Role tabs must still have a role-compatible URL before a window can be
+  // adopted or audited as JobBot-owned.
+  return roleIds(workspace).has(id)&&isPrimaryRoleUrl(tab);
+}
 async function populatedWindow(windowId){if(windowId==null||typeof chrome.windows?.get!=='function')return null;try{return await chrome.windows.get(Number(windowId),{populate:true});}catch(_){return null;}}
 function adoptionWindowSafe(win,workspace){const tabs=Array.isArray(win?.tabs)?win.tabs:[];return tabs.length>0&&tabs.every(tab=>isOwnedWorkspaceTab(tab,workspace));}
 async function workspaceWindowAudit(workspace){

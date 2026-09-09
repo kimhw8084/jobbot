@@ -129,6 +129,16 @@ async function loadWorker(mock) {
   await hooks.saveWorkspace({ window_id: 999, anchor_tab_id: 998, workspace_generation: 4 });
   state = await hooks.ensureWorkspace(101); assert.notStrictEqual(state.window_id, 10); assert.strictEqual(mock.windows.get(10).tabs.length, 1);
 
+  // A stale saved role id must not turn a personal tab into an owned tab.
+  mock = createChrome([{ id: 11, focused: true, tabs: [
+    { id: 110, url: 'https://mail.google.com/' },
+    { id: 111, url: 'chrome-extension://jobbot/dashboard.html?jobbot_workspace=1&jobbot_role=anchor' },
+  ] }]); hooks = await loadWorker(mock);
+  await hooks.saveWorkspace({ window_id: 999, anchor_tab_id: 998, search_tab_id: 110, workspace_generation: 5 });
+  state = await hooks.ensureWorkspace(111);
+  assert.notStrictEqual(state.window_id, 11);
+  assert.strictEqual(mock.windows.get(11).tabs.length, 1);
+
   // Dashboard is the only tab JobBot activates; no browser window focus call.
   const dashboard = await hooks.createOwnedTab('dashboard', 'http://127.0.0.1:8765/?jobbot_workspace=1&jobbot_role=dashboard');
   if (dashboard.jobbot_created) await hooks.activateDashboardTab(dashboard.id, state.window_id);
