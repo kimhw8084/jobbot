@@ -282,7 +282,7 @@ def command_import(args: argparse.Namespace) -> int:
 
 
 def command_validate_production(args: argparse.Namespace) -> int:
-    return run_validator(semi_minutes=args.semi_minutes)
+    return run_validator(semi_minutes=args.semi_minutes, stage=args.stage)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -306,7 +306,7 @@ def parser() -> argparse.ArgumentParser:
     funnel = sub.add_parser("funnel"); funnel.set_defaults(func=command_funnel)
     acceptance = sub.add_parser("acceptance"); acceptance.add_argument("--platform", choices=browser_tasks.PLATFORMS, required=True); acceptance.add_argument("--days", type=int, default=7); acceptance.add_argument("--max-results", type=int, default=20); acceptance.add_argument("--enqueue-only", action="store_true"); acceptance.add_argument("--no-open", action="store_true"); acceptance.add_argument("--use-production", action="store_true"); acceptance.set_defaults(func=command_acceptance)
     importer = sub.add_parser("import-db"); importer.add_argument("path"); importer.set_defaults(func=command_import)
-    validator = sub.add_parser("validate-production"); validator.add_argument("--semi-minutes", type=int, default=30); validator.set_defaults(func=command_validate_production)
+    validator = sub.add_parser("validate-production"); validator.add_argument("--stage", choices=("micro", "full"), default="full"); validator.add_argument("--semi-minutes", type=int, default=30); validator.set_defaults(func=command_validate_production)
     return root
 
 

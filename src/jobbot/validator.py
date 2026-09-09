@@ -806,10 +806,11 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
         conn.close()
 
 
-def _write_report(report: dict[str, Any], report_dir: Path) -> None:
+def _write_report(report: dict[str, Any], report_dir: Path, *, prefix: str = "") -> None:
     report_dir.mkdir(parents=True, exist_ok=True)
-    latest_json = report_dir / "latest.json"
-    latest_md = report_dir / "latest.md"
+    stem = f"{prefix}-latest" if prefix else "latest"
+    latest_json = report_dir / f"{stem}.json"
+    latest_md = report_dir / f"{stem}.md"
     latest_json.write_text(json.dumps(report, indent=2, ensure_ascii=False, default=str) + "\n", encoding="utf-8")
     lines = ["# JobBot production validation", "", f"PROD_READY={str(bool(report.get('PROD_READY'))).lower()}",
              f"branch={report.get('branch')}", f"head={report.get('head')}", ""]
@@ -864,7 +865,14 @@ def _run_semi_phase(
     }
 
 
-def run(*, semi_minutes: int = 30) -> int:
+def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
+    if stage not in {"micro", "full"}:
+        raise ValueError("stage must be micro or full")
+    micro_only = stage == "micro"
+    if micro_only:
+        # The micro path deliberately reuses the primary live proof below and
+        # returns before creating or touching soak/semi-production work.
+        semi_minutes = 30
     if semi_minutes < 30 or semi_minutes > 60:
         raise ValueError("--semi-minutes must be between 30 and 60")
     stamp = _timestamp()
@@ -884,6 +892,7 @@ def run(*, semi_minutes: int = 30) -> int:
         "soak_database": str(soak_db),
         "semi_production_database": str(semi_db),
         "dashboard_url": None,
+        "validation_stage": stage,
         "external_blockers": [],
         "internal_failures": [],
     }
@@ -947,6 +956,10 @@ def run(*, semi_minutes: int = 30) -> int:
         if not primary["pass"]:
             report["internal_failures"].append("primary live micro-validation failed")
             return 1
+        if micro_only:
+            report["validation_stage"] = "micro"
+            report["micro_pass"] = True
+            return 0
 
         soak_bundle = _isolated_bundle(soak_db, soak_out, _free_port())
         soak_url, _ = ensure_dashboard(soak_bundle, open_browser=True)
@@ -1071,10 +1084,11 @@ def run(*, semi_minutes: int = 30) -> int:
             _stop_dashboard(bundle, url)
         report["finished_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         report["PROD_READY"] = bool(report.get("PROD_READY") and not report.get("internal_failures"))
-        _write_report(report, report_dir)
+        _write_report(report, report_dir, prefix="micro" if micro_only else "")
         print(f"Validation database: {validation_db}")
         print(f"Soak database: {soak_db}")
         print(f"Semi-production database: {semi_db}")
         print(f"Dashboard: {report.get('dashboard_url') or 'not started'}")
-        print(f"Report: {report_dir / 'latest.json'}")
+        report_name = "micro-latest.json" if micro_only else "latest.json"
+        print(f"Report: {report_dir / report_name}")
         print(f"PROD_READY={str(report['PROD_READY']).lower()}")

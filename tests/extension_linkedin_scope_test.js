@@ -88,3 +88,44 @@ assert.strictEqual(inspected.extraction_scope_missing, false);
 assert.strictEqual(inspected.extraction_diagnostics.candidate_links_outside_scope, 3);
 assert.ok(!ids.includes('4901') && !ids.includes('4902') && !ids.includes('4903'));
 console.log('LinkedIn scope fixture passed: actual=3 outside_scope_excluded=3');
+
+function inspectRoot(nextRoot, title = 'LinkedIn jobs') {
+  global.location = { href: 'https://www.linkedin.com/jobs/search/?keywords=patient', pathname: '/jobs/search/', host: 'www.linkedin.com' };
+  global.document = { body: nextRoot, title, querySelector: nextRoot.querySelector.bind(nextRoot), querySelectorAll: nextRoot.querySelectorAll.bind(nextRoot) };
+  let value;
+  listener({ type: 'JOBBOT_INSPECT_SEARCH' }, null, (result) => { value = result; });
+  return value;
+}
+
+const structural = inspectRoot(parseHtml(fs.readFileSync('tests/fixtures/linkedin_structural_scope.html', 'utf8')));
+assert.deepStrictEqual(
+  structural.result_links.map((item) => item.source_job_id).sort(),
+  ['5101', '5102', '5103', '5104', '5105', '5106', '5107'],
+);
+assert.strictEqual(structural.extraction_scope_missing, false);
+assert.strictEqual(structural.extraction_diagnostics.scope_method, 'structural');
+assert.strictEqual(structural.extraction_diagnostics.candidate_links_total, 12);
+assert.strictEqual(structural.extraction_diagnostics.candidate_links_in_scope, 7);
+assert.strictEqual(structural.extraction_diagnostics.candidate_links_outside_scope, 4);
+assert.strictEqual(structural.extraction_diagnostics.chosen_root_signature, 'div.search-results-container[data-view-name=search-results-list]');
+assert.strictEqual(structural.extraction_diagnostics.chosen_card_signature, 'div.result-card[data-view-name=search-result-card]');
+assert.ok(!structural.result_links.some((item) => ['5901', '5902', '5903', '5910'].includes(item.source_job_id)));
+console.log('LinkedIn structural scope fixture passed: actual=7 duplicate_deduped=1 outside_scope_excluded=4');
+
+const unsafe = inspectRoot(parseHtml(`
+  <main><div class="one"><a href="/jobs/view/6101/?trk=flagship3_search_srp_jobs">One</a></div>
+  <div class="two"><a href="/jobs/view/6102/?trk=flagship3_search_srp_jobs">Two</a></div></main>
+`));
+assert.strictEqual(unsafe.extraction_scope_missing, true);
+assert.deepStrictEqual(unsafe.result_links, []);
+assert.strictEqual(unsafe.extraction_diagnostics.reason, 'no_safe_result_cluster');
+assert.ok(unsafe.extraction_diagnostics.anchor_samples.length <= 20);
+assert.ok(JSON.stringify(unsafe.extraction_diagnostics).length < 30000);
+console.log('LinkedIn ambiguous scope fixture passed: fail-closed with bounded diagnostics');
+
+const empty = inspectRoot(parseHtml('<main><div>No matching jobs found</div></main>'), 'LinkedIn jobs — no results');
+assert.strictEqual(empty.extraction_scope_missing, false);
+assert.deepStrictEqual(empty.result_links, []);
+assert.strictEqual(empty.extraction_diagnostics.empty_state, true);
+assert.strictEqual(empty.extraction_diagnostics.empty_state_reason, 'no matching jobs found');
+console.log('LinkedIn verified empty state fixture passed: no false scope failure');

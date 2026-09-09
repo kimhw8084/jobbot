@@ -34,6 +34,14 @@ class ValidatorIntegrationTests(unittest.TestCase):
             self.assertFalse(payload["PROD_READY"])
             self.assertIn("PROD_READY=false", (target / "latest.md").read_text(encoding="utf-8"))
 
+    def test_micro_report_has_separate_latest_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            target = Path(td)
+            _write_report({"validation_stage": "micro", "PROD_READY": False}, target, prefix="micro")
+            self.assertTrue((target / "micro-latest.json").is_file())
+            self.assertTrue((target / "micro-latest.md").is_file())
+            self.assertFalse((target / "latest.json").exists())
+
     def test_stage_pass_requires_reconciliation_and_terminal_tasks(self) -> None:
         base = {
             "terminal_classification": "COMPLETED_FULL",

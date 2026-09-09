@@ -20,6 +20,20 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertEqual(manifest["version"], "3.2.1")
         self.assertNotIn("nativeMessaging", manifest["permissions"])
         self.assertIn("http://127.0.0.1/*", manifest["host_permissions"])
+        referenced_scripts = []
+        for content_script in manifest.get("content_scripts", []):
+            for relative in content_script.get("js", []):
+                referenced_scripts.append(relative)
+                self.assertTrue((PROJECT_ROOT / "extension" / relative).is_file(), relative)
+        service_worker = manifest.get("background", {}).get("service_worker")
+        if service_worker:
+            self.assertTrue((PROJECT_ROOT / "extension" / service_worker).is_file(), service_worker)
+        for resource_group in manifest.get("web_accessible_resources", []):
+            for relative in resource_group.get("resources", []):
+                self.assertTrue((PROJECT_ROOT / "extension" / relative).is_file(), relative)
+        self.assertNotIn("linkedin-inject.js", json.dumps(manifest))
+        self.assertFalse((PROJECT_ROOT / "extension" / "linkedin-inject.js").exists())
+        self.assertEqual(set(referenced_scripts), {"selectors.js", "common.js", "linkedin.js", "indeed.js", "glassdoor.js"})
         node = subprocess.run(["node", "--version"], capture_output=True)
         if node.returncode: self.skipTest("Node is unavailable")
         for path in sorted((PROJECT_ROOT / "extension").glob("*.js")):
