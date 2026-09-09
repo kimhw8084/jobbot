@@ -351,13 +351,15 @@ def _validation_metrics(bundle: ConfigBundle, run_id: int, audit: dict[str, Any]
         ).fetchall()
         detail_states = {"PENDING": 0, "RUNNING": 0, "COMPLETE": 0, "RETRYABLE": 0,
                          "FAILED": 0, "EXTERNAL_BLOCKED": 0}
-        canonical_ids: set[int] = set()
+        # Canonical identifiers are durable JobBot strings (for example
+        # ``J943D57AD3EB03C``), not SQLite integer rowids.
+        canonical_ids: set[str] = set()
         for row in result_rows:
             status = str(row["detail_status"] or "")
             if status in detail_states:
                 detail_states[status] += 1
             if row["canonical_job_id"]:
-                canonical_ids.add(int(row["canonical_job_id"]))
+                canonical_ids.add(str(row["canonical_job_id"]))
         untouched_queued = int(conn.execute(
             "SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND started_at IS NULL AND status='queued'",
             (run_id,),

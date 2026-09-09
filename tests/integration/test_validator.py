@@ -14,6 +14,7 @@ from jobbot.validator import (
     _assert_isolated,
     _classify_supplemental,
     _record_validation_cutoff,
+    _validation_metrics,
     _scope_diagnostics,
     _phase_coverage_pass,
     _stage_pass,
@@ -212,6 +213,41 @@ class ValidatorIntegrationTests(unittest.TestCase):
         stage["validation_metrics"]["untouched_exhausted"] = 0
         stage["validation_metrics"]["attempted_incomplete"] = 1
         self.assertFalse(_stage_pass(stage, bounded=True))
+
+    def test_validation_metrics_accept_string_canonical_job_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "config").mkdir()
+            for item in (PROJECT_ROOT / "config").iterdir():
+                (root / "config" / item.name).write_bytes(item.read_bytes())
+            bundle = load_bundle(root)
+            run_id = enqueue_validation(root, ["linkedin"], bundle=bundle)
+            conn = Database(bundle).connect()
+            try:
+                task_id = conn.execute(
+                    "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)
+                ).fetchone()[0]
+                conn.execute(
+                    "UPDATE browser_search_tasks SET status='stopped',started_at='now',pages_visited=1,"
+                    "cards_extracted=1,cards_persistence_attempted=1,cards_persistence_succeeded=1 "
+                    "WHERE task_id=?", (task_id,)
+                )
+                conn.execute(
+                    "INSERT INTO search_task_results(browser_run_id,task_id,source_site,source_job_id,source_url,"
+                    "canonical_job_id,first_seen_at,last_seen_at,detail_status) VALUES(?,?,?,?,?,?,?,?,?)",
+                    (run_id, task_id, "linkedin", "4462567941",
+                     "https://www.linkedin.com/jobs/view/4462567941/", "J943D57AD3EB03C",
+                     "now", "now", "COMPLETE"),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+            metrics = _validation_metrics(
+                bundle,
+                run_id,
+                {"platforms": {}, "global": {}, "reconciliation": {"ok": True}, "integrity": "ok"},
+            )
+            self.assertEqual(metrics["canonical_jobs_attempted"], 1)
 
     def test_validation_sample_contains_representative_a_b_c_phases(self) -> None:
         with tempfile.TemporaryDirectory() as td:
