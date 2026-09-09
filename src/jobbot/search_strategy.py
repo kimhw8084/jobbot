@@ -155,7 +155,11 @@ def cadence_economics(counts: Mapping[str, int], *, baseline_recent_hours: int =
 
 def staged_cadence_economics(tasks: list[Any] | tuple[Any, ...], *, baseline_recent_hours: int = 6,
                              baseline_deep_hours: int = 24) -> dict[str, Any]:
-    """Calculate starts/day from the actual recent+deep compiled plan."""
+    """Calculate starts/day from each concrete task's cadence.
+
+    The compiled task is the source of truth.  Constants are used only for
+    legacy/malformed fixtures that do not carry a positive cadence.
+    """
     counts = {"RECENT": {band: 0 for band in BANDS}, "DEEP": {band: 0 for band in BANDS}}
     for task in tasks:
         window = str(getattr(task, "window_class", "DEEP") or "DEEP").upper()
@@ -165,10 +169,21 @@ def staged_cadence_economics(tasks: list[Any] | tuple[Any, ...], *, baseline_rec
         "RECENT": sum(value / baseline_recent_hours * 24 for value in counts["RECENT"].values()),
         "DEEP": sum(value / baseline_deep_hours * 24 for value in counts["DEEP"].values()),
     }
-    new_by_band = {
-        "RECENT": {band: counts["RECENT"][band] / DEFAULT_BAND_CADENCE_HOURS[band] * 24 for band in BANDS},
-        "DEEP": {band: counts["DEEP"][band] / DEFAULT_DEEP_CADENCE_HOURS * 24 for band in BANDS},
-    }
+    new_by_band = {"RECENT": {band: 0.0 for band in BANDS}, "DEEP": {band: 0.0 for band in BANDS}}
+    for task in tasks:
+        window = str(getattr(task, "window_class", "DEEP") or "DEEP").upper()
+        if window not in new_by_band:
+            window = "DEEP"
+        band = str(getattr(task, "search_band", "DEEP_TAIL") or "DEEP_TAIL").upper()
+        if band not in BANDS:
+            band = "DEEP_TAIL"
+        try:
+            cadence = int(getattr(task, "cadence_hours", 0) or 0)
+        except (TypeError, ValueError):
+            cadence = 0
+        if cadence <= 0:
+            cadence = DEFAULT_BAND_CADENCE_HOURS[band] if window == "RECENT" else DEFAULT_DEEP_CADENCE_HOURS
+        new_by_band[window][band] += 24 / cadence
     new = sum(new_by_band[window][band] for window in new_by_band for band in BANDS)
     old_total = sum(old.values())
     return {
@@ -247,17 +262,21 @@ def query_yield_estimate(row: Mapping[str, Any], *, minimum_descriptions: int = 
                          minimum_run_dates: int = 2) -> dict[str, Any]:
     completed = int(row.get("completed_descriptions", 0) or 0)
     ready = int(row.get("apply_now", 0) or 0) + int(row.get("apply_volume", 0) or 0)
+    new_ready = int(row.get("new_apply_ready", 0) or 0)
     eligible = yield_is_eligible(row, minimum_descriptions=minimum_descriptions, minimum_run_dates=minimum_run_dates)
     active_ms = int(row.get("task_active_browser_ms", 0) or 0)
     minutes = max(0.001, active_ms / 60000.0)
     conservative = (wilson_lower_bound(ready, completed) * completed / minutes) if active_ms and completed else 0.0
+    conservative_new = (wilson_lower_bound(new_ready, completed) * completed / minutes) if active_ms and completed else 0.0
     return {
         "apply_ready": ready,
+        "new_apply_ready": new_ready,
         "apply_ready_rate": round(ready / completed, 4) if completed else 0.0,
         "apply_now_rate": round(int(row.get("apply_now", 0) or 0) / completed, 4) if completed else 0.0,
         "wilson_lower_bound": round(wilson_lower_bound(ready, completed), 4),
         "actionable_jobs_per_minute": round(ready / minutes, 3) if active_ms else 0.0,
         "conservative_actionable_per_minute": round(conservative, 3),
+        "conservative_new_actionable_per_minute": round(conservative_new, 3),
         "task_active_browser_ms": active_ms,
         "average_active_minutes_per_completed_description": round(minutes / completed, 3) if completed and active_ms else 0.0,
         "sample_eligible": eligible,

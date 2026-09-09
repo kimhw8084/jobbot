@@ -18,7 +18,17 @@ class ExtensionBridgeTests(unittest.TestCase):
         manifest = json.loads((PROJECT_ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["manifest_version"], 3)
         self.assertEqual(manifest["version"], "3.2.1")
-        self.assertEqual(manifest["version_name"], "3.2.3-final-closure")
+        self.assertEqual(manifest["version_name"], "3.2.3-final-closure.2")
+        parent = subprocess.run(["git", "rev-parse", "HEAD^"], cwd=PROJECT_ROOT, capture_output=True, text=True)
+        if parent.returncode == 0:
+            changed = subprocess.run(
+                ["git", "diff", "--name-only", parent.stdout.strip(), "--", "extension"],
+                cwd=PROJECT_ROOT, capture_output=True, text=True,
+            ).stdout.splitlines()
+            runtime_changed = [path for path in changed if path != "extension/manifest.json"]
+            if runtime_changed:
+                self.assertIn("extension/manifest.json", changed,
+                              "runtime extension bytes changed without a new manifest build identity")
         self.assertNotIn("nativeMessaging", manifest["permissions"])
         self.assertIn("windows", manifest["permissions"])
         self.assertIn("http://127.0.0.1/*", manifest["host_permissions"])
@@ -40,7 +50,7 @@ class ExtensionBridgeTests(unittest.TestCase):
         if node.returncode: self.skipTest("Node is unavailable")
         for path in sorted((PROJECT_ROOT / "extension").glob("*.js")):
             with self.subTest(path=path.name):
-                self.assertNotIn("3.2.3-final-closure", path.read_text(encoding="utf-8"), "extension JavaScript must read version_name from manifest")
+                self.assertNotIn(manifest["version_name"], path.read_text(encoding="utf-8"), "extension JavaScript must read version_name from manifest")
                 checked = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
                 self.assertEqual(checked.returncode, 0, checked.stderr)
         dashboard_js = subprocess.run(["node", "--check", str(PROJECT_ROOT / "src/jobbot/web/dashboard.js")], capture_output=True, text=True)

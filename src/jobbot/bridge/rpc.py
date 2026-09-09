@@ -54,7 +54,7 @@ def task_selection_key(conn, row):
     if stats is not None:
         estimate = query_yield_estimate(dict(stats))
         if estimate['sample_eligible']:
-            learned_roi = float(estimate['conservative_actionable_per_minute'])
+            learned_roi = float(estimate['conservative_new_actionable_per_minute'])
     return (BAND_ORDER.get(str(row['search_band'] or 'DEEP_TAIL'), 99), -learned_roi,
             int(row['execution_rank'] or 0), int(row['priority'] or 99), int(row['task_id']))
 
@@ -83,6 +83,16 @@ def refresh_task_counters(conn, rid:int)->None:
           SET tasks_completed=?,tasks_incomplete=?,tasks_challenged=?,tasks_failed=?
           WHERE browser_run_id=? AND platform=?""",
           (values['completed'],values['incomplete'],values['challenged'],values['failed'],rid,platform))
+
+def backfill_task_yields(conn, rid: int, observed_at: str | None = None) -> int:
+    """Finalize exhausted-task yield after all attempt timing is durable."""
+    recorded = 0
+    for row in conn.execute(
+        "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND status='exhausted' AND yield_recorded_at IS NULL",
+        (rid,),
+    ).fetchall():
+        recorded += int(record_task_yield(conn, int(row['task_id']), observed_at) or 0)
+    return recorded
 
 def refresh_result_reconciliation(conn, rid:int, tid:int)->None:
     """Derive card/detail counters from committed SQLite state.
@@ -333,7 +343,13 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 try: active_ms=max(0,int(float(msg['payload'].get('task_active_browser_ms',0) or 0)))
                 except (TypeError,ValueError): active_ms=0
                 conn.execute("UPDATE browser_search_tasks SET task_active_browser_ms=task_active_browser_ms+? WHERE task_id=? AND browser_run_id=?",(active_ms,tid,rid))
-            event(conn,rid,tid,event_type,message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True}
+            event(conn,rid,tid,event_type,message,msg,out);refresh_result_reconciliation(conn,rid,tid)
+            if event_type == 'task_active_time':
+                # complete_task changes terminal state but intentionally does
+                # not finalize yield until this final attempt timing arrives.
+                # The yield marker makes duplicate timing events harmless.
+                record_task_yield(conn, tid, j.now_iso())
+            conn.commit();return {'ok':True}
         if action=='complete_task':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);status=j.clean_text(msg.get('status') or 'completed');reason=j.clean_text(msg.get('reason') or '');exhausted=1 if bool(msg.get('exhausted')) else 0
             if status=='completed': status='exhausted' if exhausted else 'incomplete'
@@ -353,8 +369,6 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
             elif status=='failed':conn.execute("UPDATE browser_platform_runs SET tasks_failed=tasks_failed+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
             mark_definition_completed(conn, t, status, now)
-            if status == 'exhausted':
-                record_task_yield(conn, tid, now)
             if status=='stopped':
                 conn.execute("UPDATE browser_runs SET stop_requested=1,stop_after_current=0,last_error=? WHERE browser_run_id=?",(reason or 'stop after current requested',rid))
             event(conn,rid,tid,'task_'+status,reason,msg,out);conn.commit();return {'ok':True}
@@ -377,6 +391,9 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='finish_run':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
+            # Crash-style recovery for the narrow gap between complete_task
+            # and the final task_active_time event.
+            backfill_task_yields(conn, rid, j.now_iso())
             pending=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('queued','running')",(rid,)).fetchone()['n']
             bad=conn.execute("SELECT COUNT(*) n FROM browser_search_tasks WHERE browser_run_id=? AND status IN ('incomplete','challenged','failed','auth_required','deferred_by_platform','paused','stopped')",(rid,)).fetchone()['n']
             final='stopped' if int(r['stop_requested'] or 0) else ('partial' if pending or bad else 'completed')

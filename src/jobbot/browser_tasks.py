@@ -182,6 +182,7 @@ def enqueue_validation_sample(
         "C_DEEP_BACKFILL",
     ),
     per_phase_per_platform: int = 6,
+    sample_bands: tuple[str, ...] | None = None,
     bundle=None,
 ) -> int:
     """Queue a bounded representative sample of the real staged plan.
@@ -204,7 +205,10 @@ def enqueue_validation_sample(
     # Validation samples are intentionally band-stratified so a short phase
     # window proves strategy execution, not merely that the queue was built.
     groups: dict[tuple[str, str, str], list[Any]] = {}
+    allowed_bands = {str(band).upper() for band in sample_bands} if sample_bands else None
     for task in planned:
+        if allowed_bands is not None and task.search_band not in allowed_bands:
+            continue
         groups.setdefault((task.phase, task.platform, task.search_band), []).append(task)
     keys = sorted(groups, key=lambda value: (value[0], value[1], {"GOLD": 0, "SILVER": 1, "GROWTH": 2, "HEDGE": 3, "DEEP_TAIL": 4}.get(value[2], 9)))
     picked = True
@@ -264,12 +268,28 @@ def enqueue_gate(base: Path, platform: str = "indeed", days: int = 7, max_result
 
 
 def enqueue_validation(base: Path, platforms: list[str] | None = None, *, max_results: int | None = None, bundle=None) -> int:
-    """Create a tiny all-primary live proof run; never used by production RUN NOW."""
+    """Create a tiny live proof from the compiled GOLD recent definition.
+
+    Validation bounds the runtime only.  The task metadata and URL remain the
+    same production SearchTask metadata used by RUN NOW.
+    """
     chosen = platforms or list(PLATFORMS)
     bad = [p for p in chosen if p not in PLATFORMS]
     if bad:
         raise ValueError(f"unsupported platform(s): {', '.join(bad)}")
     active_bundle = bundle or load_bundle(base)
+    compiled = compile_plan(active_bundle, "fast", chosen)
+    micro_tasks = {
+        task.platform: task for task in compiled
+        if task.canonical_title.casefold() == "patient enrollment specialist"
+        and task.search_band == "GOLD"
+        and task.window_class == "RECENT"
+        and task.age_days == 7
+        and task.resume_variant == "enrollment_operations"
+    }
+    missing = [platform for platform in chosen if platform not in micro_tasks]
+    if missing:
+        raise ValueError(f"compiled GOLD micro definition missing: {', '.join(missing)}")
     db = active_bundle.database_path
     Database(active_bundle).migrate()
     store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
@@ -279,15 +299,17 @@ def enqueue_validation(base: Path, platforms: list[str] | None = None, *, max_re
     ).lastrowid)
     store.conn.executemany("INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,1)", [(rid, p) for p in chosen])
     for platform in chosen:
-        query = "patient enrollment specialist"
+        task = micro_tasks[platform]
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (rid, platform, query, 1, 7, "date", search_url(platform, query, 7), max_results, "queued", now,
-             "validation-micro", "HEALTHCARE_OPS_ACCESS", "enrollment_operations", 0, 1, 1,
-             f"VALIDATION|{platform}|patient enrollment specialist", "A_FASTEST_DOOR_RECENT"),
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
+              canonical_title,search_band,query_variant,window_class,cadence_hours
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (rid, platform, task.query_text, 1, task.age_days, task.sort_mode, task.search_url, max_results, "queued", now,
+             task.profile, task.lane, task.resume_variant, task.priority, task.execution_rank, 1,
+             task.task_key, task.phase, task.canonical_title, task.search_band, task.query_variant,
+             task.window_class, task.cadence_hours),
         )
     store.conn.commit(); store.close(); return rid
 

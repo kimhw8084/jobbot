@@ -689,6 +689,7 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
               stop_after_seconds: int | None = None, bridge_restart_after: int | None = None,
               validation_micro: bool = False, validation_sample: bool = False,
               sample_phases: tuple[str, ...] | None = None, sample_per_phase: int = 6,
+              sample_bands: tuple[str, ...] | None = None,
               active_runs: list[tuple[ConfigBundle, int]] | None = None,
               deadline: float | None = None) -> dict[str, Any]:
     with _isolated_environment(bundle):
@@ -699,7 +700,7 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
             run_id = browser_tasks.enqueue_validation_sample(
                 PROJECT_ROOT, platforms, phases=sample_phases or (
                     "A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL",
-                ), per_phase_per_platform=sample_per_phase, bundle=bundle,
+                ), per_phase_per_platform=sample_per_phase, sample_bands=sample_bands, bundle=bundle,
             )
         else:
             run_id = browser_tasks.enqueue_production(PROJECT_ROOT, mode, platforms)
@@ -1011,9 +1012,9 @@ def _band_execution_metrics(execution: dict[str, dict[str, dict[str, Any]]]) -> 
     return result
 
 
-def _band_coverage_pass(execution: dict[str, dict[str, dict[str, Any]]]) -> bool:
+def _band_coverage_pass(execution: dict[str, dict[str, dict[str, Any]]], *, required_bands: tuple[str, ...] = BANDS) -> bool:
     evidence = _band_execution_metrics(execution)
-    for band in BANDS:
+    for band in required_bands:
         values = evidence[band]
         if int(values["progress_tasks"]) > 0:
             continue
@@ -1050,6 +1051,7 @@ def _run_semi_phase(
     phase_seconds: int,
     active_runs: list[tuple[ConfigBundle, int]],
     stage_deadline: float | None = None,
+    sample_band: str | None = None,
 ) -> dict[str, Any]:
     """Run one bounded phase window through the normal browser/bridge path."""
     intentional_stop = phase == "A_FASTEST_DOOR_RECENT"
@@ -1068,7 +1070,8 @@ def _run_semi_phase(
         stop_after_seconds=initial_stop_after,
         validation_sample=True,
         sample_phases=(phase,),
-        sample_per_phase=6,
+        sample_per_phase=1 if sample_band else 6,
+        sample_bands=(sample_band,) if sample_band else None,
         active_runs=active_runs,
         deadline=stage_deadline,
     )
@@ -1130,8 +1133,25 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         "internal_failures": [],
     }
     configured_tasks = compile_staged_plan(load_bundle(PROJECT_ROOT), list(PRIMARY))
+    phase_counts = _phase_counts(configured_tasks)
+    configured_by_platform = {platform: {
+        "phase_a_fast_recent": sum(1 for task in configured_tasks if task.platform == platform and task.phase == "A_FASTEST_DOOR_RECENT"),
+        "phase_b_remaining_recent": sum(1 for task in configured_tasks if task.platform == platform and task.phase == "B_REMAINING_CORE_RECENT"),
+        "recent_a_plus_b": sum(1 for task in configured_tasks if task.platform == platform and task.phase in {"A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT"}),
+        "deep_c": sum(1 for task in configured_tasks if task.platform == platform and task.phase == "C_DEEP_BACKFILL"),
+        "staged_total": sum(1 for task in configured_tasks if task.platform == platform),
+    } for platform in PRIMARY}
     report["run_now_coverage"] = {
-        "configured_production_phase_counts": _phase_counts(configured_tasks),
+        "configured_production_phase_counts": phase_counts,
+        "configured_production_labels": {
+            "phase_a_fast_recent_per_platform": configured_by_platform[PRIMARY[0]]["phase_a_fast_recent"],
+            "phase_b_remaining_recent_per_platform": configured_by_platform[PRIMARY[0]]["phase_b_remaining_recent"],
+            "total_recent_a_plus_b_per_platform": configured_by_platform[PRIMARY[0]]["recent_a_plus_b"],
+            "deep_c_per_platform": configured_by_platform[PRIMARY[0]]["deep_c"],
+            "staged_total_per_platform": configured_by_platform[PRIMARY[0]]["staged_total"],
+            "big3_staged_total": sum(value["staged_total"] for value in configured_by_platform.values()),
+        },
+        "configured_production_by_platform": configured_by_platform,
         "configured_production_band_counts": {
             phase: {band: sum(1 for task in configured_tasks if task.phase == phase and task.search_band == band) for band in BANDS}
             for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL")
@@ -1233,7 +1253,10 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         soak_execution = _phase_execution_metrics(soak_bundle, int(final_soak["run_id"]))
         soak["execution_evidence"] = soak_execution
         soak["band_execution_evidence"] = _band_execution_metrics(soak_execution)
-        soak["band_coverage_pass"] = _band_coverage_pass(soak_execution)
+        soak["band_coverage_pass"] = _band_coverage_pass(soak_execution, required_bands=("GOLD",))
+        soak["band_coverage_required"] = ["GOLD"]
+        soak["bands_reached"] = [band for band, values in soak["band_execution_evidence"].items()
+                                  if int(values.get("progress_tasks", 0) or 0) > 0]
         soak["duration_seconds_total"] = round(time.monotonic() - soak_started, 2)
         soak["dashboard"] = _dashboard_probe(soak_bundle, soak_url)
         soak["pass"] = bool(soak["outcome"]["status"] == "stopped" and soak["resume"] and
@@ -1259,28 +1282,61 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         report["dashboard_url"] = semi_url
         semi_started = time.monotonic()
         semi_deadline = semi_started + semi_minutes * 60
-        phase_seconds = max(60, (semi_minutes * 60) // 3)
+        # Five controlled representative probes make band proof deterministic
+        # without waiting for a long GOLD task to naturally drain into later
+        # bands.  The probes still use compiled SearchTasks and the normal
+        # browser/bridge path; only the validation queue is sampled.
+        probe_count = 5
+        grace_budget = probe_count * VALIDATION_STOP_GRACE_SECONDS + 60
+        phase_seconds = max(30, (semi_minutes * 60 - grace_budget) // probe_count)
         phase_runs: dict[str, Any] = {}
         with _isolated_environment(semi_bundle):
-            for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"):
-                phase_runs[phase] = _run_semi_phase(
+            probes = (
+                ("A_FASTEST_DOOR_RECENT", "GOLD"),
+                ("A_FASTEST_DOOR_RECENT", "SILVER"),
+                ("B_REMAINING_CORE_RECENT", "GROWTH"),
+                ("B_REMAINING_CORE_RECENT", "HEDGE"),
+                ("C_DEEP_BACKFILL", "DEEP_TAIL"),
+            )
+            for phase, band in probes:
+                phase_runs[f"{phase}:{band}"] = _run_semi_phase(
                     semi_bundle,
                     phase=phase,
                     platforms=list(PRIMARY),
                     phase_seconds=phase_seconds,
                     active_runs=active_runs,
                     stage_deadline=semi_deadline,
+                    sample_band=band,
                 )
-            last_run_id = int(phase_runs["C_DEEP_BACKFILL"]["final"]["run_id"])
+            last_run_id = int(phase_runs["C_DEEP_BACKFILL:DEEP_TAIL"]["final"]["run_id"])
             supplemental = _run_supplemental(semi_bundle, last_run_id)
         sampled_phase_counts: dict[str, dict[str, int]] = {}
         execution_evidence: dict[str, Any] = {}
         phase_pass: dict[str, bool] = {}
-        for phase, phase_result in phase_runs.items():
+        for probe_key, phase_result in phase_runs.items():
             run_id = int(phase_result["final"]["run_id"])
-            sampled_phase_counts.update(_sampled_phase_counts(semi_bundle, run_id))
-            execution_evidence[phase] = phase_result["execution"]
-            phase_pass[phase] = bool(phase_result["pass"])
+            for phase, platforms in _sampled_phase_counts(semi_bundle, run_id).items():
+                for platform, count in platforms.items():
+                    sampled_phase_counts.setdefault(phase, {})[platform] = sampled_phase_counts.setdefault(phase, {}).get(platform, 0) + count
+            for phase, platforms in phase_result["execution"].items():
+                target_phase = execution_evidence.setdefault(phase, {})
+                for platform, values in platforms.items():
+                    target = target_phase.setdefault(platform, {
+                        "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
+                        "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
+                        "bands": {},
+                    })
+                    for key in ("sampled_queued", "started_tasks", "progress_tasks", "cards_persisted", "details_complete", "external_tasks"):
+                        target[key] += int(values.get(key, 0) or 0)
+                    for band_name, band_values in values.get("bands", {}).items():
+                        band_target = target["bands"].setdefault(band_name, {
+                            "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
+                            "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
+                        })
+                        for key in band_target:
+                            band_target[key] += int(band_values.get(key, 0) or 0)
+            phase = phase_result["phase"]
+            phase_pass[phase] = phase_pass.get(phase, True) and bool(phase_result["pass"])
         band_evidence = _band_execution_metrics(execution_evidence)
         semi = {
             "run_id": last_run_id,

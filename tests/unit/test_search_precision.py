@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+import json
 import sqlite3
 import tempfile
 import unittest
@@ -86,6 +88,18 @@ class SearchPrecisionTests(unittest.TestCase):
         self.assertEqual(result["definition_counts"]["RECENT"]["GOLD"], result["definition_counts"]["DEEP"]["GOLD"])
         self.assertEqual(result["old_recent_starts_per_day"], 592.0)
         self.assertGreater(result["actual_reduction_percent"], 0)
+
+    def test_staged_economics_uses_compiled_task_cadence_not_defaults(self) -> None:
+        original = load_bundle(PROJECT_ROOT)
+        strategy = copy.deepcopy(original.strategy)
+        strategy["strategy"]["search_band_cadence"]["gold_hours"] = 18
+        bundle = type(original)(original.root, strategy, original.candidate, original.runtime)
+        baseline = staged_cadence_economics(compile_staged_plan(original, ["linkedin"]))
+        changed = staged_cadence_economics(compile_staged_plan(bundle, ["linkedin"]))
+        self.assertLess(
+            changed["new_recent_starts_per_day_by_band"]["GOLD"],
+            baseline["new_recent_starts_per_day_by_band"]["GOLD"],
+        )
 
     def test_scheduler_orders_recent_band_before_deep_tail_phase(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -231,6 +245,53 @@ class SearchPrecisionTests(unittest.TestCase):
                 self.assertTrue(record_task_yield(store.conn, task_id, now))
                 row = store.conn.execute("SELECT completed_descriptions,apply_now,hard_reject,out_of_scope,descriptions_missing FROM query_yield_stats").fetchone()
                 self.assertEqual(tuple(row), (3, 1, 1, 1, 1))
+            finally:
+                store.close()
+
+    def test_query_yield_credits_only_marginal_new_actionable_jobs(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "jobs.sqlite3"
+            bundle = bundle_with_database(path)
+            Database(bundle).migrate()
+            store = PrecisionStore(path)
+            try:
+                now = "2026-09-09T12:00:00+00:00"
+                for query, ledger_status in (("query A", "new"), ("query B", "unchanged")):
+                    run_id = store.conn.execute(
+                        "INSERT INTO browser_runs(version,mode,platform,status,created_at) VALUES(?,?,?,?,?)",
+                        ("test", "precision", "linkedin", "running", now),
+                    ).lastrowid
+                    task_id = store.conn.execute(
+                        """INSERT INTO browser_search_tasks(
+                           browser_run_id,platform,query_text,window_days,search_url,status,created_at,
+                           completed_at,search_band,window_class,cadence_hours,task_key,task_active_browser_ms
+                        ) VALUES(?,?,?,?,?,'exhausted',?,?,?,?,?,?,?)""",
+                        (run_id, "linkedin", query, 7, "https://example.test", now, now, "GOLD", "RECENT", 6, query, 60000),
+                    ).lastrowid
+                    store.conn.execute(
+                        "INSERT OR REPLACE INTO jobs(job_id,title,recommendation,remote_gate,description_state,first_seen,last_seen) VALUES(?,?,?,?,?,?,?)",
+                        ("canonical-X", "Patient Enrollment Specialist", "APPLY_NOW", "pass", "COMPLETE", now, now),
+                    )
+                    store.conn.execute(
+                        """INSERT INTO search_task_results(
+                           task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,
+                           browser_run_id,detail_status,canonical_job_id
+                        ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                        (task_id, "linkedin", f"source-{query}", "https://example.test/canonical-X", now, now, run_id, "COMPLETE", "canonical-X"),
+                    )
+                    store.conn.execute(
+                        "INSERT INTO browser_events(browser_run_id,task_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?,?)",
+                        (run_id, task_id, now, "job_recorded", "recorded", json.dumps({"job_id": "canonical-X", "ledger_status": ledger_status})),
+                    )
+                    store.conn.commit()
+                    self.assertTrue(record_task_yield(store.conn, task_id, now))
+                rows = store.conn.execute(
+                    "SELECT normalized_query,canonical_jobs_observed,new_canonical_jobs,apply_ready_observed,new_apply_ready FROM query_yield_stats ORDER BY normalized_query"
+                ).fetchall()
+                self.assertEqual([tuple(row) for row in rows], [
+                    ("query a", 1, 1, 1, 1),
+                    ("query b", 1, 0, 1, 0),
+                ])
             finally:
                 store.close()
 

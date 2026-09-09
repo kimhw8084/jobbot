@@ -80,6 +80,46 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
             finally:
                 rpc.BASE = previous
 
+    def test_exhausted_yield_waits_for_final_active_time_and_backfills_once(self) -> None:
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            rpc.BASE = root
+            try:
+                run_id = browser_tasks.enqueue_validation(root, ["linkedin"])
+                rpc.handle({"action": "begin_run", "run_id": run_id})
+                task = rpc.handle({"action": "next_task", "run_id": run_id, "worker_id": "yield-race"})["task"]
+                task_id = int(task["task_id"])
+                rpc.handle({"action": "complete_task", "run_id": run_id, "task_id": task_id,
+                            "status": "exhausted", "reason": "race fixture", "exhausted": True})
+                conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+                self.assertIsNone(conn.execute("SELECT yield_recorded_at FROM browser_search_tasks WHERE task_id=?", (task_id,)).fetchone()[0])
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM query_yield_stats").fetchone()[0], 0)
+                conn.close()
+                rpc.handle({"action": "browser_event", "run_id": run_id, "task_id": task_id,
+                            "event_type": "task_active_time", "message": "final active time",
+                            "payload": {"metric_scope": "task_attempt", "task_active_browser_ms": 4321}})
+                rpc.handle({"action": "browser_event", "run_id": run_id, "task_id": task_id,
+                            "event_type": "task_active_time", "message": "duplicate final timing",
+                            "payload": {"metric_scope": "task_attempt", "task_active_browser_ms": 4321}})
+                conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+                self.assertEqual(conn.execute("SELECT task_active_browser_ms FROM browser_search_tasks WHERE task_id=?", (task_id,)).fetchone()[0], 8642)
+                self.assertEqual(conn.execute("SELECT task_active_browser_ms,observation_runs FROM query_yield_stats").fetchone(), (4321, 1))
+                conn.close()
+
+                second_run = browser_tasks.enqueue_validation(root, ["linkedin"])
+                rpc.handle({"action": "begin_run", "run_id": second_run})
+                second_task = rpc.handle({"action": "next_task", "run_id": second_run, "worker_id": "yield-backfill"})["task"]
+                rpc.handle({"action": "complete_task", "run_id": second_run, "task_id": second_task["task_id"],
+                            "status": "exhausted", "reason": "crash fixture", "exhausted": True})
+                rpc.handle({"action": "finish_run", "run_id": second_run})
+                conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+                self.assertIsNotNone(conn.execute("SELECT yield_recorded_at FROM browser_search_tasks WHERE task_id=?", (second_task["task_id"],)).fetchone()[0])
+                self.assertEqual(conn.execute("SELECT observation_runs FROM query_yield_stats").fetchone()[0], 2)
+                conn.close()
+            finally:
+                rpc.BASE = previous
+
     def test_bridge_derives_reconciliation_without_card_stats(self) -> None:
         previous = rpc.BASE
         with tempfile.TemporaryDirectory() as td:

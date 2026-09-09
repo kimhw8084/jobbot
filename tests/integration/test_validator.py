@@ -11,6 +11,7 @@ from jobbot.browser_tasks import enqueue_validation, enqueue_validation_sample
 from jobbot.config import PROJECT_ROOT, load_bundle
 from jobbot.db import Database
 from jobbot.legacy_engine import fetch_remotelanders_exhaustive, source_failure_class
+from jobbot.search_plan import compile_plan
 from jobbot.validator import (
     VALIDATION_WINDOW_COMPLETE,
     _assert_isolated,
@@ -33,6 +34,31 @@ from jobbot.validator import (
 
 
 class ValidatorIntegrationTests(unittest.TestCase):
+    def test_micro_task_is_the_compiled_gold_recent_definition(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "config").mkdir()
+            for item in (PROJECT_ROOT / "config").iterdir():
+                (root / "config" / item.name).write_bytes(item.read_bytes())
+            bundle = load_bundle(root)
+            run_id = enqueue_validation(root, ["linkedin"], bundle=bundle)
+            compiled = next(task for task in compile_plan(bundle, "fast", ["linkedin"])
+                            if task.canonical_title == "Patient Enrollment Specialist")
+            conn = Database(bundle).connect()
+            try:
+                row = conn.execute("SELECT * FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()
+                for field in ("task_key", "canonical_title", "query_text", "query_variant", "search_band",
+                              "window_class", "cadence_hours", "career_lane", "resume_variant",
+                              "execution_rank", "search_url"):
+                    expected = compiled.search_url if field == "search_url" else (
+                        compiled.lane if field == "career_lane" else getattr(compiled, field)
+                    )
+                    self.assertEqual(row[field], expected, field)
+                self.assertEqual(row["window_days"], 7)
+                self.assertIsNone(row["max_results"])
+            finally:
+                conn.close()
+
     def test_deadline_timeout_leaves_cleanup_reserve_and_refuses_expired_start(self) -> None:
         with patch("jobbot.validator.time.monotonic", return_value=100.0):
             self.assertEqual(_bounded_timeout(300, 400.0), 288)
@@ -239,6 +265,23 @@ class ValidatorIntegrationTests(unittest.TestCase):
         execution["A_FASTEST_DOOR_RECENT"]["linkedin"]["bands"]["DEEP_TAIL"]["external_tasks"] = 0
         self.assertFalse(_band_coverage_pass(execution))
 
+    def test_soak_requires_gold_progress_but_not_all_bands(self) -> None:
+        execution = {
+            "A_FASTEST_DOOR_RECENT": {
+                "linkedin": {
+                    "bands": {
+                        "GOLD": {"sampled_queued": 1, "progress_tasks": 1},
+                        "SILVER": {"sampled_queued": 1, "progress_tasks": 0},
+                        "GROWTH": {"sampled_queued": 1, "progress_tasks": 0},
+                        "HEDGE": {"sampled_queued": 1, "progress_tasks": 0},
+                        "DEEP_TAIL": {"sampled_queued": 1, "progress_tasks": 0},
+                    }
+                }
+            }
+        }
+        self.assertTrue(_band_coverage_pass(execution, required_bands=("GOLD",)))
+        self.assertFalse(_band_coverage_pass(execution))
+
     def test_bounded_phase_stop_has_grace_and_only_a_resumes(self) -> None:
         stopped = {"run_id": 7, "outcome": {"status": "stopped"}}
         with patch("jobbot.validator._live_run", return_value=stopped) as live, \
@@ -340,6 +383,28 @@ class ValidatorIntegrationTests(unittest.TestCase):
                 ).fetchall()
                 self.assertEqual({row[0] for row in rows}, {"A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"})
                 self.assertTrue(all(row[2] == 2 and row[3] == 2 for row in rows))
+            finally:
+                conn.close()
+
+    def test_validation_sample_can_probe_one_real_band_without_legacy_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "config").mkdir()
+            for item in (PROJECT_ROOT / "config").iterdir():
+                (root / "config" / item.name).write_bytes(item.read_bytes())
+            bundle = load_bundle(root)
+            run_id = enqueue_validation_sample(
+                root, ["linkedin"], phases=("B_REMAINING_CORE_RECENT",),
+                sample_bands=("HEDGE",), per_phase_per_platform=1, bundle=bundle,
+            )
+            conn = Database(bundle).connect()
+            try:
+                row = conn.execute(
+                    "SELECT phase,search_band,window_class,query_variant,task_key FROM browser_search_tasks WHERE browser_run_id=?",
+                    (run_id,),
+                ).fetchone()
+                self.assertEqual(tuple(row), ("B_REMAINING_CORE_RECENT", "HEDGE", "RECENT", "primary", row[4]))
+                self.assertTrue(row[4])
             finally:
                 conn.close()
 

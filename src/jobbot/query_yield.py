@@ -92,6 +92,30 @@ def record_task_yield(conn, task_id: int, observed_at: str | None = None) -> boo
     descriptions_missing = sum(str(row["description_state"] or "").upper() == "MISSING" for row in all_rows)
     descriptions_partial = sum(str(row["description_state"] or "").upper() == "PARTIAL_TOO_SHORT" for row in all_rows)
     detail_failed = int(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status='FAILED'", (task_id,)).fetchone()[0] or 0)
+    ledger_status_by_job: dict[str, str] = {}
+    for event in conn.execute("SELECT payload_json FROM browser_events WHERE task_id=? AND event_type='job_recorded'", (task_id,)):
+        try:
+            payload = json.loads(event[0] or "{}")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        job_id = str(payload.get("job_id") or "")
+        status = str(payload.get("ledger_status") or "").lower()
+        if job_id and status in {"new", "updated", "unchanged"}:
+            # A later event for the same canonical job may be an unchanged
+            # sighting. Preserve NEW evidence for this task's marginal value.
+            if ledger_status_by_job.get(job_id) != "new":
+                ledger_status_by_job[job_id] = status
+    canonical_jobs_observed = len(all_rows)
+    new_canonical_jobs = sum(ledger_status_by_job.get(str(row["job_id"]), "") == "new" for row in all_rows)
+    if not ledger_status_by_job:
+        new_canonical_jobs = min(int(task["jobs_new"] or 0), canonical_jobs_observed)
+    apply_ready_observed = sum(str(row["recommendation"] or "") in {"APPLY_NOW", "APPLY_VOLUME"} for row in rows)
+    new_apply_ready = sum(
+        str(row["recommendation"] or "") in {"APPLY_NOW", "APPLY_VOLUME"}
+        and ledger_status_by_job.get(str(row["job_id"]), "") == "new"
+        for row in rows
+    )
+    duplicate_canonical_jobs = max(0, canonical_jobs_observed - new_canonical_jobs)
     active_browser_ms = max(0, int(task["task_active_browser_ms"] or 0))
     if not active_browser_ms:
         # Compatibility for pre-v16 rows and deterministic fixtures that
@@ -117,8 +141,9 @@ def record_task_yield(conn, task_id: int, observed_at: str | None = None) -> boo
         """INSERT INTO query_yield_stats(
           platform,normalized_query,search_band,window_class,window_days,cards_persisted,completed_descriptions,
           descriptions_missing,descriptions_partial,detail_failed,apply_now,apply_volume,high_value_stretch,review,
-          hard_reject,out_of_scope,remote_pass,task_active_browser_ms,total_browser_ms,observation_runs,observation_dates,last_observed_at
-        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          hard_reject,out_of_scope,remote_pass,task_active_browser_ms,total_browser_ms,observation_runs,observation_dates,last_observed_at,
+          canonical_jobs_observed,new_canonical_jobs,apply_ready_observed,new_apply_ready,duplicate_canonical_jobs
+        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(platform,normalized_query,search_band,window_class,window_days) DO UPDATE SET
           cards_persisted=query_yield_stats.cards_persisted+excluded.cards_persisted,
           completed_descriptions=query_yield_stats.completed_descriptions+excluded.completed_descriptions,
@@ -134,12 +159,18 @@ def record_task_yield(conn, task_id: int, observed_at: str | None = None) -> boo
           remote_pass=query_yield_stats.remote_pass+excluded.remote_pass,
           task_active_browser_ms=query_yield_stats.task_active_browser_ms+excluded.task_active_browser_ms,
           total_browser_ms=query_yield_stats.total_browser_ms+excluded.total_browser_ms,
+          canonical_jobs_observed=query_yield_stats.canonical_jobs_observed+excluded.canonical_jobs_observed,
+          new_canonical_jobs=query_yield_stats.new_canonical_jobs+excluded.new_canonical_jobs,
+          apply_ready_observed=query_yield_stats.apply_ready_observed+excluded.apply_ready_observed,
+          new_apply_ready=query_yield_stats.new_apply_ready+excluded.new_apply_ready,
+          duplicate_canonical_jobs=query_yield_stats.duplicate_canonical_jobs+excluded.duplicate_canonical_jobs,
           observation_runs=query_yield_stats.observation_runs+1,
           observation_dates=excluded.observation_dates,last_observed_at=excluded.last_observed_at""",
         (task["platform"], str(task["query_text"]).casefold(), task["search_band"], task["window_class"], int(task["window_days"] or 30), card_count,
          completed_descriptions, descriptions_missing, descriptions_partial, detail_failed, count("APPLY_NOW"), count("APPLY_VOLUME"),
          count("HIGH_VALUE_STRETCH"), count("REVIEW", "REVIEW_REMOTE"), count("SKIP_HARD_GATE"), count("OUT_OF_SCOPE"),
-         sum(row["remote_gate"] == "pass" for row in rows), active_browser_ms, active_browser_ms, 1, json.dumps(sorted(dates)), observed_at),
+         sum(row["remote_gate"] == "pass" for row in rows), active_browser_ms, active_browser_ms, 1, json.dumps(sorted(dates)), observed_at,
+         canonical_jobs_observed, new_canonical_jobs, apply_ready_observed, new_apply_ready, duplicate_canonical_jobs),
     )
     conn.execute("UPDATE browser_search_tasks SET yield_recorded_at=? WHERE task_id=?", (observed_at, task_id))
     return True

@@ -119,6 +119,17 @@ def _classification(conn: sqlite3.Connection, run_id: int | None) -> str:
 
 def collect(conn: sqlite3.Connection, run_id: int | None = None, strategy: dict[str, Any] | None = None) -> dict[str, Any]:
     current_id = _run_id(conn, run_id)
+    if current_id is not None:
+        # Audit is also a recovery boundary.  If a bridge/extension died after
+        # complete_task but before its final timing event, finalize yield from
+        # the durable task accumulator exactly once.
+        from .query_yield import record_task_yield
+        for row in conn.execute(
+            "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND status='exhausted' AND yield_recorded_at IS NULL",
+            (current_id,),
+        ).fetchall():
+            record_task_yield(conn, int(row[0]))
+        conn.commit()
     platforms = _platforms(conn, current_id)
     reconciliation: dict[str, Any] = {"ok": True, "failures": []}
     for platform, values in platforms.items():

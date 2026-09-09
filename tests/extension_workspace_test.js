@@ -26,7 +26,7 @@ function createChrome(seedWindows = []) {
   }
   const runtime = {
     getURL: (path) => `chrome-extension://jobbot/${path}`,
-    getManifest: () => ({ version: '3.2.1', version_name: '3.2.3-final-closure' }),
+    getManifest: () => ({ version: '3.2.1', version_name: '3.2.3-final-closure.2' }),
     onMessage: { addListener() {} }, onStartup: { addListener() {} }, onInstalled: { addListener() {} },
   };
   const chrome = {
