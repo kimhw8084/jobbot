@@ -286,7 +286,13 @@ chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
   if(msg?.type==='JOBBOT_CONFIGURE_BRIDGE'){configureBridge(msg.port,msg.token).then(x=>sendResponse({ok:true,version:x.version,bridge:'loopback'})).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;}
   if(msg?.type==='JOBBOT_START_RUN'){
     const rid=Number(msg.run_id||0); if(!rid){sendResponse({ok:false,error:'missing run_id'});return false;}
-    if(!runPromise){runPromise=runProduction(rid).catch(()=>{}).finally(()=>{runPromise=null;});}
+    if(runPromise){
+      const active=Number(activeRunId||0);
+      if(active===rid){sendResponse({ok:true,started:true,resumed:true,run_id:rid});}
+      else{sendResponse({ok:false,error:'another browser run is still active',active_run_id:active,run_id:rid});}
+      return false;
+    }
+    runPromise=runProduction(rid).catch(()=>{}).finally(()=>{runPromise=null;});
     sendResponse({ok:true,started:true,run_id:rid}); return false;
   }
   if(msg?.type==='JOBBOT_STOP_AFTER_CURRENT'||msg?.type==='JOBBOT_EMERGENCY_STOP'){

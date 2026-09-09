@@ -5,6 +5,7 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from jobbot.browser_tasks import enqueue_validation, enqueue_validation_sample
 from jobbot.config import PROJECT_ROOT, load_bundle
@@ -21,6 +22,8 @@ from jobbot.validator import (
     _write_report,
     _isolated_bundle,
     _prepare_validation_bundle,
+    _run_semi_phase,
+    VALIDATION_STOP_GRACE_SECONDS,
 )
 
 
@@ -205,6 +208,32 @@ class ValidatorIntegrationTests(unittest.TestCase):
             phases[phase]["linkedin"]["started_tasks"] = 1
             phases[phase]["linkedin"]["progress_tasks"] = 1
         self.assertTrue(_phase_coverage_pass(phases))
+
+    def test_bounded_phase_stop_has_grace_and_only_a_resumes(self) -> None:
+        stopped = {"run_id": 7, "outcome": {"status": "stopped"}}
+        with patch("jobbot.validator._live_run", return_value=stopped) as live, \
+             patch("jobbot.validator._resume_live", return_value=stopped) as resume, \
+             patch("jobbot.validator._phase_execution_metrics", return_value={}), \
+             patch("jobbot.validator._stage_pass", return_value=True):
+            _run_semi_phase(object(), phase="A_FASTEST_DOOR_RECENT", platforms=["linkedin"],
+                            phase_seconds=180, active_runs=[])
+            initial = live.call_args.kwargs
+            self.assertEqual(initial["stop_after_seconds"], 30)
+            self.assertEqual(initial["timeout_seconds"], 30 + VALIDATION_STOP_GRACE_SECONDS)
+            self.assertEqual(resume.call_args.args[2], 150 + VALIDATION_STOP_GRACE_SECONDS)
+            self.assertEqual(resume.call_args.args[3], 150)
+
+        with patch("jobbot.validator._live_run", return_value=stopped) as live, \
+             patch("jobbot.validator._resume_live") as resume, \
+             patch("jobbot.validator._phase_execution_metrics", return_value={}), \
+             patch("jobbot.validator._stage_pass", return_value=True):
+            result = _run_semi_phase(object(), phase="B_REMAINING_CORE_RECENT", platforms=["linkedin"],
+                                     phase_seconds=180, active_runs=[])
+            self.assertEqual(live.call_count, 1)
+            self.assertFalse(resume.called)
+            self.assertIsNone(result["resume"])
+            self.assertEqual(live.call_args.kwargs["stop_after_seconds"], 180)
+            self.assertEqual(live.call_args.kwargs["timeout_seconds"], 180 + VALIDATION_STOP_GRACE_SECONDS)
 
     def test_bounded_cutoff_allows_untouched_queued_work_but_not_internal_incomplete(self) -> None:
         stage = {

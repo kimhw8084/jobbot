@@ -69,6 +69,8 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("function closeBackgroundTarget", worker)
         self.assertIn("await keepBackgroundTab(searchTab.id,searchTarget.window_id)", worker)
         self.assertIn("windowId:searchTarget.window_id", worker)
+        self.assertIn("another browser run is still active", worker)
+        self.assertIn("active_run_id:active", worker)
         dashboard_worker = (PROJECT_ROOT / "extension" / "dashboard.js").read_text(encoding="utf-8")
         self.assertIn("EXPECTED_EXTENSION_BUILD = '3.2.2-prod-ready'", dashboard_worker)
         self.assertIn("manifest.version_name", dashboard_worker)

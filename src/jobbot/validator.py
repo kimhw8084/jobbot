@@ -37,6 +37,7 @@ EXPECTED_EXTENSION_BUILD = "3.2.2-prod-ready"
 TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
 VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
+VALIDATION_STOP_GRACE_SECONDS = 60
 
 
 def _timestamp() -> str:
@@ -838,12 +839,18 @@ def _run_semi_phase(
     """Run one bounded phase window through the normal browser/bridge path."""
     intentional_stop = phase == "A_FASTEST_DOOR_RECENT"
     first_window = min(60, max(15, phase_seconds // 6)) if intentional_stop else None
+    # A bounded window must request an orderly stop before its hard timeout.
+    # The grace period lets the extension finish the current atomic task and
+    # clear its run promise; using the same value for both caused an emergency
+    # stop at the deadline and poisoned the next phase's worker startup.
+    initial_stop_after = first_window if intentional_stop else phase_seconds
+    initial_timeout = initial_stop_after + VALIDATION_STOP_GRACE_SECONDS
     initial = _live_run(
         bundle,
         mode="staged",
         platforms=platforms,
-        timeout_seconds=phase_seconds,
-        stop_after_seconds=first_window,
+        timeout_seconds=initial_timeout,
+        stop_after_seconds=initial_stop_after,
         validation_sample=True,
         sample_phases=(phase,),
         sample_per_phase=6,
@@ -851,12 +858,12 @@ def _run_semi_phase(
     )
     resumed = None
     final = initial
-    if initial["outcome"]["status"] == "stopped":
+    if intentional_stop and initial["outcome"]["status"] == "stopped":
         remaining = max(30, phase_seconds - int(first_window or 0))
         resumed = _resume_live(
             bundle,
             int(initial["run_id"]),
-            remaining,
+            remaining + VALIDATION_STOP_GRACE_SECONDS,
             remaining if intentional_stop else None,
             active_runs,
         )
