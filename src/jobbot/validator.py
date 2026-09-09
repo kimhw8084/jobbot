@@ -38,6 +38,8 @@ TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
 VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
 VALIDATION_STOP_GRACE_SECONDS = 60
+PRIMARY_RESUME_TIMEOUT_SECONDS = 240
+PRIMARY_RESUME_STOP_AFTER_SECONDS = PRIMARY_RESUME_TIMEOUT_SECONDS - VALIDATION_STOP_GRACE_SECONDS
 
 
 def _timestamp() -> str:
@@ -942,7 +944,13 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                 active_runs=active_runs,
             )
         if primary["outcome"]["status"] == "stopped":
-            primary["resume"] = _resume_live(micro_bundle, int(primary["run_id"]), 240, 220, active_runs)
+            primary["resume"] = _resume_live(
+                micro_bundle,
+                int(primary["run_id"]),
+                PRIMARY_RESUME_TIMEOUT_SECONDS,
+                PRIMARY_RESUME_STOP_AFTER_SECONDS,
+                active_runs,
+            )
             final_primary = primary["resume"]
         else:
             primary["resume"] = None
