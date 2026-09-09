@@ -116,3 +116,19 @@ for (const spec of specs.slice(1)) {
   assert.deepStrictEqual(inspected.result_links, []);
 }
 console.log('Indeed and Glassdoor missing-scope fixtures passed: fail-closed');
+
+for (const [platform, marker] of [['indeed', '<div data-testid="no-results">No jobs found</div>'], ['glassdoor', '<div data-test="no-results">No jobs match your search</div>']]) {
+  const root = parseHtml(marker);
+  const host = `www.${platform}.com`;
+  global.location = { href: `https://${host}/jobs/search/?q=rare`, pathname: '/jobs/search/', host };
+  global.document = { body: root, title: `${platform} — no results`, querySelector: root.querySelector.bind(root), querySelectorAll: root.querySelectorAll.bind(root) };
+  let listener;
+  global.chrome = { runtime: { onMessage: { addListener(fn) { listener = fn; } } } };
+  vm.runInThisContext(fs.readFileSync(`extension/${platform}.js`, 'utf8'), { filename: `extension/${platform}.js` });
+  let inspected;
+  listener({ type: 'JOBBOT_INSPECT_SEARCH' }, null, (value) => { inspected = value; });
+  assert.strictEqual(inspected.extraction_scope_missing, false);
+  assert.strictEqual(inspected.exhausted, true);
+  assert.deepStrictEqual(inspected.result_links, []);
+}
+console.log('Indeed and Glassdoor explicit empty-result fixtures passed');

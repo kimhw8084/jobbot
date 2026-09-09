@@ -131,8 +131,10 @@ assert.strictEqual(empty.extraction_diagnostics.empty_state_reason, 'no matching
 console.log('LinkedIn verified empty state fixture passed: no false scope failure');
 
 const pagedEmpty = inspectRoot(parseHtml('<main><h1>(19) patient enrollment specialist Jobs in United States</h1></main>'), ' (19) patient enrollment specialist Jobs in United States | LinkedIn', 'https://www.linkedin.com/jobs/search/?keywords=patient&start=25');
-assert.strictEqual(pagedEmpty.extraction_scope_missing, false);
-assert.deepStrictEqual(pagedEmpty.result_links, []);
-assert.strictEqual(pagedEmpty.exhausted, true);
-assert.strictEqual(pagedEmpty.exhaustion_reason, 'paged_empty_end_state');
+assert.strictEqual(pagedEmpty.extraction_scope_missing, true);
+const pagedEmptyStable = inspectRoot(parseHtml('<main><h1>(19) patient enrollment specialist Jobs in United States</h1></main>'), ' (19) patient enrollment specialist Jobs in United States | LinkedIn', 'https://www.linkedin.com/jobs/search/?keywords=patient&start=25');
+assert.strictEqual(pagedEmptyStable.extraction_scope_missing, false);
+assert.deepStrictEqual(pagedEmptyStable.result_links, []);
+assert.strictEqual(pagedEmptyStable.exhausted, true);
+assert.strictEqual(pagedEmptyStable.exhaustion_reason, 'paged_empty_end_state_stable');
 console.log('LinkedIn paged end-state fixture passed: no false scope failure');

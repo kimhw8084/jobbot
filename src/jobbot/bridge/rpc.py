@@ -42,6 +42,9 @@ def platform_order_sql()->str:return "CASE platform WHEN 'linkedin' THEN 0 WHEN 
 
 def phase_order_sql()->str:return "CASE phase WHEN 'A_FASTEST_DOOR_RECENT' THEN 0 WHEN 'B_REMAINING_CORE_RECENT' THEN 1 WHEN 'C_DEEP_BACKFILL' THEN 2 ELSE 9 END"
 
+def platform_circuit(conn, platform: str):
+    return conn.execute("SELECT * FROM platform_state WHERE platform=?", (platform,)).fetchone()
+
 def refresh_task_counters(conn, rid:int)->None:
     """Derive status counters from durable task rows after resume/state changes."""
     counts=conn.execute("""SELECT
@@ -119,7 +122,14 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             runtime=cfg.get('runtime',{})
             return {'ok':True,'heartbeat_seconds':int(runtime.get('heartbeat_seconds',20) or 20),
                     'lease_seconds':int(runtime.get('lease_seconds',180) or 180),
-                    'watchdog_stall_seconds':int(runtime.get('watchdog_stall_seconds',180) or 180)}
+                    'watchdog_stall_seconds':int(runtime.get('watchdog_stall_seconds',180) or 180),
+                    'primary_navigation_min_gap_ms':int(runtime.get('primary_navigation_min_gap_ms',900) or 900),
+                    'primary_dom_quiet_ms':int(runtime.get('primary_dom_quiet_ms',800) or 800),
+                    'primary_dom_quiet_timeout_ms':int(runtime.get('primary_dom_quiet_timeout_ms',5000) or 5000),
+                    'primary_scroll_wait_ms':int(runtime.get('primary_scroll_wait_ms',900) or 900),
+                    'primary_detail_transition_min_gap_ms':int(runtime.get('primary_detail_transition_min_gap_ms',900) or 900),
+                    'primary_transient_retry_limit':int(runtime.get('primary_transient_retry_limit',2) or 2),
+                    'primary_transient_backoff_seconds':int(runtime.get('primary_transient_backoff_seconds',2) or 2)}
         if action=='begin_run':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
@@ -131,6 +141,9 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='platform_auth_result':
             rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform'));ok=bool(msg.get('authenticated'));reason=j.clean_text(msg.get('reason') or '')
             conn.execute("UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=? WHERE browser_run_id=? AND platform=?",('verified' if ok else 'not_authenticated',reason,j.now_iso(),rid,platform))
+            conn.execute("""INSERT INTO platform_state(platform,auth_status,auth_reason,last_auth_checked_at,last_error)
+                VALUES(?,?,?,?,?) ON CONFLICT(platform) DO UPDATE SET auth_status=excluded.auth_status,auth_reason=excluded.auth_reason,last_auth_checked_at=excluded.last_auth_checked_at,last_error=excluded.last_error""",
+                (platform,'verified' if ok else 'auth_required',reason,j.now_iso(),'' if ok else reason))
             if not ok:
                 tid=int(msg.get('task_id') or 0)
                 conn.execute("""UPDATE browser_search_tasks SET status='auth_required',completed_at=?,last_error=?,lease_owner='',lease_until=NULL
@@ -145,6 +158,9 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             hours=float(cfg.get('runtime',{}).get('challenge_cooldown_hours',12) or 12)
             cooldown=(datetime.now(timezone.utc)+timedelta(hours=hours)).isoformat(timespec='seconds')
             conn.execute("UPDATE browser_platform_runs SET auth_status='challenged',auth_reason=?,cooldown_until=? WHERE browser_run_id=? AND platform=?",(reason,cooldown,rid,platform))
+            conn.execute("""INSERT INTO platform_state(platform,auth_status,auth_reason,last_auth_checked_at,challenged_at,cooldown_until,last_error)
+                VALUES(?,?,?,?,?,?,?) ON CONFLICT(platform) DO UPDATE SET auth_status='challenged',auth_reason=excluded.auth_reason,last_auth_checked_at=excluded.last_auth_checked_at,challenged_at=excluded.challenged_at,cooldown_until=excluded.cooldown_until,last_error=excluded.last_error""",
+                (platform,'challenged',reason,j.now_iso(),j.now_iso(),cooldown,reason))
             active=conn.execute("""SELECT task_id FROM browser_search_tasks
               WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",(rid,platform,tid,tid)).fetchall()
             deferred_count=int(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND platform=? AND status='queued'",(rid,platform)).fetchone()[0])
@@ -180,6 +196,11 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                     state=platform_states.get(candidate['platform'])
                     if not state or state['auth_status'] in {'challenged','not_authenticated'}:
                         continue
+                    global_state=platform_circuit(conn,candidate['platform'])
+                    if global_state and global_state['auth_status'] in {'challenged','auth_required'}:
+                        global_cooldown=str(global_state['cooldown_until'] or '')
+                        if not global_cooldown or global_cooldown>now:
+                            continue
                     cooldown=str(state['cooldown_until'] or '')
                     if cooldown and cooldown>now:
                         continue
@@ -200,8 +221,17 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if t['status']=='queued':
                 lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
                 conn.execute("UPDATE browser_search_tasks SET status='running',started_at=COALESCE(started_at,?),attempts=attempts+1,lease_owner=?,lease_until=?,current_search_url=COALESCE(NULLIF(current_search_url,''),search_url),last_progress_at=? WHERE task_id=?",(now,owner,lease_time(lease_seconds),now,t['task_id']));event(conn,rid,t['task_id'],'task_started',f"{t['platform']}: {t['query_text']}",msg,out);conn.commit();t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(t['task_id'],)).fetchone()
-            conn.execute("UPDATE browser_runs SET current_task_id=?,last_progress_at=? WHERE browser_run_id=?",(t['task_id'],now,rid));conn.commit()
+                conn.execute("UPDATE browser_runs SET current_task_id=?,last_progress_at=? WHERE browser_run_id=?",(t['task_id'],now,rid));conn.commit()
             return {'ok':True,'task':{k:t[k] for k in t.keys()}}
+        if action=='retry_platform':
+            platform=j.clean_text(msg.get('platform')); reason=j.clean_text(msg.get('reason') or 'manual human retry requested')
+            now=j.now_iso()
+            conn.execute("""INSERT INTO platform_state(platform,auth_status,auth_reason,cooldown_until,manual_retry_requested_at,last_error)
+                VALUES(?,?,?,?,?,?) ON CONFLICT(platform) DO UPDATE SET auth_status='unchecked',auth_reason='',cooldown_until=NULL,manual_retry_requested_at=excluded.manual_retry_requested_at,last_error=''""",
+                (platform,'unchecked','',None,now,''))
+            conn.execute("UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',cooldown_until=NULL WHERE platform=?",(platform,))
+            conn.execute("UPDATE browser_search_tasks SET status='queued',completed_at=NULL,challenge_reason='',last_error='',lease_owner='',lease_until=NULL WHERE platform=? AND status IN ('challenged','auth_required','deferred_by_platform')",(platform,))
+            conn.commit(); return {'ok':True,'platform':platform,'reason':reason}
         if action=='record_result':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
             if not source or not (sid or url):return {'ok':False,'error':'insufficient_result_identity'}

@@ -43,14 +43,24 @@ def chrome_path() -> str | None:
 
 def _open_chrome(url: str) -> None:
     if sys.platform == "darwin":
-        # LaunchServices' background flag prevents a long read-only crawl from
-        # activating Chrome and stealing the user's current workspace.
-        subprocess.Popen(["open", "-g", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Use a separate normal Chrome window for the extension rendezvous.
+        # The service worker immediately adopts that window as the persistent
+        # JobBot workspace; -g keeps it from stealing the user's focus.
+        subprocess.Popen(["open", "-g", "-a", "Google Chrome", "--args", "--new-window", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return
     executable = chrome_path()
     if not executable:
         raise RuntimeError("normal installed Google Chrome was not found")
-    subprocess.Popen([executable, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.Popen([executable, "--new-window", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def open_dashboard_workspace(bundle: ConfigBundle, dashboard_url: str) -> None:
+    extension_id = (bundle.root / "config" / "EXTENSION_ID.txt").read_text(encoding="utf-8").strip()
+    manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    url = (f"chrome-extension://{extension_id}/dashboard.html?dashboard_url="
+           f"{urllib.parse.quote(dashboard_url, safe='')}&expected_build={urllib.parse.quote(str(manifest.get('version_name') or ''))}"
+           f"&expected_version={urllib.parse.quote(str(manifest.get('version') or ''))}")
+    _open_chrome(url)
 
 
 def _free_high_port() -> int:
@@ -79,12 +89,16 @@ def _run_status(bundle: ConfigBundle, run_id: int) -> str:
 def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, open_browser: bool = True,
                        timeout_seconds: float | None = None, stop_after_seconds: float | None = None,
                        test_bridge_restart_after: float | None = None,
-                       startup_timeout_seconds: float | None = None) -> RunOutcome:
+                       startup_timeout_seconds: float | None = None,
+                       dashboard_url: str | None = None) -> RunOutcome:
     runtime = bundle.runtime["runtime"]
     restarts_allowed = int(runtime["bridge_restart_limit"])
     token = secrets.token_urlsafe(48)
     port = _free_high_port()
     extension_id = (bundle.root / "config" / "EXTENSION_ID.txt").read_text(encoding="utf-8").strip()
+    manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    expected_build = str(manifest.get("version_name") or "")
+    expected_version = str(manifest.get("version") or "")
     log_path = bundle.output_dir / "logs" / f"run_{run_id}_bridge.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     restart_count = 0
@@ -120,7 +134,10 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
         url = (
             f"chrome-extension://{extension_id}/dashboard.html?autorun=1&run_id={run_id}"
             f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
+            f"&expected_build={urllib.parse.quote(expected_build)}&expected_version={urllib.parse.quote(expected_version)}"
         )
+        if dashboard_url:
+            url += f"&dashboard_url={urllib.parse.quote(dashboard_url, safe='')}"
         if open_browser:
             _open_chrome(url)
         else:

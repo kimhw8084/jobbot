@@ -196,6 +196,24 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
             finally:
                 rpc.BASE = previous
 
+    def test_platform_challenge_survives_new_run_until_manual_retry(self) -> None:
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td); rpc.BASE = root
+            try:
+                first = browser_tasks.enqueue_gate(root, "indeed", 7, 20)
+                rpc.handle({"action": "begin_run", "run_id": first})
+                task = rpc.handle({"action": "next_task", "run_id": first, "worker_id": "challenge-worker"})["task"]
+                rpc.handle({"action": "pause_platform", "run_id": first, "task_id": task["task_id"], "platform": "indeed", "reason": "captcha"})
+                rpc.handle({"action": "finish_run", "run_id": first})
+                second = browser_tasks.enqueue_gate(root, "indeed", 7, 20)
+                rpc.handle({"action": "begin_run", "run_id": second})
+                self.assertTrue(rpc.handle({"action": "next_task", "run_id": second, "worker_id": "new-run"})["done"])
+                self.assertTrue(rpc.handle({"action": "retry_platform", "platform": "indeed"})["ok"])
+                self.assertEqual(rpc.handle({"action": "next_task", "run_id": second, "worker_id": "manual-retry"})["task"]["platform"], "indeed")
+            finally:
+                rpc.BASE = previous
+
     def test_resume_does_not_repeat_completed_acceptance_cap(self) -> None:
         previous = rpc.BASE
         with tempfile.TemporaryDirectory() as td:

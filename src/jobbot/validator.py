@@ -33,13 +33,20 @@ from .search_plan import compile_plan, compile_staged_plan
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
-EXPECTED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88"
 TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
 VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
 VALIDATION_STOP_GRACE_SECONDS = 60
 PRIMARY_RESUME_TIMEOUT_SECONDS = 240
 PRIMARY_RESUME_STOP_AFTER_SECONDS = PRIMARY_RESUME_TIMEOUT_SECONDS - VALIDATION_STOP_GRACE_SECONDS
+
+
+def extension_build(root: Path = PROJECT_ROOT) -> str:
+    manifest = json.loads((root / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    value = str(manifest.get("version_name") or "").strip()
+    if not value:
+        raise RuntimeError("extension manifest has no version_name build identity")
+    return value
 
 
 def _timestamp() -> str:
@@ -128,7 +135,13 @@ def _git_state() -> dict[str, str]:
     def read(*args: str) -> str:
         return subprocess.check_output(["git", *args], cwd=PROJECT_ROOT, text=True).strip()
 
-    return {"branch": read("branch", "--show-current"), "head": read("rev-parse", "HEAD")}
+    status = subprocess.run(["git", "status", "--porcelain=v1", "--untracked-files=no"], cwd=PROJECT_ROOT, text=True, capture_output=True, check=False).stdout.strip()
+    try:
+        origin_main = read("rev-parse", "origin/main")
+    except subprocess.CalledProcessError:
+        origin_main = ""
+    return {"branch": read("branch", "--show-current"), "head": read("rev-parse", "HEAD"),
+            "origin_main_head": origin_main, "tracked_dirty": bool(status), "tracked_status": status}
 
 
 def _dashboard_json(url: str, endpoint: str) -> dict[str, Any] | None:
@@ -149,12 +162,14 @@ def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
     identity_ok = bool(identity and identity.get("resolved_database_path") == expected_db
                        and identity.get("workspace_root") == expected_workspace
                        and identity.get("jobbot_version") == "3.2.1")
+    workspace_ok = bool(active and active.get("workspace", {}).get("isolated") is True)
     return {
         "identity": identity,
         "identity_ok": identity_ok,
         "summary": summary,
         "run": active,
         "live_refresh_ok": isinstance(summary, dict) and isinstance(active, dict),
+        "workspace_isolation_ok": workspace_ok,
     }
 
 
@@ -428,13 +443,14 @@ def _extension_build_seen(bundle: ConfigBundle, run_id: int | None) -> bool:
     finally:
         conn.close()
     for message, payload_json in rows:
-        if str(message) == EXPECTED_EXTENSION_BUILD:
+        expected = extension_build(bundle.root)
+        if str(message) == expected:
             return True
         try:
             payload = json.loads(payload_json or "{}")
         except json.JSONDecodeError:
             payload = {}
-        if payload.get("build") == EXPECTED_EXTENSION_BUILD or payload.get("payload", {}).get("build") == EXPECTED_EXTENSION_BUILD:
+        if payload.get("build") == expected or payload.get("payload", {}).get("build") == expected:
             return True
     return False
 
@@ -453,8 +469,12 @@ def _classify_supplemental(
     for name, info in source_status.items():
         info = info if isinstance(info, dict) else {}
         attempted = True
-        if bool(info.get("ok")):
+        if bool(info.get("ok")) and info.get("complete", True) is not False:
             state = "completed"
+        elif bool(info.get("ok")) and info.get("state") == "CAPPED_EXTERNAL_BOUNDARY":
+            state = "CAPPED_EXTERNAL_BOUNDARY"
+        elif bool(info.get("internal")) or str(info.get("state") or "").startswith("INTERNAL_"):
+            state = "internal_failed"
         else:
             # legacy_engine catches individual HTTP/board failures and records
             # them here.  Those are isolated external failures, not pipeline
@@ -464,14 +484,16 @@ def _classify_supplemental(
             "attempted": attempted,
             "state": state,
             "completed": state == "completed",
-            "external_failed": state == "external_failed",
-            "internal_failed": False,
+            "external_failed": state in {"external_failed", "CAPPED_EXTERNAL_BOUNDARY"},
+            "internal_failed": state == "internal_failed",
             "records_persisted": int(records_by_source.get(str(name), 0) or 0),
             "error": str(info.get("error") or ""),
         }
     if code != 0 and not sources:
         internal_failed = True
-    if code != 0 and not any(value["external_failed"] for value in sources.values()):
+    if any(value["internal_failed"] for value in sources.values()):
+        internal_failed = True
+    if code != 0 and not any(value["external_failed"] for value in sources.values()) and not internal_failed:
         internal_failed = True
     if internal_failed:
         for value in sources.values():
@@ -569,7 +591,8 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
               stop_after_seconds: int | None = None, bridge_restart_after: int | None = None,
               validation_micro: bool = False, validation_sample: bool = False,
               sample_phases: tuple[str, ...] | None = None, sample_per_phase: int = 6,
-              active_runs: list[tuple[ConfigBundle, int]] | None = None) -> dict[str, Any]:
+              active_runs: list[tuple[ConfigBundle, int]] | None = None,
+              deadline: float | None = None) -> dict[str, Any]:
     with _isolated_environment(bundle):
         if validation_micro:
             run_id = browser_tasks.enqueue_validation(PROJECT_ROOT, platforms)
@@ -584,15 +607,21 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
         if active_runs is not None:
             active_runs.append((bundle, run_id))
         started = time.monotonic()
+        effective_timeout = int(timeout_seconds)
+        if deadline is not None:
+            effective_timeout = max(1, min(effective_timeout, int(deadline - started - 12)))
+            if stop_after_seconds is not None:
+                stop_after_seconds = max(1, min(int(stop_after_seconds), max(1, effective_timeout - VALIDATION_STOP_GRACE_SECONDS)))
         outcome = launch_browser_run(
             bundle,
             run_id,
             wait=True,
             open_browser=True,
-            timeout_seconds=timeout_seconds,
+            timeout_seconds=effective_timeout,
             stop_after_seconds=stop_after_seconds,
             test_bridge_restart_after=bridge_restart_after,
             startup_timeout_seconds=45,
+            dashboard_url=f"http://127.0.0.1:{int(bundle.runtime['runtime']['dashboard_port'])}/",
         )
     audit = _audit(bundle, run_id)
     validation_cutoff = False
@@ -604,6 +633,7 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
         "run_id": run_id,
         "outcome": outcome.__dict__,
         "duration_seconds": round(time.monotonic() - started, 2),
+        "deadline_remaining_seconds": None if deadline is None else round(max(0.0, deadline - time.monotonic()), 2),
         "terminal_classification": audit.get("terminal_classification"),
         "metrics": _metrics(audit),
         "audit": audit,
@@ -621,14 +651,21 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
 
 def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
                  stop_after_seconds: int | None = None,
-                 active_runs: list[tuple[ConfigBundle, int]] | None = None) -> dict[str, Any]:
+                 active_runs: list[tuple[ConfigBundle, int]] | None = None,
+                 deadline: float | None = None) -> dict[str, Any]:
     if active_runs is not None:
         active_runs.append((bundle, run_id))
     with _isolated_environment(bundle):
         browser_tasks.resume_run(PROJECT_ROOT, run_id)
         started = time.monotonic()
-        outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=True, timeout_seconds=timeout_seconds,
-                                     stop_after_seconds=stop_after_seconds, startup_timeout_seconds=45)
+        effective_timeout = int(timeout_seconds)
+        if deadline is not None:
+            effective_timeout = max(1, min(effective_timeout, int(deadline - started - 12)))
+            if stop_after_seconds is not None:
+                stop_after_seconds = max(1, min(int(stop_after_seconds), max(1, effective_timeout - VALIDATION_STOP_GRACE_SECONDS)))
+        outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=True, timeout_seconds=effective_timeout,
+                                     stop_after_seconds=stop_after_seconds, startup_timeout_seconds=45,
+                                     dashboard_url=f"http://127.0.0.1:{int(bundle.runtime['runtime']['dashboard_port'])}/")
     audit = _audit(bundle, run_id)
     validation_cutoff = False
     if outcome.status == "stopped" and stop_after_seconds is not None:
@@ -639,6 +676,7 @@ def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
         "run_id": run_id,
         "outcome": outcome.__dict__,
         "duration_seconds": round(time.monotonic() - started, 2),
+        "deadline_remaining_seconds": None if deadline is None else round(max(0.0, deadline - time.monotonic()), 2),
         "terminal_classification": audit.get("terminal_classification"),
         "metrics": _metrics(audit),
         "audit": audit,
@@ -726,14 +764,19 @@ def _fixture_and_deterministic(bundle: ConfigBundle) -> dict[str, Any]:
 def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     state = _git_state()
     checks: list[dict[str, Any]] = []
-    ok = state["branch"] == "codex/v3.2.2-prod-ready"
-    checks.append({"name": "forward branch", "ok": ok, "detail": state["branch"]})
+    ok = bool(state["branch"]) and not state["tracked_dirty"]
+    checks.append({"name": "commit provenance", "ok": ok, "detail": state})
     executable = chrome_path()
     chrome_ok = bool(executable)
     checks.append({"name": "normal Chrome", "ok": chrome_ok, "detail": executable or "not found"})
     required = [bundle.root / "extension" / name for name in ("manifest.json", "service_worker.js", "dashboard.html")]
     extension_ok = all(path.is_file() for path in required)
     checks.append({"name": "current unpacked extension", "ok": extension_ok, "detail": [str(x) for x in required if not x.is_file()]})
+    try:
+        build = extension_build(bundle.root)
+        checks.append({"name": "manifest extension build", "ok": bool(build), "detail": build})
+    except Exception as exc:
+        checks.append({"name": "manifest extension build", "ok": False, "detail": str(exc)})
     Database(bundle).migrate()
     checks.append({"name": "isolated database", "ok": bundle.database_path.resolve() != _production_db(), "detail": str(bundle.database_path)})
     doctor_ok, doctor_checks = run_doctor(bundle)
@@ -837,6 +880,7 @@ def _run_semi_phase(
     platforms: list[str],
     phase_seconds: int,
     active_runs: list[tuple[ConfigBundle, int]],
+    stage_deadline: float | None = None,
 ) -> dict[str, Any]:
     """Run one bounded phase window through the normal browser/bridge path."""
     intentional_stop = phase == "A_FASTEST_DOOR_RECENT"
@@ -857,6 +901,7 @@ def _run_semi_phase(
         sample_phases=(phase,),
         sample_per_phase=6,
         active_runs=active_runs,
+        deadline=stage_deadline,
     )
     resumed = None
     final = initial
@@ -868,6 +913,7 @@ def _run_semi_phase(
             remaining + VALIDATION_STOP_GRACE_SECONDS,
             remaining if intentional_stop else None,
             active_runs,
+            deadline=stage_deadline,
         )
         final = resumed
     execution = _phase_execution_metrics(bundle, int(final["run_id"]))
@@ -910,6 +956,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         "semi_production_database": str(semi_db),
         "dashboard_url": None,
         "validation_stage": stage,
+        "extension_build": extension_build(PROJECT_ROOT),
         "external_blockers": [],
         "internal_failures": [],
     }
@@ -920,6 +967,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
     }
     active_runs: list[tuple[ConfigBundle, int]] = []
     dashboard_bundles: list[tuple[ConfigBundle, str]] = []
+    micro_deadline = time.monotonic() + 300 if micro_only else None
     try:
         state = _git_state()
         report.update(state)
@@ -928,7 +976,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         if not report["preflight"]["ok"]:
             report["internal_failures"].append("preflight failed; live stages were not started")
             return 1
-        url, _ = ensure_dashboard(micro_bundle, open_browser=True)
+        url, _ = ensure_dashboard(micro_bundle, open_browser=False)
         dashboard_bundles.append((micro_bundle, url))
         report["dashboard_url"] = url
         with _isolated_environment(micro_bundle):
@@ -942,6 +990,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                 bridge_restart_after=8,
                 validation_micro=True,
                 active_runs=active_runs,
+                deadline=micro_deadline,
             )
         if primary["outcome"]["status"] == "stopped":
             primary["resume"] = _resume_live(
@@ -950,6 +999,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                 PRIMARY_RESUME_TIMEOUT_SECONDS,
                 PRIMARY_RESUME_STOP_AFTER_SECONDS,
                 active_runs,
+                deadline=micro_deadline,
             )
             final_primary = primary["resume"]
         else:
@@ -959,7 +1009,8 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         primary["dashboard"] = _dashboard_probe(micro_bundle, url)
         primary["pass"] = bool(primary["stop_resume_pass"] and primary["bridge_restart_pass"] is True
                                 and primary["dashboard"]["identity_ok"]
-                                and primary["dashboard"]["live_refresh_ok"] and _stage_pass(final_primary, bounded=True))
+                                and primary["dashboard"]["live_refresh_ok"] and primary["dashboard"]["workspace_isolation_ok"]
+                                and _stage_pass(final_primary, bounded=True))
         report["primary_live"] = primary
         if primary["outcome"]["status"] == "extension_unresponsive":
             report["internal_failures"].append(
@@ -967,7 +1018,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             )
         if not primary.get("extension_build_pass"):
             report["internal_failures"].append(
-                f"loaded extension did not report build {EXPECTED_EXTENSION_BUILD}; reload the unpacked extension in chrome://extensions and rerun validator"
+            f"loaded extension did not report manifest build {extension_build(PROJECT_ROOT)}; reload the unpacked extension in chrome://extensions and rerun validator"
             )
         for platform, values in final_primary.get("scope", {}).items():
             if values.get("scope_missing_events") or values.get("contamination_persisted"):
@@ -986,17 +1037,18 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
 
         soak_bundle = _isolated_bundle(soak_db, soak_out, _free_port())
         _prepare_validation_bundle(soak_bundle)
-        soak_url, _ = ensure_dashboard(soak_bundle, open_browser=True)
+        soak_url, _ = ensure_dashboard(soak_bundle, open_browser=False)
         dashboard_bundles.append((soak_bundle, soak_url))
         report["dashboard_url"] = soak_url
         soak_started = time.monotonic()
+        soak_deadline = soak_started + 900
         with _isolated_environment(soak_bundle):
             soak = _live_run(soak_bundle, mode="staged_recent", platforms=list(PRIMARY), timeout_seconds=900,
                              stop_after_seconds=60, bridge_restart_after=30, validation_sample=True,
                              sample_phases=("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT"), sample_per_phase=6,
-                             active_runs=active_runs)
+                             active_runs=active_runs, deadline=soak_deadline)
             if soak["outcome"]["status"] == "stopped":
-                soak["resume"] = _resume_live(soak_bundle, int(soak["run_id"]), 840, 780, active_runs)
+                soak["resume"] = _resume_live(soak_bundle, int(soak["run_id"]), 840, 780, active_runs, deadline=soak_deadline)
                 final_soak = soak["resume"]
             else:
                 soak["resume"] = None
@@ -1009,7 +1061,8 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         soak["pass"] = bool(soak["outcome"]["status"] == "stopped" and soak["resume"] and
                              soak["bridge_restart_pass"] is True and
                              _stage_pass(final_soak, bounded=True) and soak["supplemental"]["isolation_pass"] and
-                             soak["dashboard"]["identity_ok"] and soak["dashboard"]["live_refresh_ok"])
+                             soak["dashboard"]["identity_ok"] and soak["dashboard"]["live_refresh_ok"]
+                             and soak["dashboard"]["workspace_isolation_ok"])
         report["soak"] = soak
         if soak["supplemental"].get("external_failures"):
             report["external_blockers"].append({"stage": "soak_supplemental", "error": soak["supplemental"]["error"],
@@ -1022,10 +1075,11 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
 
         semi_bundle = _isolated_bundle(semi_db, semi_out, _free_port())
         _prepare_validation_bundle(semi_bundle)
-        semi_url, _ = ensure_dashboard(semi_bundle, open_browser=True)
+        semi_url, _ = ensure_dashboard(semi_bundle, open_browser=False)
         dashboard_bundles.append((semi_bundle, semi_url))
         report["dashboard_url"] = semi_url
         semi_started = time.monotonic()
+        semi_deadline = semi_started + semi_minutes * 60
         phase_seconds = max(60, (semi_minutes * 60) // 3)
         phase_runs: dict[str, Any] = {}
         with _isolated_environment(semi_bundle):
@@ -1036,6 +1090,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                     platforms=list(PRIMARY),
                     phase_seconds=phase_seconds,
                     active_runs=active_runs,
+                    stage_deadline=semi_deadline,
                 )
             last_run_id = int(phase_runs["C_DEEP_BACKFILL"]["final"]["run_id"])
             supplemental = _run_supplemental(semi_bundle, last_run_id)
@@ -1065,6 +1120,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             and semi["supplemental"]["isolation_pass"]
             and semi["dashboard"]["identity_ok"]
             and semi["dashboard"]["live_refresh_ok"]
+            and semi["dashboard"]["workspace_isolation_ok"]
         )
         report["semi_production"] = semi
         if semi["supplemental"].get("external_failures"):

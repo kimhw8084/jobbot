@@ -40,7 +40,7 @@ class RunNowIntegrationTests(unittest.TestCase):
         self.assertIn("-m jobbot run-now", launcher_text)
         self.assertIn('"$@"', launcher_text)
         self.assertIn('"open", "-g"', (bundle.root / "src/jobbot/orchestrator.py").read_text(encoding="utf-8"))
-        self.assertIn('"open", "-g"', (bundle.root / "src/jobbot/run_now.py").read_text(encoding="utf-8"))
+        self.assertIn("open_dashboard_workspace", (bundle.root / "src/jobbot/run_now.py").read_text(encoding="utf-8"))
 
     def test_acceptance_can_use_an_isolated_database(self) -> None:
         with tempfile.TemporaryDirectory() as td:

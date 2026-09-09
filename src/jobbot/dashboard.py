@@ -39,12 +39,23 @@ def database_identity(conn: sqlite3.Connection, bundle: ConfigBundle) -> str:
 
 
 def identity(conn: sqlite3.Connection, bundle: ConfigBundle) -> dict[str, Any]:
+    try:
+        git_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=bundle.root, text=True, timeout=2).strip()
+    except Exception:
+        git_head = "unknown"
+    try:
+        extension_build = str(json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8")).get("version_name") or "unknown")
+    except Exception:
+        extension_build = "unknown"
     return {
         "jobbot_version": "3.2.1",
         "workspace_root": str(bundle.root.resolve()),
         "resolved_database_path": str(bundle.database_path.resolve()),
         "database_identity": database_identity(conn, bundle),
         "pid": os.getpid(),
+        "git_head": git_head,
+        "extension_build": extension_build,
+        "production_mode": bundle.database_path.resolve() == (bundle.root / "data" / "jobs.sqlite3").resolve(),
     }
 
 
@@ -64,6 +75,7 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
           AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')
           AND upper(application_status) NOT IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED','WITHDRAWN','SKIP','CLOSED')""",
         "applied": "SELECT COUNT(*) FROM jobs WHERE upper(application_status) IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED')",
+        "jobs_applied": "SELECT COUNT(DISTINCT job_id) FROM application_events WHERE upper(event_type) IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED')",
         "screens": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='SCREEN'",
         "interviews": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='INTERVIEW'",
         "finals": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='FINAL'",
@@ -147,6 +159,7 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
           FROM browser_platform_runs p WHERE p.browser_run_id=?
           ORDER BY CASE p.platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END""", (run_id,),
     ).fetchall()
+    global_states = {str(row["platform"]): _dict(row) for row in conn.execute("SELECT * FROM platform_state")}
     current = conn.execute(
         """SELECT task_id,platform,phase,career_lane,window_days,execution_rank,priority,query_text,status,page_number,results_seen,detail_count_read,
           cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,
@@ -154,7 +167,23 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
           FROM browser_search_tasks WHERE task_id=?""",
         (run["current_task_id"],),
     ).fetchone() if run["current_task_id"] else None
-    return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms], "watch": _dict(watch)}
+    platform_values = []
+    for row in platforms:
+        value = _dict(row) or {}
+        global_state = global_states.get(str(value.get("platform")), {})
+        value["global_auth_status"] = global_state.get("auth_status", "unchecked")
+        value["global_auth_reason"] = global_state.get("auth_reason", "")
+        value["global_cooldown_until"] = global_state.get("cooldown_until")
+        platform_values.append(value)
+    workspace_row = conn.execute("SELECT payload_json FROM browser_events WHERE event_type='workspace_state' ORDER BY event_id DESC LIMIT 1").fetchone()
+    workspace = {}
+    if workspace_row:
+        try:
+            raw_workspace = json.loads(workspace_row[0] or "{}")
+            workspace = raw_workspace.get("payload", raw_workspace) if isinstance(raw_workspace, dict) else {}
+        except json.JSONDecodeError:
+            workspace = {}
+    return {"run": _dict(run), "current_task": _dict(current), "platforms": platform_values, "watch": _dict(watch), "platform_state": list(global_states.values()), "workspace": workspace}
 
 
 def _utc_now() -> str:
@@ -487,6 +516,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 except (TypeError, ValueError) as exc:
                     self._json(400, {"ok": False, "error": str(exc)})
                 return
+            if self.path.startswith("/api/platforms/") and self.path.endswith("/retry"):
+                platform = urllib.parse.unquote(self.path.removeprefix("/api/platforms/").removesuffix("/retry"))
+                now = _utc_now()
+                conn.execute("""INSERT INTO platform_state(platform,auth_status,auth_reason,cooldown_until,manual_retry_requested_at,last_error)
+                    VALUES(?,?,?,?,?,?) ON CONFLICT(platform) DO UPDATE SET auth_status='unchecked',auth_reason='',cooldown_until=NULL,manual_retry_requested_at=excluded.manual_retry_requested_at,last_error=''""",
+                    (platform, "unchecked", "", None, now, ""))
+                conn.execute("UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',cooldown_until=NULL WHERE platform=?", (platform,))
+                conn.execute("UPDATE browser_search_tasks SET status='queued',completed_at=NULL,challenge_reason='',last_error='',lease_owner='',lease_until=NULL WHERE platform=? AND status IN ('challenged','auth_required','deferred_by_platform')", (platform,))
+                conn.commit()
+                self._json(200, {"ok": True, "platform": platform, "message": f"Manual retry requested for {platform}."})
+                return
             if self.path.startswith("/api/jobs/") and self.path.endswith("/application"):
                 job_id = urllib.parse.unquote(self.path.removeprefix("/api/jobs/").removesuffix("/application"))
                 try:
@@ -521,13 +561,15 @@ def create_server(bundle: ConfigBundle, host: str | None = None, port: int | Non
     return DashboardServer((selected_host, int(runtime["dashboard_port"] if port is None else port)), bundle)
 
 
-def serve(bundle: ConfigBundle, *, host: str | None = None, port: int | None = None, open_browser: bool = True) -> None:
+def serve(bundle: ConfigBundle, *, host: str | None = None, port: int | None = None, open_browser: bool = True, browser_opener=None) -> None:
     server = create_server(bundle, host, port)
     url = f"http://127.0.0.1:{server.server_port}/"
     print(url, flush=True)
     if open_browser:
         def open_dashboard() -> None:
-            if sys.platform == "darwin":
+            if browser_opener is not None:
+                browser_opener(url)
+            elif sys.platform == "darwin":
                 subprocess.Popen(["open", "-g", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             else:
                 webbrowser.open(url)

@@ -1526,10 +1526,23 @@ def fetch_jobicy_targeted(client:HttpClient,cfg:dict[str,Any])->list[Job]:
     return out
 
 
+class SourceBatch(list):
+    """List of source rows carrying truthful completeness metadata."""
+    complete: bool = True
+    boundary: str = ""
+
+
+def source_failure_class(exc: BaseException) -> tuple[str, bool]:
+    """Keep parser/programming/database exceptions internal and explicit."""
+    if isinstance(exc, (KeyError, TypeError, ValueError, AttributeError, sqlite3.Error)):
+        return "INTERNAL_PARSE_ERROR", True
+    return "EXTERNAL_SOURCE_UNAVAILABLE", False
+
+
 def fetch_remotelanders_exhaustive(client:HttpClient,cfg:dict[str,Any])->list[Job]:
     """Continue until the API is exhausted; `safety_max_pages` is only a runaway guard."""
     base=clean_text(cfg.get("url")); size=max(1,min(100,int(cfg.get("page_size",100)))); max_pages=max(1,int(cfg.get("safety_max_pages",250)))
-    out=[]; seen=set()
+    out=SourceBatch(); seen=set()
     for page in range(1,max_pages+1):
         sep="&" if "?" in base else "?"; obj=client.json(f"{base}{sep}limit={size}&page={page}")
         rows=obj.get("jobs",[]) if isinstance(obj,dict) else []
@@ -1544,6 +1557,7 @@ def fetch_remotelanders_exhaustive(client:HttpClient,cfg:dict[str,Any])->list[Jo
         if len(rows)<size: break
     else:
         print(f"  ! RemoteLanders hit safety_max_pages={max_pages}; raise it if the API still had results",file=sys.stderr)
+        out.complete=False; out.boundary="CAPPED_EXTERNAL_BOUNDARY"
     return out
 
 
@@ -1776,9 +1790,10 @@ def run_search(config:dict[str,Any],strategy:dict[str,Any],mode:str)->int:
                 source_client=HttpClient(cache,max(int(ac.get("cache_minutes",0)),min_poll),int(ac.get("http_timeout_seconds",25)),clean_text(ac.get("user_agent")) or "RemoteCareerJobSearch/2.0")
             got=fn(source_client,sc)
             if len(got)>safety_max: raise RuntimeError(f"source returned {len(got)} rows, exceeding safety ceiling {safety_max}; raise app.safety_max_jobs_per_source intentionally")
-            jobs.extend(got); source_status[name]={"ok":True,"count":len(got),"complete":True}; print(f"[{name}] {len(got)} rows")
+            jobs.extend(got); complete=bool(getattr(got,"complete",True)); source_status[name]={"ok":True,"count":len(got),"complete":complete,"state":"completed" if complete else str(getattr(got,"boundary","CAPPED_EXTERNAL_BOUNDARY"))}; print(f"[{name}] {len(got)} rows" if complete else f"[{name}] {len(got)} rows ({getattr(got,'boundary','CAPPED_EXTERNAL_BOUNDARY')})")
         except Exception as e:
-            source_status[name]={"ok":False,"error":str(e),"complete":False}; print(f"[{name}] ERROR: {e}",file=sys.stderr)
+            state, internal = source_failure_class(e)
+            source_status[name]={"ok":False,"error":str(e),"complete":False,"state":state,"internal":internal}; print(f"[{name}] ERROR: {e}",file=sys.stderr)
     # Configured + learned employer boards are merged and scanned once each. A failing board is
     # isolated; it never discards successful results from the other public ATS boards.
     dyn=load_ats_watch(ats_file,int(ad.get("max_boards",1000))) if ad.get("enabled",True) else {"greenhouse":[],"lever":[],"ashby":[],"smartrecruiters":[]}

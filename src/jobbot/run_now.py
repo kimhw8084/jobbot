@@ -12,7 +12,7 @@ from pathlib import Path
 from .config import ConfigBundle
 from .db import Database
 from .dashboard import database_identity
-from .orchestrator import chrome_path
+from .orchestrator import chrome_path, open_dashboard_workspace
 from .search_plan import compile_staged_and_write
 
 
@@ -21,6 +21,40 @@ class PreflightResult:
     task_count: int
     database_path: Path
     dashboard_url: str
+
+
+def assert_production_release(bundle: ConfigBundle) -> None:
+    """Fail closed unless the exact checked-out code was fully validated."""
+    production_db = (bundle.root / "data" / "jobs.sqlite3").resolve()
+    production_out = (bundle.root / "out").resolve()
+    if bundle.database_path.resolve() != production_db or bundle.output_dir.resolve() != production_out:
+        raise RuntimeError("production guard refused non-production database/output binding")
+    if int(bundle.runtime["runtime"]["dashboard_port"]) != 8765:
+        raise RuntimeError("production guard refused non-production dashboard port")
+    report_path = bundle.root / "out" / "production-validation" / "latest.json"
+    if not report_path.is_file():
+        raise RuntimeError("production guard refused start: no latest full validation report exists")
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise RuntimeError(f"production guard refused unreadable validation report: {exc}") from exc
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=bundle.root, text=True).strip()
+    manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    build = str(manifest.get("version_name") or "")
+    if report.get("PROD_READY") is not True or report.get("internal_failures") != []:
+        raise RuntimeError("production guard refused start: latest validation is not PROD_READY with zero internal failures")
+    if str(report.get("head") or "") != head:
+        raise RuntimeError(f"production guard refused stale validation: report HEAD {report.get('head')} != current HEAD {head}")
+    if str(report.get("extension_build") or report.get("validated_extension_build") or "") != build:
+        raise RuntimeError("production guard refused stale extension build validation")
+    if os.environ.get("JOBBOT_DATABASE_PATH") and Path(os.environ["JOBBOT_DATABASE_PATH"]).resolve() != production_db:
+        raise RuntimeError("production guard refused inherited database override")
+    if os.environ.get("JOBBOT_OUTPUT_DIR") and Path(os.environ["JOBBOT_OUTPUT_DIR"]).resolve() != production_out:
+        raise RuntimeError("production guard refused inherited output override")
+    if os.environ.get("JOBBOT_DASHBOARD_PORT") and str(os.environ["JOBBOT_DASHBOARD_PORT"]) != "8765":
+        raise RuntimeError("production guard refused inherited dashboard port override")
+    if Database(bundle).integrity_check() != "ok":
+        raise RuntimeError("production guard refused database with failed integrity_check")
 
 
 def preflight(bundle: ConfigBundle, platforms: list[str] | None = None) -> PreflightResult:
@@ -118,10 +152,5 @@ def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tupl
             raise RuntimeError(f"new dashboard identity mismatch: expected {expected}, actual {actual}; see {log_path}")
         started = True
     if open_browser:
-        if sys.platform == "darwin":
-            # RUN NOW is a background worker; opening its local dashboard must
-            # not interrupt the user's active Mac application.
-            subprocess.Popen(["open", "-g", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:
-            subprocess.Popen([chrome_path() or "google-chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        open_dashboard_workspace(bundle, url)
     return url, started

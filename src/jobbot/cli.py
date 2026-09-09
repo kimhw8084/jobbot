@@ -20,8 +20,8 @@ from .doctor import run as run_doctor
 from .exports import export_all
 from .funnel import analyze
 from .ledger import open_ledger
-from .orchestrator import enqueue, launch_browser_run, resume
-from .run_now import ensure_dashboard, preflight
+from .orchestrator import enqueue, launch_browser_run, open_dashboard_workspace, resume
+from .run_now import assert_production_release, ensure_dashboard, preflight
 from .watch import DEEP, RECENT, SUPPLEMENTAL, WatchScheduler
 from .search_plan import compile_and_write, plan_counts
 from .validator import run as run_validator
@@ -87,7 +87,8 @@ def command_run(args: argparse.Namespace) -> int:
     print(f"Enqueued browser run {run_id}", flush=True)
     if args.enqueue_only:
         return 0
-    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open)
+    dashboard_url, _ = ensure_dashboard(bundle, open_browser=False)
+    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open, dashboard_url=dashboard_url)
     print(f"Browser run {run_id}: {outcome.status}; bridge restarts={outcome.bridge_restarts}")
     if not args.primary_only and outcome.status in {"completed", "partial"}:
         run_supplemental_stage(bundle, run_id, args.mode)
@@ -96,8 +97,9 @@ def command_run(args: argparse.Namespace) -> int:
 
 def command_run_now(args: argparse.Namespace) -> int:
     bundle = _bundle()
+    assert_production_release(bundle)
     check = preflight(bundle, args.platform or None)
-    dashboard_url, dashboard_started = ensure_dashboard(bundle, open_browser=not args.no_open)
+    dashboard_url, dashboard_started = ensure_dashboard(bundle, open_browser=False)
     print(
         f"RUN NOW preflight passed: tasks={check.task_count} database={check.database_path}\n"
         f"Dashboard: {dashboard_url} ({'started' if dashboard_started else 'already running'})",
@@ -107,7 +109,7 @@ def command_run_now(args: argparse.Namespace) -> int:
     print(f"Enqueued uncapped staged production browser run {run_id}", flush=True)
     if args.enqueue_only:
         return 0
-    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open)
+    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open, dashboard_url=dashboard_url)
     print(f"Browser run {run_id}: {outcome.status}; bridge restarts={outcome.bridge_restarts}", flush=True)
     # The bridge refreshes exports at terminal state. Preserve useful partial
     # output and distinguish external platform blockers with exit code 2.
@@ -119,12 +121,13 @@ def command_run_now(args: argparse.Namespace) -> int:
 
 def command_watch(args: argparse.Namespace) -> int:
     bundle = _bundle()
+    assert_production_release(bundle)
     scheduler_conn = _connection(bundle)
     runtime = bundle.runtime["runtime"]
     scheduler = WatchScheduler(scheduler_conn, recent_hours=int(runtime.get("watch_recent_hours", 6)),
                                deep_hours=int(runtime.get("watch_deep_hours", 24)),
                                supplemental_hours=int(runtime.get("watch_supplemental_hours", 6)))
-    ensure_dashboard(bundle, open_browser=not args.no_open)
+    dashboard_url, _ = ensure_dashboard(bundle, open_browser=False)
     # Invoking RUN_CONTINUOUS is the explicit restart operation for a latched
     # STOP_SEARCH. A running watcher never calls this path again by itself.
     scheduler.resume()
@@ -159,7 +162,7 @@ def command_watch(args: argparse.Namespace) -> int:
                 if args.enqueue_only:
                     print(f"Enqueued watch plan {plan} as browser run {run_id}; watcher remains checkpointed.", flush=True)
                     return 0
-                outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open)
+                outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open, dashboard_url=dashboard_url)
                 if outcome.status in {"completed", "partial"}:
                     audit_conn = _connection(bundle)
                     try:
@@ -193,11 +196,13 @@ def command_watch(args: argparse.Namespace) -> int:
 
 def command_resume(args: argparse.Namespace) -> int:
     bundle = _bundle()
+    assert_production_release(bundle)
     run_id = resume(bundle, args.run_id)
     print(f"Resuming browser run {run_id}", flush=True)
     if args.enqueue_only:
         return 0
-    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open)
+    dashboard_url, _ = ensure_dashboard(bundle, open_browser=False)
+    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open, dashboard_url=dashboard_url)
     print(f"Browser run {run_id}: {outcome.status}; bridge restarts={outcome.bridge_restarts}")
     return 0 if outcome.status == "completed" else 2
 
@@ -214,7 +219,9 @@ def command_stop(args: argparse.Namespace) -> int:
 
 
 def command_dashboard(args: argparse.Namespace) -> int:
-    serve_dashboard(_bundle(), port=args.port, open_browser=not args.no_open)
+    bundle = _bundle()
+    serve_dashboard(bundle, port=args.port, open_browser=not args.no_open,
+                    browser_opener=lambda url: open_dashboard_workspace(bundle, url))
     return 0
 
 

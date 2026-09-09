@@ -2,7 +2,8 @@
   'use strict';
   const C=globalThis.JobBotCommon, S=globalThis.JobBotSelectors?.linkedin;
   if(!C||!S)return;
-  const BUILD_ID='3.2.2-prod-ready',JOB_LINK_SELECTOR='a[href*="/jobs/view/"]',MAX_DIAGNOSTIC_ANCHORS=20,MAX_STRUCTURAL_SUMMARIES=30;
+  const BUILD_ID=String(chrome.runtime?.getManifest?.().version_name||'unknown'),JOB_LINK_SELECTOR='a[href*="/jobs/view/"]',MAX_DIAGNOSTIC_ANCHORS=20,MAX_STRUCTURAL_SUMMARIES=30;
+  const emptyObservations=new Map();
   const sid=(url)=>{try{const u=new URL(url,location.href),m=u.pathname.match(/\/jobs\/view\/(\d+)/);return m?m[1]:C.clean(u.searchParams.get('currentJobId')||'');}catch(_){return '';}};
   const canon=(href)=>{try{const id=sid(href);return id?`https://www.linkedin.com/jobs/view/${id}/`:new URL(href,location.href).href;}catch(_){return '';}};
   const rawHref=(anchor)=>anchor?.getAttribute?.('href')||anchor?.href||'';
@@ -73,7 +74,13 @@
     // remain fail-closed as extraction_scope_missing.
     try{
       const u=new URL(location.href),start=Number(u.searchParams.get('start')||0),pageText=`${title} ${body}`;
-      if(start>0&&/\bjobs?\b/.test(title)&&!/(captcha|challenge|sign in|log in|error|unavailable|temporarily)/.test(pageText))return 'paged_empty_end_state';
+      if(start>0&&/\bjobs?\b/.test(title)&&!/(captcha|challenge|sign in|log in|error|unavailable|temporarily)/.test(pageText)){
+        const key=`${location.origin}${location.pathname}?${u.searchParams.toString()}`;
+        const fingerprint=`${title}|${body.slice(0,1200)}|${document.querySelectorAll('*').length}`;
+        const previous=emptyObservations.get(key);
+        if(previous?.fingerprint===fingerprint){emptyObservations.set(key,{fingerprint,at:previous.at,count:previous.count+1});return 'paged_empty_end_state_stable';}
+        emptyObservations.set(key,{fingerprint,at:Date.now(),count:1});
+      }
     }catch(_){}
     return '';
   };

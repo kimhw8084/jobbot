@@ -1,8 +1,11 @@
 'use strict';
 
 let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTaskId=null, runPromise=null, heartbeatTimer=null;
-const JOBBOT_EXTENSION_BUILD='3.2.2-prod-ready';
-let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
+const JOBBOT_EXTENSION_BUILD=String(chrome.runtime?.getManifest?.().version_name||'unknown');
+const WORKSPACE_STORAGE_KEY='jobbot_workspace';
+const WORKSPACE_MARKER='jobbot_workspace=1';
+let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180,primary_navigation_min_gap_ms:900,primary_detail_transition_min_gap_ms:900};
+let lastPrimaryNavigationAt=0;
 const MAX_IDENTICAL_FINGERPRINTS=3;
 const AUTH_URLS={
   linkedin:'https://www.linkedin.com/jobs/',
@@ -10,6 +13,12 @@ const AUTH_URLS={
   glassdoor:'https://www.glassdoor.com/Job/index.htm',
 };
 const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+async function siteRespectfulPace(kind='navigation'){
+  const configured=Number(kind==='detail'?runtimeConfig.primary_detail_transition_min_gap_ms:runtimeConfig.primary_navigation_min_gap_ms)||900;
+  const wait=Math.max(0,lastPrimaryNavigationAt+configured-Date.now());
+  if(wait>0)await sleep(wait);
+  lastPrimaryNavigationAt=Date.now();
+}
 
 async function loadBridge(){
   if(bridgeConfig?.port&&bridgeConfig?.token)return bridgeConfig;
@@ -18,7 +27,7 @@ async function loadBridge(){
   if(b&&Number(b.port)>0&&String(b.token||'')){bridgeConfig={port:Number(b.port),token:String(b.token)};return bridgeConfig;}
   throw new Error('Local JobBot bridge is not configured. Start the run from the .command launcher.');
 }
-async function configureBridge(port,token){
+async function configureBridge(port,token,options={},senderTabId=null){
   const p=Number(port),t=String(token||'');
   if(!Number.isInteger(p)||p<1||p>65535||t.length<20)throw new Error('Invalid local bridge configuration');
   bridgeConfig={port:p,token:t};
@@ -26,30 +35,88 @@ async function configureBridge(port,token){
   const health=await nativeRequest('ping',{},10000);
   if(!health?.ok)throw new Error(health?.error||'Local bridge ping failed');
   runtimeConfig=await requiredRequest('runtime_config',{},10000);
+  const workspace=await ensureWorkspace(senderTabId);
+  if(options.dashboard_url){
+    const dashboard=await createOwnedTab('dashboard',String(options.dashboard_url));
+    await keepBackgroundTab(dashboard.id,workspace.window_id);
+  }
+  if(options.run_id){await nativeRequest('browser_event',{run_id:Number(options.run_id),event_type:'workspace_state',message:'JobBot-owned Chrome workspace established',payload:{window_id:workspace.window_id,anchor_tab_id:workspace.anchor_tab_id,auth_tab_id:(await readWorkspace()).auth_tab_id||null,search_tab_id:(await readWorkspace()).search_tab_id||null,detail_tab_id:(await readWorkspace()).detail_tab_id||null,isolated:true,workspace_generation:workspace.workspace_generation}}).catch(()=>{});}
   return health;
 }
-async function createBackgroundTarget(url){
-  // Keep crawler pages in an owned minimized window. active:false alone can
-  // still attach a new tab to the user's foreground window/Space.
-  if(typeof chrome.windows?.create==='function'){
-    const win=await chrome.windows.create({url,focused:false,state:'minimized',type:'normal'});
-    const tab=win?.tabs?.[0];
-    if(win?.id!=null&&tab?.id!=null)return{tab,window_id:win.id,owned_window:true};
-    if(win?.id!=null)try{await chrome.windows.remove(win.id);}catch(_){}
+async function readWorkspace(){const x=await chrome.storage.local.get([WORKSPACE_STORAGE_KEY,'jobbot_workspace_window_id','jobbot_workspace_anchor_tab_id','jobbot_auth_tab_id','jobbot_search_tab_id','jobbot_detail_tab_id','workspace_generation','workspace_created_at']);return{...(x[WORKSPACE_STORAGE_KEY]||{}),window_id:x.jobbot_workspace_window_id??x[WORKSPACE_STORAGE_KEY]?.window_id,anchor_tab_id:x.jobbot_workspace_anchor_tab_id??x[WORKSPACE_STORAGE_KEY]?.anchor_tab_id,auth_tab_id:x.jobbot_auth_tab_id??x[WORKSPACE_STORAGE_KEY]?.auth_tab_id,search_tab_id:x.jobbot_search_tab_id??x[WORKSPACE_STORAGE_KEY]?.search_tab_id,detail_tab_id:x.jobbot_detail_tab_id??x[WORKSPACE_STORAGE_KEY]?.detail_tab_id,workspace_generation:x.workspace_generation??x[WORKSPACE_STORAGE_KEY]?.workspace_generation,workspace_created_at:x.workspace_created_at??x[WORKSPACE_STORAGE_KEY]?.workspace_created_at};}
+async function saveWorkspace(value){await chrome.storage.local.set({[WORKSPACE_STORAGE_KEY]:value,jobbot_workspace_window_id:value.window_id||null,jobbot_workspace_anchor_tab_id:value.anchor_tab_id||null,jobbot_auth_tab_id:value.auth_tab_id||null,jobbot_search_tab_id:value.search_tab_id||null,jobbot_detail_tab_id:value.detail_tab_id||null,workspace_generation:value.workspace_generation||1,workspace_created_at:value.workspace_created_at||''});return value;}
+function workspaceAnchorUrl(){return chrome.runtime.getURL(`dashboard.html?${WORKSPACE_MARKER}`);}
+async function validTab(tabId,windowId){
+  if(tabId==null||windowId==null)return null;
+  try{const tab=await chrome.tabs.get(Number(tabId));return tab?.windowId===Number(windowId)?tab:null;}catch(_){return null;}
+}
+async function ensureWorkspace(preferredTabId=null){
+  const stored=await readWorkspace();
+  let windowId=Number(stored.window_id||0),anchorId=Number(stored.anchor_tab_id||0);
+  let anchor=await validTab(anchorId,windowId);
+  if(!anchor){
+    if(preferredTabId!=null){
+      try{
+        const preferred=await chrome.tabs.get(Number(preferredTabId));
+        if(preferred?.windowId!=null&&String(preferred.url||'').startsWith(chrome.runtime.getURL('dashboard.html'))){
+          windowId=Number(preferred.windowId);anchorId=Number(preferred.id);anchor=preferred;
+          stored.workspace_generation=Number(stored.workspace_generation||0)+1;
+          stored.workspace_created_at=new Date().toISOString();
+        }
+      }catch(_){/* the rendezvous tab may have been closed before adoption */}
+    }
   }
-  const tab=await chrome.tabs.create({url,active:false});
-  return{tab,window_id:tab?.windowId??null,owned_window:false};
+  if(!anchor){
+    const extensionTabs=await chrome.tabs.query({});
+    const existing=extensionTabs.find(tab=>String(tab.url||'').startsWith(chrome.runtime.getURL('dashboard.html'))&&String(tab.url||'').includes(WORKSPACE_MARKER));
+    if(existing){windowId=Number(existing.windowId);anchorId=Number(existing.id);anchor=existing;}
+  }
+  if(!anchor){
+    if(typeof chrome.windows?.create!=='function')throw new Error('workspace_window_unavailable: Chrome windows API unavailable');
+    const win=await chrome.windows.create({url:workspaceAnchorUrl(),focused:false,state:'normal',type:'normal'});
+    const created=win?.tabs?.[0];
+    if(win?.id==null||created?.id==null)throw new Error('workspace_window_unavailable: Chrome did not return an owned window and anchor tab');
+    windowId=Number(win.id);anchorId=Number(created.id);anchor=created;
+    stored.workspace_generation=Number(stored.workspace_generation||0)+1;
+    stored.workspace_created_at=new Date().toISOString();
+  }
+  if(preferredTabId!=null&&Number(preferredTabId)!==anchorId){
+    const preferred=await chrome.tabs.get(Number(preferredTabId));
+    if(!preferred)throw new Error('workspace_window_unavailable: controller tab disappeared');
+    await chrome.tabs.move(Number(preferredTabId),{windowId,index:-1});
+    const preferredUrl=new URL(preferred.url||chrome.runtime.getURL('dashboard.html'));
+    preferredUrl.searchParams.set('jobbot_workspace','1');
+    await chrome.tabs.update(Number(preferredTabId),{url:preferredUrl.href,active:false});
+    if(anchorId!==Number(preferredTabId))try{await chrome.tabs.remove(anchorId);}catch(_){}
+    anchorId=Number(preferredTabId);anchor=await chrome.tabs.get(anchorId);
+  }
+  const next={...stored,window_id:windowId,anchor_tab_id:anchorId,
+    workspace_anchor_url:workspaceAnchorUrl(),workspace_generation:Number(stored.workspace_generation||1),
+    workspace_created_at:stored.workspace_created_at||new Date().toISOString()};
+  await saveWorkspace(next);
+  return{...next,anchor_tab:anchor};
+}
+async function createOwnedTab(role,url){
+  const workspace=await ensureWorkspace();
+  const stored=await readWorkspace();
+  const existing=await validTab(stored[`${role}_tab_id`],workspace.window_id);
+  if(existing){
+    await chrome.tabs.update(existing.id,{url,active:false});
+    return existing;
+  }
+  if(workspace.window_id==null)throw new Error('workspace_window_unavailable: no owned window id');
+  const tab=await chrome.tabs.create({windowId:workspace.window_id,url,active:false});
+  if(tab?.id==null||tab.windowId!==workspace.window_id)throw new Error('workspace_window_unavailable: owned tab creation failed');
+  await saveWorkspace({...await readWorkspace(),[`${role}_tab_id`]:Number(tab.id)});
+  return tab;
 }
 async function keepBackgroundTab(tabId,windowId){
   const tab=await chrome.tabs.get(tabId);
-  if(windowId!=null&&tab.windowId!==windowId)await chrome.tabs.move(tabId,{windowId,index:-1});
+  if(windowId==null||tab.windowId!==windowId)throw new Error('workspace_window_unavailable: internal tab escaped owned workspace');
   await chrome.tabs.update(tabId,{active:false});
   return chrome.tabs.get(tabId);
 }
-async function closeBackgroundTarget(target,tabIds=[]){
-  if(target?.owned_window&&target.window_id!=null)try{await chrome.windows.remove(target.window_id);}catch(_){}
-  for(const id of [...new Set([target?.tab?.id,...tabIds].filter(x=>x!=null))])try{await chrome.tabs.remove(id);}catch(_){}
-}
+async function workspaceState(){const workspace=await ensureWorkspace();return{...workspace,isolated:true};}
 function transientBridgeError(error){
   const s=String(error?.message||error||'').toLowerCase();
   return /unavailable|network|failed to fetch|connection|timed out|abort|temporar|503|502|504/.test(s);
@@ -91,6 +158,15 @@ async function requiredRequest(action,payload={},timeoutMs=60000){
 }
 async function waitTabComplete(tabId,timeoutMs=45000){const deadline=Date.now()+timeoutMs;while(Date.now()<deadline){const tab=await chrome.tabs.get(tabId);if(tab.status==='complete')return tab;await sleep(400);}throw new Error('page load timed out');}
 async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4){for(let i=0;i<retries;i++){try{await waitTabComplete(tabId,45000);const resp=await chrome.tabs.sendMessage(tabId,{type,...extra});if(resp)return resp;}catch(e){if(i===retries-1)throw e;}await sleep(700+i*220);}throw new Error('content script did not respond');}
+async function inspectSearchScope(tabId,type='JOBBOT_INSPECT_SEARCH',extra={}){
+  let page=await inspectTab(tabId,type,extra);
+  if(!page?.extraction_scope_missing)return page;
+  await sleep(650);
+  const retry=await inspectTab(tabId,type,extra,2);
+  if(!retry?.extraction_scope_missing)return retry;
+  page.extraction_diagnostics={...(page.extraction_diagnostics||{}),stable_retry:retry.extraction_diagnostics||{}};
+  return page;
+}
 function fp(items){return (items||[]).map(x=>x.source_job_id||x.url).filter(Boolean).sort().join('|');}
 function parseCheckpoint(raw){try{return typeof raw==='string'?JSON.parse(raw||'{}'):(raw||{});}catch(_){return {};}}
 function normalizeSearchUrl(raw){try{const u=new URL(raw);if(/(^|\.)linkedin\.com$/i.test(u.hostname))u.searchParams.delete('currentJobId');return u.href;}catch(_){return raw||'';}}
@@ -102,7 +178,7 @@ function stopHeartbeat(){if(heartbeatTimer)clearInterval(heartbeatTimer);heartbe
 
 async function checkAuth(platform,runId,taskId){
   const url=AUTH_URLS[platform]; if(!url)return {authenticated:true,page:{reason:'no auth check configured'}};
-  const target=await createBackgroundTarget(url),tab=target.tab;
+  const tab=await createOwnedTab('auth',url);
   try{
     const p=await inspectTab(tab.id,'JOBBOT_INSPECT_AUTH',{},5);
     if(p.challenged){
@@ -112,14 +188,14 @@ async function checkAuth(platform,runId,taskId){
     const authenticated=!!p.authenticated&&!p.challenged;
     await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated,reason:p.reason||p.challenge_reason||'',page_url:p.page_url||''});
     return {authenticated,page:p};
-  }finally{await closeBackgroundTarget(target);}
+  }finally{await keepBackgroundTab(tab.id,(await ensureWorkspace()).window_id).catch(()=>{});}
 }
 
 async function gatherStableSearch(tabId,initial){
   let page=initial; const merged=new Map((page.result_links||[]).map(x=>[x.source_job_id||x.url,x])); let stable=0;
   for(let i=0;i<4&&stable<1;i++){
     const before=merged.size;
-    const after=await inspectTab(tabId,'JOBBOT_SCROLL_AND_INSPECT',{wait_ms:800+i*150});
+    const after=await inspectSearchScope(tabId,'JOBBOT_SCROLL_AND_INSPECT',{wait_ms:800+i*150});
     if(after.challenged||after.extraction_scope_missing)return after;
     for(const x of (after.result_links||[]))merged.set(x.source_job_id||x.url,x);
     page.next_url=page.next_url||after.next_url||'';
@@ -130,7 +206,7 @@ async function gatherStableSearch(tabId,initial){
 }
 
 async function advanceSearch(tabId,page){
-  if(page.next_url){const next=normalizeSearchUrl(page.next_url);await chrome.tabs.update(tabId,{url:next});await sleep(600);return {advanced:true,url:next};}
+  if(page.next_url){const next=normalizeSearchUrl(page.next_url);await siteRespectfulPace('navigation');await chrome.tabs.update(tabId,{url:next});await sleep(600);return {advanced:true,url:next};}
   try{
     const r=await inspectTab(tabId,'JOBBOT_ADVANCE_SEARCH',{},3);
     if(r?.advanced){await sleep(800);return {advanced:true,url:normalizeSearchUrl(r.page_url||'')};}
@@ -145,24 +221,25 @@ async function processTask(runId,task){
   const cp=parseCheckpoint(task.checkpoint_json); let searchUrl=normalizeSearchUrl(cp.search_url||task.search_url);
   let processed=Number(task.jobs_recorded||0), resultsSeen=Number(task.results_seen||0), pagesVisited=Number(task.pages_visited||0), detailRead=Number(task.detail_count_read||0);
   let cardsExtracted=Number(task.cards_extracted||0), persistenceAttempted=Number(task.cards_persistence_attempted||0), persistenceSucceeded=Number(task.cards_persistence_succeeded||0), persistenceFailed=Number(task.cards_persistence_failed||0), duplicateCards=Number(task.duplicate_cards||0), pendingDetails=Number(task.pending_details||0), detailsFailed=Number(task.details_failed||0);
-  const fingerprintCounts=new Map(); let searchTarget=null,searchTab=null,detailTab=null,lastMeaningfulAt=Date.now();
+  const fingerprintCounts=new Map(); let searchTab=null,detailTab=null,workspace=null,lastMeaningfulAt=Date.now();
   const cardStats=()=>({extracted_cards:cardsExtracted,persistence_attempted:persistenceAttempted,persistence_succeeded:persistenceSucceeded,persistence_failed:persistenceFailed,duplicate_cards:duplicateCards,pending_details:pendingDetails,details_completed:detailRead,details_failed:detailsFailed});
   const progressPayload=(page,pageFp)=>({run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:normalizeSearchUrl(page.page_url||searchUrl),page_fingerprint:pageFp,processed,page_number:pagesVisited,scroll_generation:pagesVisited,card_stats:cardStats()}});
   const finishIncomplete=async(reason)=>{try{await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'incomplete',reason});}catch(_){/* preserve the original failure when the bridge is unavailable */}};
   try{
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open search ${searchUrl}`});
-    searchTarget=await createBackgroundTarget(searchUrl); searchTab=searchTarget.tab;
+    workspace=await ensureWorkspace(); searchTab=await createOwnedTab('search',searchUrl);
     while(true){
       const watchdogMs=Math.max(1,Number(runtimeConfig.watchdog_stall_seconds||180))*1000;
       if(Date.now()-lastMeaningfulAt>watchdogMs){await finishIncomplete(`SAFETY_STOP: watchdog observed no meaningful progress for ${runtimeConfig.watchdog_stall_seconds||180} seconds`);return;}
       const stop=await requiredRequest('should_stop',{run_id:runId}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
-      await keepBackgroundTab(searchTab.id,searchTarget.window_id);
-      let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH');
+      await keepBackgroundTab(searchTab.id,workspace.window_id);
+      let page=await inspectSearchScope(searchTab.id,'JOBBOT_INSPECT_SEARCH');
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge'});return;}
-      if(page.extraction_scope_missing){const message=`${platform} search extraction scope missing at ${page.page_url}; diagnostics=${JSON.stringify(page.extraction_diagnostics||{})}`;await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_scope_missing',message});await finishIncomplete(`SAFETY_STOP: ${message}`);return;}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,reason:`${platform} session is no longer authenticated`,page_url:page.page_url||''});return;}
+      if(page.extraction_scope_missing){const message=`${platform} search extraction scope missing at ${page.page_url}; diagnostics=${JSON.stringify(page.extraction_diagnostics||{})}`;await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_scope_missing',message});await finishIncomplete(`SAFETY_STOP: ${message}`);return;}
       page=await gatherStableSearch(searchTab.id,page);
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge'});return;}
+      if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,reason:`${platform} session is no longer authenticated`,page_url:page.page_url||''});return;}
       if(page.extraction_scope_missing){const message=`${platform} search extraction scope missing at ${page.page_url}; diagnostics=${JSON.stringify(page.extraction_diagnostics||{})}`;await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_scope_missing',message});await finishIncomplete(`SAFETY_STOP: ${message}`);return;}
       if(page.extraction_diagnostics){await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'scope_diagnostics',message:`${platform} scoped result diagnostics`,payload:page.extraction_diagnostics}).catch(()=>{});}
       const items=page.result_links||[], pageFp=fp(items);
@@ -208,8 +285,9 @@ async function processTask(runId,task){
         if(pending.done||!pending.detail)break;
         const work=pending.detail,link={...(work.card||{}),source_job_id:work.source_job_id,url:work.source_url,title:work.title_hint,company:work.company_hint,location:work.location_hint,posted_text:work.posted_text,posted_age_days:work.posted_age_days};
         await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open detail ${link.source_job_id||link.url}`});
-        if(!detailTab)detailTab=await chrome.tabs.create({windowId:searchTarget.window_id,url:'about:blank',active:false});
-        await keepBackgroundTab(detailTab.id,searchTarget.window_id);
+        if(!detailTab)detailTab=await createOwnedTab('detail','about:blank');
+        await keepBackgroundTab(detailTab.id,workspace.window_id);
+        await siteRespectfulPace('detail');
         await chrome.tabs.update(detailTab.id,{url:link.url,active:false});
         let detail;
         try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:String(e?.message||e),url:link.url});continue;}
@@ -239,8 +317,8 @@ async function processTask(runId,task){
       }
       searchUrl=normalizeSearchUrl(adv.url||page.next_url||searchUrl); await sleep(400);
     }
-  }catch(e){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'failed',reason:String(e?.message||e).slice(0,700)}).catch(()=>{});}
-  finally{activeTaskId=null;await closeBackgroundTarget(searchTarget,[searchTab?.id,detailTab?.id]);}
+  }catch(e){const message=String(e?.message||e).slice(0,700);await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:message.includes('workspace_window_unavailable')?'incomplete':'failed',reason:message}).catch(()=>{});}
+  finally{activeTaskId=null; if(searchTab&&workspace)await keepBackgroundTab(searchTab.id,workspace.window_id).catch(()=>{}); if(detailTab&&workspace)await keepBackgroundTab(detailTab.id,workspace.window_id).catch(()=>{});}
 }
 
 async function runProduction(runId){
@@ -282,8 +360,16 @@ async function ensureResume(){
   }catch(_){}
 }
 
-chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
-  if(msg?.type==='JOBBOT_CONFIGURE_BRIDGE'){configureBridge(msg.port,msg.token).then(x=>sendResponse({ok:true,version:x.version,bridge:'loopback'})).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;}
+chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{
+  if(msg?.type==='JOBBOT_CONFIGURE_BRIDGE'){
+    configureBridge(msg.port,msg.token,{dashboard_url:msg.dashboard_url||'',run_id:msg.run_id||0},sender?.tab?.id||null)
+      .then(async x=>sendResponse({ok:true,version:x.version,bridge:'loopback',extension_build:JOBBOT_EXTENSION_BUILD,workspace:await workspaceState()}))
+      .catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));
+    return true;
+  }
+  if(msg?.type==='JOBBOT_ADOPT_WORKSPACE'){
+    ensureWorkspace(sender?.tab?.id||null).then(async workspace=>{if(msg.dashboard_url){const dashboard=await createOwnedTab('dashboard',String(msg.dashboard_url));await keepBackgroundTab(dashboard.id,workspace.window_id);}sendResponse({ok:true,workspace:{window_id:workspace.window_id,anchor_tab_id:workspace.anchor_tab_id,isolated:true}});}).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;
+  }
   if(msg?.type==='JOBBOT_START_RUN'){
     const rid=Number(msg.run_id||0); if(!rid){sendResponse({ok:false,error:'missing run_id'});return false;}
     if(runPromise){
@@ -306,6 +392,7 @@ chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
   if(msg?.type==='JOBBOT_PING'){nativeRequest('ping').then(sendResponse).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;}
   return false;
 });
+chrome.windows?.onRemoved?.addListener?.((windowId)=>{readWorkspace().then(async workspace=>{if(Number(workspace.window_id||0)===Number(windowId)){await saveWorkspace({workspace_generation:Number(workspace.workspace_generation||0),workspace_created_at:workspace.workspace_created_at||''});}}).catch(()=>{});});
 function ensureResumeAlarm(){chrome.alarms.create('jobbot-resume',{periodInMinutes:1});}
 chrome.runtime.onStartup.addListener(()=>{ensureResumeAlarm();ensureResume();});
 chrome.runtime.onInstalled.addListener(()=>{ensureResumeAlarm();ensureResume();});

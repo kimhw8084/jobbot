@@ -4,6 +4,7 @@
   if(!C||!S)return;
   const sid=(url,el)=>{try{const u=new URL(url,location.href);return C.clean(u.searchParams.get('jk')||u.searchParams.get('vjk')||el?.dataset?.jk||el?.getAttribute?.('data-jk')||'');}catch(_){return C.clean(el?.dataset?.jk||'');}};
   const canon=(href)=>{try{const u=new URL(href,location.href),id=u.searchParams.get('jk')||u.searchParams.get('vjk')||'';return id?`https://www.indeed.com/viewjob?jk=${encodeURIComponent(id)}`:u.href;}catch(_){return '';}};
+  const emptyState=()=>{const body=C.clean(document.body?.innerText||'').toLowerCase();const marker=(S.emptyStates||[]).some(s=>!!document.querySelector(s));const phrase=['no jobs found','no jobs match','no results found','we couldn\'t find','0 jobs','no available jobs'].find(x=>body.includes(x));return marker||phrase?String(phrase||'explicit empty-results marker'):'';};
   function locateSearchResults(){
     const attempts=[];
     for(const selector of S.searchContainers||[]){
@@ -17,11 +18,12 @@
       }
     }
     const allLinks=[...new Set(S.searchLinks.flatMap((selector)=>[...document.querySelectorAll(selector)]))];
-    return{root:null,cards:[],attempts,candidate_links_total:allLinks.length,candidate_links_in_scope:0,candidate_links_outside_scope:allLinks.length,outside_scope_urls:allLinks.map((a)=>canon(a.getAttribute('href')||a.href||'')).filter(Boolean)};
+    const empty=emptyState();
+    return{root:null,cards:[],attempts,empty_state:!!empty,empty_state_reason:empty,candidate_links_total:allLinks.length,candidate_links_in_scope:0,candidate_links_outside_scope:allLinks.length,outside_scope_urls:allLinks.map((a)=>canon(a.getAttribute('href')||a.href||'')).filter(Boolean)};
   }
   function collect(){
     const scope=locateSearchResults();
-    if(!scope.root)return{links:[],extraction_scope_missing:true,extraction_diagnostics:scope};
+    if(!scope.root)return{links:[],extraction_scope_missing:!scope.empty_state,extraction_diagnostics:scope};
     const seen=new Map(),scopedAnchors=new Set();
     for(const card of scope.cards)for(const selector of S.searchLinks)for(const anchor of card.querySelectorAll(selector))scopedAnchors.add(anchor);
     const allAnchors=[...new Set(S.searchLinks.flatMap((selector)=>[...document.querySelectorAll(selector)]))];
@@ -37,7 +39,7 @@
       const raw=C.absoluteUrl(anchor.getAttribute('href')||anchor.href||''),id=sid(raw,anchor),url=canon(raw);if(!id||!url)continue;
       if(!inScopeIds.has(id))outsideIds.add(id);if(!inScopeUrls.has(url))outsideUrls.add(url);
     }
-    return{links:[...seen.values()],extraction_scope_missing:false,extraction_diagnostics:{attempts:scope.attempts,matched_containers:1,candidate_links_total:allAnchors.length,candidate_links_in_scope:scopedAnchors.size,candidate_links_outside_scope:Math.max(0,allAnchors.length-scopedAnchors.size),in_scope_source_ids:[...inScopeIds],in_scope_urls:[...inScopeUrls],outside_scope_source_ids:[...outsideIds],outside_scope_urls:[...outsideUrls]}};
+    return{links:[...seen.values()],extraction_scope_missing:false,extraction_diagnostics:{extension_build:String(chrome.runtime?.getManifest?.().version_name||'unknown'),attempts:scope.attempts,matched_containers:1,candidate_links_total:allAnchors.length,candidate_links_in_scope:scopedAnchors.size,candidate_links_outside_scope:Math.max(0,allAnchors.length-scopedAnchors.size),in_scope_source_ids:[...inScopeIds],in_scope_urls:[...inScopeUrls],outside_scope_source_ids:[...outsideIds],outside_scope_urls:[...outsideUrls]}};
   }
   function nextUrl(){for(const selector of S.nextLinks){const anchor=document.querySelector(selector);if(anchor?.href)return C.absoluteUrl(anchor.href);}return '';}
   function inspectAuth(){
@@ -49,7 +51,7 @@
     const ch=C.challengeInfo(),end=C.exhaustionInfo(['no jobs matching your search']);const body=C.clean(document.body?.innerText||'').toLowerCase();
     const login=/secure\.indeed\.com\/auth|\/account\/login/.test(location.href.toLowerCase())||(S.authSignIn.some(s=>!!document.querySelector(s))&&body.includes('sign in'));
     const results=collect();
-    return{platform:'indeed',page_type:'search',challenged:ch.challenged,challenge_reason:ch.reason,login_required:login,page_url:location.href,result_links:results.links,extraction_scope_missing:results.extraction_scope_missing,extraction_diagnostics:results.extraction_diagnostics,next_url:nextUrl(),exhausted:end.exhausted,exhaustion_reason:end.reason,title:document.title};
+    return{platform:'indeed',extension_build:String(chrome.runtime?.getManifest?.().version_name||'unknown'),page_type:'search',challenged:ch.challenged,challenge_reason:ch.reason,login_required:login,page_url:location.href,result_links:results.links,extraction_scope_missing:results.extraction_scope_missing,extraction_diagnostics:results.extraction_diagnostics,next_url:nextUrl(),exhausted:end.exhausted||!!results.extraction_diagnostics?.empty_state,exhaustion_reason:end.reason||results.extraction_diagnostics?.empty_state_reason||'',title:document.title};
   }
   function inspectJob(){
     const ch=C.challengeInfo(),x=C.parseJsonLdJob()||{},title=x.title||C.firstText(S.title),company=x.company||C.firstText(S.company),locationText=x.location||C.firstText(S.location);
