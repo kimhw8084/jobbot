@@ -89,8 +89,8 @@ assert.strictEqual(inspected.extraction_diagnostics.candidate_links_outside_scop
 assert.ok(!ids.includes('4901') && !ids.includes('4902') && !ids.includes('4903'));
 console.log('LinkedIn scope fixture passed: actual=3 outside_scope_excluded=3');
 
-function inspectRoot(nextRoot, title = 'LinkedIn jobs') {
-  global.location = { href: 'https://www.linkedin.com/jobs/search/?keywords=patient', pathname: '/jobs/search/', host: 'www.linkedin.com' };
+function inspectRoot(nextRoot, title = 'LinkedIn jobs', href = 'https://www.linkedin.com/jobs/search/?keywords=patient') {
+  global.location = { href, pathname: '/jobs/search/', host: 'www.linkedin.com' };
   global.document = { body: nextRoot, title, querySelector: nextRoot.querySelector.bind(nextRoot), querySelectorAll: nextRoot.querySelectorAll.bind(nextRoot) };
   let value;
   listener({ type: 'JOBBOT_INSPECT_SEARCH' }, null, (result) => { value = result; });
@@ -129,3 +129,10 @@ assert.deepStrictEqual(empty.result_links, []);
 assert.strictEqual(empty.extraction_diagnostics.empty_state, true);
 assert.strictEqual(empty.extraction_diagnostics.empty_state_reason, 'no matching jobs found');
 console.log('LinkedIn verified empty state fixture passed: no false scope failure');
+
+const pagedEmpty = inspectRoot(parseHtml('<main><h1>(19) patient enrollment specialist Jobs in United States</h1></main>'), ' (19) patient enrollment specialist Jobs in United States | LinkedIn', 'https://www.linkedin.com/jobs/search/?keywords=patient&start=25');
+assert.strictEqual(pagedEmpty.extraction_scope_missing, false);
+assert.deepStrictEqual(pagedEmpty.result_links, []);
+assert.strictEqual(pagedEmpty.exhausted, true);
+assert.strictEqual(pagedEmpty.exhaustion_reason, 'paged_empty_end_state');
+console.log('LinkedIn paged end-state fixture passed: no false scope failure');

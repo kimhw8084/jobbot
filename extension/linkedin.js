@@ -63,7 +63,20 @@
     candidates.sort((a,b)=>b.score[0]-a.score[0]||b.score[1]-a.score[1]||b.score[2]-a.score[2]);
     return{candidate:candidates[0]||null,strong_evidence_count:strong.length,pool_count:pool.length,summaries:summaries.slice(0,MAX_STRUCTURAL_SUMMARIES)};
   }
-  const emptyState=()=>{if(allJobRecords().length)return '';const body=C.clean(document.body?.innerText||'').toLowerCase();return ['no matching jobs found','no jobs found','no jobs match','no results found','there are no jobs','end of results'].find((phrase)=>body.includes(phrase))||'';};
+  const emptyState=()=>{
+    if(allJobRecords().length)return '';
+    const body=C.clean(document.body?.innerText||'').toLowerCase(),title=C.clean(document.title).toLowerCase(),direct=['no matching jobs found','no jobs found','no jobs match','no results found','there are no jobs','end of results'].find((phrase)=>body.includes(phrase));
+    if(direct)return direct;
+    // LinkedIn can advance a valid search to an offset beyond its final page
+    // without rendering an explicit empty-results phrase. Treat only that
+    // bounded, non-initial page as a verified end state; initial empty pages
+    // remain fail-closed as extraction_scope_missing.
+    try{
+      const u=new URL(location.href),start=Number(u.searchParams.get('start')||0),pageText=`${title} ${body}`;
+      if(start>0&&/\bjobs?\b/.test(title)&&!/(captcha|challenge|sign in|log in|error|unavailable|temporarily)/.test(pageText))return 'paged_empty_end_state';
+    }catch(_){}
+    return '';
+  };
   const diagnosticNode=(node)=>({signature:nodeSignature(node),tag:String(node?.tagName||'').toLowerCase(),class:attr(node,'class').slice(0,160),role:attr(node,'role').slice(0,80),data_view_name:attr(node,'data-view-name').slice(0,120),data_testid:attr(node,'data-testid').slice(0,120)});
   function missingDiagnostics(attempts,records,structural,reason){
     const inIds=[],outIds=[...new Set(records.map((record)=>record.id))];
@@ -124,7 +137,8 @@
   function inspectSearch(){
     const ch=C.challengeInfo(),end=C.exhaustionInfo(['no matching jobs found']),url=location.href.toLowerCase();
     const results=collect();
-    return{platform:'linkedin',extension_build:BUILD_ID,page_type:'search',challenged:ch.challenged,challenge_reason:ch.reason,login_required:/\/login|\/checkpoint|\/authwall/.test(url),page_url:location.href,result_links:results.links,extraction_scope_missing:results.extraction_scope_missing,extraction_diagnostics:results.extraction_diagnostics,next_url:nextUrl(),exhausted:end.exhausted,exhaustion_reason:end.reason,title:document.title};
+    const verifiedEmptyReason=results.extraction_diagnostics?.empty_state_reason||'';
+    return{platform:'linkedin',extension_build:BUILD_ID,page_type:'search',challenged:ch.challenged,challenge_reason:ch.reason,login_required:/\/login|\/checkpoint|\/authwall/.test(url),page_url:location.href,result_links:results.links,extraction_scope_missing:results.extraction_scope_missing,extraction_diagnostics:results.extraction_diagnostics,next_url:nextUrl(),exhausted:end.exhausted||!!verifiedEmptyReason,exhaustion_reason:end.reason||verifiedEmptyReason,title:document.title};
   }
   function inspectJob(){
     const ch=C.challengeInfo(),x=C.parseJsonLdJob()||{},pageTitle=C.clean(document.title).replace(/\s*\|\s*LinkedIn\s*$/i,'').split('|')[0];
