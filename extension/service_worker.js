@@ -71,6 +71,7 @@ async function waitTabComplete(tabId,timeoutMs=45000){const deadline=Date.now()+
 async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4){for(let i=0;i<retries;i++){try{await waitTabComplete(tabId,45000);const resp=await chrome.tabs.sendMessage(tabId,{type,...extra});if(resp)return resp;}catch(e){if(i===retries-1)throw e;}await sleep(700+i*220);}throw new Error('content script did not respond');}
 function fp(items){return (items||[]).map(x=>x.source_job_id||x.url).filter(Boolean).sort().join('|');}
 function parseCheckpoint(raw){try{return typeof raw==='string'?JSON.parse(raw||'{}'):(raw||{});}catch(_){return {};}}
+function normalizeSearchUrl(raw){try{const u=new URL(raw);if(/(^|\.)linkedin\.com$/i.test(u.hostname))u.searchParams.delete('currentJobId');return u.href;}catch(_){return raw||'';}}
 function startHeartbeat(){
   if(heartbeatTimer)clearInterval(heartbeatTimer);
   heartbeatTimer=setInterval(()=>{if(activeRunId)nativeRequest('heartbeat',{run_id:activeRunId,task_id:activeTaskId||0},10000).catch(()=>{});},Math.max(1,Number(runtimeConfig.heartbeat_seconds||20))*1000);
@@ -107,10 +108,10 @@ async function gatherStableSearch(tabId,initial){
 }
 
 async function advanceSearch(tabId,page){
-  if(page.next_url){await chrome.tabs.update(tabId,{url:page.next_url});await sleep(600);return {advanced:true,url:page.next_url};}
+  if(page.next_url){const next=normalizeSearchUrl(page.next_url);await chrome.tabs.update(tabId,{url:next});await sleep(600);return {advanced:true,url:next};}
   try{
     const r=await inspectTab(tabId,'JOBBOT_ADVANCE_SEARCH',{},3);
-    if(r?.advanced){await sleep(800);return {advanced:true,url:r.page_url||''};}
+    if(r?.advanced){await sleep(800);return {advanced:true,url:normalizeSearchUrl(r.page_url||'')};}
   }catch(_){}
   return {advanced:false,url:''};
 }
@@ -119,12 +120,12 @@ async function processTask(runId,task){
   const taskId=Number(task.task_id), platform=String(task.platform||'');
   activeTaskId=taskId;
   const maxResults=task.max_results==null?null:Number(task.max_results), windowDays=Number(task.window_days||30);
-  const cp=parseCheckpoint(task.checkpoint_json); let searchUrl=cp.search_url||task.search_url;
+  const cp=parseCheckpoint(task.checkpoint_json); let searchUrl=normalizeSearchUrl(cp.search_url||task.search_url);
   let processed=Number(task.jobs_recorded||0), resultsSeen=Number(task.results_seen||0), pagesVisited=Number(task.pages_visited||0), detailRead=Number(task.detail_count_read||0);
   let cardsExtracted=Number(task.cards_extracted||0), persistenceAttempted=Number(task.cards_persistence_attempted||0), persistenceSucceeded=Number(task.cards_persistence_succeeded||0), persistenceFailed=Number(task.cards_persistence_failed||0), duplicateCards=Number(task.duplicate_cards||0), pendingDetails=Number(task.pending_details||0), detailsFailed=Number(task.details_failed||0);
   const fingerprintCounts=new Map(); let searchTab=null,detailTab=null,lastMeaningfulAt=Date.now();
   const cardStats=()=>({extracted_cards:cardsExtracted,persistence_attempted:persistenceAttempted,persistence_succeeded:persistenceSucceeded,persistence_failed:persistenceFailed,duplicate_cards:duplicateCards,pending_details:pendingDetails,details_completed:detailRead,details_failed:detailsFailed});
-  const progressPayload=(page,pageFp)=>({run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:page.page_url||searchUrl,page_fingerprint:pageFp,processed,page_number:pagesVisited,scroll_generation:pagesVisited,card_stats:cardStats()}});
+  const progressPayload=(page,pageFp)=>({run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:normalizeSearchUrl(page.page_url||searchUrl),page_fingerprint:pageFp,processed,page_number:pagesVisited,scroll_generation:pagesVisited,card_stats:cardStats()}});
   const finishIncomplete=async(reason)=>{try{await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'incomplete',reason});}catch(_){/* preserve the original failure when the bridge is unavailable */}};
   try{
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open search ${searchUrl}`});
@@ -212,7 +213,7 @@ async function processTask(runId,task){
         else{await finishIncomplete('SAFETY_STOP: no next page/batch and no verified platform end state');}
         return;
       }
-      searchUrl=adv.url||page.next_url||searchUrl; await sleep(400);
+      searchUrl=normalizeSearchUrl(adv.url||page.next_url||searchUrl); await sleep(400);
     }
   }catch(e){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'failed',reason:String(e?.message||e).slice(0,700)}).catch(()=>{});}
   finally{activeTaskId=null;if(detailTab?.id)try{await chrome.tabs.remove(detailTab.id);}catch(_){} if(searchTab?.id)try{await chrome.tabs.remove(searchTab.id);}catch(_){} }

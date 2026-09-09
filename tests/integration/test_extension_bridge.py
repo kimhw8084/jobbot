@@ -58,6 +58,8 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("active:false", worker)
         self.assertIn("jobbot_bridge_state", worker)
         self.assertIn("runtime_config", worker)
+        self.assertIn("function normalizeSearchUrl", worker)
+        self.assertIn("searchParams.delete('currentJobId')", worker)
         self.assertNotIn("const HEARTBEAT_MS", worker)
         self.assertNotIn("const WATCHDOG_MS", worker)
 
