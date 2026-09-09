@@ -64,6 +64,12 @@ def _isolated_bundle(db_path: Path, output_dir: Path, port: int) -> ConfigBundle
     )
 
 
+def _prepare_validation_bundle(bundle: ConfigBundle) -> None:
+    """Migrate an isolated stage before dashboard identity or task creation."""
+    with _isolated_environment(bundle):
+        preflight(bundle)
+
+
 def _production_db() -> Path:
     return (PROJECT_ROOT / "data" / "jobs.sqlite3").resolve()
 
@@ -964,6 +970,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             return 0
 
         soak_bundle = _isolated_bundle(soak_db, soak_out, _free_port())
+        _prepare_validation_bundle(soak_bundle)
         soak_url, _ = ensure_dashboard(soak_bundle, open_browser=True)
         dashboard_bundles.append((soak_bundle, soak_url))
         report["dashboard_url"] = soak_url
@@ -999,6 +1006,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             return 1
 
         semi_bundle = _isolated_bundle(semi_db, semi_out, _free_port())
+        _prepare_validation_bundle(semi_bundle)
         semi_url, _ = ensure_dashboard(semi_bundle, open_browser=True)
         dashboard_bundles.append((semi_bundle, semi_url))
         report["dashboard_url"] = semi_url

@@ -19,10 +19,26 @@ from jobbot.validator import (
     _phase_coverage_pass,
     _stage_pass,
     _write_report,
+    _isolated_bundle,
+    _prepare_validation_bundle,
 )
 
 
 class ValidatorIntegrationTests(unittest.TestCase):
+    def test_each_isolated_long_stage_is_migrated_before_dashboard_use(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            database_path = root / "soak.sqlite3"
+            bundle = _isolated_bundle(database_path, root / "out", 18765)
+            self.assertFalse(database_path.exists())
+            _prepare_validation_bundle(bundle)
+            self.assertTrue(database_path.is_file())
+            conn = sqlite3.connect(database_path)
+            try:
+                self.assertIsNotNone(conn.execute("SELECT 1 FROM schema_migrations LIMIT 1").fetchone())
+            finally:
+                conn.close()
+
     def test_validator_refuses_production_database(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "refusing production database"):
             _assert_isolated(PROJECT_ROOT / "data" / "jobs.sqlite3")
