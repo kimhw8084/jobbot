@@ -8,8 +8,13 @@ import unittest
 from pathlib import Path
 
 from jobbot import browser_tasks
+from jobbot.application import add_note, mark
 from jobbot.bridge import rpc
 from jobbot.config import PROJECT_ROOT
+from jobbot.discoveries import claim_next_detail, fail_detail, finish_detail, upsert_card
+from jobbot.legacy_engine import PrecisionStore
+
+from tests.helpers import scored
 
 
 class BrowserTaskIntegrationTests(unittest.TestCase):
@@ -94,6 +99,101 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                     (task_id,),
                 ).fetchone()
                 self.assertEqual(tuple(counters), (3, 3, 3, 0, 1, 3))
+                conn.close()
+            finally:
+                rpc.BASE = previous
+
+    def test_temporary_ledger_high_volume_recovery_and_application_state(self) -> None:
+        """Stress durable card/detail/application state without touching production DB."""
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            rpc.BASE = root
+            path = root / "data" / "jobs.sqlite3"
+            try:
+                run_id = browser_tasks.enqueue_gate(root, "linkedin", 7, 20)
+                conn = sqlite3.connect(path)
+                conn.row_factory = sqlite3.Row
+                task_id = int(conn.execute(
+                    "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id LIMIT 1",
+                    (run_id,),
+                ).fetchone()[0])
+
+                for index in range(1000):
+                    upsert_card(
+                        conn,
+                        run_id=run_id,
+                        task_id=task_id,
+                        platform="linkedin",
+                        source_job_id=f"stress-{index}",
+                        source_url=f"https://www.linkedin.com/jobs/view/{index}/",
+                        title_hint="Patient Enrollment Specialist",
+                        company_hint="Stress Health",
+                        location_hint="Remote — United States",
+                        posted_text="1 day ago",
+                        posted_age_days=1,
+                        card={"source_job_id": f"stress-{index}", "title": "Patient Enrollment Specialist"},
+                    )
+                    if index and index % 100 == 0:
+                        conn.commit()
+                conn.commit()
+
+                duplicate = upsert_card(
+                    conn,
+                    run_id=run_id,
+                    task_id=task_id,
+                    platform="linkedin",
+                    source_job_id="stress-0",
+                    source_url="https://www.linkedin.com/jobs/view/0/",
+                    title_hint="Patient Enrollment Specialist",
+                    company_hint="Stress Health",
+                    card={"source_job_id": "stress-0"},
+                )
+                conn.commit()
+                self.assertTrue(duplicate[1])
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=?", (task_id,)).fetchone()[0], 1000)
+                self.assertGreaterEqual(conn.execute("SELECT sighting_count FROM search_task_results WHERE source_job_id='stress-0'").fetchone()[0], 2)
+
+                first = claim_next_detail(conn, run_id=run_id, task_id=task_id, worker_id="stress-a")
+                self.assertIsNotNone(first)
+                finish_detail(conn, first.result_id, "canonical-stress-0")
+                second = claim_next_detail(conn, run_id=run_id, task_id=task_id, worker_id="stress-a")
+                self.assertIsNotNone(second)
+                self.assertEqual(fail_detail(conn, second.result_id, "transient fixture error", max_attempts=3), "RETRYABLE")
+                retried = claim_next_detail(conn, run_id=run_id, task_id=task_id, worker_id="stress-b")
+                self.assertEqual(retried.result_id, second.result_id)
+                self.assertEqual(fail_detail(conn, retried.result_id, "final fixture error", max_attempts=1), "FAILED")
+                stale = claim_next_detail(conn, run_id=run_id, task_id=task_id, worker_id="stale-worker")
+                self.assertIsNotNone(stale)
+                conn.execute("UPDATE search_task_results SET detail_lease_until='2000-01-01T00:00:00+00:00' WHERE result_id=?", (stale.result_id,))
+                conn.commit()
+                conn.close()  # simulated bridge/worker interruption
+
+                conn = sqlite3.connect(path)
+                conn.row_factory = sqlite3.Row
+                recovered = claim_next_detail(conn, run_id=run_id, task_id=task_id, worker_id="recovery-worker")
+                self.assertEqual(recovered.result_id, stale.result_id)
+                conn.commit()
+                store = PrecisionStore(path)
+                try:
+                    job = scored("Patient Enrollment Specialist", "Fully remote healthcare enrollment. Required Qualifications: 2 years relevant experience. " * 10)
+                    job.source_job_id = "stress-canonical"
+                    job.canonical_url = "https://boards.greenhouse.io/stress/jobs/1"
+                    job.apply_url = job.canonical_url
+                    self.assertEqual(store.upsert(job), "new")
+                    job.description += " Updated workflow evidence."
+                    self.assertEqual(store.upsert(job), "updated")
+                    job_id = store.resolve_job_id(job)
+                    mark(store.conn, job_id, "APPLIED", notes="stress application")
+                    add_note(store.conn, job_id, "follow up after screening")
+                    self.assertEqual(store.conn.execute("SELECT application_status FROM jobs WHERE job_id=?", (job_id,)).fetchone()[0], "APPLIED")
+                    self.assertEqual(store.conn.execute("SELECT COUNT(*) FROM application_events WHERE job_id=?", (job_id,)).fetchone()[0], 2)
+                    self.assertGreaterEqual(store.conn.execute("SELECT COUNT(*) FROM job_versions WHERE job_id=?", (job_id,)).fetchone()[0], 2)
+                finally:
+                    store.close()
+                self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status='COMPLETE'", (task_id,)).fetchone()[0], 1)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status='FAILED'", (task_id,)).fetchone()[0], 1)
                 conn.close()
             finally:
                 rpc.BASE = previous
