@@ -1,7 +1,7 @@
 'use strict';
 
 const EXPECTED_EXTENSION_VERSION = '3.2.1';
-const EXPECTED_EXTENSION_BUILD = '3.2.2-prod-ready';
+const EXPECTED_EXTENSION_BUILD = '3.2.2-prod-ready.672cf88';
 const stateEl = document.getElementById('state');
 const startButton = document.getElementById('start');
 const stopButton = document.getElementById('stop');

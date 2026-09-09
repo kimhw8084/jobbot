@@ -33,7 +33,7 @@ from .search_plan import compile_plan, compile_staged_plan
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
-EXPECTED_EXTENSION_BUILD = "3.2.2-prod-ready"
+EXPECTED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88"
 TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
 VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
