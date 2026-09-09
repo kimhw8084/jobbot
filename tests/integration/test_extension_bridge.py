@@ -18,6 +18,7 @@ class ExtensionBridgeTests(unittest.TestCase):
         manifest = json.loads((PROJECT_ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["manifest_version"], 3)
         self.assertEqual(manifest["version"], "3.2.1")
+        self.assertEqual(manifest["version_name"], "3.2.2-prod-ready")
         self.assertNotIn("nativeMessaging", manifest["permissions"])
         self.assertIn("windows", manifest["permissions"])
         self.assertIn("http://127.0.0.1/*", manifest["host_permissions"])
@@ -68,6 +69,9 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("function closeBackgroundTarget", worker)
         self.assertIn("await keepBackgroundTab(searchTab.id,searchTarget.window_id)", worker)
         self.assertIn("windowId:searchTarget.window_id", worker)
+        dashboard_worker = (PROJECT_ROOT / "extension" / "dashboard.js").read_text(encoding="utf-8")
+        self.assertIn("EXPECTED_EXTENSION_BUILD = '3.2.2-prod-ready'", dashboard_worker)
+        self.assertIn("manifest.version_name", dashboard_worker)
         self.assertNotIn("const HEARTBEAT_MS", worker)
         self.assertNotIn("const WATCHDOG_MS", worker)
 
