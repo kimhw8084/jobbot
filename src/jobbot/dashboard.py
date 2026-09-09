@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from .application import ApplicationError, STATUSES, add_note, mark
-from .candidate import Candidate
+from .candidate import Candidate, readiness_warnings
 from .config import ConfigBundle
 from .db import Database
 from .exports import export_selected
@@ -118,6 +118,7 @@ def strategy_info(bundle: ConfigBundle) -> dict[str, Any]:
         "portfolio": lanes,
         "search_bands": strategy.get("search_bands", {}),
         "search_band_cadence": strategy.get("search_band_cadence", {}),
+        "candidate_readiness_warnings": readiness_warnings(bundle),
         "score_weights": {"landing_qualification": scoring.get("landing_qualification_weight", 0.70), "door_landing": scoring.get("door_landing_weight", 0.70), "door_career": scoring.get("door_career_weight", 0.30)},
         "recommendations": {
             "APPLY_NOW": "Strong fit, confirmed remote, active, and worth applying to now.",

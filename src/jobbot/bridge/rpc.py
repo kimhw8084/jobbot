@@ -48,13 +48,13 @@ def task_selection_key(conn, row):
     """Keep band/order protection, then use learned ROI only when eligible."""
     learned_roi = 0.0
     stats = conn.execute(
-        "SELECT * FROM query_yield_stats WHERE platform=? AND normalized_query=? AND search_band=?",
-        (row['platform'], str(row['query_text']).casefold(), row['search_band']),
+        "SELECT * FROM query_yield_stats WHERE platform=? AND normalized_query=? AND search_band=? AND window_class=? AND window_days=?",
+        (row['platform'], str(row['query_text']).casefold(), row['search_band'], row['window_class'], row['window_days']),
     ).fetchone()
     if stats is not None:
         estimate = query_yield_estimate(dict(stats))
         if estimate['sample_eligible']:
-            learned_roi = float(estimate['actionable_jobs_per_minute'])
+            learned_roi = float(estimate['conservative_actionable_per_minute'])
     return (BAND_ORDER.get(str(row['search_band'] or 'DEEP_TAIL'), 99), -learned_roi,
             int(row['execution_rank'] or 0), int(row['priority'] or 99), int(row['task_id']))
 
@@ -207,7 +207,9 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 }
                 queued=conn.execute(f"""SELECT * FROM browser_search_tasks
                   WHERE browser_run_id=? AND status='queued'
-                  ORDER BY {phase_order_sql()},execution_rank,priority,task_id""",(rid,)).fetchall()
+                  ORDER BY CASE WHEN phase IN ('A_FASTEST_DOOR_RECENT','B_REMAINING_CORE_RECENT') THEN 0 ELSE 1 END,
+                           CASE search_band WHEN 'GOLD' THEN 0 WHEN 'SILVER' THEN 1 WHEN 'GROWTH' THEN 2 WHEN 'HEDGE' THEN 3 ELSE 4 END,
+                           execution_rank,priority,task_id""",(rid,)).fetchall()
                 eligible=[]
                 for candidate in queued:
                     state=platform_states.get(candidate['platform'])
@@ -223,16 +225,19 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                         continue
                     eligible.append(candidate)
                 if eligible:
-                    phase=min(eligible,key=lambda row: (0 if row['phase']=='A_FASTEST_DOOR_RECENT' else 1 if row['phase']=='B_REMAINING_CORE_RECENT' else 2 if row['phase']=='C_DEEP_BACKFILL' else 9))['phase']
-                    phase_rows=[row for row in eligible if row['phase']==phase]
+                    recent_rows=[row for row in eligible if row['phase'] in {'A_FASTEST_DOOR_RECENT','B_REMAINING_CORE_RECENT'}]
+                    deep_rows=[row for row in eligible if row['phase']=='C_DEEP_BACKFILL']
+                    # Older acceptance/task fixtures may not carry a phase.
+                    # Preserve their runnable behavior while keeping the
+                    # production A/B-before-C grouping for staged tasks.
+                    phase_rows=recent_rows or deep_rows or eligible
                     platform_candidates=[]
                     for platform in sorted({row['platform'] for row in phase_rows},key=lambda value: {'linkedin':0,'indeed':1,'glassdoor':2}.get(value,99)):
                         progress=conn.execute("""SELECT COUNT(*) FROM browser_search_tasks
-                          WHERE browser_run_id=? AND platform=? AND phase=? AND status<>'queued'""",(rid,platform,phase)).fetchone()[0]
+                          WHERE browser_run_id=? AND platform=? AND status<>'queued'""",(rid,platform)).fetchone()[0]
                         platform_candidates.append((int(progress)//wave_size,platform))
                     _,chosen_platform=min(platform_candidates,key=lambda item:(item[0],{'linkedin':0,'indeed':1,'glassdoor':2}.get(item[1],99)))
-                    platform_queue=conn.execute("""SELECT * FROM browser_search_tasks
-                      WHERE browser_run_id=? AND platform=? AND phase=? AND status='queued'""",(rid,chosen_platform,phase)).fetchall()
+                    platform_queue=[row for row in phase_rows if row['platform']==chosen_platform]
                     t=min(platform_queue,key=lambda row: task_selection_key(conn,row)) if platform_queue else None
             if not t:return {'ok':True,'done':True}
             if t['status']=='queued':
@@ -323,7 +328,12 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='heartbeat':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180);now=j.now_iso();conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(lease_seconds),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
         if action=='browser_event':
-            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);message=j.clean_text(msg.get('message') or msg.get('event_type') or 'browser event');event(conn,rid,tid,j.clean_text(msg.get('event_type') or 'browser_event'),message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True}
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);event_type=j.clean_text(msg.get('event_type') or 'browser_event');message=j.clean_text(msg.get('message') or event_type or 'browser event')
+            if event_type=='task_active_time' and isinstance(msg.get('payload'),dict) and msg['payload'].get('metric_scope')=='task_attempt':
+                try: active_ms=max(0,int(float(msg['payload'].get('task_active_browser_ms',0) or 0)))
+                except (TypeError,ValueError): active_ms=0
+                conn.execute("UPDATE browser_search_tasks SET task_active_browser_ms=task_active_browser_ms+? WHERE task_id=? AND browser_run_id=?",(active_ms,tid,rid))
+            event(conn,rid,tid,event_type,message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True}
         if action=='complete_task':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);status=j.clean_text(msg.get('status') or 'completed');reason=j.clean_text(msg.get('reason') or '');exhausted=1 if bool(msg.get('exhausted')) else 0
             if status=='completed': status='exhausted' if exhausted else 'incomplete'

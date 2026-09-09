@@ -9,6 +9,7 @@ from pathlib import Path
 from jobbot.config import PROJECT_ROOT
 from jobbot.db import Database
 from jobbot.legacy_engine import PrecisionStore, prepare_packet, resume_path_for, select_daily_plan
+from jobbot.migrations.m0016_precision_window_stats import upgrade as upgrade_precision_windows
 
 from tests.helpers import bundle_with_database, scored
 
@@ -18,7 +19,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 16)))
+            self.assertEqual(result.applied, tuple(range(1, 17)))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -33,7 +34,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 fields = {row[1] for row in conn.execute("PRAGMA table_info(search_task_results)")}
                 task_fields = {row[1] for row in conn.execute("PRAGMA table_info(browser_search_tasks)")}
                 self.assertTrue({"title_hint", "card_json", "detail_status", "detail_lease_until"} <= fields)
-                self.assertTrue({"cards_extracted", "cards_persistence_succeeded", "execution_rank", "phase", "search_band", "cadence_hours"} <= task_fields)
+                self.assertTrue({"cards_extracted", "cards_persistence_succeeded", "execution_rank", "phase", "search_band", "window_class", "query_variant", "cadence_hours"} <= task_fields)
                 self.assertTrue({"detail_priority", "detail_priority_reason"} <= fields)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_definition_state").fetchone()[0], 0)
             finally: conn.close()
@@ -58,6 +59,35 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
             conn = sqlite3.connect(target)
             try: self.assertEqual(conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], before)
             finally: conn.close()
+
+    def test_v15_yield_stats_upgrade_is_additive_and_separates_deep_window(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "legacy.sqlite3"
+            conn = sqlite3.connect(path)
+            try:
+                conn.executescript("""
+                    CREATE TABLE browser_search_tasks(task_id INTEGER PRIMARY KEY);
+                    CREATE TABLE search_definition_state(platform TEXT, task_key TEXT, next_due_at TEXT);
+                    CREATE TABLE query_yield_stats(
+                      platform TEXT NOT NULL, normalized_query TEXT NOT NULL, search_band TEXT NOT NULL,
+                      cards_persisted INTEGER NOT NULL DEFAULT 0, completed_descriptions INTEGER NOT NULL DEFAULT 0,
+                      apply_now INTEGER NOT NULL DEFAULT 0, apply_volume INTEGER NOT NULL DEFAULT 0,
+                      high_value_stretch INTEGER NOT NULL DEFAULT 0, review INTEGER NOT NULL DEFAULT 0,
+                      hard_reject INTEGER NOT NULL DEFAULT 0, out_of_scope INTEGER NOT NULL DEFAULT 0,
+                      remote_pass INTEGER NOT NULL DEFAULT 0, total_browser_ms INTEGER NOT NULL DEFAULT 0,
+                      observation_runs INTEGER NOT NULL DEFAULT 0, observation_dates TEXT NOT NULL DEFAULT '[]',
+                      last_observed_at TEXT, PRIMARY KEY(platform,normalized_query,search_band)
+                    );
+                    INSERT INTO query_yield_stats(platform,normalized_query,search_band,cards_persisted,completed_descriptions,total_browser_ms)
+                    VALUES('linkedin','patient enrollment specialist','GOLD',4,3,1200);
+                """)
+                upgrade_precision_windows(conn)
+                columns = {row[1] for row in conn.execute("PRAGMA table_info(query_yield_stats)")}
+                self.assertTrue({"window_class", "window_days", "task_active_browser_ms", "descriptions_missing"} <= columns)
+                row = conn.execute("SELECT window_class,window_days,cards_persisted,completed_descriptions,task_active_browser_ms FROM query_yield_stats").fetchone()
+                self.assertEqual(tuple(row), ("DEEP", 30, 4, 3, 0))
+            finally:
+                conn.close()
 
     def test_new_unchanged_updated_closed_reopened_and_cross_source_dedupe(self) -> None:
         with tempfile.TemporaryDirectory() as td:

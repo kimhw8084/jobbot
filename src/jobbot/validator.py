@@ -24,12 +24,14 @@ from typing import Any, Iterator
 
 from . import browser_tasks, legacy_engine
 from .audit import collect as collect_audit
+from .candidate import readiness_warnings
 from .config import PROJECT_ROOT, ConfigBundle, load_bundle
 from .db import Database
 from .doctor import run as run_doctor
 from .orchestrator import chrome_path, launch_browser_run
 from .run_now import ensure_dashboard, preflight
 from .search_plan import compile_plan, compile_staged_plan
+from .search_strategy import BANDS, staged_cadence_economics
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
@@ -894,9 +896,17 @@ def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     deep = compile_plan(bundle, "deep")
     plan_ok = bool(staged and deep) and all(task.max_results is None for task in staged + deep)
     checks.append({"name": "uncapped staged/deep search plan", "ok": plan_ok, "detail": {"staged": len(staged), "deep": len(deep)}})
+    candidate_warnings = readiness_warnings(bundle)
+    checks.append({"name": "candidate readiness warnings", "ok": True, "detail": candidate_warnings})
     deterministic = _fixture_and_deterministic(bundle)
     checks.append({"name": "deterministic suite", "ok": deterministic["local_tests"]["returncode"] == 0, "detail": deterministic["local_tests"]})
-    return {"ok": all(item["ok"] for item in checks), "git": state, "checks": checks, "deterministic": deterministic}
+    return {
+        "ok": all(item["ok"] for item in checks),
+        "git": state,
+        "checks": checks,
+        "deterministic": deterministic,
+        "candidate_readiness_warnings": candidate_warnings,
+    }
 
 
 def _phase_counts(tasks: list[Any]) -> dict[str, dict[str, int]]:
@@ -928,26 +938,39 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
     try:
         phases: dict[str, dict[str, dict[str, int | bool]]] = {}
         task_rows = conn.execute(
-            "SELECT phase,platform,status,started_at,pages_visited,cards_extracted,cards_persistence_succeeded "
+            "SELECT phase,platform,search_band,status,started_at,pages_visited,cards_extracted,cards_persistence_succeeded "
             "FROM browser_search_tasks WHERE browser_run_id=? ORDER BY phase,platform,task_id",
             (run_id,),
         ).fetchall()
         for row in task_rows:
-            phase, platform = str(row[0]), str(row[1])
+            phase, platform, band = str(row[0]), str(row[1]), str(row[2] or "DEEP_TAIL")
             values = phases.setdefault(phase, {}).setdefault(platform, {
                 "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
-                "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
+                "cards_persisted": 0, "details_complete": 0, "external_tasks": 0, "bands": {},
+            })
+            band_values = values["bands"].setdefault(band, {
+                "sampled_queued": 0,
+                "started_tasks": 0,
+                "progress_tasks": 0,
+                "cards_persisted": 0,
+                "details_complete": 0,
+                "external_tasks": 0,
             })
             values["sampled_queued"] = int(values["sampled_queued"]) + 1
-            started = bool(row[3])
+            band_values["sampled_queued"] += 1
+            started = bool(row[4])
             if started:
                 values["started_tasks"] = int(values["started_tasks"]) + 1
-            progressed = int(row[4] or 0) > 0 or int(row[5] or 0) > 0
+                band_values["started_tasks"] += 1
+            progressed = int(row[5] or 0) > 0 or int(row[6] or 0) > 0
             if progressed:
                 values["progress_tasks"] = int(values["progress_tasks"]) + 1
-            values["cards_persisted"] = int(values["cards_persisted"]) + int(row[6] or 0)
-            if str(row[2]) in TERMINAL_EXTERNAL:
+                band_values["progress_tasks"] += 1
+            values["cards_persisted"] = int(values["cards_persisted"]) + int(row[7] or 0)
+            band_values["cards_persisted"] += int(row[7] or 0)
+            if str(row[3]) in TERMINAL_EXTERNAL:
                 values["external_tasks"] = int(values["external_tasks"]) + 1
+                band_values["external_tasks"] += 1
         for phase, platforms in phases.items():
             for platform, values in platforms.items():
                 values["details_complete"] = int(conn.execute(
@@ -955,6 +978,12 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
                     "WHERE r.browser_run_id=? AND t.phase=? AND t.platform=? AND r.detail_status='COMPLETE'",
                     (run_id, phase, platform),
                 ).fetchone()[0] or 0)
+                for band in values["bands"]:
+                    values["bands"][band]["details_complete"] = int(conn.execute(
+                        "SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id "
+                        "WHERE r.browser_run_id=? AND t.phase=? AND t.platform=? AND t.search_band=? AND r.detail_status='COMPLETE'",
+                        (run_id, phase, platform, band),
+                    ).fetchone()[0] or 0)
                 values["all_external_blocked"] = bool(
                     int(values["sampled_queued"]) > 0
                     and int(values["external_tasks"]) == int(values["sampled_queued"])
@@ -962,6 +991,42 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
         return phases
     finally:
         conn.close()
+
+
+def _band_execution_metrics(execution: dict[str, dict[str, dict[str, Any]]]) -> dict[str, dict[str, int]]:
+    result = {band: {
+        "sampled_queued": 0,
+        "started_tasks": 0,
+        "progress_tasks": 0,
+        "cards_persisted": 0,
+        "details_complete": 0,
+        "external_tasks": 0,
+    } for band in BANDS}
+    for platforms in execution.values():
+        for values in platforms.values():
+            for band, metrics in values.get("bands", {}).items():
+                target = result.setdefault(band, {key: 0 for key in result[BANDS[0]]})
+                for key in target:
+                    target[key] += int(metrics.get(key, 0) or 0)
+    return result
+
+
+def _band_coverage_pass(execution: dict[str, dict[str, dict[str, Any]]]) -> bool:
+    evidence = _band_execution_metrics(execution)
+    for band in BANDS:
+        values = evidence[band]
+        if int(values["progress_tasks"]) > 0:
+            continue
+        # A band blocked on every sampled task by a platform challenge/auth
+        # state is externally exempt, but an unsampled or merely queued band
+        # is not evidence of live strategy coverage.
+        if (
+            int(values["sampled_queued"]) > 0
+            and int(values["external_tasks"]) == int(values["sampled_queued"])
+        ):
+            continue
+        return False
+    return True
 
 
 def _write_report(report: dict[str, Any], report_dir: Path, *, prefix: str = "") -> None:
@@ -1067,6 +1132,11 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
     configured_tasks = compile_staged_plan(load_bundle(PROJECT_ROOT), list(PRIMARY))
     report["run_now_coverage"] = {
         "configured_production_phase_counts": _phase_counts(configured_tasks),
+        "configured_production_band_counts": {
+            phase: {band: sum(1 for task in configured_tasks if task.phase == phase and task.search_band == band) for band in BANDS}
+            for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL")
+        },
+        "configured_cadence_economics": staged_cadence_economics(configured_tasks),
         "live_sampled_phase_counts": {},
     }
     active_runs: list[tuple[ConfigBundle, int]] = []
@@ -1160,11 +1230,16 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             soak["supplemental"] = _run_supplemental(soak_bundle, int(soak["run_id"]))
         soak["sampled_phase_counts"] = _sampled_phase_counts(soak_bundle, int(soak["run_id"]))
         report["run_now_coverage"]["live_sampled_phase_counts"]["soak"] = soak["sampled_phase_counts"]
+        soak_execution = _phase_execution_metrics(soak_bundle, int(final_soak["run_id"]))
+        soak["execution_evidence"] = soak_execution
+        soak["band_execution_evidence"] = _band_execution_metrics(soak_execution)
+        soak["band_coverage_pass"] = _band_coverage_pass(soak_execution)
         soak["duration_seconds_total"] = round(time.monotonic() - soak_started, 2)
         soak["dashboard"] = _dashboard_probe(soak_bundle, soak_url)
         soak["pass"] = bool(soak["outcome"]["status"] == "stopped" and soak["resume"] and
                              soak["bridge_restart_pass"] is True and
                              _stage_pass(final_soak, bounded=True) and soak["supplemental"]["isolation_pass"] and
+                             soak["band_coverage_pass"] and
                              soak["dashboard"]["identity_ok"] and soak["dashboard"]["live_refresh_ok"]
                              and soak["dashboard"]["workspace_isolation_ok"])
         report["soak"] = soak
@@ -1206,11 +1281,14 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             sampled_phase_counts.update(_sampled_phase_counts(semi_bundle, run_id))
             execution_evidence[phase] = phase_result["execution"]
             phase_pass[phase] = bool(phase_result["pass"])
+        band_evidence = _band_execution_metrics(execution_evidence)
         semi = {
             "run_id": last_run_id,
             "phase_runs": phase_runs,
             "sampled_phase_counts": sampled_phase_counts,
             "execution_evidence": execution_evidence,
+            "band_execution_evidence": band_evidence,
+            "band_coverage_pass": _band_coverage_pass(execution_evidence),
             "phase_pass": phase_pass,
             "supplemental": supplemental,
         }
@@ -1221,6 +1299,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         semi["pass"] = bool(
             all(phase_pass.values())
             and _phase_coverage_pass(execution_evidence)
+            and _band_coverage_pass(execution_evidence)
             and semi["supplemental"]["isolation_pass"]
             and semi["dashboard"]["identity_ok"]
             and semi["dashboard"]["live_refresh_ok"]

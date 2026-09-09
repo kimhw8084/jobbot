@@ -19,6 +19,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0013_platform_state",
     "jobbot.migrations.m0014_conservative_merge_evidence",
     "jobbot.migrations.m0015_search_precision",
+    "jobbot.migrations.m0016_precision_window_stats",
 )
 
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .search_strategy import BANDS, DEFAULT_BAND_CADENCE_HOURS, band_cadence_hours, routed_resume_variant
+from .search_strategy import BANDS, DEFAULT_BAND_CADENCE_HOURS, classification_only_titles, deep_cadence_hours, routed_resume_variant
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -146,12 +146,40 @@ def validate_strategy(strategy: dict[str, Any]) -> None:
         raise ConfigError("production_max_results must be null/unlimited")
     bands = meta.get("search_bands", {})
     cadence = meta.get("search_band_cadence", {})
+    lane_titles = {" ".join(str(value).replace("—", " ").replace("–", " ").split()).casefold()
+                   for lane in lanes if lane.get("enabled", True) for value in lane.get("titles", [])}
+    configured_titles: set[str] = set()
     for band in BANDS:
         if int(cadence.get(f"{band.lower()}_hours", DEFAULT_BAND_CADENCE_HOURS[band])) <= 0:
             raise ConfigError(f"search band cadence must be positive: {band}")
         titles = bands.get(f"{band.lower()}_titles", [])
         if not isinstance(titles, list):
             raise ConfigError(f"search band title list must be an array: {band}")
+        normalized = {" ".join(str(value).replace("—", " ").replace("–", " ").split()).casefold() for value in titles}
+        overlap = configured_titles & normalized
+        if overlap:
+            raise ConfigError(f"search band title appears in multiple bands: {sorted(overlap)}")
+        configured_titles.update(normalized)
+    classification_only = classification_only_titles(strategy)
+    orphan = configured_titles - lane_titles - classification_only
+    if orphan:
+        raise ConfigError(f"search band titles are not executable or classification_only: {sorted(orphan)}")
+    if not classification_only <= configured_titles:
+        raise ConfigError("classification_only_titles must be present in an explicit band")
+    if deep_cadence_hours(strategy) <= 0:
+        raise ConfigError("deep backfill cadence must be positive")
+    for title, override in meta.get("query_text_overrides", {}).items():
+        if isinstance(override, dict):
+            variants = override.get("query_variants", [])
+            if not isinstance(variants, list):
+                raise ConfigError(f"query_variants must be an array: {title}")
+            seen_queries = set()
+            for variant in variants:
+                query = variant.get("query_text") if isinstance(variant, dict) else variant
+                normalized_query = " ".join(str(query or "").replace("—", " ").replace("–", " ").split()).casefold()
+                if not normalized_query or normalized_query in seen_queries:
+                    raise ConfigError(f"duplicate/empty executable query variant: {title}")
+                seen_queries.add(normalized_query)
     routing = meta.get("resume_routing", {})
     for lane in lanes:
         route = routing.get(str(lane.get("id")))

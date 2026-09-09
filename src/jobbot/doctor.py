@@ -8,7 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from .bridge.server import self_test as bridge_self_test
-from .candidate import Candidate
+from .candidate import Candidate, readiness_warnings
 from .config import ConfigBundle
 from .db import Database, all_migrations
 from .exports import export_all
@@ -107,4 +107,6 @@ def run(bundle: ConfigBundle) -> tuple[bool, list[Check]]:
         resume_registry_ok,
         f"{len(resumes)}/{configured} private files present; missing files are optional and never packaged",
     ))
+    warnings = readiness_warnings(bundle)
+    checks.append(Check("Candidate readiness warnings", True, " | ".join(warnings) if warnings else "none"))
     return all(check.ok for check in checks), checks

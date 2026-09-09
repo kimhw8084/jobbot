@@ -19,6 +19,7 @@ from jobbot.validator import (
     _validation_metrics,
     _scope_diagnostics,
     _phase_coverage_pass,
+    _band_coverage_pass,
     _stage_pass,
     _write_report,
     _performance_summary,
@@ -219,6 +220,24 @@ class ValidatorIntegrationTests(unittest.TestCase):
             phases[phase]["linkedin"]["started_tasks"] = 1
             phases[phase]["linkedin"]["progress_tasks"] = 1
         self.assertTrue(_phase_coverage_pass(phases))
+
+    def test_band_coverage_requires_progress_or_all_sampled_work_external(self) -> None:
+        execution = {
+            "A_FASTEST_DOOR_RECENT": {
+                "linkedin": {
+                    "bands": {
+                        "GOLD": {"sampled_queued": 1, "progress_tasks": 1},
+                        "SILVER": {"sampled_queued": 1, "progress_tasks": 1},
+                        "GROWTH": {"sampled_queued": 1, "progress_tasks": 1},
+                        "HEDGE": {"sampled_queued": 1, "progress_tasks": 1},
+                        "DEEP_TAIL": {"sampled_queued": 1, "progress_tasks": 0, "external_tasks": 1},
+                    }
+                }
+            }
+        }
+        self.assertTrue(_band_coverage_pass(execution))
+        execution["A_FASTEST_DOOR_RECENT"]["linkedin"]["bands"]["DEEP_TAIL"]["external_tasks"] = 0
+        self.assertFalse(_band_coverage_pass(execution))
 
     def test_bounded_phase_stop_has_grace_and_only_a_resumes(self) -> None:
         stopped = {"run_id": 7, "outcome": {"status": "stopped"}}

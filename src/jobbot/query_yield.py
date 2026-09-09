@@ -22,13 +22,15 @@ def ensure_definition(conn, task: Any) -> None:
     task_key = _value(task, "task_key") or f"task:{_value(task, 'task_id', '')}"
     conn.execute(
         """INSERT INTO search_definition_state(
-          platform,task_key,canonical_title,normalized_query,search_band,cadence_hours
-        ) VALUES(?,?,?,?,?,?)
+          platform,task_key,canonical_title,normalized_query,search_band,window_class,window_days,cadence_hours
+        ) VALUES(?,?,?,?,?,?,?,?)
         ON CONFLICT(platform,task_key) DO UPDATE SET
           canonical_title=excluded.canonical_title,normalized_query=excluded.normalized_query,
-          search_band=excluded.search_band,cadence_hours=excluded.cadence_hours""",
+          search_band=excluded.search_band,window_class=excluded.window_class,
+          window_days=excluded.window_days,cadence_hours=excluded.cadence_hours""",
         (_value(task, "platform"), task_key, _value(task, "canonical_title"),
          _value(task, "query_text", _value(task, "query", "")), _value(task, "search_band", "DEEP_TAIL"),
+         _value(task, "window_class", "DEEP"), int(_value(task, "window_days", _value(task, "age_days", 30)) or 30),
          int(_value(task, "cadence_hours", 168))),
     )
 
@@ -68,26 +70,43 @@ def record_task_yield(conn, task_id: int, observed_at: str | None = None) -> boo
     if task is None or task["yield_recorded_at"] or task["status"] != "exhausted":
         return False
     observed_at = observed_at or task["completed_at"] or _now()
-    rows = conn.execute(
-        """SELECT DISTINCT r.canonical_job_id job_id,j.recommendation,j.remote_gate,j.description_state
+    all_rows = conn.execute(
+        """SELECT r.canonical_job_id job_id,
+                  MAX(j.recommendation) recommendation,
+                  MAX(j.remote_gate) remote_gate,
+                  CASE
+                    WHEN MAX(CASE WHEN UPPER(COALESCE(j.description_state,''))='COMPLETE' THEN 1 ELSE 0 END)=1 THEN 'COMPLETE'
+                    WHEN MAX(CASE WHEN UPPER(COALESCE(j.description_state,''))='PARTIAL_TOO_SHORT' THEN 1 ELSE 0 END)=1 THEN 'PARTIAL_TOO_SHORT'
+                    WHEN MAX(CASE WHEN UPPER(COALESCE(j.description_state,''))='MISSING' THEN 1 ELSE 0 END)=1 THEN 'MISSING'
+                    ELSE MAX(j.description_state)
+                  END description_state
            FROM search_task_results r LEFT JOIN jobs j ON j.job_id=r.canonical_job_id
-          WHERE r.task_id=? AND r.canonical_job_id IS NOT NULL""", (task_id,)
+          WHERE r.task_id=? AND r.canonical_job_id IS NOT NULL
+          GROUP BY r.canonical_job_id""", (task_id,)
     ).fetchall()
+    rows = [row for row in all_rows if str(row["description_state"] or "").upper() == "COMPLETE"]
     card_count = int(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=?", (task_id,)).fetchone()[0] or 0)
     completed_descriptions = sum(row["description_state"] == "COMPLETE" for row in rows)
     def count(*values: str) -> int:
         return sum(str(row["recommendation"] or "") in values for row in rows)
-    browser_ms = 0
-    for event in conn.execute("SELECT payload_json FROM browser_events WHERE task_id=?", (task_id,)):
-        try:
-            payload = json.loads(event[0] or "{}")
-            browser_ms += max(0, int(float(payload.get("duration_ms", payload.get("elapsed_ms", 0)))))
-        except (TypeError, ValueError, json.JSONDecodeError):
-            continue
+    descriptions_missing = sum(str(row["description_state"] or "").upper() == "MISSING" for row in all_rows)
+    descriptions_partial = sum(str(row["description_state"] or "").upper() == "PARTIAL_TOO_SHORT" for row in all_rows)
+    detail_failed = int(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status='FAILED'", (task_id,)).fetchone()[0] or 0)
+    active_browser_ms = max(0, int(task["task_active_browser_ms"] or 0))
+    if not active_browser_ms:
+        # Compatibility for pre-v16 rows and deterministic fixtures that
+        # record the event directly. New bridge writes maintain the explicit
+        # task-level non-overlapping accumulator above.
+        for event in conn.execute("SELECT payload_json FROM browser_events WHERE task_id=? AND event_type='task_active_time'", (task_id,)):
+            try:
+                payload = json.loads(event[0] or "{}")
+                active_browser_ms += max(0, int(float(payload.get("task_active_browser_ms", 0))))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
     dates = {str(observed_at)[:10]}
     existing = conn.execute(
-        "SELECT observation_dates FROM query_yield_stats WHERE platform=? AND normalized_query=? AND search_band=?",
-        (task["platform"], str(task["query_text"]).casefold(), task["search_band"]),
+        "SELECT observation_dates FROM query_yield_stats WHERE platform=? AND normalized_query=? AND search_band=? AND window_class=? AND window_days=?",
+        (task["platform"], str(task["query_text"]).casefold(), task["search_band"], task["window_class"], task["window_days"]),
     ).fetchone()
     if existing:
         try:
@@ -96,13 +115,16 @@ def record_task_yield(conn, task_id: int, observed_at: str | None = None) -> boo
             pass
     conn.execute(
         """INSERT INTO query_yield_stats(
-          platform,normalized_query,search_band,cards_persisted,completed_descriptions,
-          apply_now,apply_volume,high_value_stretch,review,hard_reject,out_of_scope,
-          remote_pass,total_browser_ms,observation_runs,observation_dates,last_observed_at
-        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        ON CONFLICT(platform,normalized_query,search_band) DO UPDATE SET
+          platform,normalized_query,search_band,window_class,window_days,cards_persisted,completed_descriptions,
+          descriptions_missing,descriptions_partial,detail_failed,apply_now,apply_volume,high_value_stretch,review,
+          hard_reject,out_of_scope,remote_pass,task_active_browser_ms,total_browser_ms,observation_runs,observation_dates,last_observed_at
+        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(platform,normalized_query,search_band,window_class,window_days) DO UPDATE SET
           cards_persisted=query_yield_stats.cards_persisted+excluded.cards_persisted,
           completed_descriptions=query_yield_stats.completed_descriptions+excluded.completed_descriptions,
+          descriptions_missing=query_yield_stats.descriptions_missing+excluded.descriptions_missing,
+          descriptions_partial=query_yield_stats.descriptions_partial+excluded.descriptions_partial,
+          detail_failed=query_yield_stats.detail_failed+excluded.detail_failed,
           apply_now=query_yield_stats.apply_now+excluded.apply_now,
           apply_volume=query_yield_stats.apply_volume+excluded.apply_volume,
           high_value_stretch=query_yield_stats.high_value_stretch+excluded.high_value_stretch,
@@ -110,20 +132,21 @@ def record_task_yield(conn, task_id: int, observed_at: str | None = None) -> boo
           hard_reject=query_yield_stats.hard_reject+excluded.hard_reject,
           out_of_scope=query_yield_stats.out_of_scope+excluded.out_of_scope,
           remote_pass=query_yield_stats.remote_pass+excluded.remote_pass,
+          task_active_browser_ms=query_yield_stats.task_active_browser_ms+excluded.task_active_browser_ms,
           total_browser_ms=query_yield_stats.total_browser_ms+excluded.total_browser_ms,
           observation_runs=query_yield_stats.observation_runs+1,
           observation_dates=excluded.observation_dates,last_observed_at=excluded.last_observed_at""",
-        (task["platform"], str(task["query_text"]).casefold(), task["search_band"], card_count,
-         completed_descriptions, count("APPLY_NOW"), count("APPLY_VOLUME"), count("HIGH_VALUE_STRETCH"),
-         count("REVIEW", "REVIEW_REMOTE"), count("OUT_OF_SCOPE", "SKIP_HARD_GATE"), count("OUT_OF_SCOPE"),
-         sum(row["remote_gate"] == "pass" for row in rows), browser_ms, 1, json.dumps(sorted(dates)), observed_at),
+        (task["platform"], str(task["query_text"]).casefold(), task["search_band"], task["window_class"], int(task["window_days"] or 30), card_count,
+         completed_descriptions, descriptions_missing, descriptions_partial, detail_failed, count("APPLY_NOW"), count("APPLY_VOLUME"),
+         count("HIGH_VALUE_STRETCH"), count("REVIEW", "REVIEW_REMOTE"), count("SKIP_HARD_GATE"), count("OUT_OF_SCOPE"),
+         sum(row["remote_gate"] == "pass" for row in rows), active_browser_ms, active_browser_ms, 1, json.dumps(sorted(dates)), observed_at),
     )
     conn.execute("UPDATE browser_search_tasks SET yield_recorded_at=? WHERE task_id=?", (observed_at, task_id))
     return True
 
 
 def economics(conn) -> dict[str, Any]:
-    rows = conn.execute("SELECT * FROM query_yield_stats ORDER BY platform,normalized_query,search_band").fetchall()
+    rows = conn.execute("SELECT * FROM query_yield_stats ORDER BY platform,normalized_query,search_band,window_class,window_days").fetchall()
     bands = {band: {"queries": 0, "sample_eligible": 0, "apply_ready": 0, "completed_descriptions": 0} for band in BANDS}
     eligible: list[dict[str, Any]] = []
     for row in rows:
@@ -137,9 +160,10 @@ def economics(conn) -> dict[str, Any]:
         bands[band]["sample_eligible"] += int(estimate["sample_eligible"])
         if estimate["sample_eligible"]:
             eligible.append(record)
-    eligible.sort(key=lambda item: item["estimate"]["actionable_jobs_per_minute"], reverse=True)
+    eligible.sort(key=lambda item: item["estimate"]["conservative_actionable_per_minute"], reverse=True)
     def compact(row: dict[str, Any]) -> dict[str, Any]:
-        return {"platform": row["platform"], "query": row["normalized_query"], "band": row["search_band"], **row["estimate"]}
+        return {"platform": row["platform"], "query": row["normalized_query"], "band": row["search_band"],
+                "window_class": row["window_class"], "window_days": row["window_days"], **row["estimate"]}
     return {
         "bands": bands,
         "eligible_sample_minimum": ">=30 completed descriptions across >=2 run dates",

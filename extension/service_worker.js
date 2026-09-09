@@ -250,7 +250,8 @@ async function checkAuth(platform,runId,taskId){
 
 async function gatherStableSearch(tabId,initial){
   let page=initial; const merged=new Map((page.result_links||[]).map(x=>[x.source_job_id||x.url,x])); let stable=0;
-  for(let i=0;i<4&&stable<1;i++){
+  const observations=Math.max(1,Number(runtimeConfig.primary_transient_retry_limit||2)+1);
+  for(let i=0;i<observations+1&&stable<1;i++){
     const before=merged.size;
     const after=await inspectSearchScope(tabId,'JOBBOT_SCROLL_AND_INSPECT',{wait_ms:runtimeConfig.primary_scroll_wait_ms,quiet_ms:runtimeConfig.primary_dom_quiet_ms,quiet_timeout_ms:runtimeConfig.primary_dom_quiet_timeout_ms});
     if(after.challenged||after.extraction_scope_missing)return after;
@@ -275,6 +276,7 @@ async function advanceSearch(tabId,page){
 async function processTask(runId,task){
   const taskId=Number(task.task_id), platform=String(task.platform||'');
   activeTaskId=taskId;
+  const taskActiveStartedAt=Date.now();
   const maxResults=task.max_results==null?null:Number(task.max_results), windowDays=Number(task.window_days||30);
   const cp=parseCheckpoint(task.checkpoint_json); let searchUrl=normalizeSearchUrl(cp.search_url||task.search_url);
   let processed=Number(task.jobs_recorded||0), resultsSeen=Number(task.results_seen||0), pagesVisited=Number(task.pages_visited||0), detailRead=Number(task.detail_count_read||0);
@@ -394,7 +396,10 @@ async function processTask(runId,task){
       searchUrl=normalizeSearchUrl(adv.url||page.next_url||searchUrl);
     }
   }catch(e){const message=String(e?.message||e).slice(0,700);await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:message.includes('workspace_window_unavailable')?'incomplete':'failed',reason:message}).catch(()=>{});}
-  finally{activeTaskId=null; if(searchTab&&workspace)await keepBackgroundTab(searchTab.id,workspace.window_id).catch(()=>{}); if(detailTab&&workspace)await keepBackgroundTab(detailTab.id,workspace.window_id).catch(()=>{});}
+  finally{
+    await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'task_active_time',message:`task active ${Math.max(0,Date.now()-taskActiveStartedAt)}ms`,payload:{task_active_browser_ms:Math.max(0,Date.now()-taskActiveStartedAt),metric_scope:'task_attempt',attempt:Number(task.attempts||1),platform}}).catch(()=>{});
+    activeTaskId=null; if(searchTab&&workspace)await keepBackgroundTab(searchTab.id,workspace.window_id).catch(()=>{}); if(detailTab&&workspace)await keepBackgroundTab(detailTab.id,workspace.window_id).catch(()=>{});
+  }
 }
 
 async function runProduction(runId){

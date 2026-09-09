@@ -67,7 +67,7 @@ class RunNowIntegrationTests(unittest.TestCase):
             bundle = bundle_with_database(root / "jobs.sqlite3", root / "out")
             self.assertFalse(bundle.database_path.exists())
             result = preflight(bundle, ["linkedin"])
-            self.assertEqual(result.task_count, 278)
+            self.assertEqual(result.task_count, 296)
             self.assertTrue(result.database_path.is_file())
             self.assertTrue((root / "out" / "search_plan.json").is_file())
         args = parser().parse_args(["run-now", "--platform", "linkedin", "--enqueue-only", "--no-open"])
@@ -108,12 +108,12 @@ class RunNowIntegrationTests(unittest.TestCase):
             run_id = browser_tasks.enqueue_production(root, "staged")
             conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
             try:
-                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 834)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 888)
                 phases = dict(conn.execute("SELECT phase,COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? GROUP BY phase", (run_id,)).fetchall())
                 self.assertEqual(phases, {
-                    "A_FASTEST_DOOR_RECENT": 315,
+                    "A_FASTEST_DOOR_RECENT": 342,
                     "B_REMAINING_CORE_RECENT": 102,
-                    "C_DEEP_BACKFILL": 417,
+                    "C_DEEP_BACKFILL": 444,
                 })
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND max_results IS NOT NULL", (run_id,)).fetchone()[0], 0)
             finally:

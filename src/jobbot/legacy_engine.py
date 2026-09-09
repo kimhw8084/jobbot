@@ -312,6 +312,18 @@ def remote_gate(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> 
     # Unconditional role-specific onsite/hybrid requirements. Ignore a geographically conditional
     # sentence for an obviously different metro if the posting also contains explicit remote language.
     explicit_remote=phrase_hits(rcfg.get("accepted_markers",[]),full)
+    # Remote work after required in-person onboarding is a separate logistics
+    # gate.  Unknown candidate travel constraints must not be promoted to an
+    # application-ready recommendation.  A future candidate configuration may
+    # explicitly set allow_in_person_training=true.
+    training_allowed = candidate.get("allow_in_person_training") is True
+    training_pattern = re.compile(
+        r"\b(?:mandatory|required|must)\b.{0,120}\b(?:in[- ]person|onsite|on-site)\b.{0,100}\b(?:training|onboarding|orientation)\b"
+        r"|\b(?:in[- ]person|onsite|on-site)\b.{0,100}\b(?:training|onboarding|orientation)\b.{0,100}\b(?:mandatory|required|must)\b",
+        re.I | re.S,
+    )
+    if not training_allowed and training_pattern.search(full):
+        return "review", "mandatory in-person training/onboarding requires explicit logistics review", 45.0
     hard_patterns=[
         r"not (?:a )?fully remote(?: position| role)?",
         r"(?:onsite|on-site|in-person) (?:work )?(?:is )?required",

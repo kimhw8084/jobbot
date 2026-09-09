@@ -36,7 +36,9 @@ fast_first_queries = [
   "Healthcare Operations Specialist", "Patient Operations Coordinator",
   "Patient Operations Specialist", "Care Operations Coordinator", "Care Operations Specialist",
   "Healthcare Intake Specialist", "Patient Intake Specialist", "Patient Onboarding Specialist",
-  "Clinical Onboarding Specialist", "Behavioral Health Intake Coordinator"
+  "Clinical Onboarding Specialist", "Behavioral Health Intake Coordinator",
+  "Bilingual Enrollment Coordinator", "Eligibility Specialist",
+  "Patient Outreach Representative", "Member Engagement Coordinator"
 ]
 
 # Search bands are independent of career-lane allocation.  They control
@@ -50,6 +52,10 @@ growth_hours = 24
 hedge_hours = 48
 deep_tail_hours = 168
 
+[strategy.search_deep_cadence]
+# Historical deep windows repeat weekly regardless of the freshness band.
+hours = 168
+
 [strategy.search_bands]
 gold_titles = [
   "Patient Enrollment Specialist", "Patient Enrollment Coordinator",
@@ -60,10 +66,11 @@ gold_titles = [
   "Patient Registration Specialist", "Patient Registration Coordinator",
   "Patient Intake Specialist", "Healthcare Intake Specialist",
   "Patient Onboarding Specialist", "Insurance Verification Specialist",
-  "Benefits Verification Specialist", "Eligibility Specialist",
-  "Healthcare Eligibility Specialist", "Patient Services Specialist",
+  "Benefits Verification Specialist", "Eligibility Specialist", "Healthcare Eligibility Specialist",
+  "Patient Services Specialist",
   "Patient Services Coordinator", "Patient Support Specialist",
   "Patient Outreach Representative", "Member Engagement Coordinator",
+  "Behavioral Health Intake Coordinator",
   "Remote Patient Monitoring Coordinator", "RPM Coordinator"
 ]
 silver_titles = [
@@ -75,6 +82,7 @@ silver_titles = [
   "Provider Enrollment Coordinator", "Provider Enrollment Representative",
   "Credentialing Associate", "Credentialing Coordinator",
   "Patient Engagement Specialist", "Member Engagement Specialist",
+  "Member Services Specialist", "Member Support Specialist",
   "Customer Operations Coordinator — Healthcare", "Customer Operations Specialist — Healthcare"
 ]
 growth_titles = [
@@ -90,13 +98,16 @@ growth_titles = [
 # Higher-ed/EdTech and content/AI quality are deliberately protected as a
 # hedge, but run after the healthcare reservoir has had first opportunity.
 hedge_lanes = ["HIGHER_ED_EDTECH", "CONTENT_AI_QUALITY"]
+classification_only_titles = ["Healthcare Eligibility Specialist"]
 
 [strategy.query_text_overrides]
 # Keep the canonical role label for lane attribution while using natural
 # market vocabulary for generic searches.
-"Business Process Analyst — Healthcare" = { query_text = "healthcare business process analyst", aliases = ["healthcare process analyst"] }
-"Quality Operations Specialist — Healthcare" = { query_text = "healthcare quality operations specialist", aliases = ["healthcare quality specialist"] }
-"Quality Operations Coordinator — Healthcare" = { query_text = "healthcare quality operations coordinator", aliases = ["healthcare quality coordinator"] }
+"Eligibility Specialist" = { query_text = "healthcare eligibility specialist", query_variants = ["enrollment and eligibility representative"], explanatory_aliases = ["Eligibility Specialist"] }
+"Patient Outreach Representative" = { query_text = "patient outreach representative", query_variants = ["bilingual patient outreach"] }
+"Business Process Analyst — Healthcare" = { query_text = "healthcare business process analyst", query_variants = ["healthcare process analyst"] }
+"Quality Operations Specialist — Healthcare" = { query_text = "healthcare quality operations specialist", query_variants = ["healthcare quality specialist"] }
+"Quality Operations Coordinator — Healthcare" = { query_text = "healthcare quality operations coordinator", query_variants = ["healthcare quality coordinator"] }
 
 [strategy.resume_routing]
 # These lanes do not have a separate file in the candidate registry.  Route to
@@ -197,9 +208,9 @@ domain_markers = ["healthcare", "patient", "clinical", "medical", "member", "pro
 responsibility_markers = ["enrollment", "patient access", "intake", "registration", "verification", "authorization", "referral", "onboarding", "care coordination", "documentation"]
 titles = [
   "Healthcare Operations Specialist", "Healthcare Operations Coordinator", "Clinical Operations Specialist", "Clinical Operations Coordinator", "Medical Operations Specialist", "Medical Operations Coordinator", "Care Operations Specialist", "Care Operations Coordinator", "Patient Operations Specialist", "Patient Operations Coordinator",
-  "Patient Enrollment Specialist", "Patient Enrollment Coordinator", "Healthcare Enrollment Specialist", "Healthcare Enrollment Coordinator", "Member Enrollment Specialist", "Member Enrollment Coordinator", "Provider Enrollment Specialist", "Provider Enrollment Coordinator", "Provider Enrollment Representative", "Payer Enrollment Specialist",
+  "Patient Enrollment Specialist", "Patient Enrollment Coordinator", "Healthcare Enrollment Specialist", "Healthcare Enrollment Coordinator", "Member Enrollment Specialist", "Member Enrollment Coordinator", "Bilingual Enrollment Coordinator", "Provider Enrollment Specialist", "Provider Enrollment Coordinator", "Provider Enrollment Representative", "Payer Enrollment Specialist",
   "Patient Access Specialist", "Patient Access Representative", "Patient Access Associate", "Patient Registration Specialist", "Patient Registration Coordinator",
-  "Patient Engagement Specialist", "Member Engagement Specialist", "Patient Support Specialist", "Patient Services Specialist", "Patient Services Coordinator", "Member Support Specialist", "Member Services Specialist",
+  "Patient Engagement Specialist", "Member Engagement Specialist", "Patient Support Specialist", "Patient Services Specialist", "Patient Services Coordinator", "Member Support Specialist", "Member Services Specialist", "Member Engagement Coordinator", "Patient Outreach Representative", "Eligibility Specialist",
   "Patient Onboarding Specialist", "Clinical Onboarding Specialist", "Healthcare Intake Specialist", "Patient Intake Specialist", "Behavioral Health Intake Coordinator",
   "Insurance Verification Specialist", "Benefits Verification Specialist", "Authorization Specialist", "Prior Authorization Specialist", "Authorization & Verification Specialist", "Referral Coordinator", "Referral Specialist",
   "Credentialing Associate", "Credentialing Specialist", "Credentialing Coordinator", "Credentialing & Enrollment Coordinator",
@@ -224,7 +235,7 @@ resume_variant = "healthcare_qa"
 generic_title_patterns = ["medical records specialist", "health information specialist", "documentation specialist", "quality coordinator", "quality specialist"]
 domain_markers = ["healthcare", "patient", "clinical", "medical", "health information", "medical records", "HIPAA", "PHI"]
 responsibility_markers = ["records", "release of information", "documentation", "quality review", "quality improvement", "audit", "data accuracy", "compliance"]
-titles = ["Medical Records Specialist", "Medical Records Coordinator", "ROI Medical Records Specialist", "Health Information Specialist", "Health Information Coordinator", "Healthcare Documentation Specialist", "Clinical Documentation Specialist", "Documentation Quality Specialist", "Documentation Coordinator — Healthcare", "Quality Improvement Coordinator", "Quality Coordinator — Healthcare", "Healthcare Quality Specialist", "Quality Management Specialist — Healthcare"]
+titles = ["Medical Records Specialist", "Medical Records Coordinator", "ROI Medical Records Specialist", "Health Information Specialist", "Health Information Coordinator", "Health Information Operations Coordinator", "Healthcare Documentation Specialist", "Clinical Documentation Specialist", "Documentation Quality Specialist", "Documentation Coordinator — Healthcare", "Quality Improvement Coordinator", "Quality Coordinator — Healthcare", "Healthcare Quality Specialist", "Quality Management Specialist — Healthcare"]
 
 [[lanes]]
 id = "HEALTHCARE_QUALITY_DATA"
@@ -238,7 +249,7 @@ profile = "P1-healthcare-quality-data"
 domain = "healthcare"
 fast_days = 7
 deep_days = 30
-resume_variant = "healthcare_data_quality"
+resume_variant = "healthcare_qa"
 generic_title_patterns = ["quality analyst", "quality specialist", "data quality specialist", "operations analyst", "health information analyst", "data operations specialist"]
 domain_markers = ["healthcare", "patient", "clinical", "medical", "provider", "payer", "health plan", "EHR", "EMR", "HIPAA", "PHI"]
 responsibility_markers = ["data quality", "quality improvement", "reporting", "analytics", "audit", "process improvement", "data validation", "operations"]
@@ -257,7 +268,7 @@ profile = "P1-healthcare-implementation-project"
 domain = "healthcare"
 fast_days = 7
 deep_days = 30
-resume_variant = "healthcare_data_quality"
+resume_variant = "healthcare_qa"
 generic_title_patterns = ["implementation coordinator", "implementation specialist", "project coordinator", "program coordinator"]
 domain_markers = ["healthcare", "healthtech", "patient", "clinical", "medical", "provider", "payer", "health plan", "telehealth", "EHR", "EMR"]
 responsibility_markers = ["implementation", "onboarding", "configuration", "go-live", "project", "workflow", "training", "integration", "program operations"]
@@ -311,7 +322,7 @@ profile = "P1-transferable-data-ops"
 domain = "transferable"
 fast_days = 7
 deep_days = 30
-resume_variant = "healthcare_data_quality"
+resume_variant = "healthcare_qa"
 activation = "qualified_active_unapplied_reservoir_below_minimum"
 generic_title_patterns = ["data operations specialist", "data quality specialist", "data integrity specialist", "data validation specialist", "operations data specialist"]
 domain_markers = []

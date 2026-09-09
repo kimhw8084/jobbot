@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .config import ConfigBundle
-from .search_strategy import BAND_ORDER, band_cadence_hours, canonical_band_counts, query_definition, search_band
+from .search_strategy import BAND_ORDER, canonical_band_counts, classification_only_titles, query_definition, search_band, window_cadence_hours
 
 
 PLATFORM_ORDER = {"linkedin": 0, "indeed": 1, "glassdoor": 2}
@@ -39,7 +39,9 @@ class SearchTask:
     canonical_title: str = ""
     query_text: str = ""
     aliases: tuple[str, ...] = ()
+    query_variant: str = "primary"
     search_band: str = "DEEP_TAIL"
+    window_class: str = "DEEP"
     cadence_hours: int = 168
 
 
@@ -92,6 +94,7 @@ def compile_plan(
     seen: set[tuple[str, str, int, bool]] = set()
     tasks: list[SearchTask] = []
     execution_cfg = bundle.strategy.get("strategy", {}).get("execution", {})
+    classification_only = classification_only_titles(bundle.strategy)
     fast_prefix = {
         normalize_search_query(title): index
         for index, title in enumerate(execution_cfg.get("fast_first_queries", []), start=1)
@@ -107,27 +110,54 @@ def compile_plan(
         for title in lane.get("titles", []):
             definition = query_definition(str(title), bundle.strategy)
             canonical_title = str(definition["canonical_title"])
+            if normalize_search_query(canonical_title) in classification_only:
+                continue
             query = normalize_search_query(str(definition["query_text"]))
             band = search_band(canonical_title, str(lane["id"]), bundle.strategy)
-            cadence_hours = band_cadence_hours(bundle.strategy, band)
+            window_class = "RECENT" if mode == "fast" else "DEEP"
+            cadence_hours = window_cadence_hours(bundle.strategy, band, window_class)
             for platform in selected:
-                identity = (platform, query.casefold(), age_days, True)
-                if identity in seen:
-                    continue
-                seen.add(identity)
-                tasks.append(SearchTask(
-                    task_key=_task_key(platform, query, age_days), platform=platform,
-                    lane=str(lane["id"]), lane_label=str(lane["label"]),
-                    allocation_percent=int(lane["allocation_percent"]), profile=str(lane["profile"]),
-                    priority=int(lane["priority"]), query=query, remote_required=True,
-                    execution_rank=(fast_prefix[query] if query in fast_prefix else 1000 + BAND_ORDER[band] * 10000 + int(lane.get("execution_rank", 99)) * 100 + len(tasks)),
-                    age_days=age_days, sort_mode="newest", enabled=True,
-                    resume_variant=str(bundle.strategy.get("strategy", {}).get("resume_routing", {}).get(str(lane["id"]), {}).get("variant", lane["resume_variant"])) if isinstance(bundle.strategy.get("strategy", {}).get("resume_routing", {}).get(str(lane["id"]), {}), dict) else str(lane["resume_variant"]),
-                    search_url=build_search_url(platform, query, age_days), phase=phase_name, max_results=None,
-                    canonical_title=canonical_title, query_text=query, aliases=tuple(definition["aliases"]),
-                    search_band=band, cadence_hours=cadence_hours,
-                ))
-    tasks.sort(key=lambda x: (PLATFORM_ORDER[x.platform], x.execution_rank, BAND_ORDER.get(x.search_band, 99), x.priority, x.lane, x.query.casefold(), x.age_days))
+                executable_queries = [("primary", query)] + [
+                    (str(item["id"]), str(item["query_text"])) for item in definition.get("query_variants", ())
+                ]
+                for query_variant, variant_query in executable_queries:
+                    identity = (platform, variant_query.casefold(), age_days, True)
+                    if identity in seen:
+                        continue
+                    seen.add(identity)
+                    prefix_rank = fast_prefix.get(variant_query, fast_prefix.get(normalize_search_query(canonical_title)))
+                    tasks.append(SearchTask(
+                        task_key=_task_key(platform, variant_query, age_days), platform=platform,
+                        lane=str(lane["id"]), lane_label=str(lane["label"]),
+                        allocation_percent=int(lane["allocation_percent"]), profile=str(lane["profile"]),
+                        priority=int(lane["priority"]), query=variant_query, remote_required=True,
+                        execution_rank=(prefix_rank if prefix_rank is not None else 1000 + BAND_ORDER[band] * 10000 + int(lane.get("execution_rank", 99)) * 100 + len(tasks)),
+                        age_days=age_days, sort_mode="newest", enabled=True,
+                        resume_variant=str(bundle.strategy.get("strategy", {}).get("resume_routing", {}).get(str(lane["id"]), {}).get("variant", lane["resume_variant"])) if isinstance(bundle.strategy.get("strategy", {}).get("resume_routing", {}).get(str(lane["id"]), {}), dict) else str(lane["resume_variant"]),
+                        search_url=build_search_url(platform, variant_query, age_days), phase=phase_name, max_results=None,
+                        canonical_title=canonical_title, query_text=variant_query, aliases=tuple(definition["aliases"]),
+                        query_variant=query_variant, search_band=band, window_class=window_class, cadence_hours=cadence_hours,
+                    ))
+    tasks.sort(key=lambda x: (PLATFORM_ORDER[x.platform], 0 if x.window_class == "RECENT" else 1, BAND_ORDER.get(x.search_band, 99), x.execution_rank, x.priority, x.lane, x.query.casefold(), x.age_days))
+    # The complete deep compilation is the authoritative executable-universe
+    # check.  Fast/phase subsets intentionally omit lower-priority lanes, but
+    # a configured band title must never disappear because an alias or query
+    # dedupe silently absorbed it.
+    if mode == "deep" and priority_min == 0 and priority_max is None and not include_fallback:
+        configured_titles = {
+            normalize_search_query(title)
+            for band in BAND_ORDER
+            for title in bundle.strategy.get("strategy", {}).get("search_bands", {}).get(
+                f"{band.lower()}_titles", []
+            )
+        }
+        compiled_titles = {normalize_search_query(task.canonical_title) for task in tasks}
+        missing = configured_titles - compiled_titles - classification_only
+        if missing:
+            raise ValueError(
+                "configured search-band titles are not executable or classification_only: "
+                + ", ".join(sorted(missing))
+            )
     return tasks
 
 
@@ -150,7 +180,7 @@ def compile_staged_plan(bundle: ConfigBundle, platforms: Iterable[str] | None = 
     selected_phases = set(phases or phase_order)
     return sorted(
         [task for task in phase_a + phase_b + phase_c if task.phase in selected_phases],
-        key=lambda task: (phase_order[task.phase], PLATFORM_ORDER[task.platform], task.execution_rank, task.priority, task.lane, task.query.casefold(), task.age_days),
+        key=lambda task: (phase_order[task.phase], PLATFORM_ORDER[task.platform], 0 if task.window_class == "RECENT" else 1, BAND_ORDER.get(task.search_band, 99), task.execution_rank, task.priority, task.lane, task.query.casefold(), task.age_days),
     )
 
 
@@ -189,9 +219,9 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
             writer.writerow(row)
     rows = "".join(
         "<tr>" + "".join(f"<td>{html.escape(str(value if value is not None else 'UNLIMITED'))}</td>" for value in (
-            task.phase, task.lane, f"{task.allocation_percent}%", task.profile, task.platform, task.query,
-            "Remote" if task.remote_required else "Any", f"{task.age_days} days", task.priority,
-            task.execution_rank, task.search_band, task.canonical_title, task.query_text,
+            task.phase, task.lane, f"{task.allocation_percent}%", task.profile, task.platform, task.canonical_title, task.query,
+            task.search_band, task.window_class, task.query_variant, "Remote" if task.remote_required else "Any", f"{task.age_days} days", task.priority,
+            task.execution_rank,
             "enabled" if task.enabled else "disabled", task.resume_variant, task.cadence_hours, task.max_results,
         )) + "</tr>" for task in tasks
     )
@@ -202,7 +232,7 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
     )
     html_path.write_text(f"""<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>JobBot Search Plan</title>
 <style>body{{font:14px system-ui;margin:24px;color:#14213d}}h1{{margin-bottom:4px}}.summary{{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}}.pill{{background:#edf4ff;border-radius:999px;padding:8px 12px}}table{{border-collapse:collapse;width:100%}}th,td{{border-bottom:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}}th{{position:sticky;top:0;background:#fff}}tr:nth-child(even){{background:#fafafa}}</style></head><body><h1>JobBot v3.2 Search Plan — {html.escape(mode)}</h1><p>Every production task is remote-only and unlimited by result count. Total tasks: <strong>{counts['total']}</strong>.</p><div class=\"summary\">{platform_pills}</div>
-<table><thead><tr><th>Phase</th><th>Lane</th><th>Allocation</th><th>Profile</th><th>Platform</th><th>Canonical role</th><th>Exact query</th><th>Band</th><th>Condition</th><th>Age</th><th>Priority</th><th>Execution rank</th><th>State</th><th>Resume</th><th>Cadence hours</th><th>Max results</th></tr></thead><tbody>{rows}</tbody></table></body></html>""", encoding="utf-8")
+<table><thead><tr><th>Phase</th><th>Lane</th><th>Allocation</th><th>Profile</th><th>Platform</th><th>Canonical role</th><th>Exact query</th><th>Band</th><th>Window</th><th>Variant</th><th>Condition</th><th>Age</th><th>Priority</th><th>Execution rank</th><th>State</th><th>Resume</th><th>Cadence hours</th><th>Max results</th></tr></thead><tbody>{rows}</tbody></table></body></html>""", encoding="utf-8")
     return {"json": json_path, "csv": csv_path, "html": html_path}
 
 

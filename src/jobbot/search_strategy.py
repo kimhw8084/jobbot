@@ -20,6 +20,7 @@ DEFAULT_BAND_CADENCE_HOURS = {
     "HEDGE": 48,
     "DEEP_TAIL": 168,
 }
+DEFAULT_DEEP_CADENCE_HOURS = 168
 
 
 def _norm(value: Any) -> str:
@@ -35,6 +36,21 @@ def band_cadence_hours(strategy: Mapping[str, Any], band: str) -> int:
     configured = strategy.get("strategy", {}).get("search_band_cadence", {})
     value = configured.get(f"{band.lower()}_hours", DEFAULT_BAND_CADENCE_HOURS[band])
     return max(1, int(value))
+
+
+def deep_cadence_hours(strategy: Mapping[str, Any]) -> int:
+    configured = strategy.get("strategy", {}).get("search_deep_cadence", {})
+    return max(1, int(configured.get("hours", DEFAULT_DEEP_CADENCE_HOURS)))
+
+
+def window_cadence_hours(strategy: Mapping[str, Any], band: str, window_class: str) -> int:
+    """Return cadence for one concrete freshness window, not just a title band."""
+    return deep_cadence_hours(strategy) if str(window_class).upper() == "DEEP" else band_cadence_hours(strategy, band)
+
+
+def classification_only_titles(strategy: Mapping[str, Any]) -> set[str]:
+    configured = strategy.get("strategy", {}).get("search_bands", {})
+    return {_norm(value) for value in configured.get("classification_only_titles", []) if _norm(value)}
 
 
 def search_band(title: str, lane_id: str = "", strategy: Mapping[str, Any] | None = None) -> str:
@@ -73,19 +89,43 @@ def routed_resume_variant(strategy: Mapping[str, Any], lane: Mapping[str, Any]) 
 
 
 def query_definition(title: str, strategy: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """Resolve canonical title, actual query text, and optional aliases."""
+    """Resolve a canonical role and its explicit executable query variants."""
     strategy = strategy or {}
     canonical = str(title).strip()
     overrides = strategy.get("strategy", {}).get("query_text_overrides", {})
     override = overrides.get(canonical) or overrides.get(_norm(canonical))
+    query_variants: list[dict[str, str]] = []
+    explanatory_aliases: list[str] = []
     if isinstance(override, str):
-        query_text, aliases = override, []
+        query_text = override
     elif isinstance(override, Mapping):
         query_text = str(override.get("query_text") or canonical)
-        aliases = [str(item) for item in override.get("aliases", []) if str(item).strip()]
+        explanatory_aliases = [str(item) for item in override.get("explanatory_aliases", []) if str(item).strip()]
+        for index, item in enumerate(override.get("query_variants", []), start=1):
+            if isinstance(item, Mapping):
+                variant_id = str(item.get("id") or f"variant_{index}").strip()
+                variant_query = str(item.get("query_text") or "").strip()
+            else:
+                variant_id = f"variant_{index}"
+                variant_query = str(item).strip()
+            if variant_query:
+                query_variants.append({"id": variant_id, "query_text": variant_query})
     else:
-        query_text, aliases = canonical, []
-    return {"canonical_title": canonical, "query_text": _norm(query_text), "aliases": tuple(aliases)}
+        query_text = canonical
+    primary = _norm(query_text)
+    deduped: list[dict[str, str]] = []
+    seen = {primary}
+    for variant in query_variants:
+        normalized = _norm(variant["query_text"])
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            deduped.append({"id": variant["id"], "query_text": normalized})
+    return {
+        "canonical_title": canonical,
+        "query_text": primary,
+        "aliases": tuple(explanatory_aliases),
+        "query_variants": tuple(deduped),
+    }
 
 
 def canonical_band_counts(tasks: list[Any] | tuple[Any, ...] | Any) -> dict[str, int]:
@@ -98,13 +138,10 @@ def canonical_band_counts(tasks: list[Any] | tuple[Any, ...] | Any) -> dict[str,
 
 def cadence_economics(counts: Mapping[str, int], *, baseline_recent_hours: int = 6,
                       baseline_deep_hours: int = 24) -> dict[str, Any]:
-    """Estimate steady-state definition starts without reducing coverage."""
+    """Compatibility helper for one definition set; staged plans use the richer helper below."""
     baseline_daily = sum(int(counts.get(band, 0)) / baseline_recent_hours * 24 for band in BANDS)
     baseline_daily += sum(int(counts.get(band, 0)) / baseline_deep_hours * 24 for band in BANDS)
-    band_daily = {
-        band: (int(counts.get(band, 0)) / DEFAULT_BAND_CADENCE_HOURS[band] * 24)
-        for band in BANDS
-    }
+    band_daily = {band: int(counts.get(band, 0)) / DEFAULT_BAND_CADENCE_HOURS[band] * 24 for band in BANDS}
     new_daily = sum(band_daily.values())
     reduction = 0.0 if baseline_daily <= 0 else max(0.0, 1.0 - new_daily / baseline_daily)
     return {
@@ -112,6 +149,36 @@ def cadence_economics(counts: Mapping[str, int], *, baseline_recent_hours: int =
         "band_definitions_per_day": {key: round(value, 2) for key, value in band_daily.items()},
         "steady_state_definitions_per_day": round(new_daily, 2),
         "theoretical_reduction_percent": round(reduction * 100, 1),
+        "coverage_preserved": True,
+    }
+
+
+def staged_cadence_economics(tasks: list[Any] | tuple[Any, ...], *, baseline_recent_hours: int = 6,
+                             baseline_deep_hours: int = 24) -> dict[str, Any]:
+    """Calculate starts/day from the actual recent+deep compiled plan."""
+    counts = {"RECENT": {band: 0 for band in BANDS}, "DEEP": {band: 0 for band in BANDS}}
+    for task in tasks:
+        window = str(getattr(task, "window_class", "DEEP") or "DEEP").upper()
+        band = str(getattr(task, "search_band", "DEEP_TAIL") or "DEEP_TAIL").upper()
+        counts.setdefault(window, {name: 0 for name in BANDS})[band if band in BANDS else "DEEP_TAIL"] += 1
+    old = {
+        "RECENT": sum(value / baseline_recent_hours * 24 for value in counts["RECENT"].values()),
+        "DEEP": sum(value / baseline_deep_hours * 24 for value in counts["DEEP"].values()),
+    }
+    new_by_band = {
+        "RECENT": {band: counts["RECENT"][band] / DEFAULT_BAND_CADENCE_HOURS[band] * 24 for band in BANDS},
+        "DEEP": {band: counts["DEEP"][band] / DEFAULT_DEEP_CADENCE_HOURS * 24 for band in BANDS},
+    }
+    new = sum(new_by_band[window][band] for window in new_by_band for band in BANDS)
+    old_total = sum(old.values())
+    return {
+        "definition_counts": counts,
+        "old_recent_starts_per_day": round(old["RECENT"], 2),
+        "old_deep_starts_per_day": round(old["DEEP"], 2),
+        "new_recent_starts_per_day_by_band": {band: round(value, 2) for band, value in new_by_band["RECENT"].items()},
+        "new_deep_starts_per_day_by_band": {band: round(value, 2) for band, value in new_by_band["DEEP"].items()},
+        "new_total_starts_per_day": round(new, 2),
+        "actual_reduction_percent": round(max(0.0, 1.0 - new / old_total) * 100, 1) if old_total else 0.0,
         "coverage_preserved": True,
     }
 
@@ -181,13 +248,18 @@ def query_yield_estimate(row: Mapping[str, Any], *, minimum_descriptions: int = 
     completed = int(row.get("completed_descriptions", 0) or 0)
     ready = int(row.get("apply_now", 0) or 0) + int(row.get("apply_volume", 0) or 0)
     eligible = yield_is_eligible(row, minimum_descriptions=minimum_descriptions, minimum_run_dates=minimum_run_dates)
-    minutes = max(0.001, float(row.get("total_browser_ms", 0) or 0) / 60000.0)
+    active_ms = int(row.get("task_active_browser_ms", 0) or 0)
+    minutes = max(0.001, active_ms / 60000.0)
+    conservative = (wilson_lower_bound(ready, completed) * completed / minutes) if active_ms and completed else 0.0
     return {
         "apply_ready": ready,
         "apply_ready_rate": round(ready / completed, 4) if completed else 0.0,
         "apply_now_rate": round(int(row.get("apply_now", 0) or 0) / completed, 4) if completed else 0.0,
         "wilson_lower_bound": round(wilson_lower_bound(ready, completed), 4),
-        "actionable_jobs_per_minute": round(ready / minutes, 3) if row.get("total_browser_ms") else 0.0,
+        "actionable_jobs_per_minute": round(ready / minutes, 3) if active_ms else 0.0,
+        "conservative_actionable_per_minute": round(conservative, 3),
+        "task_active_browser_ms": active_ms,
+        "average_active_minutes_per_completed_description": round(minutes / completed, 3) if completed and active_ms else 0.0,
         "sample_eligible": eligible,
         "sample_requirement": f">={minimum_descriptions} completed descriptions across >={minimum_run_dates} run dates",
     }

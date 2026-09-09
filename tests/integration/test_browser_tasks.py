@@ -52,6 +52,14 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 self.assertTrue(rpc.handle({"action": "begin_run", "run_id": run_id})["ok"])
                 task = rpc.handle({"action": "next_task", "run_id": run_id, "worker_id": "test"})["task"]
                 task_id = int(task["task_id"])
+                self.assertTrue(rpc.handle({
+                    "action": "browser_event", "run_id": run_id, "task_id": task_id,
+                    "event_type": "task_active_time", "message": "active",
+                    "payload": {"metric_scope": "task_attempt", "task_active_browser_ms": 1234},
+                })["ok"])
+                active_conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+                self.assertEqual(active_conn.execute("SELECT task_active_browser_ms FROM browser_search_tasks WHERE task_id=?", (task_id,)).fetchone()[0], 1234)
+                active_conn.close()
                 result = {"action": "record_result", "run_id": run_id, "task_id": task_id, "source_site": "indeed", "source_job_id": "write-1", "source_url": "https://www.indeed.com/viewjob?jk=write-1"}
                 self.assertFalse(rpc.handle(result)["duplicate"])
                 db = root / "data" / "jobs.sqlite3"; conn = sqlite3.connect(db)

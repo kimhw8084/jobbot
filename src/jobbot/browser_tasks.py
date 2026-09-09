@@ -130,7 +130,8 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         ensure_definition(cadence_conn, {
             "platform": task.platform, "task_key": task.task_key,
             "canonical_title": task.canonical_title, "query_text": task.query_text or task.query,
-            "search_band": task.search_band, "cadence_hours": task.cadence_hours,
+            "search_band": task.search_band, "window_class": task.window_class, "window_days": task.age_days,
+            "cadence_hours": task.cadence_hours,
         })
     cadence_conn.commit()
     cadence_conn.close()
@@ -141,7 +142,8 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         "career_lane": task.lane, "resume_variant": task.resume_variant,
         "priority": task.priority, "search_url": task.search_url,
         "execution_rank": task.execution_rank, "phase": task.phase,
-        "search_band": task.search_band, "cadence_hours": task.cadence_hours,
+        "search_band": task.search_band, "query_variant": task.query_variant,
+        "window_class": task.window_class, "window_days": task.age_days, "cadence_hours": task.cadence_hours,
     } for task in planned]
     store = j.PrecisionStore(db); init_browser_schema(store.conn)
     now = j.now_iso()
@@ -161,10 +163,10 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,canonical_title,search_band,cadence_hours
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,canonical_title,search_band,query_variant,window_class,cadence_hours
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, t["platform"], t["query_text"], 1, t["window_days"], "date", t["search_url"], None, "queued", now,
-             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"], t["canonical_title"], t["search_band"], t["cadence_hours"]),
+             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"], t["canonical_title"], t["search_band"], t["query_variant"], t["window_class"], t["cadence_hours"]),
         )
     store.conn.commit(); store.close()
     return rid
@@ -199,12 +201,22 @@ def enqueue_validation_sample(
     planned = compile_staged_plan(active_bundle, chosen, phases)
     selected: list[Any] = []
     counts: dict[tuple[str, str], int] = {}
+    # Validation samples are intentionally band-stratified so a short phase
+    # window proves strategy execution, not merely that the queue was built.
+    groups: dict[tuple[str, str, str], list[Any]] = {}
     for task in planned:
-        key = (task.phase, task.platform)
-        if counts.get(key, 0) >= per_phase_per_platform:
-            continue
-        selected.append(task)
-        counts[key] = counts.get(key, 0) + 1
+        groups.setdefault((task.phase, task.platform, task.search_band), []).append(task)
+    keys = sorted(groups, key=lambda value: (value[0], value[1], {"GOLD": 0, "SILVER": 1, "GROWTH": 2, "HEDGE": 3, "DEEP_TAIL": 4}.get(value[2], 9)))
+    picked = True
+    while picked:
+        picked = False
+        for phase, platform, band in keys:
+            key = (phase, platform)
+            if counts.get(key, 0) >= per_phase_per_platform or not groups[(phase, platform, band)]:
+                continue
+            selected.append(groups[(phase, platform, band)].pop(0))
+            counts[key] = counts.get(key, 0) + 1
+            picked = True
     db = active_bundle.database_path
     Database(active_bundle).migrate()
     store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
@@ -223,10 +235,10 @@ def enqueue_validation_sample(
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,canonical_title,search_band,cadence_hours
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,canonical_title,search_band,query_variant,window_class,cadence_hours
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, task.platform, task.query_text or task.query, 1, task.age_days, task.sort_mode, task.search_url, None, "queued", now,
-             task.profile, task.lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase, task.canonical_title, task.search_band, task.cadence_hours),
+             task.profile, task.lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase, task.canonical_title, task.search_band, task.query_variant, task.window_class, task.cadence_hours),
         )
     store.conn.commit(); store.close()
     return rid

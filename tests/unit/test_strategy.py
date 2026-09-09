@@ -20,7 +20,7 @@ class StrategyTests(unittest.TestCase):
             "HIGHER_ED_EDTECH": 15, "CONTENT_AI_QUALITY": 5,
         })
         self.assertEqual({k: len(v["titles"]) for k, v in lanes.items()}, {
-            "HEALTHCARE_OPS_ACCESS": 62, "HEALTHCARE_INFO_QA": 13,
+            "HEALTHCARE_OPS_ACCESS": 66, "HEALTHCARE_INFO_QA": 14,
             "HEALTHCARE_QUALITY_DATA": 16, "HEALTHCARE_IMPLEMENTATION": 14,
             "HIGHER_ED_EDTECH": 24, "CONTENT_AI_QUALITY": 10,
         })
@@ -40,9 +40,9 @@ class StrategyTests(unittest.TestCase):
     def test_plan_counts_and_no_production_caps(self) -> None:
         deep = compile_plan(self.bundle, "deep")
         fast = compile_plan(self.bundle, "fast")
-        self.assertEqual(plan_counts(deep)["total"], 417)
-        self.assertEqual(plan_counts(fast)["total"], 315)
-        self.assertEqual(plan_counts(deep)["by_platform"], {"linkedin": 139, "indeed": 139, "glassdoor": 139})
+        self.assertEqual(plan_counts(deep)["total"], 444)
+        self.assertEqual(plan_counts(fast)["total"], 342)
+        self.assertEqual(plan_counts(deep)["by_platform"], {"linkedin": 148, "indeed": 148, "glassdoor": 148})
         identities = {(x.platform, x.query.casefold(), x.age_days, x.remote_required) for x in deep}
         self.assertEqual(len(identities), len(deep))
         self.assertTrue(all(x.max_results is None and x.remote_required for x in deep + fast))
@@ -80,22 +80,22 @@ class StrategyTests(unittest.TestCase):
         first = [task.query for task in compile_plan(self.bundle, "fast", ["linkedin"])[:6]]
         self.assertEqual(first, [
             "patient enrollment specialist", "patient access specialist",
-            "healthcare operations coordinator", "patient enrollment coordinator",
-            "healthcare enrollment specialist", "healthcare enrollment coordinator",
+            "patient enrollment coordinator", "healthcare enrollment specialist",
+            "healthcare enrollment coordinator", "member enrollment specialist",
         ])
         self.assertNotEqual(first[0], "clinical documentation specialist")
 
     def test_staged_plan_covers_recent_and_deep_core_universe(self) -> None:
         staged = compile_staged_plan(self.bundle)
-        self.assertEqual(plan_counts(staged)["by_platform"], {"linkedin": 278, "indeed": 278, "glassdoor": 278})
+        self.assertEqual(plan_counts(staged)["by_platform"], {"linkedin": 296, "indeed": 296, "glassdoor": 296})
         self.assertEqual({task.phase for task in staged}, {
             "A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL",
         })
         for platform in ("linkedin", "indeed", "glassdoor"):
             phases = [task for task in staged if task.platform == platform]
-            self.assertEqual(len([task for task in phases if task.phase == "A_FASTEST_DOOR_RECENT"]), 105)
+            self.assertEqual(len([task for task in phases if task.phase == "A_FASTEST_DOOR_RECENT"]), 114)
             self.assertEqual(len([task for task in phases if task.phase == "B_REMAINING_CORE_RECENT"]), 34)
-            self.assertEqual(len([task for task in phases if task.phase == "C_DEEP_BACKFILL"]), 139)
+            self.assertEqual(len([task for task in phases if task.phase == "C_DEEP_BACKFILL"]), 148)
         self.assertTrue(all(task.max_results is None for task in staged))
 
     def test_strategy_validator_rejects_allocation_drift(self) -> None:
