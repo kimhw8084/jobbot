@@ -5,6 +5,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from .query_yield import economics
+
 
 TASK_STATUSES = (
     "queued", "running", "exhausted", "incomplete", "challenged",
@@ -50,6 +52,8 @@ def _platforms(conn: sqlite3.Connection, run_id: int | None, include_all: bool =
         })
         phase_rows = conn.execute(f"SELECT COALESCE(t.phase,'UNSPECIFIED') phase,COUNT(*) n FROM browser_search_tasks t{where} AND t.platform=? GROUP BY t.phase ORDER BY t.phase", (*args, platform)).fetchall()
         values["phases"] = {str(row["phase"]): int(row["n"]) for row in phase_rows}
+        band_rows = conn.execute(f"SELECT COALESCE(t.search_band,'DEEP_TAIL') band,COUNT(*) n FROM browser_search_tasks t{where} AND t.platform=? GROUP BY t.search_band ORDER BY t.search_band", (*args, platform)).fetchall()
+        values["bands"] = {str(row["band"]): int(row["n"]) for row in band_rows}
         result[platform] = values
     return result
 
@@ -137,6 +141,7 @@ def collect(conn: sqlite3.Connection, run_id: int | None = None, strategy: dict[
         "platforms": platforms,
         "global": _global(conn, current_id, strategy),
         "cumulative": {"global": cumulative, "platforms": _platforms(conn, None, include_all=True)},
+        "search_economics": economics(conn),
         "reconciliation": reconciliation,
         "diagnosis": diagnosis,
     }
@@ -145,7 +150,7 @@ def collect(conn: sqlite3.Connection, run_id: int | None = None, strategy: dict[
 def render_terminal(audit: dict[str, Any]) -> str:
     lines = ["JOBBOT RETRIEVAL AUDIT", f"CURRENT RUN: {audit.get('current_run_id') or 'none'}", f"TERMINAL: {audit.get('terminal_classification')}", ""]
     for platform, values in audit["platforms"].items():
-        lines.append(f"{platform.upper()}: planned={values['planned']} queued={values['queued']} running={values['running']} exhausted={values['exhausted']} incomplete={values['incomplete']} challenged={values['challenged']} auth_required={values['auth_required']} deferred_by_platform={values['deferred_by_platform']} failed={values['failed']} stopped={values['stopped']} unexplained={values['unexplained']} extracted={values['cards_extracted']} attempted={values['cards_persistence_attempted']} persisted={values['cards_persisted']} persistence_failed={values['cards_persistence_failed']} duplicates={values['duplicate_sightings']} phases={values['phases']}")
+        lines.append(f"{platform.upper()}: planned={values['planned']} queued={values['queued']} running={values['running']} exhausted={values['exhausted']} incomplete={values['incomplete']} challenged={values['challenged']} auth_required={values['auth_required']} deferred_by_platform={values['deferred_by_platform']} failed={values['failed']} stopped={values['stopped']} unexplained={values['unexplained']} extracted={values['cards_extracted']} attempted={values['cards_persistence_attempted']} persisted={values['cards_persisted']} persistence_failed={values['cards_persistence_failed']} duplicates={values['duplicate_sightings']} phases={values['phases']} bands={values['bands']}")
     lines.extend(["", *[f"{key}={value}" for key, value in audit["global"].items()], f"RECONCILIATION_OK={audit['reconciliation']['ok']}"])
     if audit["diagnosis"]:
         lines.extend(["", "DIAGNOSIS:", *[f"- {value}" for value in audit["diagnosis"]]])

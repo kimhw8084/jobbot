@@ -18,6 +18,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0012_watch_stop_latch",
     "jobbot.migrations.m0013_platform_state",
     "jobbot.migrations.m0014_conservative_merge_evidence",
+    "jobbot.migrations.m0015_search_precision",
 )
 
 

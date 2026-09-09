@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .config import ConfigBundle
+from .search_strategy import BAND_ORDER, band_cadence_hours, canonical_band_counts, query_definition, search_band
 
 
 PLATFORM_ORDER = {"linkedin": 0, "indeed": 1, "glassdoor": 2}
@@ -35,6 +36,11 @@ class SearchTask:
     search_url: str
     phase: str
     max_results: None = None
+    canonical_title: str = ""
+    query_text: str = ""
+    aliases: tuple[str, ...] = ()
+    search_band: str = "DEEP_TAIL"
+    cadence_hours: int = 168
 
 
 def normalize_search_query(title: str) -> str:
@@ -99,7 +105,11 @@ def compile_plan(
             continue
         age_days = int(lane[f"{mode}_days"])
         for title in lane.get("titles", []):
-            query = normalize_search_query(str(title))
+            definition = query_definition(str(title), bundle.strategy)
+            canonical_title = str(definition["canonical_title"])
+            query = normalize_search_query(str(definition["query_text"]))
+            band = search_band(canonical_title, str(lane["id"]), bundle.strategy)
+            cadence_hours = band_cadence_hours(bundle.strategy, band)
             for platform in selected:
                 identity = (platform, query.casefold(), age_days, True)
                 if identity in seen:
@@ -110,12 +120,14 @@ def compile_plan(
                     lane=str(lane["id"]), lane_label=str(lane["label"]),
                     allocation_percent=int(lane["allocation_percent"]), profile=str(lane["profile"]),
                     priority=int(lane["priority"]), query=query, remote_required=True,
-                    execution_rank=(fast_prefix.get(query, 1000 + int(lane.get("execution_rank", 99)) * 100 + len(tasks))),
+                    execution_rank=(fast_prefix[query] if query in fast_prefix else 1000 + BAND_ORDER[band] * 10000 + int(lane.get("execution_rank", 99)) * 100 + len(tasks)),
                     age_days=age_days, sort_mode="newest", enabled=True,
-                    resume_variant=str(lane["resume_variant"]),
+                    resume_variant=str(bundle.strategy.get("strategy", {}).get("resume_routing", {}).get(str(lane["id"]), {}).get("variant", lane["resume_variant"])) if isinstance(bundle.strategy.get("strategy", {}).get("resume_routing", {}).get(str(lane["id"]), {}), dict) else str(lane["resume_variant"]),
                     search_url=build_search_url(platform, query, age_days), phase=phase_name, max_results=None,
+                    canonical_title=canonical_title, query_text=query, aliases=tuple(definition["aliases"]),
+                    search_band=band, cadence_hours=cadence_hours,
                 ))
-    tasks.sort(key=lambda x: (PLATFORM_ORDER[x.platform], x.execution_rank, x.priority, x.lane, x.query.casefold(), x.age_days))
+    tasks.sort(key=lambda x: (PLATFORM_ORDER[x.platform], x.execution_rank, BAND_ORDER.get(x.search_band, 99), x.priority, x.lane, x.query.casefold(), x.age_days))
     return tasks
 
 
@@ -146,6 +158,7 @@ def plan_counts(tasks: Iterable[SearchTask]) -> dict[str, Any]:
     by_lane: dict[str, int] = {}
     by_platform: dict[str, int] = {}
     lane_platform: dict[str, dict[str, int]] = {}
+    by_band: dict[str, int] = {}
     total = 0
     for task in tasks:
         total += 1
@@ -153,7 +166,9 @@ def plan_counts(tasks: Iterable[SearchTask]) -> dict[str, Any]:
         by_platform[task.platform] = by_platform.get(task.platform, 0) + 1
         lane_counts = lane_platform.setdefault(task.lane, {})
         lane_counts[task.platform] = lane_counts.get(task.platform, 0) + 1
-    return {"total": total, "by_lane": by_lane, "by_platform": by_platform, "lane_platform": lane_platform}
+        band = getattr(task, "search_band", "DEEP_TAIL")
+        by_band[band] = by_band.get(band, 0) + 1
+    return {"total": total, "by_lane": by_lane, "by_platform": by_platform, "lane_platform": lane_platform, "by_band": by_band}
 
 
 def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str, Path]:
@@ -176,7 +191,8 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
         "<tr>" + "".join(f"<td>{html.escape(str(value if value is not None else 'UNLIMITED'))}</td>" for value in (
             task.phase, task.lane, f"{task.allocation_percent}%", task.profile, task.platform, task.query,
             "Remote" if task.remote_required else "Any", f"{task.age_days} days", task.priority,
-            task.execution_rank, "enabled" if task.enabled else "disabled", task.resume_variant, task.max_results,
+            task.execution_rank, task.search_band, task.canonical_title, task.query_text,
+            "enabled" if task.enabled else "disabled", task.resume_variant, task.cadence_hours, task.max_results,
         )) + "</tr>" for task in tasks
     )
     counts = plan_counts(tasks)
@@ -186,7 +202,7 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
     )
     html_path.write_text(f"""<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>JobBot Search Plan</title>
 <style>body{{font:14px system-ui;margin:24px;color:#14213d}}h1{{margin-bottom:4px}}.summary{{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}}.pill{{background:#edf4ff;border-radius:999px;padding:8px 12px}}table{{border-collapse:collapse;width:100%}}th,td{{border-bottom:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}}th{{position:sticky;top:0;background:#fff}}tr:nth-child(even){{background:#fafafa}}</style></head><body><h1>JobBot v3.2 Search Plan — {html.escape(mode)}</h1><p>Every production task is remote-only and unlimited by result count. Total tasks: <strong>{counts['total']}</strong>.</p><div class=\"summary\">{platform_pills}</div>
-<table><thead><tr><th>Phase</th><th>Lane</th><th>Allocation</th><th>Profile</th><th>Platform</th><th>Exact query</th><th>Condition</th><th>Age</th><th>Priority</th><th>Execution rank</th><th>State</th><th>Resume</th><th>Max results</th></tr></thead><tbody>{rows}</tbody></table></body></html>""", encoding="utf-8")
+<table><thead><tr><th>Phase</th><th>Lane</th><th>Allocation</th><th>Profile</th><th>Platform</th><th>Canonical role</th><th>Exact query</th><th>Band</th><th>Condition</th><th>Age</th><th>Priority</th><th>Execution rank</th><th>State</th><th>Resume</th><th>Cadence hours</th><th>Max results</th></tr></thead><tbody>{rows}</tbody></table></body></html>""", encoding="utf-8")
     return {"json": json_path, "csv": csv_path, "html": html_path}
 
 

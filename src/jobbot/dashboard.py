@@ -20,6 +20,8 @@ from .config import ConfigBundle
 from .db import Database
 from .exports import export_selected
 from .legacy_engine import select_daily_plan
+from .query_yield import economics
+from .search_strategy import routed_resume_variant
 
 
 TABLE_COLUMNS = (
@@ -61,7 +63,7 @@ def identity(conn: sqlite3.Connection, bundle: ConfigBundle) -> dict[str, Any]:
     }
 
 
-def summary(conn: sqlite3.Connection) -> dict[str, int]:
+def summary(conn: sqlite3.Connection) -> dict[str, Any]:
     queries = {
         "total": "SELECT COUNT(*) FROM jobs", "active": "SELECT COUNT(*) FROM jobs WHERE is_active=1",
         "updated": "SELECT COUNT(*) FROM jobs WHERE change_status='UPDATED'",
@@ -87,17 +89,26 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
         "detail_pending": "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",
         "details_complete": "SELECT COUNT(*) FROM search_task_results WHERE detail_status='COMPLETE'",
     }
-    return {key: int(conn.execute(sql).fetchone()[0] or 0) for key, sql in queries.items()}
+    result: dict[str, Any] = {key: int(conn.execute(sql).fetchone()[0] or 0) for key, sql in queries.items()}
+    economics_value = economics(conn)
+    result["search_economics"] = economics_value
+    result["search_economics_summary"] = " · ".join(
+        f"{band} apply-ready {values['apply_ready']} / descriptions {values['completed_descriptions']}"
+        for band, values in economics_value["bands"].items()
+    )
+    return result
 
 
 def strategy_info(bundle: ConfigBundle) -> dict[str, Any]:
     strategy = bundle.strategy.get("strategy", {})
     lanes = []
     for lane in bundle.strategy.get("lanes", []):
+        routed_variant, route_reason = routed_resume_variant(bundle.strategy, lane)
         lanes.append({
             "id": lane.get("id", ""), "label": lane.get("label", ""),
             "allocation_percent": lane.get("allocation_percent", 0),
-            "execution_rank": lane.get("execution_rank", 1000), "resume_variant": lane.get("resume_variant", ""),
+            "execution_rank": lane.get("execution_rank", 1000), "resume_variant": routed_variant,
+            "resume_route_reason": route_reason,
         })
     scoring = strategy.get("scoring", {})
     return {
@@ -105,6 +116,8 @@ def strategy_info(bundle: ConfigBundle) -> dict[str, Any]:
         "thesis": "Bilingual regulated healthcare operations → health information, documentation, and data quality → QA, compliance, and process improvement → analytics, implementation, and project ownership → senior analyst, lead, program, quality, implementation, and operations paths.",
         "governing_sentence": "Use enrollment to get the next job. Do not allow enrollment to define the next decade.",
         "portfolio": lanes,
+        "search_bands": strategy.get("search_bands", {}),
+        "search_band_cadence": strategy.get("search_band_cadence", {}),
         "score_weights": {"landing_qualification": scoring.get("landing_qualification_weight", 0.70), "door_landing": scoring.get("door_landing_weight", 0.70), "door_career": scoring.get("door_career_weight", 0.30)},
         "recommendations": {
             "APPLY_NOW": "Strong fit, confirmed remote, active, and worth applying to now.",

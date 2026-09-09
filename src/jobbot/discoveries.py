@@ -36,6 +36,8 @@ class Discovery:
     observed_at: str
     detail_status: str
     detail_attempts: int
+    detail_priority: int
+    detail_priority_reason: str
     card: dict[str, Any]
 
     @classmethod
@@ -53,6 +55,7 @@ class Discovery:
             posted_age_days=None if row["posted_age_days"] is None else float(row["posted_age_days"]),
             observed_at=str(row["observed_at"] or row["first_seen_at"]),
             detail_status=str(row["detail_status"]), detail_attempts=int(row["detail_attempts"] or 0),
+            detail_priority=int(row["detail_priority"] or 0), detail_priority_reason=str(row["detail_priority_reason"] or ""),
             card=card if isinstance(card, dict) else {},
         )
 
@@ -62,6 +65,7 @@ def upsert_card(
     source_job_id: str, source_url: str, title_hint: str = "", company_hint: str = "",
     location_hint: str = "", posted_text: str = "", posted_age_days: float | None = None,
     card: dict[str, Any] | None = None, eligible_for_detail: bool = True,
+    detail_priority: int = 0, detail_priority_reason: str = "",
 ) -> tuple[Discovery, bool]:
     now = _now()
     row = conn.execute(
@@ -76,10 +80,10 @@ def upsert_card(
             """INSERT INTO search_task_results(
               task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,
               browser_run_id,title_hint,company_hint,location_hint,posted_text,posted_age_days,
-              observed_at,card_json,detail_status
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              observed_at,card_json,detail_status,detail_priority,detail_priority_reason
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (task_id, platform, source_job_id, source_url, now, now, run_id, title_hint,
-             company_hint, location_hint, posted_text, posted_age_days, now, payload, initial_status),
+             company_hint, location_hint, posted_text, posted_age_days, now, payload, initial_status, int(detail_priority), detail_priority_reason),
         )
         result_id = int(cursor.lastrowid)
         duplicate = False
@@ -93,11 +97,13 @@ def upsert_card(
               location_hint=CASE WHEN ?<>'' THEN ? ELSE location_hint END,
               posted_text=CASE WHEN ?<>'' THEN ? ELSE posted_text END,
               posted_age_days=COALESCE(?,posted_age_days),card_json=CASE WHEN ?<>'{}' THEN ? ELSE card_json END,
+              detail_priority=MAX(detail_priority,?),
+              detail_priority_reason=CASE WHEN ?>=detail_priority THEN ? ELSE detail_priority_reason END,
               detail_status=CASE WHEN detail_status='SKIPPED_AGE' AND ? THEN 'PENDING' ELSE detail_status END
               WHERE result_id=?""",
             (run_id, now, now, title_hint, title_hint, company_hint, company_hint,
              location_hint, location_hint, posted_text, posted_text, posted_age_days,
-             payload, payload, 1 if eligible_for_detail else 0, result_id),
+             payload, payload, int(detail_priority), int(detail_priority), detail_priority_reason, 1 if eligible_for_detail else 0, result_id),
         )
         duplicate = True
     saved = conn.execute("SELECT * FROM search_task_results WHERE result_id=?", (result_id,)).fetchone()
@@ -122,7 +128,8 @@ def claim_next_detail(
            WHERE browser_run_id=? AND task_id=?
              AND (detail_status IN ('PENDING','RETRYABLE')
                OR (detail_status='RUNNING' AND detail_lease_owner=?))
-           ORDER BY CASE detail_status WHEN 'RUNNING' THEN 0 WHEN 'RETRYABLE' THEN 1 ELSE 2 END,result_id
+           ORDER BY CASE detail_status WHEN 'RUNNING' THEN 0 WHEN 'RETRYABLE' THEN 1 ELSE 2 END,
+                    detail_priority DESC,result_id
            LIMIT 1""",
         (run_id, task_id, worker_id),
     ).fetchone()

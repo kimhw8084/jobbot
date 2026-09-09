@@ -163,22 +163,26 @@ def command_watch(args: argparse.Namespace) -> int:
                     browser_mode = "staged_recent"
                 else:
                     browser_mode = "staged_deep"
-                run_id = enqueue(bundle, browser_mode, args.platform or None)
+                run_id = enqueue(bundle, browser_mode, args.platform or None, due_only=True)
                 scheduler.start(plan, run_id)
                 scheduler.bind_run(run_id)
-                if args.enqueue_only:
+                if browser_tasks.run_task_count(bundle.root, run_id) == 0:
+                    browser_tasks.complete_empty_run(bundle.root, run_id)
+                    browser_ok = True
+                elif args.enqueue_only:
                     print(f"Enqueued watch plan {plan} as browser run {run_id}; watcher remains checkpointed.", flush=True)
                     return 0
-                outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open, dashboard_url=dashboard_url)
-                if outcome.status in {"completed", "partial"}:
-                    audit_conn = _connection(bundle)
-                    try:
-                        current_audit = collect_audit(audit_conn, run_id, bundle.strategy)
-                    finally:
-                        audit_conn.close()
-                    browser_ok = current_audit["reconciliation"]["ok"] and current_audit["terminal_classification"] in {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
                 else:
-                    browser_ok = False
+                    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=not args.no_open, dashboard_url=dashboard_url)
+                    if outcome.status in {"completed", "partial"}:
+                        audit_conn = _connection(bundle)
+                        try:
+                            current_audit = collect_audit(audit_conn, run_id, bundle.strategy)
+                        finally:
+                            audit_conn.close()
+                        browser_ok = current_audit["reconciliation"]["ok"] and current_audit["terminal_classification"] in {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
+                    else:
+                        browser_ok = False
             supplemental_ran = False
             supplemental_ok = True
             if SUPPLEMENTAL in plan:

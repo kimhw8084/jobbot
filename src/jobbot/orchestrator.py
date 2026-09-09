@@ -183,8 +183,8 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
         ready_dir.cleanup()
 
 
-def enqueue(bundle: ConfigBundle, mode: str, platforms: list[str] | None = None) -> int:
-    return browser_tasks.enqueue_production(bundle.root, mode, platforms)
+def enqueue(bundle: ConfigBundle, mode: str, platforms: list[str] | None = None, *, due_only: bool = False) -> int:
+    return browser_tasks.enqueue_production(bundle.root, mode, platforms, due_only=due_only)
 
 
 def resume(bundle: ConfigBundle, run_id: int | None = None) -> int:

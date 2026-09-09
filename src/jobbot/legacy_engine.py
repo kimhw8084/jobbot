@@ -15,6 +15,7 @@ import difflib
 import hashlib
 import functools
 import concurrent.futures
+import math
 import json
 import re
 import sqlite3
@@ -1259,6 +1260,14 @@ def select_daily_plan(rows:list[sqlite3.Row],strategy:dict[str,Any],target:Optio
     tc=strategy.get("strategy",{}).get("throughput",{}); target=int(target or tc.get("daily_target",15)); target=max(int(tc.get("daily_minimum",10)),min(int(tc.get("daily_maximum",20)),target))
     done={"applied","screen","interview","final","final_interview","offer","rejected","withdrawn","skip","closed"}
     elig=[r for r in rows if int(r["is_active"] or 0)==1 and clean_text(r["posting_status"])!="closed" and norm(r["application_status"]) not in done and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}]
+    apply_ready = [r for r in elig if r["recommendation"] in {"APPLY_NOW", "APPLY_VOLUME"}]
+    # Preserve the user-facing precision gate.  When the reservoir is too
+    # small to make an 80% apply-ready day, expose the real apply-ready count
+    # rather than padding TODAY with stretch roles.  Stretch work remains
+    # available in its dedicated view.
+    minimum_apply_ready_for_mix = int(math.ceil(target * 0.80))
+    if len(apply_ready) < minimum_apply_ready_for_mix:
+        elig = apply_ready
     rank={"APPLY_NOW":0,"APPLY_VOLUME":1,"HIGH_VALUE_STRETCH":2}; empirical_boosts=empirical_boosts or {}; elig.sort(key=lambda r:(rank.get(r["recommendation"],9),-((r["application_priority_score"] or 0)+empirical_boosts.get(norm(r["normalized_title_family"] or r["title"]),0.0)),-(r["door_score"] or 0),-(r["qualification_score"] or 0),-(r["relevance_score"] or 0)))
     out=[]; selected=set(); cc={}; fc={}; maxc=int(tc.get("max_same_company_per_day",2)); maxf=int(tc.get("max_same_title_family_per_day",4)); p3_limit=int(target*float(tc.get("p3_max_percent",5))/100); p3_count=0
     # Pass 1: maximize diversity while keeping the strongest recommendations first.

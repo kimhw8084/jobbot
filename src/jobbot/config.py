@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .search_strategy import BANDS, DEFAULT_BAND_CADENCE_HOURS, band_cadence_hours, routed_resume_variant
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = PROJECT_ROOT / "config"
@@ -74,12 +76,14 @@ def _legacy_searches(strategy: dict[str, Any]) -> list[dict[str, Any]]:
     for lane in strategy.get("lanes", []):
         if not lane.get("enabled", True):
             continue
+        resume_variant, resume_route_reason = routed_resume_variant(strategy, lane)
         profiles.append({
             "name": lane["profile"],
             "enabled": True,
             "priority": int(lane["priority"]),
             "career_lane": lane["id"],
-            "resume_variant": lane["resume_variant"],
+            "resume_variant": resume_variant,
+            "resume_route_reason": resume_route_reason,
             "domain": lane["domain"],
             "keywords": list(lane.get("titles", [])),
             "generic_title_patterns": list(lane.get("generic_title_patterns", [])),
@@ -140,6 +144,19 @@ def validate_strategy(strategy: dict[str, Any]) -> None:
             raise ConfigError(f"invalid age window for lane {lane_id}")
     if meta.get("production_max_results") is not None:
         raise ConfigError("production_max_results must be null/unlimited")
+    bands = meta.get("search_bands", {})
+    cadence = meta.get("search_band_cadence", {})
+    for band in BANDS:
+        if int(cadence.get(f"{band.lower()}_hours", DEFAULT_BAND_CADENCE_HOURS[band])) <= 0:
+            raise ConfigError(f"search band cadence must be positive: {band}")
+        titles = bands.get(f"{band.lower()}_titles", [])
+        if not isinstance(titles, list):
+            raise ConfigError(f"search band title list must be an array: {band}")
+    routing = meta.get("resume_routing", {})
+    for lane in lanes:
+        route = routing.get(str(lane.get("id")))
+        if route is not None and not isinstance(route, (str, dict)):
+            raise ConfigError(f"invalid resume routing for {lane.get('id')}")
 
 
 def validate_candidate(data: dict[str, Any]) -> None:

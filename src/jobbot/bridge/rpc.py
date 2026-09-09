@@ -11,6 +11,8 @@ from ..config import PROJECT_ROOT
 from .. import legacy_engine as j
 from .. import browser_tasks as v3
 from ..discoveries import block_detail, claim_next_detail, fail_detail, finish_detail, upsert_card
+from ..query_yield import mark_definition_completed, mark_definition_started, record_task_yield
+from ..search_strategy import BAND_ORDER, detail_priority, query_yield_estimate
 
 BASE = PROJECT_ROOT
 j.VERSION=v3.V3_VERSION; j.c.VERSION=v3.V3_VERSION
@@ -41,6 +43,20 @@ def get_run(conn,rid):return conn.execute("SELECT * FROM browser_runs WHERE brow
 def platform_order_sql()->str:return "CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 WHEN 'glassdoor' THEN 2 ELSE 99 END"
 
 def phase_order_sql()->str:return "CASE phase WHEN 'A_FASTEST_DOOR_RECENT' THEN 0 WHEN 'B_REMAINING_CORE_RECENT' THEN 1 WHEN 'C_DEEP_BACKFILL' THEN 2 ELSE 9 END"
+
+def task_selection_key(conn, row):
+    """Keep band/order protection, then use learned ROI only when eligible."""
+    learned_roi = 0.0
+    stats = conn.execute(
+        "SELECT * FROM query_yield_stats WHERE platform=? AND normalized_query=? AND search_band=?",
+        (row['platform'], str(row['query_text']).casefold(), row['search_band']),
+    ).fetchone()
+    if stats is not None:
+        estimate = query_yield_estimate(dict(stats))
+        if estimate['sample_eligible']:
+            learned_roi = float(estimate['actionable_jobs_per_minute'])
+    return (BAND_ORDER.get(str(row['search_band'] or 'DEEP_TAIL'), 99), -learned_roi,
+            int(row['execution_rank'] or 0), int(row['priority'] or 99), int(row['task_id']))
 
 def platform_circuit(conn, platform: str):
     return conn.execute("SELECT * FROM platform_state WHERE platform=?", (platform,)).fetchone()
@@ -215,13 +231,13 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                           WHERE browser_run_id=? AND platform=? AND phase=? AND status<>'queued'""",(rid,platform,phase)).fetchone()[0]
                         platform_candidates.append((int(progress)//wave_size,platform))
                     _,chosen_platform=min(platform_candidates,key=lambda item:(item[0],{'linkedin':0,'indeed':1,'glassdoor':2}.get(item[1],99)))
-                    t=conn.execute(f"""SELECT * FROM browser_search_tasks
-                      WHERE browser_run_id=? AND platform=? AND phase=? AND status='queued'
-                      ORDER BY execution_rank,priority,task_id LIMIT 1""",(rid,chosen_platform,phase)).fetchone()
+                    platform_queue=conn.execute("""SELECT * FROM browser_search_tasks
+                      WHERE browser_run_id=? AND platform=? AND phase=? AND status='queued'""",(rid,chosen_platform,phase)).fetchall()
+                    t=min(platform_queue,key=lambda row: task_selection_key(conn,row)) if platform_queue else None
             if not t:return {'ok':True,'done':True}
             if t['status']=='queued':
                 lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
-                conn.execute("UPDATE browser_search_tasks SET status='running',started_at=COALESCE(started_at,?),attempts=attempts+1,lease_owner=?,lease_until=?,current_search_url=COALESCE(NULLIF(current_search_url,''),search_url),last_progress_at=? WHERE task_id=?",(now,owner,lease_time(lease_seconds),now,t['task_id']));event(conn,rid,t['task_id'],'task_started',f"{t['platform']}: {t['query_text']}",msg,out);conn.commit();t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(t['task_id'],)).fetchone()
+                conn.execute("UPDATE browser_search_tasks SET status='running',started_at=COALESCE(started_at,?),attempts=attempts+1,lease_owner=?,lease_until=?,current_search_url=COALESCE(NULLIF(current_search_url,''),search_url),last_progress_at=? WHERE task_id=?",(now,owner,lease_time(lease_seconds),now,t['task_id']));mark_definition_started(conn, t, now);event(conn,rid,t['task_id'],'task_started',f"{t['platform']}: {t['query_text']}",msg,out);conn.commit();t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(t['task_id'],)).fetchone()
                 conn.execute("UPDATE browser_runs SET current_task_id=?,last_progress_at=? WHERE browser_run_id=?",(t['task_id'],now,rid));conn.commit()
             return {'ok':True,'task':{k:t[k] for k in t.keys()}}
         if action=='retry_platform':
@@ -236,15 +252,21 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='record_result':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
             if not source or not (sid or url):return {'ok':False,'error':'insufficient_result_identity'}
-            task=conn.execute("SELECT 1 FROM browser_search_tasks WHERE task_id=? AND browser_run_id=? AND platform=?",(tid,rid,source)).fetchone()
+            task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=? AND platform=?",(tid,rid,source)).fetchone()
             if not task:return {'ok':False,'error':'task_not_found'}
             try: posted_age=float(msg['posted_age_days']) if msg.get('posted_age_days') is not None else None
             except (TypeError,ValueError): posted_age=None
             card=msg.get('card') if isinstance(msg.get('card'),dict) else {}
+            priority, priority_reason = detail_priority(
+                title=j.clean_text(msg.get('title_hint') or card.get('title')),
+                query_text=task['query_text'], search_band=task['search_band'],
+                posted_age_days=posted_age, strategy=strategy,
+            )
             discovery,duplicate=upsert_card(conn,run_id=rid,task_id=tid,platform=source,source_job_id=sid,source_url=url,
                 title_hint=j.clean_text(msg.get('title_hint') or card.get('title')),company_hint=j.clean_text(msg.get('company_hint') or card.get('company')),
                 location_hint=j.clean_text(msg.get('location_hint') or card.get('location')),posted_text=j.clean_text(msg.get('posted_text') or card.get('posted_text')),
-                posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)))
+                posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)),
+                detail_priority=priority,detail_priority_reason=priority_reason)
             if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
             pending_count=conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",(tid,)).fetchone()[0]
             event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status,'pending_count':int(pending_count)}
@@ -307,7 +329,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if status=='completed': status='exhausted' if exhausted else 'incomplete'
             if status=='test_limit': status='incomplete'
             allowed={'exhausted','incomplete','challenged','failed','stopped','auth_required','paused'};status=status if status in allowed else 'incomplete'
-            t=conn.execute("SELECT platform,status FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
+            t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
             if not t:return {'ok':False,'error':'task_not_found'}
             if t['status'] not in {'queued','running'}:
                 return {'ok':True,'already_terminal':True,'status':t['status']}
@@ -320,6 +342,9 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             elif status=='challenged':
                 conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
             elif status=='failed':conn.execute("UPDATE browser_platform_runs SET tasks_failed=tasks_failed+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
+            mark_definition_completed(conn, t, status, now)
+            if status == 'exhausted':
+                record_task_yield(conn, tid, now)
             if status=='stopped':
                 conn.execute("UPDATE browser_runs SET stop_requested=1,stop_after_current=0,last_error=? WHERE browser_run_id=?",(reason or 'stop after current requested',rid))
             event(conn,rid,tid,'task_'+status,reason,msg,out);conn.commit();return {'ok':True}
@@ -354,7 +379,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
             refresh_task_counters(conn,rid);conn.commit();r=get_run(conn,rid)
-            tasks=conn.execute("SELECT task_id,platform,phase,query_text,status,results_seen,detail_count_read,jobs_recorded,unique_jobs_recorded,duplicate_sightings,jobs_new,jobs_updated,jobs_unchanged,pages_visited,current_search_url,page_number,scroll_generation,last_page_fingerprint,last_source_job_id,challenge_reason,last_error,exhaustion_reason,safety_stop_reason,execution_rank,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,duplicate_cards,pending_details,details_failed FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",(rid,)).fetchall();plats=conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=? ORDER BY CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END",(rid,)).fetchall();return {'ok':True,'run':{k:r[k] for k in r.keys()},'platforms':[{k:p[k] for k in p.keys()} for p in plats],'tasks':[{k:t[k] for k in t.keys()} for t in tasks]}
+            tasks=conn.execute("SELECT task_id,platform,phase,canonical_title,query_text,search_band,cadence_hours,status,results_seen,detail_count_read,jobs_recorded,unique_jobs_recorded,duplicate_sightings,jobs_new,jobs_updated,jobs_unchanged,pages_visited,current_search_url,page_number,scroll_generation,last_page_fingerprint,last_source_job_id,challenge_reason,last_error,exhaustion_reason,safety_stop_reason,execution_rank,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,duplicate_cards,pending_details,details_failed FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id",(rid,)).fetchall();plats=conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=? ORDER BY CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 ELSE 2 END",(rid,)).fetchall();return {'ok':True,'run':{k:r[k] for k in r.keys()},'platforms':[{k:p[k] for k in p.keys()} for p in plats],'tasks':[{k:t[k] for k in t.keys()} for t in tasks]}
         if action=='task_status':
             tid=int(msg.get('task_id') or 0);t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(tid,)).fetchone()
             if not t:return {'ok':False,'error':'task_not_found'}

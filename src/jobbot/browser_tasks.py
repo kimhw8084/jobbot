@@ -12,6 +12,7 @@ from . import legacy_engine as j
 from .config import PROJECT_ROOT, load_bundle
 from .db import Database, apply_pending
 from .search_plan import build_search_url, compile_plan, compile_staged_plan, normalize_search_query
+from .query_yield import definition_is_due, ensure_definition
 
 V3_VERSION = "3.2.1"
 EXTENSION_ID = "jfdlmelgonjhgnabpbipjefgamedpgfb"
@@ -96,7 +97,7 @@ def iter_strategy_tasks(strategy: dict[str, Any], mode: str, platforms: list[str
     return tasks
 
 
-def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | None = None) -> int:
+def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | None = None, *, due_only: bool = False) -> int:
     db, _, _, _, strategy = paths(base)
     bundle = load_bundle(base)
     chosen = platforms or list(PLATFORMS)
@@ -110,12 +111,37 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         planned = compile_staged_plan(bundle, chosen, ("C_DEEP_BACKFILL",))
     else:
         planned = compile_plan(bundle, mode, chosen)
+    cadence_conn = sqlite3.connect(bundle.database_path)
+    cadence_conn.row_factory = sqlite3.Row
+    init_browser_schema(cadence_conn)
+    now = j.now_iso()
+    if due_only:
+        planned = [
+            task for task in planned
+            if definition_is_due(
+                cadence_conn.execute(
+                    "SELECT next_due_at FROM search_definition_state WHERE platform=? AND task_key=?",
+                    (task.platform, task.task_key),
+                ).fetchone(),
+                now,
+            )
+        ]
+    for task in planned:
+        ensure_definition(cadence_conn, {
+            "platform": task.platform, "task_key": task.task_key,
+            "canonical_title": task.canonical_title, "query_text": task.query_text or task.query,
+            "search_band": task.search_band, "cadence_hours": task.cadence_hours,
+        })
+    cadence_conn.commit()
+    cadence_conn.close()
     tasks = [{
-        "task_key": task.task_key, "platform": task.platform, "query_text": task.query,
+        "task_key": task.task_key, "platform": task.platform, "canonical_title": task.canonical_title,
+        "query_text": task.query_text or task.query,
         "window_days": task.age_days, "search_profile": task.profile,
         "career_lane": task.lane, "resume_variant": task.resume_variant,
         "priority": task.priority, "search_url": task.search_url,
         "execution_rank": task.execution_rank, "phase": task.phase,
+        "search_band": task.search_band, "cadence_hours": task.cadence_hours,
     } for task in planned]
     store = j.PrecisionStore(db); init_browser_schema(store.conn)
     now = j.now_iso()
@@ -135,10 +161,10 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,canonical_title,search_band,cadence_hours
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, t["platform"], t["query_text"], 1, t["window_days"], "date", t["search_url"], None, "queued", now,
-             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"]),
+             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"], t["canonical_title"], t["search_band"], t["cadence_hours"]),
         )
     store.conn.commit(); store.close()
     return rid
@@ -197,10 +223,10 @@ def enqueue_validation_sample(
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (rid, task.platform, task.query, 1, task.age_days, task.sort_mode, task.search_url, None, "queued", now,
-             task.profile, task.lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase),
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,canonical_title,search_band,cadence_hours
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (rid, task.platform, task.query_text or task.query, 1, task.age_days, task.sort_mode, task.search_url, None, "queued", now,
+             task.profile, task.lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase, task.canonical_title, task.search_band, task.cadence_hours),
         )
     store.conn.commit(); store.close()
     return rid
@@ -252,6 +278,32 @@ def enqueue_validation(base: Path, platforms: list[str] | None = None, *, max_re
              f"VALIDATION|{platform}|patient enrollment specialist", "A_FASTEST_DOOR_RECENT"),
         )
     store.conn.commit(); store.close(); return rid
+
+
+def run_task_count(base: Path, run_id: int) -> int:
+    db, _, _, _, _ = paths(base)
+    conn = sqlite3.connect(db)
+    try:
+        return int(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0] or 0)
+    finally:
+        conn.close()
+
+
+def complete_empty_run(base: Path, run_id: int) -> None:
+    """Checkpoint a cadence cycle that had no due definitions.
+
+    This prevents a watch cycle from opening Chrome merely because a phase
+    alarm fired while every definition in that phase is still inside its
+    band-specific durable cadence.
+    """
+    db, _, _, _, _ = paths(base)
+    conn = sqlite3.connect(db)
+    now = j.now_iso()
+    try:
+        conn.execute("UPDATE browser_runs SET status='completed',completed_at=?,last_progress_at=? WHERE browser_run_id=?", (now, now, run_id))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def resume_run(base: Path, rid: int | None = None) -> int:

@@ -61,6 +61,13 @@ many tabs, but preserves normal-Chrome behavior, challenge safety, and
 write-through durability. Stop with `./STOP_SEARCH.command`; resume with
 `./RESUME_SEARCH.command` or the dashboard’s **Resume checkpoint** button.
 
+The first production cycle is ordered GOLD fastest-door searches, then SILVER,
+GROWTH, HEDGE, and DEEP_TAIL coverage. Independent band cadence reduces repeat
+browser work without disabling any configured core definition. TODAY is a
+precision queue: when the apply-ready reservoir is too small to maintain the
+80% APPLY_NOW/APPLY_VOLUME target, it shows the real reservoir instead of
+padding it with weaker roles.
+
 ## Canonical cross-platform CLI
 
 After installation, run commands from the repository root:
