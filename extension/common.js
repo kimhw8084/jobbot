@@ -76,5 +76,14 @@
     const reason=[...phrases,...defaults].map(x=>clean(x).toLowerCase()).find(x=>x&&body.includes(x));
     return {exhausted:!!reason,reason:reason||''};
   };
-  globalThis.JobBotCommon={clean,clip,textOf,firstText,headingSectionText,firstAttr,absoluteUrl,challengeInfo,parseAgeDays,parseJsonLdJob,scrollResults,exhaustionInfo};
+  const waitForDomQuiet = (quietMs=800, timeoutMs=5000) => new Promise((resolve) => {
+    const quiet=Math.max(50,Number(quietMs)||800), timeout=Math.max(quiet,Number(timeoutMs)||5000);
+    if(typeof MutationObserver==='undefined'||!document?.documentElement){setTimeout(()=>resolve({quiet:false,timeout:true}),Math.min(quiet,timeout));return;}
+    let quietTimer=null, finished=false;
+    const finish=(timedOut=false)=>{if(finished)return;finished=true;if(quietTimer)clearTimeout(quietTimer);observer.disconnect();resolve({quiet:!timedOut,timeout:timedOut});};
+    const observer=new MutationObserver(()=>{if(quietTimer)clearTimeout(quietTimer);quietTimer=setTimeout(finish,quiet);});
+    observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,characterData:true});
+    quietTimer=setTimeout(finish,quiet);setTimeout(()=>finish(true),timeout);
+  });
+  globalThis.JobBotCommon={clean,clip,textOf,firstText,headingSectionText,firstAttr,absoluteUrl,challengeInfo,parseAgeDays,parseJsonLdJob,scrollResults,exhaustionInfo,waitForDomQuiet};
 })();

@@ -82,6 +82,13 @@ def command_doctor(_args: argparse.Namespace) -> int:
 
 def command_run(args: argparse.Namespace) -> int:
     bundle = _bundle()
+    # RUN_FAST_SEARCH/RUN_FULL_SEARCH/RUN_PLATFORM_*.command are production
+    # launchers.  Keep the developer CLI useful for isolated bundles, but do
+    # not let a production-bound `run` bypass the exact validated-HEAD guard.
+    production_db = (bundle.root / "data" / "jobs.sqlite3").resolve()
+    production_out = (bundle.root / "out").resolve()
+    if bundle.database_path.resolve() == production_db and bundle.output_dir.resolve() == production_out:
+        assert_production_release(bundle)
     compile_and_write(bundle, args.mode, args.platform or None)
     run_id = enqueue(bundle, args.mode, args.platform or None)
     print(f"Enqueued browser run {run_id}", flush=True)

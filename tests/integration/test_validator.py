@@ -10,6 +10,7 @@ from unittest.mock import patch
 from jobbot.browser_tasks import enqueue_validation, enqueue_validation_sample
 from jobbot.config import PROJECT_ROOT, load_bundle
 from jobbot.db import Database
+from jobbot.legacy_engine import fetch_remotelanders_exhaustive, source_failure_class
 from jobbot.validator import (
     VALIDATION_WINDOW_COMPLETE,
     _assert_isolated,
@@ -20,6 +21,9 @@ from jobbot.validator import (
     _phase_coverage_pass,
     _stage_pass,
     _write_report,
+    _performance_summary,
+    _dashboard_probe,
+    _bounded_timeout,
     _isolated_bundle,
     _prepare_validation_bundle,
     _run_semi_phase,
@@ -28,6 +32,13 @@ from jobbot.validator import (
 
 
 class ValidatorIntegrationTests(unittest.TestCase):
+    def test_deadline_timeout_leaves_cleanup_reserve_and_refuses_expired_start(self) -> None:
+        with patch("jobbot.validator.time.monotonic", return_value=100.0):
+            self.assertEqual(_bounded_timeout(300, 400.0), 288)
+        with patch("jobbot.validator.time.monotonic", return_value=399.0):
+            with self.assertRaisesRegex(RuntimeError, "refusing to start"):
+                _bounded_timeout(10, 400.0)
+
     def test_each_isolated_long_stage_is_migrated_before_dashboard_use(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -348,6 +359,96 @@ class ValidatorIntegrationTests(unittest.TestCase):
         internal = _classify_supplemental({}, code=1, uncaught_error="ProgrammingError: broken orchestration")
         self.assertFalse(internal["isolation_pass"])
         self.assertTrue(internal["internal_failed"])
+
+    def test_performance_summary_reports_bounded_p50_p95_without_page_content(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "config").mkdir()
+            for item in (PROJECT_ROOT / "config").iterdir():
+                (root / "config" / item.name).write_bytes(item.read_bytes())
+            bundle = load_bundle(root)
+            run_id = enqueue_validation(root, ["linkedin"], bundle=bundle)
+            conn = Database(bundle).connect()
+            try:
+                for value in (10, 20, 30, 40, 50):
+                    conn.execute(
+                        "INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)",
+                        (run_id, "now", "performance", f"search {value}ms", json.dumps({
+                            "operation": "search_collect", "platform": "linkedin", "duration_ms": value,
+                        })),
+                    )
+                conn.execute(
+                    "INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)",
+                    (run_id, "now", "performance", "cards", json.dumps({
+                        "operation": "card_persist", "platform": "linkedin", "duration_ms": 600, "cards": 3,
+                    })),
+                )
+                conn.execute(
+                    "INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)",
+                    (run_id, "now", "performance", "detail", json.dumps({
+                        "operation": "detail_record", "platform": "linkedin", "duration_ms": 1200,
+                    })),
+                )
+                conn.commit()
+                summary = _performance_summary(conn, run_id)
+            finally:
+                conn.close()
+            self.assertEqual(summary["samples"], 7)
+            self.assertEqual(summary["operations"]["linkedin:search_collect"]["p50_ms"], 30)
+            self.assertEqual(summary["operations"]["linkedin:search_collect"]["p95_ms"], 48)
+            self.assertEqual(summary["throughput"]["linkedin"]["cards_per_minute"], 300.0)
+            self.assertEqual(summary["throughput"]["linkedin"]["canonical_details_per_minute"], 50.0)
+
+    def test_workspace_probe_rejects_focus_or_recreation_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = _isolated_bundle(root / "validation.sqlite3", root / "out", 18765)
+            Database(bundle).migrate()
+            identity = {
+                "resolved_database_path": str(bundle.database_path.resolve()),
+                "workspace_root": str(bundle.root.resolve()),
+                "jobbot_version": "3.2.1",
+            }
+            active = {"workspace": {
+                "isolated": True, "workspace_window_id": 7,
+                "workspace_creation_method": "windows.create",
+                "ownership_violations": 0, "role_tab_window_ids": {}, "worker_tab_window_ids": {},
+                "focus_requests_by_jobbot": 0, "workspace_recreation_count": 0,
+            }}
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                self.assertTrue(_dashboard_probe(bundle, "http://127.0.0.1:18765/")["workspace_isolation_ok"])
+            active["workspace"]["focus_requests_by_jobbot"] = 1
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/")["workspace_isolation_ok"])
+            active["workspace"]["focus_requests_by_jobbot"] = 0
+            active["workspace"]["role_tab_window_ids"] = {"anchor": 8}
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/")["workspace_isolation_ok"])
+
+    def test_supplemental_failure_taxonomy_keeps_programming_bugs_internal(self) -> None:
+        import socket
+        import urllib.error
+
+        self.assertEqual(source_failure_class(TimeoutError("network timeout"))[0], "EXTERNAL_NETWORK")
+        self.assertEqual(source_failure_class(urllib.error.HTTPError("https://x", 429, "rate", {}, None))[0], "EXTERNAL_RATE_LIMIT")
+        self.assertEqual(source_failure_class(ValueError("bad parser value"))[0], "INTERNAL_PARSE_ERROR")
+        self.assertEqual(source_failure_class(KeyError("missing parser field"))[1], True)
+        self.assertEqual(source_failure_class(sqlite3.OperationalError("locked"))[0], "INTERNAL_DB_ERROR")
+        self.assertEqual(source_failure_class(RuntimeError("orchestration defect"))[0], "INTERNAL_LOGIC_ERROR")
+        self.assertEqual(source_failure_class(socket.timeout("timed out"))[0], "EXTERNAL_NETWORK")
+        self.assertEqual(source_failure_class(json.JSONDecodeError("bad json", "{", 1))[0], "EXTERNAL_SCHEMA_CHANGED")
+
+    def test_remotelanders_safety_ceiling_is_capped_not_complete(self) -> None:
+        class EndlessSource:
+            def json(self, _url: str) -> dict[str, list[dict[str, str]]]:
+                return {"jobs": [{"slug": "job-1", "title": "Patient Access Specialist", "company": "Example Health", "url": "https://example.com/jobs/1"}]}
+
+        batch = fetch_remotelanders_exhaustive(
+            EndlessSource(),
+            {"url": "https://remotelanders.example/api/jobs", "page_size": 1, "safety_max_pages": 2},
+        )
+        self.assertFalse(batch.complete)
+        self.assertEqual(batch.boundary, "CAPPED_EXTERNAL_BOUNDARY")
 
 
 if __name__ == "__main__": unittest.main()

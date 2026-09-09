@@ -18,8 +18,10 @@ import concurrent.futures
 import json
 import re
 import sqlite3
+import socket
 import sys
 import tempfile
+import urllib.error
 import urllib.parse
 import webbrowser
 from datetime import datetime, timezone
@@ -968,22 +970,53 @@ class PrecisionStore(c.Store):
         self.conn.commit(); return int(cur.lastrowid)
 
     def resolve_job_id(self,job:Job)->str:
+        self._last_merge_reason=""
+        self._last_merge_confidence=0.0
         ok=occurrence_key(job)
         r=self.conn.execute("SELECT job_id FROM source_occurrences WHERE occurrence_key=?",(ok,)).fetchone()
-        if r: return clean_text(r["job_id"])
+        if r:
+            self._last_merge_reason="same_durable_occurrence"; self._last_merge_confidence=1.0
+            return clean_text(r["job_id"])
         urls=[canonical_url(x) for x in (job.apply_url,job.canonical_url) if canonical_url(x)]
         for u in urls:
             if not is_job_specific_url(u): continue
             r=self.conn.execute("SELECT job_id FROM jobs WHERE canonical_url=? OR apply_url=? LIMIT 1",(u,u)).fetchone()
-            if r: return clean_text(r["job_id"])
+            if r:
+                self._last_merge_reason="same_job_specific_url"; self._last_merge_confidence=1.0
+                return clean_text(r["job_id"])
             r=self.conn.execute("SELECT job_id FROM source_occurrences WHERE source_url=? OR apply_url=? LIMIT 1",(u,u)).fetchone()
-            if r: return clean_text(r["job_id"])
-        # Strong exact cross-source fingerprint: same company + title + essentially identical description.
+            if r:
+                self._last_merge_reason="same_source_occurrence_url"; self._last_merge_confidence=1.0
+                return clean_text(r["job_id"])
+        # Strong cross-source fingerprint.  A same-source different-ID
+        # occurrence is intentionally kept separate unless its URL matched
+        # above, preventing requisition overmerge.
         if job.company and job.title and len(job.description or "")>500:
-            dh=hashlib.sha256(norm(job.description)[:12000].encode()).hexdigest()[:20]
-            candidates=self.conn.execute("SELECT job_id,description FROM jobs WHERE lower(company)=lower(?) AND lower(title)=lower(?) LIMIT 20",(job.company,job.title)).fetchall()
+            candidates=self.conn.execute("SELECT job_id,description,location_raw FROM jobs WHERE lower(company)=lower(?) AND lower(title)=lower(?) LIMIT 20",(job.company,job.title)).fetchall()
             for x in candidates:
-                if x["description"] and hashlib.sha256(norm(x["description"])[:12000].encode()).hexdigest()[:20]==dh:
+                existing_location=norm(x["location_raw"] or ""); incoming_location=norm(job.location_raw or "")
+                if not (existing_location==incoming_location or ("remote" in existing_location and "remote" in incoming_location)):
+                    continue
+                incoming_ats = ats_requisition_identity(job.apply_url or job.canonical_url)
+                existing_urls = self.conn.execute(
+                    "SELECT source_url,apply_url FROM source_occurrences WHERE job_id=?",
+                    (x["job_id"],),
+                ).fetchall()
+                existing_ats = {
+                    ats_requisition_identity(url)
+                    for row in existing_urls
+                    for url in (row["source_url"], row["apply_url"])
+                    if ats_requisition_identity(url)[0]
+                }
+                # Two distinct requisitions on the same employer ATS are not
+                # mirrors merely because their descriptions look alike.
+                if incoming_ats[0] and any(kind == incoming_ats[0] and board == incoming_ats[1] and token != incoming_ats[2] for kind, board, token in existing_ats):
+                    continue
+                conflict=self.conn.execute("SELECT 1 FROM source_occurrences WHERE job_id=? AND source_site=? AND COALESCE(source_job_id,'')<>? LIMIT 1",(x["job_id"],job.source_site,job.source_job_id or "")).fetchone()
+                if conflict or not x["description"]: continue
+                similarity=difflib.SequenceMatcher(None,norm(x["description"])[:12000],norm(job.description)[:12000]).ratio()
+                if similarity>=0.96:
+                    self._last_merge_reason="strong_description_fingerprint"; self._last_merge_confidence=round(similarity,4)
                     return clean_text(x["job_id"])
         return job.job_id
 
@@ -1053,7 +1086,7 @@ class PrecisionStore(c.Store):
                 (jid,version_id,field,json.dumps(change.get("old"),ensure_ascii=False),json.dumps(change.get("new"),ensure_ascii=False),observed))
 
     def upsert(self,job:Job,run_id:Optional[int]=None,commit:bool=True)->str:
-        now=now_iso(); jid=self.resolve_job_id(job); ok=occurrence_key(job); snap=source_snapshot(job); h=snapshot_hash(snap)
+        now=now_iso(); jid=self.resolve_job_id(job); merge_reason=getattr(self,"_last_merge_reason",""); merge_confidence=float(getattr(self,"_last_merge_confidence",0.0) or 0); ok=occurrence_key(job); snap=source_snapshot(job); h=snapshot_hash(snap)
         board=clean_text((job.raw or {}).get("_board") or (job.raw or {}).get("board") or "")
         existing=self.conn.execute("SELECT * FROM jobs WHERE job_id=?",(jid,)).fetchone()
         incoming_conf=float(getattr(job,"source_confidence",0) or 0)
@@ -1064,6 +1097,7 @@ class PrecisionStore(c.Store):
                 "tags_json":json.dumps(snap["tags"],ensure_ascii=False),**self._strategy_values(job),
                 "first_seen":now,"last_seen":now,"current_content_hash":h,"canonical_source_site":job.source_site,
                 "canonical_source_confidence":incoming_conf,"canonical_occurrence_key":ok,"last_changed_at":now,"change_status":"NEW","update_count":0,
+                "canonical_merge_reason":merge_reason or "new_canonical","canonical_merge_confidence":merge_confidence,
                 "is_active":0 if clean_text(getattr(job,"posting_status","unknown"))=="closed" else 1,
                 "closed_at":now if clean_text(getattr(job,"posting_status","unknown"))=="closed" else None,
             }
@@ -1097,6 +1131,8 @@ class PrecisionStore(c.Store):
                 status="updated"
             else:
                 status="unchanged"
+            if merge_reason:
+                self.conn.execute("UPDATE jobs SET canonical_merge_reason=?,canonical_merge_confidence=? WHERE job_id=?",(merge_reason,merge_confidence,jid))
         # Every source encounter is logged independently.
         occ=self.conn.execute("SELECT * FROM source_occurrences WHERE occurrence_key=?",(ok,)).fetchone()
         if occ:
@@ -1468,6 +1504,28 @@ def ats_identity(url:str)->tuple[str,str]:
     return "",""
 
 
+def ats_requisition_identity(url: str) -> tuple[str, str, str]:
+    """Return (ATS, board, requisition) when a URL exposes both identifiers."""
+    try:
+        p = urllib.parse.urlsplit(url)
+        host = (p.hostname or "").lower()
+        parts = [urllib.parse.unquote(x) for x in p.path.split("/") if x]
+        if "greenhouse.io" in host or "greenhouse.com" in host:
+            if "jobs" in parts:
+                index = parts.index("jobs")
+                if index and index + 1 < len(parts):
+                    return "greenhouse", parts[index - 1], parts[index + 1]
+        if "jobs.lever.co" in host and len(parts) >= 2:
+            return "lever", parts[0], parts[1]
+        if "jobs.ashbyhq.com" in host and len(parts) >= 2:
+            return "ashby", parts[0], parts[1]
+        if ("jobs.smartrecruiters.com" in host or "careers.smartrecruiters.com" in host) and len(parts) >= 2:
+            return "smartrecruiters", parts[0], parts[1]
+    except Exception:
+        pass
+    return "", "", ""
+
+
 def load_ats_watch(path:Path,max_boards:int)->dict[str,list[dict[str,Any]]]:
     empty={"greenhouse":[],"lever":[],"ashby":[],"smartrecruiters":[]}
     if not path.exists(): return empty
@@ -1533,10 +1591,18 @@ class SourceBatch(list):
 
 
 def source_failure_class(exc: BaseException) -> tuple[str, bool]:
-    """Keep parser/programming/database exceptions internal and explicit."""
-    if isinstance(exc, (KeyError, TypeError, ValueError, AttributeError, sqlite3.Error)):
+    """Classify source failures without turning programming bugs into outages."""
+    if isinstance(exc, sqlite3.Error):
+        return "INTERNAL_DB_ERROR", True
+    if isinstance(exc, (KeyError, TypeError, ValueError, AttributeError)):
+        if isinstance(exc, json.JSONDecodeError):
+            return "EXTERNAL_SCHEMA_CHANGED", False
         return "INTERNAL_PARSE_ERROR", True
-    return "EXTERNAL_SOURCE_UNAVAILABLE", False
+    if isinstance(exc, urllib.error.HTTPError):
+        return ("EXTERNAL_RATE_LIMIT" if int(exc.code or 0) in {420, 429} else "EXTERNAL_HTTP"), False
+    if isinstance(exc, (TimeoutError, socket.timeout, urllib.error.URLError, ConnectionError)):
+        return "EXTERNAL_NETWORK", False
+    return "INTERNAL_LOGIC_ERROR", True
 
 
 def fetch_remotelanders_exhaustive(client:HttpClient,cfg:dict[str,Any])->list[Job]:
@@ -1657,7 +1723,7 @@ def merge_ats_watch(*watches:dict[str,Any])->dict[str,list[dict[str,Any]]]:
     return out
 
 
-def fetch_direct_ats_watch_resilient(client:HttpClient,watch:dict[str,Any],runtime:Optional[dict[str,Any]]=None)->tuple[list[Job],dict[tuple[str,str],set[str]],list[str]]:
+def fetch_direct_ats_watch_resilient(client:HttpClient,watch:dict[str,Any],runtime:Optional[dict[str,Any]]=None)->tuple[list[Job],dict[tuple[str,str],set[str]],list[dict[str,Any]]]:
     """Scan public employer boards with bounded concurrency and visible progress.
 
     Each board is isolated, uses a shorter ATS-specific timeout, and caches successful responses
@@ -1685,16 +1751,17 @@ def fetch_direct_ats_watch_resilient(client:HttpClient,watch:dict[str,Any],runti
             got,ss=fetch_direct_ats_watch_v2(bclient,{"ats_watch":{typ:[x]}})
             return typ,token,got,ss,None
         except Exception as e:
-            return typ,token,[],{},f"{typ}:{token}: {e}"
+            state, internal = source_failure_class(e)
+            return typ,token,[],{}, {"board": f"{typ}:{token}", "state": state, "internal": internal, "error": str(e)}
 
-    out=[]; scans={}; errors=[]; done=0
+    out=[]; scans={}; errors: list[dict[str,Any]]=[]; done=0
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers,thread_name_prefix="ats") as pool:
         futs=[pool.submit(scan_one,item) for item in entries]
         for fut in concurrent.futures.as_completed(futs):
             typ,token,got,ss,err=fut.result(); done+=1
             if err:
                 errors.append(err)
-                print(f"[ats-watch] {done}/{total} FAIL {typ}:{token} — {err.split(': ',1)[-1]}",file=sys.stderr)
+                print(f"[ats-watch] {done}/{total} FAIL {typ}:{token} — {err.get('error','unknown error')}",file=sys.stderr)
             else:
                 out.extend(got); scans.update(ss)
                 print(f"[ats-watch] {done}/{total} OK   {typ}:{token} — {len(got)} posting(s)")
@@ -1800,7 +1867,8 @@ def run_search(config:dict[str,Any],strategy:dict[str,Any],mode:str)->int:
     merged_watch=merge_ats_watch(config.get("ats_watch",{}),dyn)
     ats,dscans,ats_errors=fetch_direct_ats_watch_resilient(client,merged_watch,config.get("ats_runtime",{}))
     jobs.extend(ats); board_scans.update(dscans)
-    source_status["ats_watch"]={"ok":len(ats_errors)==0,"count":len(ats),"boards_complete":len(dscans),"board_errors":len(ats_errors),"errors":ats_errors[:30],"complete":len(ats_errors)==0}
+    ats_internal=any(bool(error.get("internal")) for error in ats_errors)
+    source_status["ats_watch"]={"ok":len(ats_errors)==0,"count":len(ats),"boards_complete":len(dscans),"board_errors":len(ats_errors),"errors":ats_errors[:30],"complete":len(ats_errors)==0,"state":("INTERNAL_ORCHESTRATION_ERROR" if ats_internal else ("EXTERNAL_SOURCE_UNAVAILABLE" if ats_errors else "completed")),"internal":ats_internal}
     print(f"[ats-watch] {len(ats)} postings from {len(dscans)} complete board scan(s); {len(ats_errors)} board error(s)")
     for j in jobs:
         setattr(j,"_mode",mode)
@@ -1858,22 +1926,31 @@ def run_search(config:dict[str,Any],strategy:dict[str,Any],mode:str)->int:
 
 
 
-def resume_path_for(row:sqlite3.Row,base:Path)->Path:
-    m={
-      "enrollment_operations":"Elizabeth_Kim-Ortiz_Resume_Enrollment_Operations(1).docx",
-      "healthcare_qa":"Elizabeth_Kim-Ortiz_Resume_Healthcare_QA(1).docx",
-      "healthcare_qa_or_enrollment_ops":"Elizabeth_Kim-Ortiz_Resume_Enrollment_Operations(1).docx",
-      "higher_ed_records":"Elizabeth_Kim-Ortiz_Resume_HigherEd_Records(1).docx",
-      "content_quality":"Elizabeth_Kim-Ortiz_Resume_Content_Quality(1).docx",
-    }
-    return base/"resumes"/m.get(row["resume_variant"],m["enrollment_operations"])
+def resume_path_for(row:sqlite3.Row,base:Path)->Path|None:
+    """Return only the explicitly configured, existing resume variant.
+
+    A missing or unknown variant must be visible to the applicant.  Falling
+    back to enrollment operations silently routes an application to a resume
+    that may not support the lane's actual strategy.
+    """
+    config_path = base / "config" / "candidate.toml"
+    try:
+        configured = load_toml(config_path).get("resume_files", {})
+    except (OSError, ValueError, TypeError):
+        configured = {}
+    value = configured.get(clean_text(row["resume_variant"]))
+    if not value:
+        return None
+    path = abs_path(base, str(value))
+    return path if path.is_file() else None
 
 
 def prepare_packet(store:PrecisionStore,out:Path,base:Path,job_id:str)->Path:
     r=store.conn.execute("SELECT * FROM jobs WHERE job_id=?",(job_id,)).fetchone()
     if not r: raise ValueError(f"Unknown job id: {job_id}")
     d=out/"application_packets"; d.mkdir(parents=True,exist_ok=True); rp=resume_path_for(r,base)
-    lines=[f"# Application Packet — {r['title']} — {r['company']}","",f"Job ID: `{job_id}`",f"Recommendation: **{r['recommendation']}**",f"Priority {r['application_priority_score']:.1f} | Door {r['door_score']:.1f} | Landing-fit {r['landing_score']:.1f} | Qualification {r['qualification_score']:.1f} | Career {r['career_score']:.1f} | Relevance {r['relevance_score']:.1f}",f"Remote: {r['remote_gate']} ({r['remote_gate_reason']})",f"Work authorization: {r['work_auth_gate']} — {r['work_authorization_requirement'] or 'no explicit restriction extracted'}",f"Travel: {r['travel_percent'] if r['travel_percent'] is not None else 'not explicitly quantified'}% | Schedule/timezone: {r['timezone_requirement'] or 'none extracted'}",f"Salary: {r['salary_text'] or 'unknown'}",f"Posted: {r['posted_at'] or 'unknown'}",f"Apply: {r['apply_url'] or r['canonical_url']}","",f"## Resume to use\n`{rp}`","","## Evidence supporting application"]
+    resume_label = str(rp) if rp is not None else f"RESUME FILE UNAVAILABLE — configured variant: {r['resume_variant'] or 'unknown'}"
+    lines=[f"# Application Packet — {r['title']} — {r['company']}","",f"Job ID: `{job_id}`",f"Recommendation: **{r['recommendation']}**",f"Priority {r['application_priority_score']:.1f} | Door {r['door_score']:.1f} | Landing-fit {r['landing_score']:.1f} | Qualification {r['qualification_score']:.1f} | Career {r['career_score']:.1f} | Relevance {r['relevance_score']:.1f}",f"Remote: {r['remote_gate']} ({r['remote_gate_reason']})",f"Work authorization: {r['work_auth_gate']} — {r['work_authorization_requirement'] or 'no explicit restriction extracted'}",f"Travel: {r['travel_percent'] if r['travel_percent'] is not None else 'not explicitly quantified'}% | Schedule/timezone: {r['timezone_requirement'] or 'none extracted'}",f"Salary: {r['salary_text'] or 'unknown'}",f"Posted: {r['posted_at'] or 'unknown'}",f"Apply: {r['apply_url'] or r['canonical_url']}","",f"## Resume to use\n`{resume_label}`","","## Evidence supporting application"]
     lines += [f"- {x}" for x in jsoncol(r,"requirement_matches_json")] or ["- No explicit requirement matches extracted; review manually."]
     lines += ["","## Gaps / items to verify"]+[f"- {x}" for x in jsoncol(r,"requirement_gaps_json")] if jsoncol(r,"requirement_gaps_json") else ["","## Gaps / items to verify","- None detected by the deterministic parser; still verify the posting before submitting."]
     lines += ["","## Submission checklist","- [ ] Confirm role is still fully remote and Texas-eligible","- [ ] Confirm no required qualification was missed by extraction","- [ ] Use the recommended resume (tailor wording truthfully if useful)","- [ ] Answer screening questions from actual experience only","- [ ] Submit through the employer/direct application page when possible","- [ ] Save confirmation / application ID","- [ ] Mark the job as applied: `python jobbot.py mark %s applied`"%job_id,"","## Full job description","",r["description"] or "(description unavailable)"]

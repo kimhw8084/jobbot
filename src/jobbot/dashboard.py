@@ -15,9 +15,11 @@ from pathlib import Path
 from typing import Any
 
 from .application import ApplicationError, STATUSES, add_note, mark
+from .candidate import Candidate
 from .config import ConfigBundle
 from .db import Database
 from .exports import export_selected
+from .legacy_engine import select_daily_plan
 
 
 TABLE_COLUMNS = (
@@ -333,7 +335,7 @@ def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "
     return {"pending": pending, "discoveries": [_dict(row) for row in rows]}
 
 
-def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[str, Any]:
+def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]], strategy: dict[str, Any] | None = None) -> dict[str, Any]:
     def one(name: str, default: str = "") -> str:
         return (params.get(name) or [default])[0].strip()
     page = max(1, int(one("page", "1") or 1))
@@ -341,7 +343,20 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
     conditions = ["1=1"]
     args: list[Any] = []
     view = one("view")
-    if view == "actionable":
+    if view == "today":
+        if strategy is None:
+            conditions.append("j.is_active=1 AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
+        else:
+            daily_ids = [str(row["job_id"]) for row in select_daily_plan(
+                conn.execute("SELECT * FROM jobs WHERE is_active=1").fetchall(), strategy
+            )]
+            if daily_ids:
+                placeholders = ",".join("?" for _ in daily_ids)
+                conditions.append(f"j.job_id IN ({placeholders})")
+                args.extend(daily_ids)
+            else:
+                conditions.append("1=0")
+    elif view == "actionable":
         conditions.append("j.is_active=1 AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
     elif view not in {"", "all"}:
         raise ValueError(f"unsupported jobs view: {view}")
@@ -388,11 +403,19 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
     return {"page": page, "page_size": page_size, "total": total, "columns": TABLE_COLUMNS, "jobs": [_dict(row) for row in rows]}
 
 
-def job_detail(conn: sqlite3.Connection, job_id: str) -> dict[str, Any] | None:
+def job_detail(conn: sqlite3.Connection, job_id: str, bundle: ConfigBundle | None = None) -> dict[str, Any] | None:
     row = conn.execute("SELECT * FROM jobs WHERE job_id=?", (job_id,)).fetchone()
     if row is None:
         return None
     job = _dict(row) or {}
+    if bundle is not None:
+        candidate = Candidate.from_bundle(bundle)
+        variant = str(job.get("resume_variant") or "")
+        resume = candidate.resume_files.get(variant)
+        job["resume_file_available"] = bool(resume and resume.is_file())
+        job["resume_file_status"] = (
+            "available" if job["resume_file_available"] else "resume file unavailable"
+        )
     for key in tuple(job):
         if key.endswith("_json"):
             try:
@@ -468,10 +491,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 status = str((query.get("status") or [""])[0])
                 self._json(200, live_discoveries(conn, limit, status)); return
             if parsed.path == "/api/jobs":
-                self._json(200, query_jobs(conn, urllib.parse.parse_qs(parsed.query))); return
+                self._json(200, query_jobs(conn, urllib.parse.parse_qs(parsed.query), self.bundle.strategy)); return
             if parsed.path.startswith("/api/jobs/"):
                 job_id = urllib.parse.unquote(parsed.path.removeprefix("/api/jobs/"))
-                detail = job_detail(conn, job_id)
+                detail = job_detail(conn, job_id, self.bundle)
                 self._json(200 if detail else 404, detail or {"error": "not_found"}); return
             self._json(404, {"error": "not_found"})
         finally:

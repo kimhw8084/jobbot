@@ -176,6 +176,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
             if int(r['stop_requested'] or 0):return {'ok':True,'stop':True}
+            if int(r['stop_after_current'] or 0):return {'ok':True,'stop':True,'stop_after_current':True}
             now=j.now_iso(); owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
             conn.execute("UPDATE browser_search_tasks SET status='queued',lease_owner='',lease_until=NULL WHERE browser_run_id=? AND status='running' AND lease_until IS NOT NULL AND lease_until<?",(rid,now))
             t=conn.execute(f"""SELECT * FROM browser_search_tasks
@@ -319,6 +320,8 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             elif status=='challenged':
                 conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
             elif status=='failed':conn.execute("UPDATE browser_platform_runs SET tasks_failed=tasks_failed+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
+            if status=='stopped':
+                conn.execute("UPDATE browser_runs SET stop_requested=1,stop_after_current=0,last_error=? WHERE browser_run_id=?",(reason or 'stop after current requested',rid))
             event(conn,rid,tid,'task_'+status,reason,msg,out);conn.commit();return {'ok':True}
         if action=='should_stop':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid);return {'ok':True,'stop':bool(r and int(r['stop_requested'] or 0)),'stop_after_current':bool(r and int(r['stop_after_current'] or 0))}

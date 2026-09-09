@@ -37,8 +37,21 @@ TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
 VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
 VALIDATION_STOP_GRACE_SECONDS = 60
+VALIDATION_CLEANUP_RESERVE_SECONDS = 12
 PRIMARY_RESUME_TIMEOUT_SECONDS = 240
 PRIMARY_RESUME_STOP_AFTER_SECONDS = PRIMARY_RESUME_TIMEOUT_SECONDS - VALIDATION_STOP_GRACE_SECONDS
+
+
+def _bounded_timeout(requested: int | float, deadline: float | None = None) -> int:
+    """Return a timeout that leaves cleanup room, or refuse a late start."""
+    requested_seconds = max(1, int(requested))
+    if deadline is None:
+        return requested_seconds
+    remaining = float(deadline) - time.monotonic()
+    available = int(remaining - VALIDATION_CLEANUP_RESERVE_SECONDS)
+    if available < 1:
+        raise RuntimeError("validation stage deadline expired; refusing to start new browser work")
+    return min(requested_seconds, available)
 
 
 def extension_build(root: Path = PROJECT_ROOT) -> str:
@@ -162,7 +175,21 @@ def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
     identity_ok = bool(identity and identity.get("resolved_database_path") == expected_db
                        and identity.get("workspace_root") == expected_workspace
                        and identity.get("jobbot_version") == "3.2.1")
-    workspace_ok = bool(active and active.get("workspace", {}).get("isolated") is True)
+    workspace = (active or {}).get("workspace", {}) if isinstance(active, dict) else {}
+    window_id = workspace.get("workspace_window_id") or workspace.get("window_id")
+    role_windows = workspace.get("role_tab_window_ids") or {}
+    worker_windows = workspace.get("worker_tab_window_ids") or {}
+    role_windows_ok = all(str(value) == str(window_id) for value in role_windows.values() if value is not None)
+    worker_windows_ok = all(str(value) == str(window_id) for value in worker_windows.values() if value is not None)
+    workspace_ok = bool(
+        active and workspace.get("isolated") is True
+        and int(workspace.get("ownership_violations", 0) or 0) == 0
+        and role_windows_ok
+        and worker_windows_ok
+        and workspace.get("workspace_creation_method") != "unsafe_rendezvous_adoption"
+        and int(workspace.get("focus_requests_by_jobbot", 0) or 0) == 0
+        and int(workspace.get("workspace_recreation_count", 0) or 0) == 0
+    )
     return {
         "identity": identity,
         "identity_ok": identity_ok,
@@ -170,6 +197,16 @@ def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
         "run": active,
         "live_refresh_ok": isinstance(summary, dict) and isinstance(active, dict),
         "workspace_isolation_ok": workspace_ok,
+        "workspace_proof": {
+            "window_id": window_id,
+            "role_tab_window_ids": role_windows,
+            "worker_tab_window_ids": worker_windows,
+            "ownership_violations": int(workspace.get("ownership_violations", 0) or 0),
+            "non_jobbot_tab_count": int(workspace.get("non_jobbot_tab_count", 0) or 0),
+            "workspace_creation_method": workspace.get("workspace_creation_method", ""),
+            "workspace_recreation_count": int(workspace.get("workspace_recreation_count", 0) or 0),
+            "focus_requests_by_jobbot": int(workspace.get("focus_requests_by_jobbot", 0) or 0),
+        },
     }
 
 
@@ -201,10 +238,69 @@ def _integrity(path: Path) -> str:
         conn.close()
 
 
+def _performance_summary(conn, run_id: int | None) -> dict[str, Any]:
+    """Summarize bounded worker timings without storing page content."""
+    if run_id is None:
+        return {"samples": 0, "operations": {}}
+    rows = conn.execute(
+        "SELECT payload_json FROM browser_events WHERE browser_run_id=? AND event_type='performance'",
+        (run_id,),
+    ).fetchall()
+    groups: dict[tuple[str, str], list[float]] = {}
+    throughput: dict[str, dict[str, float]] = {}
+    for row in rows:
+        try:
+            payload = json.loads(row[0] or "{}")
+            operation = str(payload.get("operation") or "unknown")
+            platform = str(payload.get("platform") or "all")
+            value = float(payload.get("duration_ms"))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        if 0 <= value <= 900000:
+            groups.setdefault((platform, operation), []).append(value)
+            stats = throughput.setdefault(platform, {
+                "card_count": 0.0, "card_duration_ms": 0.0,
+                "detail_count": 0.0, "detail_duration_ms": 0.0,
+            })
+            if operation == "card_persist":
+                stats["card_count"] += float(payload.get("cards", 0) or 0)
+                stats["card_duration_ms"] += value
+            elif operation == "detail_record":
+                stats["detail_count"] += 1
+                stats["detail_duration_ms"] += value
+
+    def percentile(values: list[float], fraction: float) -> float:
+        ordered = sorted(values)
+        if len(ordered) == 1:
+            return round(ordered[0], 2)
+        position = (len(ordered) - 1) * fraction
+        lower, upper = int(position), min(len(ordered) - 1, int(position) + 1)
+        return round(ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower), 2)
+
+    operations = {
+        f"{platform}:{operation}": {
+            "samples": len(values),
+            "p50_ms": percentile(values, 0.50),
+            "p95_ms": percentile(values, 0.95),
+        }
+        for (platform, operation), values in sorted(groups.items())
+    }
+    rates = {}
+    for platform, stats in sorted(throughput.items()):
+        card_minutes = stats["card_duration_ms"] / 60000
+        detail_minutes = stats["detail_duration_ms"] / 60000
+        rates[platform] = {
+            "cards_per_minute": round(stats["card_count"] / card_minutes, 2) if card_minutes else 0.0,
+            "canonical_details_per_minute": round(stats["detail_count"] / detail_minutes, 2) if detail_minutes else 0.0,
+        }
+    return {"samples": sum(item["samples"] for item in operations.values()), "operations": operations, "throughput": rates}
+
+
 def _audit(bundle: ConfigBundle, run_id: int | None = None) -> dict[str, Any]:
     conn = Database(bundle).connect()
     try:
         audit = collect_audit(conn, run_id=run_id, strategy=bundle.strategy)
+        audit["performance"] = _performance_summary(conn, run_id)
     finally:
         conn.close()
     audit["integrity"] = _integrity(bundle.database_path) if bundle.database_path.exists() else "missing"
@@ -594,6 +690,7 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
               active_runs: list[tuple[ConfigBundle, int]] | None = None,
               deadline: float | None = None) -> dict[str, Any]:
     with _isolated_environment(bundle):
+        _bounded_timeout(timeout_seconds, deadline)
         if validation_micro:
             run_id = browser_tasks.enqueue_validation(PROJECT_ROOT, platforms)
         elif validation_sample:
@@ -607,9 +704,12 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
         if active_runs is not None:
             active_runs.append((bundle, run_id))
         started = time.monotonic()
-        effective_timeout = int(timeout_seconds)
+        try:
+            effective_timeout = _bounded_timeout(timeout_seconds, deadline)
+        except RuntimeError:
+            browser_tasks.emergency_stop(PROJECT_ROOT, run_id)
+            raise
         if deadline is not None:
-            effective_timeout = max(1, min(effective_timeout, int(deadline - started - 12)))
             if stop_after_seconds is not None:
                 stop_after_seconds = max(1, min(int(stop_after_seconds), max(1, effective_timeout - VALIDATION_STOP_GRACE_SECONDS)))
         outcome = launch_browser_run(
@@ -653,14 +753,18 @@ def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
                  stop_after_seconds: int | None = None,
                  active_runs: list[tuple[ConfigBundle, int]] | None = None,
                  deadline: float | None = None) -> dict[str, Any]:
+    _bounded_timeout(timeout_seconds, deadline)
     if active_runs is not None:
         active_runs.append((bundle, run_id))
     with _isolated_environment(bundle):
         browser_tasks.resume_run(PROJECT_ROOT, run_id)
         started = time.monotonic()
-        effective_timeout = int(timeout_seconds)
+        try:
+            effective_timeout = _bounded_timeout(timeout_seconds, deadline)
+        except RuntimeError:
+            browser_tasks.emergency_stop(PROJECT_ROOT, run_id)
+            raise
         if deadline is not None:
-            effective_timeout = max(1, min(effective_timeout, int(deadline - started - 12)))
             if stop_after_seconds is not None:
                 stop_after_seconds = max(1, min(int(stop_after_seconds), max(1, effective_timeout - VALIDATION_STOP_GRACE_SECONDS)))
         outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=True, timeout_seconds=effective_timeout,

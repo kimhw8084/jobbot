@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+import copy
+import json
 import shutil
 import socket
 import sqlite3
+import subprocess
 import tempfile
 import threading
 import unittest
@@ -12,16 +15,52 @@ from pathlib import Path
 from unittest.mock import patch
 
 from jobbot import browser_tasks
-from jobbot.cli import command_acceptance, parser
+from jobbot.cli import command_acceptance, command_run, parser
 from jobbot.config import PROJECT_ROOT
 from jobbot.dashboard import create_server
 from jobbot import run_now
 from jobbot.run_now import preflight
+from jobbot.run_now import assert_production_release
+from jobbot.config import ConfigBundle, load_bundle
 
 from tests.helpers import bundle_with_database
 
 
 class RunNowIntegrationTests(unittest.TestCase):
+    def test_production_release_guard_rejects_tracked_worktree_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            original = load_bundle(PROJECT_ROOT)
+            runtime = copy.deepcopy(original.runtime)
+            runtime["runtime"]["database_path"] = "data/jobs.sqlite3"
+            runtime["runtime"]["output_dir"] = "out"
+            runtime["runtime"]["dashboard_port"] = 8765
+            bundle = ConfigBundle(root, original.strategy, original.candidate, runtime)
+            (root / "data").mkdir()
+            (root / "out" / "production-validation").mkdir(parents=True)
+            (root / "extension").mkdir()
+            (root / "data" / "jobs.sqlite3").touch()
+            (root / "out" / "production-validation" / "latest.json").write_text(
+                json.dumps({"PROD_READY": True, "internal_failures": [], "head": "abc", "extension_build": "build"}),
+                encoding="utf-8",
+            )
+            (root / "extension" / "manifest.json").write_text(json.dumps({"version_name": "build"}), encoding="utf-8")
+            dirty = subprocess.CompletedProcess([], 0, stdout=" M src/jobbot/run_now.py\n", stderr="")
+            with patch("jobbot.run_now.subprocess.check_output", return_value="abc\n"), \
+                 patch("jobbot.run_now.subprocess.run", return_value=dirty), \
+                 patch("jobbot.run_now.Database.integrity_check", return_value="ok"):
+                with self.assertRaisesRegex(RuntimeError, "tracked working tree is dirty"):
+                    assert_production_release(bundle)
+
+    def test_production_run_subcommand_cannot_bypass_release_guard(self) -> None:
+        bundle = bundle_with_database(PROJECT_ROOT / "data" / "jobs.sqlite3", PROJECT_ROOT / "out")
+        args = parser().parse_args(["run", "--mode", "fast", "--enqueue-only"])
+        with patch("jobbot.cli._bundle", return_value=bundle), \
+             patch("jobbot.cli.assert_production_release") as guard, \
+             patch("jobbot.cli.compile_and_write"), \
+             patch("jobbot.cli.enqueue", return_value=123):
+            self.assertEqual(command_run(args), 0)
+        guard.assert_called_once_with(bundle)
     def test_clean_room_preflight_and_launcher(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

@@ -343,9 +343,10 @@ def extract_states(text: str) -> set[str]:
 
 
 def canonical_job_id(company: str, title: str, location: str, source_id: str = "") -> str:
-    # Cross-source identity: company/title/location, with external id only as fallback if core fields missing.
+    # Cross-source merging is decided in PrecisionStore.resolve_job_id(), not
+    # by dropping distinct source requisition IDs from the fallback key.
     core = "|".join([norm(company), norm(title), norm(location)])
-    if not norm(company) or not norm(title):
+    if source_id or not norm(company) or not norm(title):
         core += "|" + norm(source_id)
     return "J" + hashlib.sha256(core.encode("utf-8", errors="ignore")).hexdigest()[:14].upper()
 
@@ -545,7 +546,12 @@ class HttpClient:
         if allow_stale and cp.exists():
             print(f"  ! network failed for {host_of(url)}; using cached copy", file=sys.stderr)
             return cp.read_bytes()
-        raise RuntimeError(f"GET failed for {host_of(url)}: {last}")
+        # Preserve the typed root cause for supplemental isolation.  Wrapping
+        # every network failure in RuntimeError made timeouts and HTTP 429s
+        # indistinguishable from JobBot programming defects.
+        if last is not None:
+            raise last
+        raise RuntimeError(f"GET failed for {host_of(url)}")
 
     def json(self, url: str) -> Any:
         return json.loads(self.get_bytes(url, "application/json").decode("utf-8", errors="replace"))

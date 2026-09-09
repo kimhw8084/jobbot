@@ -39,6 +39,12 @@ def assert_production_release(bundle: ConfigBundle) -> None:
     except Exception as exc:
         raise RuntimeError(f"production guard refused unreadable validation report: {exc}") from exc
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=bundle.root, text=True).strip()
+    status = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--untracked-files=no"],
+        cwd=bundle.root, text=True, capture_output=True, check=False,
+    )
+    if status.stdout.strip():
+        raise RuntimeError("production guard refused start: tracked working tree is dirty")
     manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
     build = str(manifest.get("version_name") or "")
     if report.get("PROD_READY") is not True or report.get("internal_failures") != []:

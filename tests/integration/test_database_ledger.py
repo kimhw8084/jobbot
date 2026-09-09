@@ -8,7 +8,7 @@ from pathlib import Path
 
 from jobbot.config import PROJECT_ROOT
 from jobbot.db import Database
-from jobbot.legacy_engine import PrecisionStore, select_daily_plan
+from jobbot.legacy_engine import PrecisionStore, prepare_packet, resume_path_for, select_daily_plan
 
 from tests.helpers import bundle_with_database, scored
 
@@ -18,7 +18,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 14)))
+            self.assertEqual(result.applied, tuple(range(1, 15)))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -112,6 +112,67 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 self.assertTrue(all(row["recommendation"] in {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"} for row in plan))
                 self.assertTrue(all(row["remote_gate"] == "pass" for row in plan))
             finally: store.close()
+
+    def test_cross_platform_merge_is_conservative_about_requisition_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "jobs.sqlite3"; bundle = bundle_with_database(path); Database(bundle).migrate(); store = PrecisionStore(path)
+            try:
+                description = "Fully remote healthcare enrollment operations. Required Qualifications: 2 years relevant experience. " + "HIPAA documentation and patient access workflow. " * 40
+                first = scored("Patient Access Specialist", description, source="greenhouse")
+                first.source_job_id = "board-requisition-1"; first.canonical_url = "https://boards.greenhouse.io/example/jobs/1"; first.apply_url = first.canonical_url
+                second = scored(first.title, description, source="greenhouse")
+                second.source_job_id = "board-requisition-2"; second.canonical_url = "https://boards.greenhouse.io/example/jobs/2"; second.apply_url = second.canonical_url
+                self.assertEqual(store.upsert(first), "new")
+                self.assertEqual(store.upsert(second), "new")
+                self.assertEqual(store.conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], 2)
+
+                mirror = scored(first.title, description.replace("patient access workflow", "patient-access workflow"), source="indeed")
+                mirror.source_job_id = "indeed-mirror-1"; mirror.canonical_url = "https://www.indeed.com/viewjob?jk=mirror-1"; mirror.apply_url = mirror.canonical_url
+                self.assertEqual(store.upsert(mirror), "unchanged")
+                self.assertEqual(store.conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], 2)
+                merge_reason, confidence = store.conn.execute(
+                    "SELECT canonical_merge_reason,canonical_merge_confidence FROM jobs WHERE job_id=?",
+                    (store.resolve_job_id(first),),
+                ).fetchone()
+                self.assertIn(merge_reason, {"same_job_specific_url", "strong_description_fingerprint"})
+                self.assertGreaterEqual(float(confidence), 0.96)
+            finally: store.close()
+
+    def test_distinct_cross_source_ats_requisitions_do_not_overmerge(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "jobs.sqlite3"; bundle = bundle_with_database(path); Database(bundle).migrate(); store = PrecisionStore(path)
+            try:
+                description = "Fully remote healthcare operations role. Required Qualifications: 2 years relevant experience. " + "Patient access documentation and quality workflow. " * 40
+                first = scored("Healthcare Operations Coordinator", description, source="linkedin")
+                first.source_job_id = "li-1"; first.canonical_url = "https://www.linkedin.com/jobs/view/1001/"; first.apply_url = "https://boards.greenhouse.io/example/jobs/1001"
+                second = scored(first.title, description, source="indeed")
+                second.source_job_id = "indeed-2"; second.canonical_url = "https://www.indeed.com/viewjob?jk=2"; second.apply_url = "https://boards.greenhouse.io/example/jobs/1002"
+                self.assertEqual(store.upsert(first), "new")
+                self.assertEqual(store.upsert(second), "new")
+                self.assertEqual(store.conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], 2)
+            finally:
+                store.close()
+
+    def test_resume_routing_never_fabricates_a_missing_variant(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "jobs.sqlite3"
+            bundle = bundle_with_database(path)
+            Database(bundle).migrate()
+            store = PrecisionStore(path)
+            try:
+                job = scored(
+                    "Healthcare Quality Analyst",
+                    "Fully remote healthcare quality and data operations. " * 20,
+                )
+                store.upsert(job)
+                store.conn.execute("UPDATE jobs SET resume_variant=?", ("healthcare_data_quality",))
+                store.conn.commit()
+                row = store.conn.execute("SELECT * FROM jobs LIMIT 1").fetchone()
+                self.assertIsNone(resume_path_for(row, PROJECT_ROOT))
+                packet = prepare_packet(store, Path(td) / "out", PROJECT_ROOT, row["job_id"])
+                self.assertIn("RESUME FILE UNAVAILABLE", packet.read_text(encoding="utf-8"))
+            finally:
+                store.close()
 
 
 if __name__ == "__main__": unittest.main()
