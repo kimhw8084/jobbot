@@ -19,6 +19,7 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertEqual(manifest["manifest_version"], 3)
         self.assertEqual(manifest["version"], "3.2.1")
         self.assertNotIn("nativeMessaging", manifest["permissions"])
+        self.assertIn("windows", manifest["permissions"])
         self.assertIn("http://127.0.0.1/*", manifest["host_permissions"])
         referenced_scripts = []
         for content_script in manifest.get("content_scripts", []):
@@ -60,6 +61,13 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("runtime_config", worker)
         self.assertIn("function normalizeSearchUrl", worker)
         self.assertIn("searchParams.delete('currentJobId')", worker)
+        self.assertIn("function createBackgroundTarget", worker)
+        self.assertIn("state:'minimized'", worker)
+        self.assertIn("focused:false", worker)
+        self.assertIn("function keepBackgroundTab", worker)
+        self.assertIn("function closeBackgroundTarget", worker)
+        self.assertIn("await keepBackgroundTab(searchTab.id,searchTarget.window_id)", worker)
+        self.assertIn("windowId:searchTarget.window_id", worker)
         self.assertNotIn("const HEARTBEAT_MS", worker)
         self.assertNotIn("const WATCHDOG_MS", worker)
 

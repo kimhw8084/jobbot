@@ -28,6 +28,28 @@ async function configureBridge(port,token){
   runtimeConfig=await requiredRequest('runtime_config',{},10000);
   return health;
 }
+async function createBackgroundTarget(url){
+  // Keep crawler pages in an owned minimized window. active:false alone can
+  // still attach a new tab to the user's foreground window/Space.
+  if(typeof chrome.windows?.create==='function'){
+    const win=await chrome.windows.create({url,focused:false,state:'minimized',type:'normal'});
+    const tab=win?.tabs?.[0];
+    if(win?.id!=null&&tab?.id!=null)return{tab,window_id:win.id,owned_window:true};
+    if(win?.id!=null)try{await chrome.windows.remove(win.id);}catch(_){}
+  }
+  const tab=await chrome.tabs.create({url,active:false});
+  return{tab,window_id:tab?.windowId??null,owned_window:false};
+}
+async function keepBackgroundTab(tabId,windowId){
+  const tab=await chrome.tabs.get(tabId);
+  if(windowId!=null&&tab.windowId!==windowId)await chrome.tabs.move(tabId,{windowId,index:-1});
+  await chrome.tabs.update(tabId,{active:false});
+  return chrome.tabs.get(tabId);
+}
+async function closeBackgroundTarget(target,tabIds=[]){
+  if(target?.owned_window&&target.window_id!=null)try{await chrome.windows.remove(target.window_id);}catch(_){}
+  for(const id of [...new Set([target?.tab?.id,...tabIds].filter(x=>x!=null))])try{await chrome.tabs.remove(id);}catch(_){}
+}
 function transientBridgeError(error){
   const s=String(error?.message||error||'').toLowerCase();
   return /unavailable|network|failed to fetch|connection|timed out|abort|temporar|503|502|504/.test(s);
@@ -80,7 +102,7 @@ function stopHeartbeat(){if(heartbeatTimer)clearInterval(heartbeatTimer);heartbe
 
 async function checkAuth(platform,runId,taskId){
   const url=AUTH_URLS[platform]; if(!url)return {authenticated:true,page:{reason:'no auth check configured'}};
-  const tab=await chrome.tabs.create({url,active:false});
+  const target=await createBackgroundTarget(url),tab=target.tab;
   try{
     const p=await inspectTab(tab.id,'JOBBOT_INSPECT_AUTH',{},5);
     if(p.challenged){
@@ -90,7 +112,7 @@ async function checkAuth(platform,runId,taskId){
     const authenticated=!!p.authenticated&&!p.challenged;
     await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated,reason:p.reason||p.challenge_reason||'',page_url:p.page_url||''});
     return {authenticated,page:p};
-  }finally{try{await chrome.tabs.remove(tab.id);}catch(_){}}
+  }finally{await closeBackgroundTarget(target);}
 }
 
 async function gatherStableSearch(tabId,initial){
@@ -123,17 +145,18 @@ async function processTask(runId,task){
   const cp=parseCheckpoint(task.checkpoint_json); let searchUrl=normalizeSearchUrl(cp.search_url||task.search_url);
   let processed=Number(task.jobs_recorded||0), resultsSeen=Number(task.results_seen||0), pagesVisited=Number(task.pages_visited||0), detailRead=Number(task.detail_count_read||0);
   let cardsExtracted=Number(task.cards_extracted||0), persistenceAttempted=Number(task.cards_persistence_attempted||0), persistenceSucceeded=Number(task.cards_persistence_succeeded||0), persistenceFailed=Number(task.cards_persistence_failed||0), duplicateCards=Number(task.duplicate_cards||0), pendingDetails=Number(task.pending_details||0), detailsFailed=Number(task.details_failed||0);
-  const fingerprintCounts=new Map(); let searchTab=null,detailTab=null,lastMeaningfulAt=Date.now();
+  const fingerprintCounts=new Map(); let searchTarget=null,searchTab=null,detailTab=null,lastMeaningfulAt=Date.now();
   const cardStats=()=>({extracted_cards:cardsExtracted,persistence_attempted:persistenceAttempted,persistence_succeeded:persistenceSucceeded,persistence_failed:persistenceFailed,duplicate_cards:duplicateCards,pending_details:pendingDetails,details_completed:detailRead,details_failed:detailsFailed});
   const progressPayload=(page,pageFp)=>({run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:normalizeSearchUrl(page.page_url||searchUrl),page_fingerprint:pageFp,processed,page_number:pagesVisited,scroll_generation:pagesVisited,card_stats:cardStats()}});
   const finishIncomplete=async(reason)=>{try{await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'incomplete',reason});}catch(_){/* preserve the original failure when the bridge is unavailable */}};
   try{
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open search ${searchUrl}`});
-    searchTab=await chrome.tabs.create({url:searchUrl,active:false});
+    searchTarget=await createBackgroundTarget(searchUrl); searchTab=searchTarget.tab;
     while(true){
       const watchdogMs=Math.max(1,Number(runtimeConfig.watchdog_stall_seconds||180))*1000;
       if(Date.now()-lastMeaningfulAt>watchdogMs){await finishIncomplete(`SAFETY_STOP: watchdog observed no meaningful progress for ${runtimeConfig.watchdog_stall_seconds||180} seconds`);return;}
       const stop=await requiredRequest('should_stop',{run_id:runId}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
+      await keepBackgroundTab(searchTab.id,searchTarget.window_id);
       let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH');
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge'});return;}
       if(page.extraction_scope_missing){const message=`${platform} search extraction scope missing at ${page.page_url}; diagnostics=${JSON.stringify(page.extraction_diagnostics||{})}`;await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_scope_missing',message});await finishIncomplete(`SAFETY_STOP: ${message}`);return;}
@@ -185,7 +208,8 @@ async function processTask(runId,task){
         if(pending.done||!pending.detail)break;
         const work=pending.detail,link={...(work.card||{}),source_job_id:work.source_job_id,url:work.source_url,title:work.title_hint,company:work.company_hint,location:work.location_hint,posted_text:work.posted_text,posted_age_days:work.posted_age_days};
         await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open detail ${link.source_job_id||link.url}`});
-        if(!detailTab)detailTab=await chrome.tabs.create({url:'about:blank',active:false});
+        if(!detailTab)detailTab=await chrome.tabs.create({windowId:searchTarget.window_id,url:'about:blank',active:false});
+        await keepBackgroundTab(detailTab.id,searchTarget.window_id);
         await chrome.tabs.update(detailTab.id,{url:link.url,active:false});
         let detail;
         try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:String(e?.message||e),url:link.url});continue;}
@@ -216,7 +240,7 @@ async function processTask(runId,task){
       searchUrl=normalizeSearchUrl(adv.url||page.next_url||searchUrl); await sleep(400);
     }
   }catch(e){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'failed',reason:String(e?.message||e).slice(0,700)}).catch(()=>{});}
-  finally{activeTaskId=null;if(detailTab?.id)try{await chrome.tabs.remove(detailTab.id);}catch(_){} if(searchTab?.id)try{await chrome.tabs.remove(searchTab.id);}catch(_){} }
+  finally{activeTaskId=null;await closeBackgroundTarget(searchTarget,[searchTab?.id,detailTab?.id]);}
 }
 
 async function runProduction(runId){
