@@ -19,7 +19,7 @@ class ExtensionBridgeTests(unittest.TestCase):
         manifest = json.loads((PROJECT_ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["manifest_version"], 3)
         self.assertEqual(manifest["version"], "3.2.3")
-        self.assertEqual(manifest["version_name"], "3.2.3-static-hardening.3")
+        self.assertEqual(manifest["version_name"], "3.2.3-static-hardening.4")
         identity = expected_identity(PROJECT_ROOT)
         build_meta = metadata(PROJECT_ROOT)
         self.assertTrue(identity["runtime_digest"])

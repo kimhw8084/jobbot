@@ -105,7 +105,8 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
                        timeout_seconds: float | None = None, stop_after_seconds: float | None = None,
                        test_bridge_restart_after: float | None = None,
                        startup_timeout_seconds: float | None = None,
-                       dashboard_url: str | None = None) -> RunOutcome:
+                       dashboard_url: str | None = None,
+                       validation_stage_id: str | None = None) -> RunOutcome:
     runtime = bundle.runtime["runtime"]
     restarts_allowed = int(runtime["bridge_restart_limit"])
     token = secrets.token_urlsafe(48)
@@ -155,6 +156,8 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
         )
         if dashboard_url:
             url += f"&dashboard_url={urllib.parse.quote(dashboard_url, safe='')}"
+        if validation_stage_id:
+            url += f"&validation_stage_id={urllib.parse.quote(validation_stage_id, safe='')}"
         if open_browser:
             _open_chrome(url)
         else:

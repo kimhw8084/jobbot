@@ -32,7 +32,7 @@ function createChrome(seedWindows = []) {
   }
   const runtime = {
     getURL: (path) => `chrome-extension://jobbot/${path}`,
-    getManifest: () => ({ version: '3.2.3', version_name: '3.2.3-static-hardening.3' }),
+    getManifest: () => ({ version: '3.2.3', version_name: '3.2.3-static-hardening.4' }),
     onMessage: { addListener(fn) { messageListeners.push(fn); } }, onStartup: { addListener() {} }, onInstalled: { addListener() {} },
   };
   const chrome = {
@@ -93,7 +93,7 @@ async function loadWorker(mock) {
     setInterval, clearInterval,
     fetch: async (url, options = {}) => {
       if (String(url).endsWith('/build_meta.json')) {
-        return { ok: true, status: 200, json: async () => ({ extension_build: '3.2.3-static-hardening.3', runtime_digest: 'synthetic-runtime-digest', runtime_paths: [] }) };
+        return { ok: true, status: 200, json: async () => ({ extension_build: '3.2.3-static-hardening.4', runtime_digest: 'synthetic-runtime-digest', runtime_paths: [] }) };
       }
       let request = {};
       try { request = JSON.parse(options.body || '{}'); } catch (_) {}
@@ -168,6 +168,10 @@ async function dispatchMessage(mock, message, tabId) {
   state = await hooks.ensureWorkspace(111);
   assert.notStrictEqual(state.window_id, 11);
   assert.strictEqual(mock.windows.get(11).tabs.length, 1);
+  await mock.chrome.tabs.create({ windowId: state.window_id, url: 'https://mail.google.com/', active: false });
+  const unsafeOwnedState = await hooks.workspaceState();
+  assert.strictEqual(unsafeOwnedState.non_jobbot_tab_count, 1);
+  assert.strictEqual(unsafeOwnedState.isolated, false);
 
   // Dashboard is the only tab JobBot activates; no browser window focus call.
   const dashboard = await hooks.createOwnedTab('dashboard', 'http://127.0.0.1:8765/?jobbot_workspace=1&jobbot_role=dashboard');
@@ -176,18 +180,51 @@ async function dispatchMessage(mock, message, tabId) {
   assert.strictEqual(mock.tabs.get(dashboard.id).active, true);
   assert.strictEqual(mock.tabs.get(state.anchor_tab_id).active, false);
 
+  // A stage baseline is captured before initial workspace recreation and the
+  // resulting delta remains visible to the validator.
+  mock = createChrome([{ id: 13, focused: true, tabs: [
+    { id: 130, url: 'chrome-extension://jobbot/dashboard.html?autorun=1&run_id=51&bridge_port=52625&bridge_token=synthetic-token-1234567890' },
+    { id: 131, url: 'https://mail.google.com/' },
+  ] }]); hooks = await loadWorker(mock);
+  await hooks.saveWorkspace({ window_id: 999, anchor_tab_id: 998, workspace_recreation_count: 1304 });
+  const initialRecreation = await dispatchMessage(mock, {
+    type: 'JOBBOT_CONFIGURE_BRIDGE', port: 52625, token: 'synthetic-token-1234567890',
+    run_id: 51, dashboard_url: '', validation_stage_id: 'initial-stage-cccccccc',
+  }, 130);
+  assert.strictEqual(initialRecreation.ok, true);
+  assert.strictEqual(initialRecreation.workspace.workspace_recreation_baseline, 1304);
+  assert.strictEqual(initialRecreation.workspace.workspace_recreation_current, 1305);
+  assert.strictEqual(initialRecreation.workspace.workspace_recreation_delta, 1);
+
+  // A validation stage without a cumulative count cannot establish proof.
+  mock = createChrome([{ id: 14, focused: false, tabs: [
+    { id: 140, url: 'chrome-extension://jobbot/dashboard.html?autorun=1&run_id=52&bridge_port=52625&bridge_token=synthetic-token-1234567890' },
+  ] }]); hooks = await loadWorker(mock);
+  const missingBaseline = await dispatchMessage(mock, {
+    type: 'JOBBOT_CONFIGURE_BRIDGE', port: 52625, token: 'synthetic-token-1234567890',
+    run_id: 52, dashboard_url: '', validation_stage_id: 'missing-stage-dddddddd',
+  }, 140);
+  assert.strictEqual(missingBaseline.ok, false);
+  assert.match(missingBaseline.error, /workspace_recreation_baseline_unavailable/);
+
   // Repeated configure calls settle after one required marker normalization;
   // the subsequent autorun reaches the service-worker run exactly once.
   mock = createChrome([{ id: 12, focused: true, tabs: [
     { id: 120, url: 'chrome-extension://jobbot/dashboard.html?autorun=1&run_id=41&bridge_port=52625&bridge_token=synthetic-token-1234567890' },
     { id: 121, url: 'https://mail.google.com/' },
   ] }]); hooks = await loadWorker(mock);
+  await hooks.saveWorkspace({ workspace_recreation_count: 1304 });
   const configureMessage = {
     type: 'JOBBOT_CONFIGURE_BRIDGE', port: 52625, token: 'synthetic-token-1234567890',
-    run_id: 41, dashboard_url: '',
+    run_id: 41, dashboard_url: '', validation_stage_id: 'micro-stage-aaaaaaaa',
   };
   const firstConfigure = await dispatchMessage(mock, configureMessage, 120);
   assert.strictEqual(firstConfigure.ok, true);
+  assert.strictEqual(firstConfigure.workspace.validation_stage_id, 'micro-stage-aaaaaaaa');
+  assert.strictEqual(firstConfigure.workspace.workspace_recreation_baseline, 1304);
+  assert.strictEqual(firstConfigure.workspace.workspace_recreation_current, 1304);
+  assert.strictEqual(firstConfigure.workspace.workspace_recreation_delta, 0);
+  assert.strictEqual(firstConfigure.workspace.workspace_recreation_baseline_captured_before_ensure, true);
   assert.strictEqual(mock.urlUpdates.length, 1);
   assert.strictEqual(mock.windows.get(12).tabs.some((tab) => tab.id === 121), true);
   assert.strictEqual(mock.moveCalls.filter((call) => call.id === 120).length, 1);
@@ -198,6 +235,21 @@ async function dispatchMessage(mock, message, tabId) {
   assert.strictEqual(secondConfigure.ok, true);
   assert.strictEqual(mock.urlUpdates.length, 1);
   assert.strictEqual(mock.moveCalls.filter((call) => call.id === 120).length, 1);
+  assert.strictEqual(secondConfigure.workspace.workspace_recreation_baseline, 1304);
+  assert.strictEqual(secondConfigure.workspace.workspace_recreation_current, 1304);
+  assert.strictEqual(secondConfigure.workspace.workspace_recreation_delta, 0);
+  const persisted = await hooks.readWorkspace();
+  await hooks.saveWorkspace({ ...persisted, workspace_recreation_count: 1305 });
+  const recreatedConfigure = await dispatchMessage(mock, configureMessage, 120);
+  assert.strictEqual(recreatedConfigure.workspace.workspace_recreation_baseline, 1304);
+  assert.strictEqual(recreatedConfigure.workspace.workspace_recreation_current, 1305);
+  assert.strictEqual(recreatedConfigure.workspace.workspace_recreation_delta, 1);
+  configureMessage.validation_stage_id = 'soak-stage-bbbbbbbb';
+  const newStageConfigure = await dispatchMessage(mock, configureMessage, 120);
+  assert.strictEqual(newStageConfigure.workspace.validation_stage_id, 'soak-stage-bbbbbbbb');
+  assert.strictEqual(newStageConfigure.workspace.workspace_recreation_baseline, 1305);
+  assert.strictEqual(newStageConfigure.workspace.workspace_recreation_current, 1305);
+  assert.strictEqual(newStageConfigure.workspace.workspace_recreation_delta, 0);
   await dispatchMessage(mock, { type: 'JOBBOT_START_RUN', run_id: 41 }, 120);
   for (let attempt = 0; attempt < 20 && !mock.rpcRequests.some((request) => request.action === 'finish_run'); attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 0));

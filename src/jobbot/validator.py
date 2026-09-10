@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -179,17 +180,19 @@ def _dashboard_json(url: str, endpoint: str) -> dict[str, Any] | None:
         return None
 
 
-def _workspace_recreation_baseline(url: str) -> int | None:
-    active = _dashboard_json(url, "/api/run")
-    workspace = (active or {}).get("workspace", {}) if isinstance(active, dict) else {}
-    value = workspace.get("workspace_recreation_count")
+def _nonnegative_int(value: Any) -> int | None:
     try:
-        return int(value)
+        parsed = int(value)
     except (TypeError, ValueError):
         return None
+    return parsed if parsed >= 0 else None
 
 
-def _dashboard_probe(bundle: ConfigBundle, url: str, *, recreation_baseline: int | None = None) -> dict[str, Any]:
+def _new_validation_stage_id(label: str) -> str:
+    return f"{label}-{uuid.uuid4().hex}"
+
+
+def _dashboard_probe(bundle: ConfigBundle, url: str, *, recreation_stage_id: str) -> dict[str, Any]:
     identity = _dashboard_json(url, "/api/identity")
     summary = _dashboard_json(url, "/api/summary")
     active = _dashboard_json(url, "/api/run")
@@ -204,15 +207,32 @@ def _dashboard_probe(bundle: ConfigBundle, url: str, *, recreation_baseline: int
     worker_windows = workspace.get("worker_tab_window_ids") or {}
     role_windows_ok = all(str(value) == str(window_id) for value in role_windows.values() if value is not None)
     worker_windows_ok = all(str(value) == str(window_id) for value in worker_windows.values() if value is not None)
-    recreation_count = int(workspace.get("workspace_recreation_count", 0) or 0)
-    recreation_unchanged = recreation_baseline is not None and recreation_count == int(recreation_baseline)
+    recreation_count = _nonnegative_int(workspace.get("workspace_recreation_count"))
+    recreation_baseline = _nonnegative_int(workspace.get("workspace_recreation_baseline"))
+    recreation_current = _nonnegative_int(workspace.get("workspace_recreation_current"))
+    recreation_delta = _nonnegative_int(workspace.get("workspace_recreation_delta"))
+    proof_stage_id = str(workspace.get("validation_stage_id") or "")
+    stage_id_matches = bool(recreation_stage_id and proof_stage_id == recreation_stage_id)
+    proof_arithmetic_ok = bool(
+        recreation_count is not None and recreation_baseline is not None
+        and recreation_current is not None and recreation_delta is not None
+        and recreation_current == recreation_count
+        and recreation_delta == recreation_current - recreation_baseline
+        and workspace.get("workspace_recreation_baseline_captured_before_ensure") is True
+    )
+    recreation_proof_ok = stage_id_matches and proof_arithmetic_ok
+    recreation_unchanged = recreation_proof_ok and recreation_delta == 0
+    ownership_violations = _nonnegative_int(workspace.get("ownership_violations"))
+    non_jobbot_tab_count = _nonnegative_int(workspace.get("non_jobbot_tab_count"))
+    focus_requests = _nonnegative_int(workspace.get("focus_requests_by_jobbot"))
     workspace_ok = bool(
         active and workspace.get("isolated") is True
-        and int(workspace.get("ownership_violations", 0) or 0) == 0
+        and ownership_violations == 0
+        and non_jobbot_tab_count == 0
         and role_windows_ok
         and worker_windows_ok
         and workspace.get("workspace_creation_method") != "unsafe_rendezvous_adoption"
-        and int(workspace.get("focus_requests_by_jobbot", 0) or 0) == 0
+        and focus_requests == 0
         and recreation_unchanged
     )
     return {
@@ -226,13 +246,19 @@ def _dashboard_probe(bundle: ConfigBundle, url: str, *, recreation_baseline: int
             "window_id": window_id,
             "role_tab_window_ids": role_windows,
             "worker_tab_window_ids": worker_windows,
-            "ownership_violations": int(workspace.get("ownership_violations", 0) or 0),
-            "non_jobbot_tab_count": int(workspace.get("non_jobbot_tab_count", 0) or 0),
+            "ownership_violations": ownership_violations,
+            "non_jobbot_tab_count": non_jobbot_tab_count,
             "workspace_creation_method": workspace.get("workspace_creation_method", ""),
             "workspace_recreation_count": recreation_count,
+            "workspace_recreation_stage_id": proof_stage_id,
             "workspace_recreation_baseline": recreation_baseline,
+            "workspace_recreation_current": recreation_current,
+            "workspace_recreation_delta": recreation_delta,
+            "workspace_recreation_stage_id_matches": stage_id_matches,
+            "workspace_recreation_proof_ok": recreation_proof_ok,
+            "workspace_recreation_baseline_captured_before_ensure": workspace.get("workspace_recreation_baseline_captured_before_ensure") is True,
             "workspace_recreation_unchanged": recreation_unchanged,
-            "focus_requests_by_jobbot": int(workspace.get("focus_requests_by_jobbot", 0) or 0),
+            "focus_requests_by_jobbot": focus_requests,
         },
     }
 
@@ -710,6 +736,7 @@ def _run_supplemental(bundle: ConfigBundle, run_id: int | None) -> dict[str, Any
 
 
 def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_seconds: int,
+              stage_id: str,
               stop_after_seconds: int | None = None, bridge_restart_after: int | None = None,
               validation_micro: bool = False, validation_sample: bool = False,
               sample_phases: tuple[str, ...] | None = None, sample_per_phase: int = 6,
@@ -749,6 +776,7 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
             test_bridge_restart_after=bridge_restart_after,
             startup_timeout_seconds=45,
             dashboard_url=f"http://127.0.0.1:{int(bundle.runtime['runtime']['dashboard_port'])}/",
+            validation_stage_id=stage_id,
         )
     audit = _audit(bundle, run_id)
     validation_cutoff = False
@@ -777,6 +805,7 @@ def _live_run(bundle: ConfigBundle, *, mode: str, platforms: list[str], timeout_
 
 
 def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
+                 stage_id: str,
                  stop_after_seconds: int | None = None,
                  active_runs: list[tuple[ConfigBundle, int]] | None = None,
                  deadline: float | None = None) -> dict[str, Any]:
@@ -796,7 +825,8 @@ def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
                 stop_after_seconds = max(1, min(int(stop_after_seconds), max(1, effective_timeout - VALIDATION_STOP_GRACE_SECONDS)))
         outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=True, timeout_seconds=effective_timeout,
                                      stop_after_seconds=stop_after_seconds, startup_timeout_seconds=45,
-                                     dashboard_url=f"http://127.0.0.1:{int(bundle.runtime['runtime']['dashboard_port'])}/")
+                                     dashboard_url=f"http://127.0.0.1:{int(bundle.runtime['runtime']['dashboard_port'])}/",
+                                     validation_stage_id=stage_id)
     audit = _audit(bundle, run_id)
     validation_cutoff = False
     if outcome.status == "stopped" and stop_after_seconds is not None:
@@ -1073,6 +1103,7 @@ def _run_semi_phase(
     bundle: ConfigBundle,
     *,
     phase: str,
+    stage_id: str,
     platforms: list[str],
     phase_seconds: int,
     active_runs: list[tuple[ConfigBundle, int]],
@@ -1093,6 +1124,7 @@ def _run_semi_phase(
         mode="staged",
         platforms=platforms,
         timeout_seconds=initial_timeout,
+        stage_id=stage_id,
         stop_after_seconds=initial_stop_after,
         validation_sample=True,
         sample_phases=(phase,),
@@ -1109,6 +1141,7 @@ def _run_semi_phase(
             bundle,
             int(initial["run_id"]),
             remaining + VALIDATION_STOP_GRACE_SECONDS,
+            stage_id,
             remaining if intentional_stop else None,
             active_runs,
             deadline=stage_deadline,
@@ -1198,6 +1231,12 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
     }
     active_runs: list[tuple[ConfigBundle, int]] = []
     dashboard_bundles: list[tuple[ConfigBundle, str]] = []
+    stage_ids = {
+        "micro": _new_validation_stage_id("micro"),
+        "soak": _new_validation_stage_id("soak"),
+        "semi_production": _new_validation_stage_id("semi-production"),
+    }
+    report["workspace_recreation_stage_ids"] = dict(stage_ids)
     micro_deadline = time.monotonic() + 300 if micro_only else None
     try:
         state = _git_state()
@@ -1210,8 +1249,6 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         url, _ = ensure_dashboard(micro_bundle, open_browser=False)
         dashboard_bundles.append((micro_bundle, url))
         report["dashboard_url"] = url
-        micro_recreation_baseline = _workspace_recreation_baseline(url)
-        report.setdefault("workspace_recreation_baselines", {})["micro"] = micro_recreation_baseline
         with _isolated_environment(micro_bundle):
             preflight(micro_bundle)
             primary = _live_run(
@@ -1219,6 +1256,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                 mode="staged_recent",
                 platforms=list(PRIMARY),
                 timeout_seconds=300,
+                stage_id=stage_ids["micro"],
                 stop_after_seconds=20,
                 bridge_restart_after=8,
                 validation_micro=True,
@@ -1230,6 +1268,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                 micro_bundle,
                 int(primary["run_id"]),
                 PRIMARY_RESUME_TIMEOUT_SECONDS,
+                stage_ids["micro"],
                 PRIMARY_RESUME_STOP_AFTER_SECONDS,
                 active_runs,
                 deadline=micro_deadline,
@@ -1239,7 +1278,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             primary["resume"] = None
             final_primary = primary
         primary["stop_resume_pass"] = bool(primary["outcome"]["status"] == "stopped" and primary["resume"] and _stage_pass(final_primary, bounded=True))
-        primary["dashboard"] = _dashboard_probe(micro_bundle, url, recreation_baseline=micro_recreation_baseline)
+        primary["dashboard"] = _dashboard_probe(micro_bundle, url, recreation_stage_id=stage_ids["micro"])
         primary["pass"] = bool(primary["stop_resume_pass"] and primary["bridge_restart_pass"] is True
                                 and primary["dashboard"]["identity_ok"]
                                 and primary["dashboard"]["live_refresh_ok"] and primary["dashboard"]["workspace_isolation_ok"]
@@ -1273,17 +1312,16 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         soak_url, _ = ensure_dashboard(soak_bundle, open_browser=False)
         dashboard_bundles.append((soak_bundle, soak_url))
         report["dashboard_url"] = soak_url
-        soak_recreation_baseline = _workspace_recreation_baseline(soak_url)
-        report.setdefault("workspace_recreation_baselines", {})["soak"] = soak_recreation_baseline
         soak_started = time.monotonic()
         soak_deadline = soak_started + 900
         with _isolated_environment(soak_bundle):
             soak = _live_run(soak_bundle, mode="staged_recent", platforms=list(PRIMARY), timeout_seconds=900,
+                             stage_id=stage_ids["soak"],
                              stop_after_seconds=60, bridge_restart_after=30, validation_sample=True,
                              sample_phases=("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT"), sample_per_phase=6,
                              active_runs=active_runs, deadline=soak_deadline)
             if soak["outcome"]["status"] == "stopped":
-                soak["resume"] = _resume_live(soak_bundle, int(soak["run_id"]), 840, 780, active_runs, deadline=soak_deadline)
+                soak["resume"] = _resume_live(soak_bundle, int(soak["run_id"]), 840, stage_ids["soak"], 780, active_runs, deadline=soak_deadline)
                 final_soak = soak["resume"]
             else:
                 soak["resume"] = None
@@ -1299,7 +1337,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         soak["bands_reached"] = [band for band, values in soak["band_execution_evidence"].items()
                                   if int(values.get("progress_tasks", 0) or 0) > 0]
         soak["duration_seconds_total"] = round(time.monotonic() - soak_started, 2)
-        soak["dashboard"] = _dashboard_probe(soak_bundle, soak_url, recreation_baseline=soak_recreation_baseline)
+        soak["dashboard"] = _dashboard_probe(soak_bundle, soak_url, recreation_stage_id=stage_ids["soak"])
         soak["pass"] = bool(soak["outcome"]["status"] == "stopped" and soak["resume"] and
                              soak["bridge_restart_pass"] is True and
                              _stage_pass(final_soak, bounded=True) and soak["supplemental"]["isolation_pass"] and
@@ -1321,8 +1359,6 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         semi_url, _ = ensure_dashboard(semi_bundle, open_browser=False)
         dashboard_bundles.append((semi_bundle, semi_url))
         report["dashboard_url"] = semi_url
-        semi_recreation_baseline = _workspace_recreation_baseline(semi_url)
-        report.setdefault("workspace_recreation_baselines", {})["semi_production"] = semi_recreation_baseline
         semi_started = time.monotonic()
         semi_deadline = semi_started + semi_minutes * 60
         # Five controlled representative probes make band proof deterministic
@@ -1345,6 +1381,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                 phase_runs[f"{phase}:{band}"] = _run_semi_phase(
                     semi_bundle,
                     phase=phase,
+                    stage_id=stage_ids["semi_production"],
                     platforms=list(PRIMARY),
                     phase_seconds=phase_seconds,
                     active_runs=active_runs,
@@ -1394,7 +1431,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         report["run_now_coverage"]["live_sampled_phase_counts"]["semi_production"] = sampled_phase_counts
         report["run_now_coverage"]["semi_execution_evidence"] = execution_evidence
         semi["duration_seconds_total"] = round(time.monotonic() - semi_started, 2)
-        semi["dashboard"] = _dashboard_probe(semi_bundle, semi_url, recreation_baseline=semi_recreation_baseline)
+        semi["dashboard"] = _dashboard_probe(semi_bundle, semi_url, recreation_stage_id=stage_ids["semi_production"])
         semi["pass"] = bool(
             all(phase_pass.values())
             and _phase_coverage_pass(execution_evidence)

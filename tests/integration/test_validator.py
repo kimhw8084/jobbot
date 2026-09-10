@@ -288,23 +288,25 @@ class ValidatorIntegrationTests(unittest.TestCase):
              patch("jobbot.validator._resume_live", return_value=stopped) as resume, \
              patch("jobbot.validator._phase_execution_metrics", return_value={}), \
              patch("jobbot.validator._stage_pass", return_value=True):
-            _run_semi_phase(object(), phase="A_FASTEST_DOOR_RECENT", platforms=["linkedin"],
-                            phase_seconds=180, active_runs=[])
+            _run_semi_phase(object(), phase="A_FASTEST_DOOR_RECENT", stage_id="semi-stage-aaaaaaaa",
+                            platforms=["linkedin"], phase_seconds=180, active_runs=[])
             initial = live.call_args.kwargs
             self.assertEqual(initial["stop_after_seconds"], 30)
             self.assertEqual(initial["timeout_seconds"], 30 + VALIDATION_STOP_GRACE_SECONDS)
             self.assertEqual(resume.call_args.args[2], 150 + VALIDATION_STOP_GRACE_SECONDS)
-            self.assertEqual(resume.call_args.args[3], 150)
+            self.assertEqual(resume.call_args.args[3], "semi-stage-aaaaaaaa")
+            self.assertEqual(initial["stage_id"], "semi-stage-aaaaaaaa")
 
         with patch("jobbot.validator._live_run", return_value=stopped) as live, \
              patch("jobbot.validator._resume_live") as resume, \
              patch("jobbot.validator._phase_execution_metrics", return_value={}), \
              patch("jobbot.validator._stage_pass", return_value=True):
-            result = _run_semi_phase(object(), phase="B_REMAINING_CORE_RECENT", platforms=["linkedin"],
-                                     phase_seconds=180, active_runs=[])
+            result = _run_semi_phase(object(), phase="B_REMAINING_CORE_RECENT", stage_id="semi-stage-bbbbbbbb",
+                                     platforms=["linkedin"], phase_seconds=180, active_runs=[])
             self.assertEqual(live.call_count, 1)
             self.assertFalse(resume.called)
             self.assertIsNone(result["resume"])
+            self.assertEqual(live.call_args.kwargs["stage_id"], "semi-stage-bbbbbbbb")
             self.assertEqual(live.call_args.kwargs["stop_after_seconds"], 180)
             self.assertEqual(live.call_args.kwargs["timeout_seconds"], 180 + VALIDATION_STOP_GRACE_SECONDS)
 
@@ -483,7 +485,7 @@ class ValidatorIntegrationTests(unittest.TestCase):
             self.assertEqual(summary["throughput"]["linkedin"]["cards_per_minute"], 300.0)
             self.assertEqual(summary["throughput"]["linkedin"]["canonical_details_per_minute"], 50.0)
 
-    def test_workspace_probe_uses_current_stage_recreation_baseline(self) -> None:
+    def test_workspace_probe_requires_stage_scoped_recreation_proof(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             bundle = _isolated_bundle(root / "validation.sqlite3", root / "out", 18765)
@@ -493,29 +495,58 @@ class ValidatorIntegrationTests(unittest.TestCase):
                 "workspace_root": str(bundle.root.resolve()),
                 "jobbot_version": "3.2.3",
             }
+            stage_id = "micro-stage-aaaaaaaa"
             active = {"workspace": {
                 "isolated": True, "workspace_window_id": 7,
                 "workspace_creation_method": "windows.create",
-                "ownership_violations": 0, "role_tab_window_ids": {}, "worker_tab_window_ids": {},
-                "focus_requests_by_jobbot": 0, "workspace_recreation_count": 1304,
+                "ownership_violations": 0, "non_jobbot_tab_count": 0,
+                "role_tab_window_ids": {}, "worker_tab_window_ids": {}, "focus_requests_by_jobbot": 0,
+                "workspace_recreation_count": 1304,
+                "validation_stage_id": stage_id,
+                "workspace_recreation_baseline": 1304,
+                "workspace_recreation_current": 1304,
+                "workspace_recreation_delta": 0,
+                "workspace_recreation_baseline_captured_before_ensure": True,
             }}
             with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
-                probe = _dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)
+                probe = _dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id=stage_id)
                 self.assertTrue(probe["workspace_isolation_ok"])
                 self.assertTrue(probe["workspace_proof"]["workspace_recreation_unchanged"])
+                self.assertTrue(probe["workspace_proof"]["workspace_recreation_proof_ok"])
             active["workspace"]["focus_requests_by_jobbot"] = 1
             with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
-                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)["workspace_isolation_ok"])
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id=stage_id)["workspace_isolation_ok"])
             active["workspace"]["focus_requests_by_jobbot"] = 0
+            active["workspace"]["non_jobbot_tab_count"] = 1
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id=stage_id)["workspace_isolation_ok"])
+            active["workspace"]["non_jobbot_tab_count"] = 0
             active["workspace"]["role_tab_window_ids"] = {"anchor": 8}
             with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
-                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)["workspace_isolation_ok"])
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id=stage_id)["workspace_isolation_ok"])
             active["workspace"]["role_tab_window_ids"] = {}
             active["workspace"]["workspace_recreation_count"] = 1305
+            active["workspace"]["workspace_recreation_current"] = 1305
+            active["workspace"]["workspace_recreation_delta"] = 1
             with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
-                probe = _dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)
+                probe = _dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id=stage_id)
                 self.assertFalse(probe["workspace_isolation_ok"])
                 self.assertFalse(probe["workspace_proof"]["workspace_recreation_unchanged"])
+            active["workspace"]["workspace_recreation_baseline"] = 1304
+            active["workspace"]["workspace_recreation_delta"] = 1
+            active["workspace"]["validation_stage_id"] = "soak-stage-bbbbbbbb"
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id=stage_id)["workspace_isolation_ok"])
+            active["workspace"]["validation_stage_id"] = "soak-stage-bbbbbbbb"
+            active["workspace"]["workspace_recreation_baseline"] = 1305
+            active["workspace"]["workspace_recreation_delta"] = 0
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                fresh_stage = _dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id="soak-stage-bbbbbbbb")
+                self.assertTrue(fresh_stage["workspace_isolation_ok"])
+                self.assertTrue(fresh_stage["workspace_proof"]["workspace_recreation_stage_id_matches"])
+            active["workspace"].pop("workspace_recreation_baseline")
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_stage_id=stage_id)["workspace_isolation_ok"])
 
     def test_supplemental_failure_taxonomy_keeps_programming_bugs_internal(self) -> None:
         import socket
