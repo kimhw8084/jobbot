@@ -12,6 +12,32 @@ Repository administration should protect `main`, require the macOS/Linux/Windows
 core CI matrix and release-integrity checks, prohibit force pushes and branch
 deletion, and retain tags or other recoverable release references.
 
+## Source cleanliness policy
+
+Production validation and the production launch guard use Git's complete
+porcelain status (`--untracked-files=all`) as the source-of-truth policy.
+Tracked modifications, staged changes, deletions, and every nonignored
+untracked path block immutable-source validation, with one narrow local-sync
+exception: a regular `name 2.ext` file is tolerated only when its normalized
+name is already tracked and its Git blob is byte-identical to that tracked
+file. There is no filename allowlist and no content-changing historical-copy
+exemption for source-like files under `src/`, `extension/`, `scripts/`,
+`config/`, `docs/`, or `tests/`.
+
+The repository `.gitignore` contains only narrowly named local-state classes:
+databases/backups, output/log/cache/browser-profile state, resumes, and other
+generated runtime artifacts. Those ignored paths may exist locally because they
+are not source identity and cannot enter a release: release archives are built
+from committed Git objects, not the mutable filesystem. A new local artifact
+must be placed in one of those documented runtime classes only when it is
+genuinely runtime state; otherwise it remains a blocking untracked source
+input.
+
+Cloud-synced duplicate copies in source or test directories are therefore only
+tolerated when they are exact byte-identical overlays. Divergent copies must be
+intentionally removed, relocated to a supported local-state directory, or
+versioned by the owner before production validation.
+
 The repository is a private single-user snapshot. Candidate evidence and resume
 files remain local inputs and are not included in release archives. Databases,
 logs, browser state, credentials, caches, and generated outputs are never
