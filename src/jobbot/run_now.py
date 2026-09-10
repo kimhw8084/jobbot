@@ -40,7 +40,12 @@ def assert_production_release(bundle: ConfigBundle) -> None:
         report = json.loads(report_path.read_text(encoding="utf-8"))
     except Exception as exc:
         raise RuntimeError(f"production guard refused unreadable validation report: {exc}") from exc
-    current = release_identity(bundle.root)
+    try:
+        current = release_identity(bundle.root, require_upstream=True)
+    except RuntimeError as exc:
+        raise RuntimeError(f"production guard refused: source provenance unavailable: {exc}") from exc
+    if not current.get("branch"):
+        raise RuntimeError("production guard refused start: checked-out branch identity is unavailable")
     if not current["clean_worktree"]:
         raise RuntimeError("production guard refused start: relevant worktree is not clean")
     manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
@@ -49,6 +54,8 @@ def assert_production_release(bundle: ConfigBundle) -> None:
         raise RuntimeError("production guard refused start: latest validation is not PROD_READY with zero internal failures")
     if str(report.get("head") or "") != current["head"]:
         raise RuntimeError(f"production guard refused stale validation: report HEAD {report.get('head')} != current HEAD {current['head']}")
+    if str(report.get("branch") or "") != str(current.get("branch") or ""):
+        raise RuntimeError("production guard refused stale validation: certified branch identity differs")
     if str(report.get("tree") or report.get("source_tree") or "") != current["tree"]:
         raise RuntimeError("production guard refused stale validation: source tree identity differs")
     if report.get("clean_worktree") is not True or report.get("head_equals_upstream") is not True:

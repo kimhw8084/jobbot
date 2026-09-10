@@ -34,7 +34,7 @@ from .search_plan import compile_plan, compile_staged_plan
 from .search_strategy import BANDS, staged_cadence_economics
 from .version import PRODUCT_VERSION
 from .extension_identity import expected_identity
-from .provenance import identity_unchanged, release_identity, source_identity
+from .provenance import identity_unchanged, release_identity, source_identity, _git, ProvenanceError
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
@@ -163,13 +163,8 @@ def _command(args: list[str], *, env: dict[str, str] | None = None, timeout: int
 
 
 def _git_state() -> dict[str, Any]:
-    state = source_identity(PROJECT_ROOT)
-    try:
-        state["origin_main_head"] = subprocess.check_output(
-            ["git", "rev-parse", "origin/main"], cwd=PROJECT_ROOT, text=True,
-        ).strip()
-    except subprocess.CalledProcessError:
-        state["origin_main_head"] = ""
+    state = source_identity(PROJECT_ROOT, require_upstream=True)
+    state["origin_main_head"] = _git(PROJECT_ROOT, "rev-parse", "origin/main")
     state["tracked_dirty"] = any(not line.startswith("?? ") for line in state["status_lines"])
     state["tracked_status"] = "\n".join(line for line in state["status_lines"] if not line.startswith("?? "))
     return state
@@ -1150,7 +1145,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         "external_blockers": [],
         "internal_failures": [],
     }
-    source_snapshot = release_identity(PROJECT_ROOT)
+    source_snapshot = release_identity(PROJECT_ROOT, require_upstream=True)
     report.update({
         "branch": source_snapshot["branch"], "head": source_snapshot["head"],
         "tree": source_snapshot["tree"], "upstream_ref": source_snapshot["upstream_ref"],
@@ -1431,11 +1426,16 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         for bundle, url in reversed(dashboard_bundles):
             _stop_dashboard(bundle, url)
         report["finished_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        source_end = release_identity(PROJECT_ROOT)
-        report["source_identity_end"] = source_end
-        report["source_unchanged"] = identity_unchanged(PROJECT_ROOT, source_snapshot)
-        if not report["source_unchanged"]:
-            report["internal_failures"].append("source tree or extension runtime identity changed during validation")
+        try:
+            source_end = release_identity(PROJECT_ROOT, require_upstream=True)
+            report["source_identity_end"] = source_end
+            report["source_unchanged"] = identity_unchanged(PROJECT_ROOT, source_snapshot)
+            if not report["source_unchanged"]:
+                report["internal_failures"].append("source tree or extension runtime identity changed during validation")
+        except ProvenanceError as exc:
+            report["source_identity_end"] = {"error": str(exc)}
+            report["source_unchanged"] = False
+            report["internal_failures"].append(f"source provenance unavailable at validation end: {exc}")
         report["PROD_READY"] = bool(report.get("PROD_READY") and not report.get("internal_failures"))
         _write_report(report, report_dir, prefix="micro" if micro_only else "")
         print(f"Validation database: {validation_db}")

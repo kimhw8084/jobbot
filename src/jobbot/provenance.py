@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import subprocess
-import re
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +10,10 @@ from .version import PRODUCT_VERSION
 
 
 CLEANLINESS_POLICY_ID = "git-v1"
+class ProvenanceError(RuntimeError):
+    """Raised when Git source identity cannot be established safely."""
+
+
 CLEANLINESS_POLICY = {
     "id": CLEANLINESS_POLICY_ID,
     "status_command": "git status --porcelain=v1 --untracked-files=all",
@@ -18,49 +21,51 @@ CLEANLINESS_POLICY = {
     "nonignored_untracked_block": True,
     "ignored_local_state_allowed": True,
     "source_like_untracked_block": True,
-    "exact_cloud_sync_duplicate_overlay_allowed": True,
 }
 
 
 def _git(root: Path, *args: str) -> str:
-    return subprocess.check_output(["git", *args], cwd=root, text=True, stderr=subprocess.STDOUT).strip()
+    operation = "git " + " ".join(args)
+    try:
+        value = subprocess.check_output(["git", *args], cwd=root, text=True, stderr=subprocess.STDOUT)
+    except (subprocess.CalledProcessError, OSError, UnicodeDecodeError) as exc:
+        raise ProvenanceError(f"required Git operation failed: {operation}") from exc
+    if not isinstance(value, str):
+        raise ProvenanceError(f"required Git operation returned invalid text: {operation}")
+    return value.strip()
 
 
 def _nonignored_untracked_paths(root: Path) -> list[str]:
-    result = subprocess.run(
-        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
-        cwd=root, text=False, capture_output=True, check=False,
-    )
-    if result.returncode != 0:
-        return []
-    raw = result.stdout
-    if isinstance(raw, str):
-        return [item for item in raw.split("\0") if item]
-    return [item.decode("utf-8", errors="surrogateescape") for item in raw.split(b"\0") if item]
-
-
-def _is_exact_cloud_sync_duplicate(root: Path, relative: str) -> bool:
-    """Recognize only harmless byte-identical ``name 2.ext`` sync copies.
-
-    Cloud sync tools can leave a second copy beside a tracked file.  A copy is
-    tolerated only when its normalized path is already tracked, it is a regular
-    file (not a link), and its Git blob is byte-identical to that tracked file.
-    Divergent copies remain blocking source-like untracked state.
-    """
-    path = Path(relative)
-    match = re.match(r"^(.*) 2(\.[^./]+)$", path.name)
-    if not match:
-        return False
-    normalized = path.with_name(f"{match.group(1)}{match.group(2)}")
-    local = root / path
-    if not local.is_file() or local.is_symlink():
-        return False
+    operation = "git ls-files --others --exclude-standard -z"
     try:
-        tracked_blob = _git(root, "rev-parse", f"HEAD:{normalized.as_posix()}")
-        local_blob = _git(root, "hash-object", "--", relative)
-    except (subprocess.CalledProcessError, OSError):
-        return False
-    return bool(tracked_blob) and tracked_blob == local_blob
+        result = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+            cwd=root, text=False, capture_output=True, check=True,
+        )
+    except (subprocess.CalledProcessError, OSError, UnicodeDecodeError) as exc:
+        raise ProvenanceError(f"required Git operation failed: {operation}") from exc
+    raw = result.stdout
+    if not isinstance(raw, bytes):
+        raise ProvenanceError(f"required Git operation returned invalid bytes: {operation}")
+    try:
+        decoded = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ProvenanceError(f"required Git operation returned undecodable paths: {operation}") from exc
+    return [item for item in decoded.split("\0") if item]
+
+
+def _status_lines(root: Path) -> list[str]:
+    operation = "git status --porcelain=v1 --untracked-files=all"
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=root, text=True, capture_output=True, check=True,
+        )
+    except (subprocess.CalledProcessError, OSError) as exc:
+        raise ProvenanceError(f"required Git operation failed: {operation}") from exc
+    if not isinstance(result.stdout, str):
+        raise ProvenanceError(f"required Git operation returned invalid text: {operation}")
+    return result.stdout.splitlines()
 
 
 def _worktree_status(root: Path) -> dict[str, Any]:
@@ -72,32 +77,27 @@ def _worktree_status(root: Path) -> dict[str, Any]:
     In particular, filename suffixes, directory names, and historical local
     overlays are never treated as implicit exemptions.
     """
-    raw_status = subprocess.run(
-        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
-        cwd=root, text=True, capture_output=True, check=False,
-    ).stdout.splitlines()
+    raw_status = _status_lines(root)
     untracked_paths = _nonignored_untracked_paths(root)
-    permitted_overlays = [path for path in untracked_paths if _is_exact_cloud_sync_duplicate(root, path)]
-    permitted_set = set(permitted_overlays)
-    blocking_untracked = [path for path in untracked_paths if path not in permitted_set]
     tracked_changes = [line for line in raw_status if not line.startswith("?? ")]
-    status = tracked_changes + [f"?? {path}" for path in blocking_untracked]
+    status = tracked_changes + [f"?? {path}" for path in untracked_paths]
     return {
         "raw_status_lines": raw_status,
         "status_lines": status,
         "tracked_changes": tracked_changes,
-        "nonignored_untracked": [f"?? {path}" for path in blocking_untracked],
-        "permitted_local_overlays": permitted_overlays,
+        "nonignored_untracked": [f"?? {path}" for path in untracked_paths],
         "clean_worktree": not status,
         "cleanliness_policy": dict(CLEANLINESS_POLICY),
     }
 
 
-def source_identity(root: Path) -> dict[str, Any]:
+def source_identity(root: Path, *, require_upstream: bool = False) -> dict[str, Any]:
     try:
         upstream_ref = _git(root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}")
         upstream_sha = _git(root, "rev-parse", "@{upstream}")
-    except (subprocess.CalledProcessError, OSError):
+    except ProvenanceError as exc:
+        if require_upstream:
+            raise ProvenanceError(f"required Git upstream ref/SHA could not be established: {exc}") from exc
         upstream_ref = ""
         upstream_sha = ""
     worktree = _worktree_status(root)
@@ -113,8 +113,8 @@ def source_identity(root: Path) -> dict[str, Any]:
     }
 
 
-def release_identity(root: Path) -> dict[str, Any]:
-    value = source_identity(root)
+def release_identity(root: Path, *, require_upstream: bool = False) -> dict[str, Any]:
+    value = source_identity(root, require_upstream=require_upstream)
     extension = expected_identity(root)
     value.update({
         "extension_version": extension["extension_version"],
@@ -125,7 +125,7 @@ def release_identity(root: Path) -> dict[str, Any]:
 
 
 def identity_unchanged(root: Path, snapshot: dict[str, Any]) -> bool:
-    current = release_identity(root)
+    current = release_identity(root, require_upstream=True)
     for key in ("head", "tree", "extension_build", "extension_runtime_digest", "status_lines"):
         if current.get(key) != snapshot.get(key):
             return False

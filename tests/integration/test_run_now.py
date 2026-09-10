@@ -22,11 +22,31 @@ from jobbot import run_now
 from jobbot.run_now import preflight
 from jobbot.run_now import assert_production_release
 from jobbot.config import ConfigBundle, load_bundle
+from jobbot.provenance import ProvenanceError
 
 from tests.helpers import bundle_with_database
 
 
 class RunNowIntegrationTests(unittest.TestCase):
+    def test_production_guard_refuses_unavailable_source_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            original = load_bundle(PROJECT_ROOT)
+            runtime = copy.deepcopy(original.runtime)
+            runtime["runtime"]["database_path"] = "data/jobs.sqlite3"
+            runtime["runtime"]["output_dir"] = "out"
+            runtime["runtime"]["dashboard_port"] = 8765
+            bundle = ConfigBundle(root, original.strategy, original.candidate, runtime)
+            (root / "out" / "production-validation").mkdir(parents=True)
+            (root / "extension").mkdir()
+            (root / "extension" / "manifest.json").write_text(json.dumps({"version_name": "build"}), encoding="utf-8")
+            (root / "out" / "production-validation" / "latest.json").write_text(
+                json.dumps({"PROD_READY": True, "internal_failures": []}), encoding="utf-8"
+            )
+            with patch("jobbot.run_now.release_identity", side_effect=ProvenanceError("git status failed")):
+                with self.assertRaisesRegex(RuntimeError, "source provenance unavailable"):
+                    assert_production_release(bundle)
+
     def test_production_release_guard_rejects_tracked_worktree_changes(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -45,10 +65,7 @@ class RunNowIntegrationTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (root / "extension" / "manifest.json").write_text(json.dumps({"version_name": "build"}), encoding="utf-8")
-            dirty = subprocess.CompletedProcess([], 0, stdout=" M src/jobbot/run_now.py\n", stderr="")
-            with patch("jobbot.run_now.subprocess.check_output", return_value="abc\n"), \
-                 patch("jobbot.run_now.subprocess.run", return_value=dirty), \
-                 patch("jobbot.run_now.Database.integrity_check", return_value="ok"):
+            with patch("jobbot.run_now.release_identity", return_value={"branch": "test", "clean_worktree": False}):
                 with self.assertRaisesRegex(RuntimeError, "relevant worktree is not clean"):
                     assert_production_release(bundle)
 
