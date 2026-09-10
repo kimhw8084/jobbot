@@ -16,7 +16,10 @@ DIST = ROOT / "dist"
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", "cache", "out", "logs", "data", "resumes", "artifacts", "dist", ".browser-profile", "release"}
 FORBIDDEN_SUFFIXES = {".sqlite3", ".pyc", ".zip"}
 PRIVATE_PATHS = {"config/candidate.toml"}
-RELEASE_ROOT = "jobbot-3.2.3"
+
+
+def _release_root(product_version: str) -> str:
+    return f"jobbot-{product_version}"
 
 
 def _git(*args: str) -> str:
@@ -106,17 +109,19 @@ def _provenance(commit: str, files: list[str]) -> dict[str, Any]:
 def build(*, commit: str | None = None, target: Path | None = None) -> tuple[Path, str, int]:
     selected = _git("rev-parse", commit or "HEAD")
     files = release_files(selected)
+    modes = {path: mode for mode, path in _tree_entries(selected)}
     provenance = _provenance(selected, files)
+    release_root = _release_root(provenance["product_version"])
     destination = (target or DIST / f"jobbot-{provenance['product_version']}.zip").resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in files:
-            info = zipfile.ZipInfo(f"{RELEASE_ROOT}/{path}")
+            info = zipfile.ZipInfo(f"{release_root}/{path}")
             info.date_time = (1980, 1, 1, 0, 0, 0)
             info.compress_type = zipfile.ZIP_DEFLATED
-            info.external_attr = 0o100644 << 16
+            info.external_attr = (0o100755 if modes.get(path) == "100755" else 0o100644) << 16
             archive.writestr(info, _object_bytes(selected, path), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
-        manifest_info = zipfile.ZipInfo(f"{RELEASE_ROOT}/RELEASE_PROVENANCE.json")
+        manifest_info = zipfile.ZipInfo(f"{release_root}/RELEASE_PROVENANCE.json")
         manifest_info.date_time = (1980, 1, 1, 0, 0, 0)
         manifest_info.compress_type = zipfile.ZIP_DEFLATED
         manifest_info.external_attr = 0o100644 << 16
@@ -136,7 +141,7 @@ def verify(archive_path: Path, provenance_path: Path | None = None) -> dict[str,
         raise RuntimeError("release archive SHA-256 does not match provenance")
     with zipfile.ZipFile(archive_path) as archive:
         names = set(archive.namelist())
-        prefix = f"{RELEASE_ROOT}/"
+        prefix = f"{_release_root(value['product_version'])}/"
         embedded = json.loads(archive.read(f"{prefix}RELEASE_PROVENANCE.json").decode("utf-8"))
         expected = {key: item for key, item in value.items() if key not in {"archive_sha256", "archive"}}
         if embedded != expected:

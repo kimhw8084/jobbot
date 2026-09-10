@@ -7,8 +7,10 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 from jobbot.config import PROJECT_ROOT
+from jobbot.provenance import identity_unchanged, release_identity
 
 
 def release_module():
@@ -33,7 +35,7 @@ class ReleaseProvenanceTests(unittest.TestCase):
                 self.assertTrue(any(name.endswith("RELEASE_PROVENANCE.json") for name in names))
                 self.assertFalse(any("candidate.toml" in name for name in names))
                 self.assertFalse(any("jobs.sqlite3" in name or "/data/" in name for name in names))
-                provenance = json.loads(archive.read("jobbot-3.2.3/RELEASE_PROVENANCE.json"))
+                provenance = json.loads(archive.read(f"jobbot-{release_identity(PROJECT_ROOT)['product_version']}/RELEASE_PROVENANCE.json"))
             self.assertRegex(provenance["source_commit"], r"^[0-9a-f]{40}$")
             self.assertRegex(provenance["source_tree"], r"^[0-9a-f]{40}$")
             self.assertEqual(hashlib.sha256(first.read_bytes()).hexdigest(), first_hash)
@@ -43,7 +45,15 @@ class ReleaseProvenanceTests(unittest.TestCase):
         paths = builder.release_files("HEAD")
         self.assertNotIn("config/candidate.toml", paths)
         self.assertTrue(all(not path.startswith("tests/") for path in paths))
-        self.assertNotIn("src/jobbot/orchestrator 2.py", paths)
+            self.assertNotIn("src/jobbot/orchestrator 2.py", paths)
+
+    def test_validation_provenance_detects_worktree_status_change(self) -> None:
+        snapshot = release_identity(PROJECT_ROOT)
+        changed = dict(snapshot)
+        changed["status_lines"] = ["?? unexpected-release-input.txt"]
+        changed["clean_worktree"] = False
+        with patch("jobbot.provenance.release_identity", return_value=changed):
+            self.assertFalse(identity_unchanged(PROJECT_ROOT, snapshot))
 
 
 if __name__ == "__main__":

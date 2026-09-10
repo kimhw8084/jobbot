@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""JobBot v3.2.0 — recall-first enrichment, verification, and exhaustive ledger.
+"""JobBot v3.2.3 — recall-first enrichment, verification, and exhaustive ledger.
 
 Design goals:
 - retrieve broadly enough to sustain 10–20 strong applications/day and 500+ cumulative,
@@ -2262,7 +2262,7 @@ def doctor(config:dict[str,Any],strategy:dict[str,Any],db:Path)->int:
     return rc
 
 def main()->int:
-    ap=argparse.ArgumentParser(description="JobBot v3.2.0 — recall-first canonical verification and append-oriented career ledger"); ap.add_argument("--config",default="config.toml"); sub=ap.add_subparsers(dest="cmd",required=True)
+    ap=argparse.ArgumentParser(description=f"JobBot {VERSION} — recall-first canonical verification and append-oriented career ledger"); ap.add_argument("--config",default="config.toml"); sub=ap.add_subparsers(dest="cmd",required=True)
     p=sub.add_parser("run",help="Retrieve every reachable job inside configured automatic-source boundaries, version changes, qualify, score, and export"); p.add_argument("--mode",choices=["fast","deep"],default="fast")
     sub.add_parser("stats"); sub.add_parser("progress"); sub.add_parser("audit",help="Explain retrieval volume, filtering, verification backlog and Big-3 coverage"); sub.add_parser("candidate-check"); sub.add_parser("self-test"); sub.add_parser("security-check"); sub.add_parser("versioning-test"); sub.add_parser("throughput-test"); sub.add_parser("doctor"); sub.add_parser("integrity-check")
     p=sub.add_parser("capture",help="Safely capture one supplemental public job page from user-assisted browsing (Big-3 disabled)"); p.add_argument("--platform",default="web"); p.add_argument("--url",default="")

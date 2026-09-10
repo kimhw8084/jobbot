@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.3 — Exact-source production hardening
+
+- Added durable bridge mutation receipts, tokenized same-origin dashboard writes, exact source/runtime provenance, and reproducible Git-object release archives.
+- Kept the strategy schema at 3.2.0; it remains an independent configuration compatibility version.
+
 ## 3.2.0 — Production consolidation
 
 - Consolidated the version-named subtree into one repository-root `src/jobbot` package and canonical `python -m jobbot` CLI.

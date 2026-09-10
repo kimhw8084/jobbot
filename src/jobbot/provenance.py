@@ -51,8 +51,7 @@ def release_identity(root: Path) -> dict[str, Any]:
 
 def identity_unchanged(root: Path, snapshot: dict[str, Any]) -> bool:
     current = release_identity(root)
-    for key in ("head", "tree", "extension_build", "extension_runtime_digest"):
+    for key in ("head", "tree", "extension_build", "extension_runtime_digest", "status_lines"):
         if current.get(key) != snapshot.get(key):
             return False
     return True
-

@@ -130,6 +130,20 @@ def self_test() -> int:
         with urllib.request.urlopen(req, timeout=10) as r:
             obj = json.loads(r.read().decode())
         assert obj.get("ok") and obj.get("request_id") == "selftest", obj
+        missing_request_id = urllib.request.Request(
+            f"http://127.0.0.1:{srv.server_port}/rpc",
+            data=json.dumps({"action": "begin_run", "run_id": 1}).encode(),
+            headers={"Content-Type": "application/json", "X-JobBot-Token": token},
+            method="POST",
+        )
+        try:
+            urllib.request.urlopen(missing_request_id, timeout=10)
+            raise AssertionError("mutating RPC without request_id unexpectedly succeeded")
+        except urllib.error.HTTPError as e:
+            try:
+                assert e.code == 400, e.code
+            finally:
+                e.close()
         unauth = urllib.request.Request(f"http://127.0.0.1:{srv.server_port}/health", method="GET")
         try:
             urllib.request.urlopen(unauth, timeout=10)

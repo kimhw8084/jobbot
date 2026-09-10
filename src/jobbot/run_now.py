@@ -53,6 +53,12 @@ def assert_production_release(bundle: ConfigBundle) -> None:
         raise RuntimeError("production guard refused stale validation: source tree identity differs")
     if report.get("clean_worktree") is not True or report.get("head_equals_upstream") is not True:
         raise RuntimeError("production guard refused validation without a clean pushed source tree")
+    if report.get("source_unchanged") is not True:
+        raise RuntimeError("production guard refused validation without an unchanged source identity")
+    certified = report.get("source_identity_end") or report.get("source_identity_start") or {}
+    for field in ("head", "tree", "upstream_ref", "upstream_sha"):
+        if str(certified.get(field) or "") != str(current.get(field) or ""):
+            raise RuntimeError(f"production guard refused validation: certified {field} differs")
     if str(report.get("extension_build") or report.get("validated_extension_build") or "") != build:
         raise RuntimeError("production guard refused stale extension build validation")
     if str(report.get("extension_runtime_digest") or "") != current["extension_runtime_digest"]:

@@ -336,6 +336,37 @@ class SearchPrecisionTests(unittest.TestCase):
         self.assertGreater(estimate["conservative_actionable_per_minute"], 0)
         self.assertLess(estimate["conservative_actionable_per_minute"], estimate["actionable_jobs_per_minute"])
 
+    def test_operator_economics_uses_the_same_marginal_metric_as_scheduler(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "jobs.sqlite3"
+            bundle = bundle_with_database(path)
+            Database(bundle).migrate()
+            conn = Database(bundle).connect()
+            try:
+                columns = (
+                    "platform,normalized_query,search_band,window_class,window_days,"
+                    "completed_descriptions,apply_now,apply_volume,new_apply_ready,"
+                    "task_active_browser_ms,observation_dates"
+                )
+                # Query B has the stronger gross rate, but almost all of its
+                # actionable sightings overlap existing canonical jobs. Query
+                # A is therefore the better marginal source and must lead in
+                # both the operator report and scheduler's learned ordering.
+                conn.execute(
+                    f"INSERT INTO query_yield_stats({columns}) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    ("linkedin", "query a", "GOLD", "RECENT", 7, 30, 15, 0, 15, 600000, '["2026-09-01", "2026-09-09"]'),
+                )
+                conn.execute(
+                    f"INSERT INTO query_yield_stats({columns}) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    ("linkedin", "query b", "GOLD", "RECENT", 7, 30, 29, 1, 1, 600000, '["2026-09-01", "2026-09-09"]'),
+                )
+                conn.commit()
+                report = economics(conn)
+                self.assertEqual(report["top_queries"][0]["query"], "query a")
+                self.assertEqual(report["top_queries"][0]["new_apply_ready"], 15)
+            finally:
+                conn.close()
+
     def test_today_precision_gate_does_not_pad_a_small_apply_ready_reservoir(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "jobs.sqlite3"
