@@ -131,3 +131,17 @@ for file in extension/*.js; do node --check "$file"; done
 ```
 
 The release builder excludes databases, resumes, browser state, credentials, logs, caches, virtual environments, and ZIP artifacts from the package. See [architecture](docs/ARCHITECTURE.md), [operations](docs/OPERATIONS.md), [database](docs/DATABASE.md), and [troubleshooting](docs/TROUBLESHOOTING.md).
+
+### Release governance and privacy
+
+This repository is a private, single-user JobBot snapshot. `config/candidate.toml`
+and local resume files are intentionally excluded from release archives; the
+working checkout supplies those owner-private inputs. Releases are built from
+an immutable Git commit with `scripts/build_release.py`, not from arbitrary
+working-tree files. The emitted provenance sidecar records the source commit,
+tree, extension runtime digest, migration level, file hashes, and archive hash.
+
+Before promoting a validated release, protect `main` with pull-request-only
+integration, require the core OS/Python CI checks and release-integrity checks,
+disable force-push and branch deletion, and retain recoverable release tags.
+Production launchers reject a stale or dirty validated source tree.

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from jobbot.bridge.server import self_test
 from jobbot.config import PROJECT_ROOT
+from jobbot.extension_identity import expected_identity, metadata
 
 
 class ExtensionBridgeTests(unittest.TestCase):
@@ -19,6 +20,11 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertEqual(manifest["manifest_version"], 3)
         self.assertEqual(manifest["version"], "3.2.3")
         self.assertEqual(manifest["version_name"], "3.2.3-static-hardening.1")
+        identity = expected_identity(PROJECT_ROOT)
+        build_meta = metadata(PROJECT_ROOT)
+        self.assertTrue(identity["runtime_digest"])
+        self.assertEqual(build_meta["extension_build"], identity["extension_build"])
+        self.assertEqual(build_meta["runtime_digest"], identity["runtime_digest"])
         parent = subprocess.run(["git", "rev-parse", "HEAD^"], cwd=PROJECT_ROOT, capture_output=True, text=True)
         if parent.returncode == 0:
             changed = subprocess.run(

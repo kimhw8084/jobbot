@@ -104,7 +104,7 @@ def _provenance(commit: str, files: list[str]) -> dict[str, Any]:
 
 
 def build(*, commit: str | None = None, target: Path | None = None) -> tuple[Path, str, int]:
-    selected = commit or _git("rev-parse", "HEAD")
+    selected = _git("rev-parse", commit or "HEAD")
     files = release_files(selected)
     provenance = _provenance(selected, files)
     destination = (target or DIST / f"jobbot-{provenance['product_version']}.zip").resolve()

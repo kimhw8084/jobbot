@@ -41,6 +41,9 @@ jobs:
           node tests/extension_linkedin_scope_test.js
           node tests/extension_primary_scope_test.js
           node tests/extension_workspace_test.js
+      - name: Run release-blocking deterministic suites
+        run: |
+          python -m unittest tests.integration.test_rpc_idempotency tests.integration.test_dashboard_exports_application tests.integration.test_release_provenance -v
       - name: Validate extension JavaScript
         shell: bash
         run: |
@@ -55,3 +58,12 @@ jobs:
       - name: Run doctor on POSIX
         if: runner.os != 'Windows'
         run: python -m jobbot doctor
+      - name: Verify immutable release reproducibility
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        shell: bash
+        run: |
+          mkdir -p /tmp/jobbot-release-check
+          python scripts/build_release.py --commit HEAD --output /tmp/jobbot-release-check/one.zip
+          python scripts/build_release.py --commit HEAD --output /tmp/jobbot-release-check/two.zip
+          cmp /tmp/jobbot-release-check/one.zip /tmp/jobbot-release-check/two.zip
+          python scripts/build_release.py --verify /tmp/jobbot-release-check/one.zip
