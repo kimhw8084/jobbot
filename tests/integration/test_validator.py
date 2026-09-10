@@ -491,7 +491,7 @@ class ValidatorIntegrationTests(unittest.TestCase):
             identity = {
                 "resolved_database_path": str(bundle.database_path.resolve()),
                 "workspace_root": str(bundle.root.resolve()),
-                "jobbot_version": "3.2.1",
+                "jobbot_version": "3.2.3",
             }
             active = {"workspace": {
                 "isolated": True, "workspace_window_id": 7,

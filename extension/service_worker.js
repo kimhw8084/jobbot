@@ -2,6 +2,7 @@
 
 let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTaskId=null, runPromise=null, heartbeatTimer=null;
 const JOBBOT_EXTENSION_BUILD=String(chrome.runtime?.getManifest?.().version_name||'unknown');
+let JOBBOT_EXTENSION_METADATA={extension_build:JOBBOT_EXTENSION_BUILD,runtime_digest:'',runtime_paths:[]};
 const WORKSPACE_STORAGE_KEY='jobbot_workspace';
 const WORKSPACE_MARKER='jobbot_workspace=1';
 let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180,primary_navigation_min_gap_ms:900,primary_dom_quiet_ms:800,primary_dom_quiet_timeout_ms:5000,primary_scroll_wait_ms:900,primary_detail_transition_min_gap_ms:900,primary_transient_retry_limit:2,primary_transient_backoff_seconds:2};
@@ -29,6 +30,7 @@ async function loadBridge(){
   throw new Error('Local JobBot bridge is not configured. Start the run from the .command launcher.');
 }
 async function configureBridge(port,token,options={},senderTabId=null){
+  await loadExtensionMetadata();
   const p=Number(port),t=String(token||'');
   if(!Number.isInteger(p)||p<1||p>65535||t.length<20)throw new Error('Invalid local bridge configuration');
   bridgeConfig={port:p,token:t};
@@ -43,6 +45,17 @@ async function configureBridge(port,token,options={},senderTabId=null){
   }
   if(options.run_id){await nativeRequest('browser_event',{run_id:Number(options.run_id),event_type:'workspace_state',message:'JobBot-owned Chrome workspace established',payload:await workspaceState()}).catch(()=>{});}
   return health;
+}
+async function loadExtensionMetadata(){
+  if(JOBBOT_EXTENSION_METADATA.runtime_digest)return JOBBOT_EXTENSION_METADATA;
+  try{
+    const response=await fetch(chrome.runtime.getURL('build_meta.json'),{cache:'no-store'});
+    if(!response.ok)throw new Error(`build metadata HTTP ${response.status}`);
+    const value=await response.json();
+    if(String(value.extension_build||'')!==JOBBOT_EXTENSION_BUILD||!String(value.runtime_digest||''))throw new Error('extension build metadata does not match manifest');
+    JOBBOT_EXTENSION_METADATA=value;
+    return value;
+  }catch(error){throw new Error(`extension runtime identity unavailable: ${error?.message||error}`);}
 }
 async function readWorkspace(){const x=await chrome.storage.local.get([WORKSPACE_STORAGE_KEY,'jobbot_workspace_window_id','jobbot_workspace_anchor_tab_id','jobbot_dashboard_tab_id','jobbot_auth_tab_id','jobbot_search_tab_id','jobbot_detail_tab_id','workspace_generation','workspace_created_at']);return{...(x[WORKSPACE_STORAGE_KEY]||{}),window_id:x.jobbot_workspace_window_id??x[WORKSPACE_STORAGE_KEY]?.window_id,anchor_tab_id:x.jobbot_workspace_anchor_tab_id??x[WORKSPACE_STORAGE_KEY]?.anchor_tab_id,dashboard_tab_id:x.jobbot_dashboard_tab_id??x[WORKSPACE_STORAGE_KEY]?.dashboard_tab_id,auth_tab_id:x.jobbot_auth_tab_id??x[WORKSPACE_STORAGE_KEY]?.auth_tab_id,search_tab_id:x.jobbot_search_tab_id??x[WORKSPACE_STORAGE_KEY]?.search_tab_id,detail_tab_id:x.jobbot_detail_tab_id??x[WORKSPACE_STORAGE_KEY]?.detail_tab_id,workspace_generation:x.workspace_generation??x[WORKSPACE_STORAGE_KEY]?.workspace_generation,workspace_created_at:x.workspace_created_at??x[WORKSPACE_STORAGE_KEY]?.workspace_created_at};}
 async function saveWorkspace(value){await chrome.storage.local.set({[WORKSPACE_STORAGE_KEY]:value,jobbot_workspace_window_id:value.window_id||null,jobbot_workspace_anchor_tab_id:value.anchor_tab_id||null,jobbot_dashboard_tab_id:value.dashboard_tab_id||null,jobbot_auth_tab_id:value.auth_tab_id||null,jobbot_search_tab_id:value.search_tab_id||null,jobbot_detail_tab_id:value.detail_tab_id||null,workspace_generation:value.workspace_generation||1,workspace_created_at:value.workspace_created_at||'',workspace_creation_method:value.workspace_creation_method||'',workspace_reused:value.workspace_reused===true,controller_original_window_id:value.controller_original_window_id||null,controller_original_window_tab_count:value.controller_original_window_tab_count||0,controller_original_window_had_non_jobbot_tabs:value.controller_original_window_had_non_jobbot_tabs===true,workspace_recreation_count:value.workspace_recreation_count||0,focus_requests_by_jobbot:value.focus_requests_by_jobbot||0});return value;}
@@ -404,11 +417,12 @@ async function processTask(runId,task){
 
 async function runProduction(runId){
   activeRunId=Number(runId); await chrome.storage.local.set({jobbot_active_run_id:activeRunId});
+  await loadExtensionMetadata();
   runtimeConfig=await requiredRequest('runtime_config',{},10000);
   startHeartbeat();
   try{
     await requiredRequest('begin_run',{run_id:activeRunId});
-    await nativeRequest('browser_event',{run_id:activeRunId,event_type:'extension_build',message:JOBBOT_EXTENSION_BUILD,payload:{build:JOBBOT_EXTENSION_BUILD}});
+    await nativeRequest('browser_event',{run_id:activeRunId,event_type:'extension_build',message:JOBBOT_EXTENSION_BUILD,payload:{build:JOBBOT_EXTENSION_BUILD,runtime_digest:JOBBOT_EXTENSION_METADATA.runtime_digest,runtime_paths:JOBBOT_EXTENSION_METADATA.runtime_paths}});
     const authChecked=new Map();
     while(true){
       const n=await requiredRequest('next_task',{run_id:activeRunId,worker_id:`extension-run-${activeRunId}`}); if(n.stop||n.done)break; if(!n.task)break;
@@ -444,7 +458,7 @@ async function ensureResume(){
 chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{
   if(msg?.type==='JOBBOT_CONFIGURE_BRIDGE'){
     configureBridge(msg.port,msg.token,{dashboard_url:msg.dashboard_url||'',run_id:msg.run_id||0},sender?.tab?.id||null)
-      .then(async x=>sendResponse({ok:true,version:x.version,bridge:'loopback',extension_build:JOBBOT_EXTENSION_BUILD,workspace:await workspaceState()}))
+      .then(async x=>sendResponse({ok:true,version:x.version,bridge:'loopback',extension_build:JOBBOT_EXTENSION_BUILD,extension_runtime_digest:JOBBOT_EXTENSION_METADATA.runtime_digest,workspace:await workspaceState()}))
       .catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));
     return true;
   }

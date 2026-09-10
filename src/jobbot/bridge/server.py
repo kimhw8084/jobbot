@@ -17,6 +17,7 @@ from typing import Any
 
 from . import rpc as native
 from .. import browser_tasks as v3
+from ..version import PRODUCT_VERSION
 
 MAX_BODY = 4 * 1024 * 1024
 RPC_LOCK = threading.Lock()
@@ -36,7 +37,7 @@ class BridgeServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "JobBotLoopback/3.2.1"
+    server_version = f"JobBotLoopback/{PRODUCT_VERSION}"
     def log_message(self, fmt: str, *args: Any) -> None:
         log(fmt % args)
 
@@ -94,6 +95,8 @@ class Handler(BaseHTTPRequestHandler):
             msg = json.loads(self.rfile.read(n).decode("utf-8"))
             if not isinstance(msg, dict):
                 raise ValueError("request must be a JSON object")
+            if str(msg.get("action") or "") in native.MUTATING_ACTIONS and not str(msg.get("request_id") or "").strip():
+                self._json(400, {"ok": False, "error": "request_id_required_for_mutation"}); return
             with RPC_LOCK:
                 resp = native.handle(msg)
             if msg.get("request_id") and isinstance(resp, dict):

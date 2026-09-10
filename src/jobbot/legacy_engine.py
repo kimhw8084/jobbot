@@ -30,8 +30,9 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from . import legacy_core as c
+from .version import PRODUCT_VERSION
 
-VERSION = "3.2.0"
+VERSION = PRODUCT_VERSION
 c.VERSION = VERSION
 
 # Re-export core helpers used below.

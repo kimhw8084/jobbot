@@ -191,7 +191,10 @@ def economics(conn) -> dict[str, Any]:
         bands[band]["sample_eligible"] += int(estimate["sample_eligible"])
         if estimate["sample_eligible"]:
             eligible.append(record)
-    eligible.sort(key=lambda item: item["estimate"]["conservative_actionable_per_minute"], reverse=True)
+    # Operator ranking must match the scheduler: marginal NEW actionable yield
+    # is the scarce value after overlap, while gross apply-ready rate remains a
+    # diagnostic only.
+    eligible.sort(key=lambda item: item["estimate"]["conservative_new_actionable_per_minute"], reverse=True)
     def compact(row: dict[str, Any]) -> dict[str, Any]:
         return {"platform": row["platform"], "query": row["normalized_query"], "band": row["search_band"],
                 "window_class": row["window_class"], "window_days": row["window_days"], **row["estimate"]}

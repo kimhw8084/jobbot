@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -23,8 +24,87 @@ def log(msg:str)->None: print(f"[jobbot-rpc] {msg}",file=sys.stderr,flush=True)
 def lease_time(seconds:int=180)->str:
     return (datetime.now(timezone.utc)+timedelta(seconds=max(1,int(seconds)))).isoformat(timespec='seconds')
 
-def open_store():
-    db,out,_,cfg,strategy=v3.paths(BASE);store=j.PrecisionStore(db);v3.init_browser_schema(store.conn);return store,cfg,strategy,out
+MUTATING_ACTIONS = frozenset({
+    'begin_run', 'platform_auth_result', 'pause_platform', 'next_task',
+    'retry_platform', 'record_result', 'next_pending_detail', 'detail_read',
+    'record_job', 'job_error', 'detail_external_blocked', 'task_progress',
+    'heartbeat', 'browser_event', 'complete_task', 'request_stop',
+    'emergency_stop', 'finish_run', 'run_error',
+})
+
+
+def open_store(*, defer_commits: bool = False):
+    db,out,_,cfg,strategy=v3.paths(BASE);store=j.PrecisionStore(db);v3.init_browser_schema(store.conn)
+    if defer_commits:
+        store.conn.defer_commits = True
+    return store,cfg,strategy,out
+
+
+def _normalized_payload(msg: dict[str, Any]) -> str:
+    """Return a deterministic request identity without transport secrets."""
+    value = {str(k): v for k, v in msg.items() if str(k) != 'request_id'}
+    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':'), default=str)
+
+
+def request_payload_hash(msg: dict[str, Any]) -> str:
+    return hashlib.sha256(_normalized_payload(msg).encode('utf-8')).hexdigest()
+
+
+def _receipt_metadata(msg: dict[str, Any]) -> tuple[int | None, int | None]:
+    def integer(name: str) -> int | None:
+        try:
+            value = int(msg.get(name) or 0)
+            return value or None
+        except (TypeError, ValueError):
+            return None
+    return integer('run_id'), integer('task_id')
+
+
+def _replay_or_collision(conn, msg: dict[str, Any]) -> dict[str, Any] | None:
+    request_id = str(msg.get('request_id') or '').strip()
+    if not request_id:
+        return None
+    row = conn.execute("SELECT * FROM rpc_receipts WHERE request_id=?", (request_id,)).fetchone()
+    if row is None:
+        return None
+    if str(row['action']) != str(msg.get('action') or '') or str(row['payload_hash']) != request_payload_hash(msg):
+        return {'ok': False, 'error': 'idempotency_collision', 'request_id': request_id}
+    try:
+        response = json.loads(row['response_json'] or '{}')
+    except (TypeError, ValueError, json.JSONDecodeError):
+        response = {'ok': False, 'error': 'corrupt_rpc_receipt'}
+    if not isinstance(response, dict):
+        response = {'ok': False, 'error': 'corrupt_rpc_receipt'}
+    response['replayed'] = True
+    return response
+
+
+def _begin_receipt(conn, msg: dict[str, Any]) -> dict[str, Any] | None:
+    request_id = str(msg.get('request_id') or '').strip()
+    if not request_id:
+        return None
+    if len(request_id) > 200:
+        raise ValueError('request_id too long')
+    replay = _replay_or_collision(conn, msg)
+    if replay is not None:
+        return replay
+    run_id, task_id = _receipt_metadata(msg)
+    conn.execute(
+        """INSERT INTO rpc_receipts(request_id,action,payload_hash,status,response_json,run_id,task_id,created_at)
+           VALUES(?,?,?,?,?,?,?,?)""",
+        (request_id, str(msg.get('action') or ''), request_payload_hash(msg), 'PENDING', '{}', run_id, task_id, j.now_iso()),
+    )
+    return None
+
+
+def _finish_receipt(conn, msg: dict[str, Any], response: dict[str, Any]) -> None:
+    request_id = str(msg.get('request_id') or '').strip()
+    if not request_id:
+        return
+    conn.execute(
+        "UPDATE rpc_receipts SET status='COMMITTED',response_json=?,completed_at=? WHERE request_id=?",
+        (json.dumps(response, ensure_ascii=False, separators=(',', ':')), j.now_iso(), request_id),
+    )
 
 def run_log(out:Path,run_id:int|None,message:str)->None:
     if not run_id:return
@@ -139,9 +219,11 @@ def refresh_result_reconciliation(conn, rid:int, tid:int)->None:
          duplicate_cards, pending_details, detail_failures, rid, tid),
     )
 
-def handle(msg:dict[str,Any])->dict[str,Any]:
+def _handle_once(msg:dict[str,Any], active_store=None)->dict[str,Any]:
     action=str(msg.get('action') or '')
-    store,cfg,strategy,out=open_store();conn=store.conn
+    owns_store = active_store is None
+    store,cfg,strategy,out=(open_store() if active_store is None else active_store)
+    conn=store.conn
     try:
         if action=='ping': return {'ok':True,'version':v3.V3_VERSION,'bridge':'loopback'}
         if action=='runtime_config':
@@ -414,4 +496,38 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='run_error':
             rid=int(msg.get('run_id') or 0);message=j.clean_text(msg.get('message') or 'extension error');conn.execute("UPDATE browser_runs SET last_error=?,last_progress_at=? WHERE browser_run_id=?",(message,j.now_iso(),rid));event(conn,rid,None,'run_error',message,msg,out);conn.commit();return {'ok':True}
         return {'ok':False,'error':'unknown_action','action':action}
-    finally:store.close()
+    finally:
+        if owns_store:
+            store.close()
+
+
+def handle(msg: dict[str, Any]) -> dict[str, Any]:
+    """Dispatch one RPC, durably replaying identified mutations exactly once.
+
+    Direct unit callers without a request ID retain legacy semantics for
+    compatibility. The HTTP bridge rejects such mutation requests before they
+    reach this function, so every browser mutation is receipt-protected.
+    """
+    action = str(msg.get('action') or '')
+    request_id = str(msg.get('request_id') or '').strip()
+    if action not in MUTATING_ACTIONS or not request_id:
+        return _handle_once(msg)
+    store, cfg, strategy, out = open_store(defer_commits=True)
+    conn = store.conn
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        replay = _begin_receipt(conn, msg)
+        if replay is not None:
+            conn.rollback()
+            return replay
+        response = _handle_once(msg, (store, cfg, strategy, out))
+        if not isinstance(response, dict):
+            response = {'ok': False, 'error': 'invalid_response'}
+        _finish_receipt(conn, msg, response)
+        conn.durable_commit()
+        return response
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        store.close()

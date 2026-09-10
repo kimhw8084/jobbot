@@ -49,7 +49,7 @@ class RunNowIntegrationTests(unittest.TestCase):
             with patch("jobbot.run_now.subprocess.check_output", return_value="abc\n"), \
                  patch("jobbot.run_now.subprocess.run", return_value=dirty), \
                  patch("jobbot.run_now.Database.integrity_check", return_value="ok"):
-                with self.assertRaisesRegex(RuntimeError, "tracked working tree is dirty"):
+                with self.assertRaisesRegex(RuntimeError, "relevant worktree is not clean"):
                     assert_production_release(bundle)
 
     def test_production_run_subcommand_cannot_bypass_release_guard(self) -> None:
@@ -124,7 +124,7 @@ class RunNowIntegrationTests(unittest.TestCase):
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3", Path(td) / "out")
             run_now.Database(bundle).migrate()
             other = {
-                "jobbot_version": "3.2.1",
+                "jobbot_version": "3.2.3",
                 "workspace_root": str(bundle.root.resolve()),
                 "resolved_database_path": str((Path(td) / "other.sqlite3").resolve()),
                 "database_identity": "different-db",

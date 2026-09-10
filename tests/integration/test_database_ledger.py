@@ -10,6 +10,7 @@ from jobbot.config import PROJECT_ROOT
 from jobbot.db import Database
 from jobbot.legacy_engine import PrecisionStore, prepare_packet, resume_path_for, select_daily_plan
 from jobbot.migrations.m0016_precision_window_stats import upgrade as upgrade_precision_windows
+from jobbot.migrations import all_migrations
 
 from tests.helpers import bundle_with_database, scored
 
@@ -19,7 +20,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 18)))
+            self.assertEqual(result.applied, tuple(m.VERSION for m in all_migrations()))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")

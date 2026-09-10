@@ -13,8 +13,9 @@ from .config import PROJECT_ROOT, load_bundle
 from .db import Database, apply_pending
 from .search_plan import build_search_url, compile_plan, compile_staged_plan, normalize_search_query
 from .query_yield import definition_is_due, ensure_definition
+from .version import PRODUCT_VERSION
 
-V3_VERSION = "3.2.1"
+V3_VERSION = PRODUCT_VERSION
 EXTENSION_ID = "jfdlmelgonjhgnabpbipjefgamedpgfb"
 PLATFORMS = ("linkedin", "indeed", "glassdoor")
 PLATFORM_PRIORITY = {"linkedin": 0, "indeed": 1, "glassdoor": 2}

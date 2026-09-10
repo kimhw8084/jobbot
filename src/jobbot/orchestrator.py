@@ -16,6 +16,7 @@ from pathlib import Path
 
 from . import browser_tasks
 from .config import ConfigBundle
+from .extension_identity import expected_identity
 
 
 @dataclass(frozen=True)
@@ -57,9 +58,11 @@ def _open_chrome(url: str) -> None:
 def open_dashboard_workspace(bundle: ConfigBundle, dashboard_url: str) -> None:
     extension_id = (bundle.root / "config" / "EXTENSION_ID.txt").read_text(encoding="utf-8").strip()
     manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    identity = expected_identity(bundle.root)
     url = (f"chrome-extension://{extension_id}/dashboard.html?dashboard_url="
            f"{urllib.parse.quote(dashboard_url, safe='')}&expected_build={urllib.parse.quote(str(manifest.get('version_name') or ''))}"
-           f"&expected_version={urllib.parse.quote(str(manifest.get('version') or ''))}")
+           f"&expected_version={urllib.parse.quote(str(manifest.get('version') or ''))}"
+           f"&expected_runtime_digest={urllib.parse.quote(identity['runtime_digest'])}")
     _open_chrome(url)
 
 
@@ -99,6 +102,7 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
     manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
     expected_build = str(manifest.get("version_name") or "")
     expected_version = str(manifest.get("version") or "")
+    expected_runtime_digest = expected_identity(bundle.root)["runtime_digest"]
     log_path = bundle.output_dir / "logs" / f"run_{run_id}_bridge.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     restart_count = 0
@@ -135,6 +139,7 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
             f"chrome-extension://{extension_id}/dashboard.html?autorun=1&run_id={run_id}"
             f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
             f"&expected_build={urllib.parse.quote(expected_build)}&expected_version={urllib.parse.quote(expected_version)}"
+            f"&expected_runtime_digest={urllib.parse.quote(expected_runtime_digest)}"
         )
         if dashboard_url:
             url += f"&dashboard_url={urllib.parse.quote(dashboard_url, safe='')}"

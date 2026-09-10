@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import hashlib
 import os
+import secrets
 import sqlite3
 import subprocess
 import sys
@@ -22,6 +23,7 @@ from .exports import export_selected
 from .legacy_engine import select_daily_plan
 from .query_yield import economics
 from .search_strategy import routed_resume_variant
+from .version import PRODUCT_VERSION
 
 
 TABLE_COLUMNS = (
@@ -52,7 +54,7 @@ def identity(conn: sqlite3.Connection, bundle: ConfigBundle) -> dict[str, Any]:
     except Exception:
         extension_build = "unknown"
     return {
-        "jobbot_version": "3.2.1",
+        "jobbot_version": PRODUCT_VERSION,
         "workspace_root": str(bundle.root.resolve()),
         "resolved_database_path": str(bundle.database_path.resolve()),
         "database_identity": database_identity(conn, bundle),
@@ -450,10 +452,13 @@ class DashboardServer(ThreadingHTTPServer):
     def __init__(self, address: tuple[str, int], bundle: ConfigBundle):
         super().__init__(address, DashboardHandler)
         self.bundle = bundle
+        self.csrf_token = secrets.token_urlsafe(32)
+        self.expected_host = f"127.0.0.1:{self.server_port}"
+        self.expected_origin = f"http://{self.expected_host}"
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
-    server_version = "JobBotDashboard/3.2.1"
+    server_version = f"JobBotDashboard/{PRODUCT_VERSION}"
 
     def log_message(self, fmt: str, *args: Any) -> None:
         return
@@ -471,13 +476,42 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(body)
 
     def _json(self, code: int, value: Any) -> None:
         self._send(code, json.dumps(value, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
+    def _valid_host(self) -> bool:
+        return self.headers.get("Host", "") == self.server.expected_host  # type: ignore[attr-defined]
+
+    def _authorize_mutation(self) -> bool:
+        """Fail closed before reading or applying any dashboard mutation."""
+        expected_host = self.server.expected_host  # type: ignore[attr-defined]
+        expected_origin = self.server.expected_origin  # type: ignore[attr-defined]
+        if self.headers.get("Host", "") != expected_host:
+            self._json(403, {"ok": False, "error": "invalid_loopback_host"})
+            return False
+        if self.headers.get("Origin", "") != expected_origin:
+            self._json(403, {"ok": False, "error": "invalid_origin"})
+            return False
+        content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        if content_type != "application/json":
+            self._json(415, {"ok": False, "error": "application_json_required"})
+            return False
+        token = self.headers.get("X-JobBot-CSRF", "")
+        if not token or not secrets.compare_digest(token, self.server.csrf_token):  # type: ignore[attr-defined]
+            self._json(403, {"ok": False, "error": "invalid_csrf_token"})
+            return False
+        return True
+
     def do_GET(self) -> None:
+        if not self._valid_host():
+            self._json(403, {"ok": False, "error": "invalid_loopback_host"})
+            return
         parsed = urllib.parse.urlsplit(self.path)
         if parsed.path == "/":
             self._static("dashboard.html", "text/html; charset=utf-8")
@@ -489,6 +523,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
         conn = self._conn()
         try:
+            if parsed.path == "/api/session":
+                self._json(200, {"ok": True, "origin": self.server.expected_origin, "csrf_token": self.server.csrf_token})  # type: ignore[attr-defined]
+                return
             if parsed.path == "/api/identity":
                 self._json(200, identity(conn, self.bundle)); return
             if parsed.path == "/api/summary":
@@ -523,6 +560,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         if not self.path.startswith("/api/"):
             self._json(404, {"error": "not_found"}); return
+        if not self._authorize_mutation():
+            return
         try:
             size = int(self.headers.get("Content-Length", "0"))
             if size <= 0 or size > 1024 * 1024:

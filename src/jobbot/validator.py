@@ -32,6 +32,9 @@ from .orchestrator import chrome_path, launch_browser_run
 from .run_now import ensure_dashboard, preflight
 from .search_plan import compile_plan, compile_staged_plan
 from .search_strategy import BANDS, staged_cadence_economics
+from .version import PRODUCT_VERSION
+from .extension_identity import expected_identity
+from .provenance import identity_unchanged, release_identity, source_identity
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
@@ -61,6 +64,19 @@ def extension_build(root: Path = PROJECT_ROOT) -> str:
     value = str(manifest.get("version_name") or "").strip()
     if not value:
         raise RuntimeError("extension manifest has no version_name build identity")
+    return value
+
+
+def extension_runtime_identity(root: Path = PROJECT_ROOT) -> dict[str, Any]:
+    value = expected_identity(root)
+    metadata_path = root / "extension" / "build_meta.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.is_file() else {}
+    value["metadata"] = metadata
+    value["metadata_matches"] = (
+        metadata.get("extension_build") == value["extension_build"]
+        and metadata.get("extension_version") == value["extension_version"]
+        and metadata.get("runtime_digest") == value["runtime_digest"]
+    )
     return value
 
 
@@ -146,17 +162,17 @@ def _command(args: list[str], *, env: dict[str, str] | None = None, timeout: int
         return {"command": args, "returncode": 124, "output": _tail(str(exc)), "timed_out": True}
 
 
-def _git_state() -> dict[str, str]:
-    def read(*args: str) -> str:
-        return subprocess.check_output(["git", *args], cwd=PROJECT_ROOT, text=True).strip()
-
-    status = subprocess.run(["git", "status", "--porcelain=v1", "--untracked-files=no"], cwd=PROJECT_ROOT, text=True, capture_output=True, check=False).stdout.strip()
+def _git_state() -> dict[str, Any]:
+    state = source_identity(PROJECT_ROOT)
     try:
-        origin_main = read("rev-parse", "origin/main")
+        state["origin_main_head"] = subprocess.check_output(
+            ["git", "rev-parse", "origin/main"], cwd=PROJECT_ROOT, text=True,
+        ).strip()
     except subprocess.CalledProcessError:
-        origin_main = ""
-    return {"branch": read("branch", "--show-current"), "head": read("rev-parse", "HEAD"),
-            "origin_main_head": origin_main, "tracked_dirty": bool(status), "tracked_status": status}
+        state["origin_main_head"] = ""
+    state["tracked_dirty"] = any(not line.startswith("?? ") for line in state["status_lines"])
+    state["tracked_status"] = "\n".join(line for line in state["status_lines"] if not line.startswith("?? "))
+    return state
 
 
 def _dashboard_json(url: str, endpoint: str) -> dict[str, Any] | None:
@@ -176,7 +192,7 @@ def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
     expected_workspace = str(bundle.root.resolve())
     identity_ok = bool(identity and identity.get("resolved_database_path") == expected_db
                        and identity.get("workspace_root") == expected_workspace
-                       and identity.get("jobbot_version") == "3.2.1")
+                       and identity.get("jobbot_version") == PRODUCT_VERSION)
     workspace = (active or {}).get("workspace", {}) if isinstance(active, dict) else {}
     window_id = workspace.get("workspace_window_id") or workspace.get("window_id")
     role_windows = workspace.get("role_tab_window_ids") or {}
@@ -541,14 +557,13 @@ def _extension_build_seen(bundle: ConfigBundle, run_id: int | None) -> bool:
     finally:
         conn.close()
     for message, payload_json in rows:
-        expected = extension_build(bundle.root)
-        if str(message) == expected:
-            return True
+        expected = extension_runtime_identity(bundle.root)
         try:
             payload = json.loads(payload_json or "{}")
         except json.JSONDecodeError:
             payload = {}
-        if payload.get("build") == expected or payload.get("payload", {}).get("build") == expected:
+        event_payload = payload.get("payload", payload) if isinstance(payload, dict) else {}
+        if event_payload.get("build") == expected["extension_build"] and event_payload.get("runtime_digest") == expected["runtime_digest"]:
             return True
     return False
 
@@ -871,7 +886,7 @@ def _fixture_and_deterministic(bundle: ConfigBundle) -> dict[str, Any]:
 def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     state = _git_state()
     checks: list[dict[str, Any]] = []
-    ok = bool(state["branch"]) and not state["tracked_dirty"]
+    ok = bool(state["branch"]) and bool(state["clean_worktree"]) and bool(state.get("head_equals_upstream"))
     checks.append({"name": "commit provenance", "ok": ok, "detail": state})
     executable = chrome_path()
     chrome_ok = bool(executable)
@@ -882,6 +897,8 @@ def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     try:
         build = extension_build(bundle.root)
         checks.append({"name": "manifest extension build", "ok": bool(build), "detail": build})
+        identity = extension_runtime_identity(bundle.root)
+        checks.append({"name": "extension runtime identity", "ok": bool(identity["metadata_matches"]), "detail": identity})
     except Exception as exc:
         checks.append({"name": "manifest extension build", "ok": False, "detail": str(exc)})
     Database(bundle).migrate()
@@ -1129,9 +1146,20 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         "dashboard_url": None,
         "validation_stage": stage,
         "extension_build": extension_build(PROJECT_ROOT),
+        "extension_runtime_digest": extension_runtime_identity(PROJECT_ROOT)["runtime_digest"],
         "external_blockers": [],
         "internal_failures": [],
     }
+    source_snapshot = release_identity(PROJECT_ROOT)
+    report.update({
+        "branch": source_snapshot["branch"], "head": source_snapshot["head"],
+        "tree": source_snapshot["tree"], "upstream_ref": source_snapshot["upstream_ref"],
+        "upstream_sha": source_snapshot["upstream_sha"],
+        "head_equals_upstream": source_snapshot["head_equals_upstream"],
+        "clean_worktree": source_snapshot["clean_worktree"],
+        "source_identity_start": source_snapshot,
+        "product_version": source_snapshot["product_version"],
+    })
     configured_tasks = compile_staged_plan(load_bundle(PROJECT_ROOT), list(PRIMARY))
     phase_counts = _phase_counts(configured_tasks)
     configured_by_platform = {platform: {
@@ -1403,6 +1431,11 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         for bundle, url in reversed(dashboard_bundles):
             _stop_dashboard(bundle, url)
         report["finished_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        source_end = release_identity(PROJECT_ROOT)
+        report["source_identity_end"] = source_end
+        report["source_unchanged"] = identity_unchanged(PROJECT_ROOT, source_snapshot)
+        if not report["source_unchanged"]:
+            report["internal_failures"].append("source tree or extension runtime identity changed during validation")
         report["PROD_READY"] = bool(report.get("PROD_READY") and not report.get("internal_failures"))
         _write_report(report, report_dir, prefix="micro" if micro_only else "")
         print(f"Validation database: {validation_db}")

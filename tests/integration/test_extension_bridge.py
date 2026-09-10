@@ -17,8 +17,8 @@ class ExtensionBridgeTests(unittest.TestCase):
     def test_manifest_and_javascript_syntax(self) -> None:
         manifest = json.loads((PROJECT_ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["manifest_version"], 3)
-        self.assertEqual(manifest["version"], "3.2.1")
-        self.assertEqual(manifest["version_name"], "3.2.3-final-closure.2")
+        self.assertEqual(manifest["version"], "3.2.3")
+        self.assertEqual(manifest["version_name"], "3.2.3-static-hardening.1")
         parent = subprocess.run(["git", "rev-parse", "HEAD^"], cwd=PROJECT_ROOT, capture_output=True, text=True)
         if parent.returncode == 0:
             changed = subprocess.run(

@@ -12,6 +12,7 @@ from typing import Any, Iterable
 
 from .config import ConfigBundle
 from .search_strategy import BAND_ORDER, canonical_band_counts, classification_only_titles, query_definition, search_band, window_cadence_hours
+from .version import PRODUCT_VERSION
 
 
 PLATFORM_ORDER = {"linkedin": 0, "indeed": 1, "glassdoor": 2}
@@ -206,7 +207,7 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
     json_path = output_dir / "search_plan.json"
     csv_path = output_dir / "search_plan.csv"
     html_path = output_dir / "search_plan.html"
-    payload = {"version": "3.2.1", "mode": mode, "counts": plan_counts(tasks), "tasks": [asdict(t) for t in tasks]}
+    payload = {"version": PRODUCT_VERSION, "mode": mode, "counts": plan_counts(tasks), "tasks": [asdict(t) for t in tasks]}
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     with csv_path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(asdict(tasks[0]).keys()) if tasks else list(SearchTask.__dataclass_fields__))

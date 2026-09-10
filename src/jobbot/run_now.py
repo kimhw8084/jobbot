@@ -14,6 +14,8 @@ from .db import Database
 from .dashboard import database_identity
 from .orchestrator import chrome_path, open_dashboard_workspace
 from .search_plan import compile_staged_and_write
+from .version import PRODUCT_VERSION
+from .provenance import release_identity
 
 
 @dataclass(frozen=True)
@@ -38,21 +40,23 @@ def assert_production_release(bundle: ConfigBundle) -> None:
         report = json.loads(report_path.read_text(encoding="utf-8"))
     except Exception as exc:
         raise RuntimeError(f"production guard refused unreadable validation report: {exc}") from exc
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=bundle.root, text=True).strip()
-    status = subprocess.run(
-        ["git", "status", "--porcelain=v1", "--untracked-files=no"],
-        cwd=bundle.root, text=True, capture_output=True, check=False,
-    )
-    if status.stdout.strip():
-        raise RuntimeError("production guard refused start: tracked working tree is dirty")
+    current = release_identity(bundle.root)
+    if not current["clean_worktree"]:
+        raise RuntimeError("production guard refused start: relevant worktree is not clean")
     manifest = json.loads((bundle.root / "extension" / "manifest.json").read_text(encoding="utf-8"))
     build = str(manifest.get("version_name") or "")
     if report.get("PROD_READY") is not True or report.get("internal_failures") != []:
         raise RuntimeError("production guard refused start: latest validation is not PROD_READY with zero internal failures")
-    if str(report.get("head") or "") != head:
-        raise RuntimeError(f"production guard refused stale validation: report HEAD {report.get('head')} != current HEAD {head}")
+    if str(report.get("head") or "") != current["head"]:
+        raise RuntimeError(f"production guard refused stale validation: report HEAD {report.get('head')} != current HEAD {current['head']}")
+    if str(report.get("tree") or report.get("source_tree") or "") != current["tree"]:
+        raise RuntimeError("production guard refused stale validation: source tree identity differs")
+    if report.get("clean_worktree") is not True or report.get("head_equals_upstream") is not True:
+        raise RuntimeError("production guard refused validation without a clean pushed source tree")
     if str(report.get("extension_build") or report.get("validated_extension_build") or "") != build:
         raise RuntimeError("production guard refused stale extension build validation")
+    if str(report.get("extension_runtime_digest") or "") != current["extension_runtime_digest"]:
+        raise RuntimeError("production guard refused stale extension runtime bytes")
     if os.environ.get("JOBBOT_DATABASE_PATH") and Path(os.environ["JOBBOT_DATABASE_PATH"]).resolve() != production_db:
         raise RuntimeError("production guard refused inherited database override")
     if os.environ.get("JOBBOT_OUTPUT_DIR") and Path(os.environ["JOBBOT_OUTPUT_DIR"]).resolve() != production_out:
@@ -109,7 +113,7 @@ def ensure_dashboard(bundle: ConfigBundle, *, open_browser: bool = True) -> tupl
     conn = Database(bundle).connect()
     try:
         expected = {
-            "jobbot_version": "3.2.1", "workspace_root": str(bundle.root.resolve()),
+            "jobbot_version": PRODUCT_VERSION, "workspace_root": str(bundle.root.resolve()),
             "resolved_database_path": str(bundle.database_path.resolve()),
             "database_identity": database_identity(conn, bundle),
         }

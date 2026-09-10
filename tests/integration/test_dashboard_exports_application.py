@@ -6,6 +6,7 @@ import sqlite3
 import tempfile
 import threading
 import unittest
+import urllib.error
 import urllib.request
 from pathlib import Path
 from unittest.mock import patch
@@ -20,6 +21,21 @@ from tests.helpers import bundle_with_database
 
 
 class DashboardExportApplicationTests(unittest.TestCase):
+    def mutation_headers(self, server) -> dict[str, str]:
+        return {
+            "Content-Type": "application/json",
+            "Origin": f"http://127.0.0.1:{server.server_port}",
+            "X-JobBot-CSRF": server.csrf_token,
+        }
+
+    def post_status(self, url: str, payload: dict[str, object], headers: dict[str, str]) -> tuple[int, dict[str, object]]:
+        request = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=5) as response:
+                return response.status, json.loads(response.read())
+        except urllib.error.HTTPError as error:
+            return error.code, json.loads(error.read())
+
     def seed(self, conn: sqlite3.Connection, count: int = 2100) -> None:
         rows = []
         for index in range(count):
@@ -50,11 +66,42 @@ class DashboardExportApplicationTests(unittest.TestCase):
                 self.assertEqual(set(coverage["primary"]), {"linkedin", "indeed", "glassdoor"})
                 self.assertIn("supplemental", coverage)
                 job_id = payload["jobs"][0]["job_id"]
-                request = urllib.request.Request(base + f"/api/jobs/{job_id}/application", data=json.dumps({"status": "APPLIED", "notes": "dashboard test"}).encode(), headers={"Content-Type": "application/json"}, method="POST")
+                request = urllib.request.Request(base + f"/api/jobs/{job_id}/application", data=json.dumps({"status": "APPLIED", "notes": "dashboard test"}).encode(), headers=self.mutation_headers(server), method="POST")
                 with urllib.request.urlopen(request, timeout=5) as response: self.assertTrue(json.loads(response.read())["ok"])
                 conn = Database(bundle).connect()
                 self.assertEqual(conn.execute("SELECT application_status FROM jobs WHERE job_id=?", (job_id,)).fetchone()[0], "APPLIED")
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM application_events WHERE job_id=?", (job_id,)).fetchone()[0], 1); conn.close()
+            finally:
+                server.shutdown(); server.server_close(); thread.join(timeout=3)
+
+    def test_dashboard_mutations_require_exact_origin_host_json_and_token(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); bundle = bundle_with_database(root / "jobs.sqlite3", root / "out"); Database(bundle).migrate()
+            conn = Database(bundle).connect(); self.seed(conn, 1); conn.close()
+            server = create_server(bundle, port=0); thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+            try:
+                base = f"http://127.0.0.1:{server.server_port}"
+                status, session = self.post_status(base + "/api/jobs/J000000/application", {"status": "APPLIED"}, self.mutation_headers(server))
+                self.assertEqual(status, 200); self.assertTrue(session["ok"])
+                conn = Database(bundle).connect(); self.assertEqual(conn.execute("SELECT application_status FROM jobs WHERE job_id='J000000'").fetchone()[0], "APPLIED"); conn.close()
+                invalid = self.mutation_headers(server)
+                invalid["Origin"] = "https://attacker.example"
+                status, _ = self.post_status(base + "/api/jobs/J000000/application", {"status": "REJECTED"}, invalid)
+                self.assertEqual(status, 403)
+                invalid = self.mutation_headers(server); invalid.pop("X-JobBot-CSRF")
+                status, _ = self.post_status(base + "/api/jobs/J000000/application", {"status": "REJECTED"}, invalid)
+                self.assertEqual(status, 403)
+                invalid = self.mutation_headers(server); invalid["Content-Type"] = "text/plain"
+                status, _ = self.post_status(base + "/api/jobs/J000000/application", {"status": "REJECTED"}, invalid)
+                self.assertEqual(status, 415)
+                invalid = self.mutation_headers(server); invalid["Host"] = "attacker.example"
+                status, _ = self.post_status(base + "/api/jobs/J000000/application", {"status": "REJECTED"}, invalid)
+                self.assertEqual(status, 403)
+                with urllib.request.urlopen(base + "/api/session", timeout=5) as response:
+                    bootstrap = json.loads(response.read()); self.assertTrue(bootstrap["csrf_token"]); self.assertIn("127.0.0.1", bootstrap["origin"])
+                with urllib.request.urlopen(base + "/", timeout=5) as response:
+                    self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
+                    self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
             finally:
                 server.shutdown(); server.server_close(); thread.join(timeout=3)
 
@@ -146,7 +193,7 @@ class DashboardExportApplicationTests(unittest.TestCase):
             try:
                 base = f"http://127.0.0.1:{server.server_port}"
                 def control(action: str) -> dict[str, object]:
-                    request = urllib.request.Request(base + "/api/run/control", data=json.dumps({"action": action, "run_id": run_id}).encode(), headers={"Content-Type": "application/json"}, method="POST")
+                    request = urllib.request.Request(base + "/api/run/control", data=json.dumps({"action": action, "run_id": run_id}).encode(), headers=self.mutation_headers(server), method="POST")
                     with urllib.request.urlopen(request, timeout=5) as response: return json.loads(response.read())
                 self.assertEqual(control("stop")["status"], "running")
                 conn = Database(bundle).connect(); self.assertEqual(conn.execute("SELECT stop_after_current FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()[0], 1); conn.close()

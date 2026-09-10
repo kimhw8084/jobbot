@@ -397,10 +397,29 @@ class Job:
         return canonical_job_id(self.company, self.title, self.location_raw, self.source_job_id)
 
 
+class CommitControlledConnection(sqlite3.Connection):
+    """SQLite connection whose commits can be deferred by one owner.
+
+    The bridge uses this only while a durable RPC receipt and its business
+    mutation share one transaction. Normal stores retain ordinary commit
+    semantics.
+    """
+
+    defer_commits = False
+
+    def commit(self) -> None:
+        if self.defer_commits:
+            return
+        super().commit()
+
+    def durable_commit(self) -> None:
+        super().commit()
+
+
 class Store:
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(path)
+        self.conn = sqlite3.connect(path, factory=CommitControlledConnection)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
