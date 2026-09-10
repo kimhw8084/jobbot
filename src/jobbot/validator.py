@@ -179,7 +179,17 @@ def _dashboard_json(url: str, endpoint: str) -> dict[str, Any] | None:
         return None
 
 
-def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
+def _workspace_recreation_baseline(url: str) -> int | None:
+    active = _dashboard_json(url, "/api/run")
+    workspace = (active or {}).get("workspace", {}) if isinstance(active, dict) else {}
+    value = workspace.get("workspace_recreation_count")
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _dashboard_probe(bundle: ConfigBundle, url: str, *, recreation_baseline: int | None = None) -> dict[str, Any]:
     identity = _dashboard_json(url, "/api/identity")
     summary = _dashboard_json(url, "/api/summary")
     active = _dashboard_json(url, "/api/run")
@@ -194,6 +204,8 @@ def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
     worker_windows = workspace.get("worker_tab_window_ids") or {}
     role_windows_ok = all(str(value) == str(window_id) for value in role_windows.values() if value is not None)
     worker_windows_ok = all(str(value) == str(window_id) for value in worker_windows.values() if value is not None)
+    recreation_count = int(workspace.get("workspace_recreation_count", 0) or 0)
+    recreation_unchanged = recreation_baseline is not None and recreation_count == int(recreation_baseline)
     workspace_ok = bool(
         active and workspace.get("isolated") is True
         and int(workspace.get("ownership_violations", 0) or 0) == 0
@@ -201,7 +213,7 @@ def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
         and worker_windows_ok
         and workspace.get("workspace_creation_method") != "unsafe_rendezvous_adoption"
         and int(workspace.get("focus_requests_by_jobbot", 0) or 0) == 0
-        and int(workspace.get("workspace_recreation_count", 0) or 0) == 0
+        and recreation_unchanged
     )
     return {
         "identity": identity,
@@ -217,7 +229,9 @@ def _dashboard_probe(bundle: ConfigBundle, url: str) -> dict[str, Any]:
             "ownership_violations": int(workspace.get("ownership_violations", 0) or 0),
             "non_jobbot_tab_count": int(workspace.get("non_jobbot_tab_count", 0) or 0),
             "workspace_creation_method": workspace.get("workspace_creation_method", ""),
-            "workspace_recreation_count": int(workspace.get("workspace_recreation_count", 0) or 0),
+            "workspace_recreation_count": recreation_count,
+            "workspace_recreation_baseline": recreation_baseline,
+            "workspace_recreation_unchanged": recreation_unchanged,
             "focus_requests_by_jobbot": int(workspace.get("focus_requests_by_jobbot", 0) or 0),
         },
     }
@@ -1196,6 +1210,8 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         url, _ = ensure_dashboard(micro_bundle, open_browser=False)
         dashboard_bundles.append((micro_bundle, url))
         report["dashboard_url"] = url
+        micro_recreation_baseline = _workspace_recreation_baseline(url)
+        report.setdefault("workspace_recreation_baselines", {})["micro"] = micro_recreation_baseline
         with _isolated_environment(micro_bundle):
             preflight(micro_bundle)
             primary = _live_run(
@@ -1223,7 +1239,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             primary["resume"] = None
             final_primary = primary
         primary["stop_resume_pass"] = bool(primary["outcome"]["status"] == "stopped" and primary["resume"] and _stage_pass(final_primary, bounded=True))
-        primary["dashboard"] = _dashboard_probe(micro_bundle, url)
+        primary["dashboard"] = _dashboard_probe(micro_bundle, url, recreation_baseline=micro_recreation_baseline)
         primary["pass"] = bool(primary["stop_resume_pass"] and primary["bridge_restart_pass"] is True
                                 and primary["dashboard"]["identity_ok"]
                                 and primary["dashboard"]["live_refresh_ok"] and primary["dashboard"]["workspace_isolation_ok"]
@@ -1257,6 +1273,8 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         soak_url, _ = ensure_dashboard(soak_bundle, open_browser=False)
         dashboard_bundles.append((soak_bundle, soak_url))
         report["dashboard_url"] = soak_url
+        soak_recreation_baseline = _workspace_recreation_baseline(soak_url)
+        report.setdefault("workspace_recreation_baselines", {})["soak"] = soak_recreation_baseline
         soak_started = time.monotonic()
         soak_deadline = soak_started + 900
         with _isolated_environment(soak_bundle):
@@ -1281,7 +1299,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         soak["bands_reached"] = [band for band, values in soak["band_execution_evidence"].items()
                                   if int(values.get("progress_tasks", 0) or 0) > 0]
         soak["duration_seconds_total"] = round(time.monotonic() - soak_started, 2)
-        soak["dashboard"] = _dashboard_probe(soak_bundle, soak_url)
+        soak["dashboard"] = _dashboard_probe(soak_bundle, soak_url, recreation_baseline=soak_recreation_baseline)
         soak["pass"] = bool(soak["outcome"]["status"] == "stopped" and soak["resume"] and
                              soak["bridge_restart_pass"] is True and
                              _stage_pass(final_soak, bounded=True) and soak["supplemental"]["isolation_pass"] and
@@ -1303,6 +1321,8 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         semi_url, _ = ensure_dashboard(semi_bundle, open_browser=False)
         dashboard_bundles.append((semi_bundle, semi_url))
         report["dashboard_url"] = semi_url
+        semi_recreation_baseline = _workspace_recreation_baseline(semi_url)
+        report.setdefault("workspace_recreation_baselines", {})["semi_production"] = semi_recreation_baseline
         semi_started = time.monotonic()
         semi_deadline = semi_started + semi_minutes * 60
         # Five controlled representative probes make band proof deterministic
@@ -1374,7 +1394,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         report["run_now_coverage"]["live_sampled_phase_counts"]["semi_production"] = sampled_phase_counts
         report["run_now_coverage"]["semi_execution_evidence"] = execution_evidence
         semi["duration_seconds_total"] = round(time.monotonic() - semi_started, 2)
-        semi["dashboard"] = _dashboard_probe(semi_bundle, semi_url)
+        semi["dashboard"] = _dashboard_probe(semi_bundle, semi_url, recreation_baseline=semi_recreation_baseline)
         semi["pass"] = bool(
             all(phase_pass.values())
             and _phase_coverage_pass(execution_evidence)

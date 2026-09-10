@@ -85,11 +85,11 @@ class OrchestratorMacLauncherTests(unittest.TestCase):
         self.assertEqual(query["run_id"], ["41"])
         self.assertEqual(query["bridge_port"], ["52625"])
         self.assertEqual(query["bridge_token"], ["synthetic-token"])
-        self.assertEqual(query["expected_build"], ["3.2.3-static-hardening.2"])
+        self.assertEqual(query["expected_build"], ["3.2.3-static-hardening.3"])
         self.assertEqual(query["expected_version"], ["3.2.3"])
         self.assertEqual(
             query["expected_runtime_digest"],
-            ["957762fca849fb32d353fed471016997eb0a808271f3c03b6b77bd11dae5cdc7"],
+            ["fef84daf2e117d15e4268f59aff75cbb4e5fc4bc867a1786309dcdb022629d35"],
         )
         self.assertEqual(query["dashboard_url"], ["http://127.0.0.1:8765/"])
 

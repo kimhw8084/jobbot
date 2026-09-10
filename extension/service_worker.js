@@ -144,10 +144,13 @@ async function ensureWorkspace(preferredTabId=null){
       controllerOriginalWindowTabCount=Array.isArray(sourceWindow?.tabs)?sourceWindow.tabs.length:0;
       controllerOriginalWindowHadNonJobbotTabs=Array.isArray(sourceWindow?.tabs)&&sourceWindow.tabs.some(tab=>!isOwnedWorkspaceTab(tab,{...stored,anchor_tab_id:preferred.id}));
     }
-    await chrome.tabs.move(Number(preferredTabId),{windowId,index:-1});
     const preferredUrl=new URL(preferred.url||chrome.runtime.getURL('dashboard.html'));
     preferredUrl.searchParams.set('jobbot_workspace','1');
-    await chrome.tabs.update(Number(preferredTabId),{url:preferredUrl.href,active:false});
+    if(Number(preferred.windowId)!==Number(windowId))await chrome.tabs.move(Number(preferredTabId),{windowId,index:-1});
+    const changes={};
+    if(String(preferred.url||'')!==preferredUrl.href)changes.url=preferredUrl.href;
+    if(preferred.active)changes.active=false;
+    if(Object.keys(changes).length)await chrome.tabs.update(Number(preferredTabId),{...changes});
     if(!anchorId){anchorId=Number(preferredTabId);anchor=await chrome.tabs.get(anchorId);}
   }
   const next={...stored,window_id:windowId,anchor_tab_id:anchorId,

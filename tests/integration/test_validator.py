@@ -483,7 +483,7 @@ class ValidatorIntegrationTests(unittest.TestCase):
             self.assertEqual(summary["throughput"]["linkedin"]["cards_per_minute"], 300.0)
             self.assertEqual(summary["throughput"]["linkedin"]["canonical_details_per_minute"], 50.0)
 
-    def test_workspace_probe_rejects_focus_or_recreation_claims(self) -> None:
+    def test_workspace_probe_uses_current_stage_recreation_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             bundle = _isolated_bundle(root / "validation.sqlite3", root / "out", 18765)
@@ -497,17 +497,25 @@ class ValidatorIntegrationTests(unittest.TestCase):
                 "isolated": True, "workspace_window_id": 7,
                 "workspace_creation_method": "windows.create",
                 "ownership_violations": 0, "role_tab_window_ids": {}, "worker_tab_window_ids": {},
-                "focus_requests_by_jobbot": 0, "workspace_recreation_count": 0,
+                "focus_requests_by_jobbot": 0, "workspace_recreation_count": 1304,
             }}
             with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
-                self.assertTrue(_dashboard_probe(bundle, "http://127.0.0.1:18765/")["workspace_isolation_ok"])
+                probe = _dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)
+                self.assertTrue(probe["workspace_isolation_ok"])
+                self.assertTrue(probe["workspace_proof"]["workspace_recreation_unchanged"])
             active["workspace"]["focus_requests_by_jobbot"] = 1
             with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
-                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/")["workspace_isolation_ok"])
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)["workspace_isolation_ok"])
             active["workspace"]["focus_requests_by_jobbot"] = 0
             active["workspace"]["role_tab_window_ids"] = {"anchor": 8}
             with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
-                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/")["workspace_isolation_ok"])
+                self.assertFalse(_dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)["workspace_isolation_ok"])
+            active["workspace"]["role_tab_window_ids"] = {}
+            active["workspace"]["workspace_recreation_count"] = 1305
+            with patch("jobbot.validator._dashboard_json", side_effect=[identity, {}, active]):
+                probe = _dashboard_probe(bundle, "http://127.0.0.1:18765/", recreation_baseline=1304)
+                self.assertFalse(probe["workspace_isolation_ok"])
+                self.assertFalse(probe["workspace_proof"]["workspace_recreation_unchanged"])
 
     def test_supplemental_failure_taxonomy_keeps_programming_bugs_internal(self) -> None:
         import socket
