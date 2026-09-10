@@ -1,0 +1,7 @@
+# Runtime extension bytes are part of the cryptographic release identity.
+# Keep them byte-stable across macOS, Linux, and Windows checkouts.
+extension/*.js text eol=lf
+extension/*.html text eol=lf
+extension/*.json text eol=lf
+extension/*.css text eol=lf
+src/jobbot/web/*.js text eol=lf
