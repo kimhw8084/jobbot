@@ -44,10 +44,22 @@ def chrome_path() -> str | None:
 
 def _open_chrome(url: str) -> None:
     if sys.platform == "darwin":
-        # Use a separate normal Chrome window for the extension rendezvous.
-        # The service worker immediately adopts that window as the persistent
-        # JobBot workspace; -g keeps it from stealing the user's focus.
-        subprocess.Popen(["open", "-g", "-a", "Google Chrome", "--args", "--new-window", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Pass the rendezvous URL to LaunchServices as an actual URL operand.
+        # Arguments after `open --args` become Chrome argv and never navigate
+        # the existing normal profile; -g preserves background delivery.
+        try:
+            subprocess.run(
+                ["open", "-g", "-a", "Google Chrome", url],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                f"macOS Google Chrome URL delivery failed (open exit {exc.returncode})"
+            ) from exc
+        except OSError as exc:
+            raise RuntimeError("macOS Google Chrome URL delivery could not start") from exc
         return
     executable = chrome_path()
     if not executable:
