@@ -45,7 +45,7 @@ class ReleaseProvenanceTests(unittest.TestCase):
         paths = builder.release_files("HEAD")
         self.assertNotIn("config/candidate.toml", paths)
         self.assertTrue(all(not path.startswith("tests/") for path in paths))
-            self.assertNotIn("src/jobbot/orchestrator 2.py", paths)
+        self.assertNotIn("src/jobbot/orchestrator 2.py", paths)
 
     def test_validation_provenance_detects_worktree_status_change(self) -> None:
         snapshot = release_identity(PROJECT_ROOT)
