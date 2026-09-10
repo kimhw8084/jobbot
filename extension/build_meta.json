@@ -1,7 +1,7 @@
 {
   "extension_version": "3.2.3",
-  "extension_build": "3.2.3-static-hardening.1",
-  "runtime_digest": "8bdb3bbdf8e344b20a7ae5e3fb1c5540509dced213349fd4248ac77d2762b82c",
+  "extension_build": "3.2.3-static-hardening.2",
+  "runtime_digest": "957762fca849fb32d353fed471016997eb0a808271f3c03b6b77bd11dae5cdc7",
   "runtime_paths": [
     "common.js",
     "dashboard.html",
