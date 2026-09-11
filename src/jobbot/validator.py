@@ -940,7 +940,7 @@ def _coverage_cell_evidence(
     elif sampled == 0:
         reason = "unsampled"
         passed = False
-    elif external == sampled:
+    elif external == sampled and started > 0:
         reason = "external_blocked"
         passed = True
     elif started == 0:
@@ -966,6 +966,154 @@ def _coverage_cell_evidence(
         "external_classification": external_classifications,
         "coverage_pass": passed,
         "coverage_reason": reason,
+    }
+
+
+def _platform_circuit_state(bundle: ConfigBundle, platform: str) -> dict[str, Any] | None:
+    conn = Database(bundle).connect()
+    try:
+        row = conn.execute(
+            "SELECT platform,auth_status,auth_reason,cooldown_until,manual_retry_requested_at "
+            "FROM platform_state WHERE platform=?",
+            (platform,),
+        ).fetchone()
+        return {key: row[key] for key in row.keys()} if row else None
+    finally:
+        conn.close()
+
+
+def _safe_external_reason(value: Any, classification: str) -> str:
+    reason = str(value or "").strip().replace("\n", " ")
+    if not reason or "http://" in reason or "https://" in reason:
+        return classification
+    return reason[:240]
+
+
+def _external_blocker_provenance(
+    bundle: ConfigBundle,
+    *,
+    cell: dict[str, Any],
+) -> dict[str, Any]:
+    """Capture only safe, task/event metadata for a directly observed blocker."""
+    run_id = int(cell["run_id"])
+    conn = Database(bundle).connect()
+    try:
+        task = conn.execute(
+            "SELECT task_id,challenge_reason,last_error,status FROM browser_search_tasks "
+            "WHERE browser_run_id=? AND phase=? AND platform=? AND search_band=? ORDER BY task_id LIMIT 1",
+            (run_id, cell["phase"], cell["platform"], cell["band"]),
+        ).fetchone()
+        event = conn.execute(
+            "SELECT event_id,event_at,event_type FROM browser_events WHERE browser_run_id=? "
+            "AND event_type IN ('platform_paused','auth_failed','run_finished') "
+            "ORDER BY event_id DESC LIMIT 1",
+            (run_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    classifications = dict(cell.get("external_classification", {}) or {})
+    classification = next(iter(classifications), "external_blocked")
+    return {
+        "platform": cell["platform"],
+        "classification": classification,
+        "originating_cell": {
+            "phase": cell["phase"],
+            "band": cell["band"],
+            "platform": cell["platform"],
+        },
+        "originating_run_id": run_id,
+        "originating_task_id": None if task is None else int(task["task_id"]),
+        "reason": _safe_external_reason(
+            None if task is None else (task["challenge_reason"] or task["last_error"]),
+            classification,
+        ),
+        "observed_event_id": None if event is None else int(event["event_id"]),
+        "observed_at": None if event is None else str(event["event_at"]),
+        "observed_event_type": None if event is None else str(event["event_type"]),
+    }
+
+
+def _stage_blocker_active(bundle: ConfigBundle, blocker: dict[str, Any]) -> bool:
+    """Require the same stage-local circuit to remain externally blocked."""
+    state = _platform_circuit_state(bundle, str(blocker["platform"]))
+    if not state:
+        return False
+    observed_at = str(blocker.get("observed_at") or "")
+    retry_at = str(state.get("manual_retry_requested_at") or "")
+    if retry_at and (not observed_at or retry_at > observed_at):
+        return False
+    status = str(state.get("auth_status") or "")
+    classification = str(blocker.get("classification") or "")
+    if classification in {"challenged", "auth_required", "deferred_by_platform"}:
+        return status in {"challenged", "auth_required"}
+    return False
+
+
+def _active_stage_blocker(
+    bundle: ConfigBundle,
+    stage_blockers: dict[str, dict[str, Any]],
+    platform: str,
+) -> dict[str, Any] | None:
+    blocker = stage_blockers.get(platform)
+    return blocker if blocker and _stage_blocker_active(bundle, blocker) else None
+
+
+def _inherited_external_cell(
+    *,
+    phase: str,
+    band: str,
+    platform: str,
+    blocker: dict[str, Any],
+) -> dict[str, Any]:
+    """Represent a later cell exempted by a live blocker, without execution."""
+    classification = str(blocker["classification"])
+    return {
+        "phase": phase,
+        "band": band,
+        "platform": platform,
+        "run_id": None,
+        "sampled_count": 0,
+        "started_count": 0,
+        "progress_count": 0,
+        "persisted_count": 0,
+        "complete_detail_count": 0,
+        "external_count": 0,
+        "external_classification": {classification: 1},
+        "coverage_pass": True,
+        "coverage_reason": "inherited_external_blocked",
+        "inherited_from_cell": dict(blocker["originating_cell"]),
+        "inherited_from_run_id": int(blocker["originating_run_id"]),
+        "external_blocker": dict(blocker),
+    }
+
+
+def _inherited_semi_phase(
+    *,
+    phase: str,
+    band: str,
+    platform: str,
+    blocker: dict[str, Any],
+) -> dict[str, Any]:
+    coverage_cell = _inherited_external_cell(
+        phase=phase, band=band, platform=platform, blocker=blocker,
+    )
+    return {
+        "phase": phase,
+        "initial": None,
+        "resume": None,
+        "final": {
+            "run_id": None,
+            "outcome": {"status": "inherited_external_blocked"},
+            "validation_classification": "INHERITED_EXTERNAL_BLOCKED",
+            "validation_cutoff": False,
+            "scope": {},
+            "extension_build_pass": True,
+        },
+        "execution": {},
+        "coverage_cell": coverage_cell,
+        "pass": True,
+        "stop_resume_pass": False,
+        "inherited": True,
     }
 
 
@@ -1293,6 +1441,11 @@ def _run_semi_phase(
             platform=platforms[0],
             run_id=int(final["run_id"]),
         )
+        if coverage_cell["coverage_reason"] == "external_blocked":
+            coverage_cell["external_blocker"] = _external_blocker_provenance(
+                bundle,
+                cell=coverage_cell,
+            )
     stage_pass = _stage_pass(
         final,
         bounded=True,
@@ -1522,22 +1675,44 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         phase_seconds = _semi_cell_phase_seconds(semi_minutes, len(cell_schedule))
         phase_runs: dict[str, Any] = {}
         semi_cell_failure: dict[str, Any] | None = None
+        stage_blockers: dict[str, dict[str, Any]] = {}
+        stage_external_blockers: list[dict[str, Any]] = []
         with _isolated_environment(semi_bundle):
             for index, (phase, band, platform) in enumerate(cell_schedule):
                 cell_key = f"{phase}:{band}:{platform}"
-                phase_runs[cell_key] = _run_semi_phase(
-                    semi_bundle,
-                    phase=phase,
-                    stage_id=stage_ids["semi_production"],
-                    platforms=[platform],
-                    phase_seconds=phase_seconds,
-                    active_runs=active_runs,
-                    stage_deadline=semi_deadline,
-                    sample_band=band,
-                    # Retain one intentional stop/resume proof without
-                    # repeating it for every platform cell.
-                    stop_resume=index == 0,
-                )
+                blocker = _active_stage_blocker(semi_bundle, stage_blockers, platform)
+                if blocker:
+                    phase_runs[cell_key] = _inherited_semi_phase(
+                        phase=phase,
+                        band=band,
+                        platform=platform,
+                        blocker=blocker,
+                    )
+                else:
+                    if platform in stage_blockers:
+                        stage_blockers.pop(platform, None)
+                    phase_runs[cell_key] = _run_semi_phase(
+                        semi_bundle,
+                        phase=phase,
+                        stage_id=stage_ids["semi_production"],
+                        platforms=[platform],
+                        phase_seconds=phase_seconds,
+                        active_runs=active_runs,
+                        stage_deadline=semi_deadline,
+                        sample_band=band,
+                        # Retain one intentional stop/resume proof without
+                        # repeating it for every platform cell.
+                        stop_resume=index == 0,
+                    )
+                    direct_cell = phase_runs[cell_key].get("coverage_cell")
+                    if direct_cell and direct_cell.get("coverage_reason") == "external_blocked":
+                        stage_blockers[platform] = dict(direct_cell["external_blocker"])
+                        if not any(
+                            item.get("platform") == platform
+                            and item.get("originating_run_id") == stage_blockers[platform].get("originating_run_id")
+                            for item in stage_external_blockers
+                        ):
+                            stage_external_blockers.append(dict(stage_blockers[platform]))
                 if not phase_runs[cell_key]["pass"]:
                     semi_cell_failure = {
                         "cell": {"phase": phase, "band": band, "platform": platform},
@@ -1545,8 +1720,12 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                         "run_id": phase_runs[cell_key]["final"].get("run_id"),
                     }
                     break
-            last_key = next(reversed(phase_runs))
-            last_run_id = int(phase_runs[last_key]["final"]["run_id"])
+            actual_run_ids = [
+                int(result["final"]["run_id"])
+                for result in phase_runs.values()
+                if result["final"].get("run_id") is not None
+            ]
+            last_run_id = actual_run_ids[-1]
             supplemental = (
                 {
                     "ok": False,
@@ -1565,33 +1744,35 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         phase_pass: dict[str, bool] = {}
         coverage_cells: list[dict[str, Any]] = []
         for probe_key, phase_result in phase_runs.items():
-            run_id = int(phase_result["final"]["run_id"])
-            for phase, platforms in _sampled_phase_counts(semi_bundle, run_id).items():
-                for platform, count in platforms.items():
-                    sampled_phase_counts.setdefault(phase, {})[platform] = sampled_phase_counts.setdefault(phase, {}).get(platform, 0) + count
-            for phase, platforms in phase_result["execution"].items():
-                target_phase = execution_evidence.setdefault(phase, {})
-                for platform, values in platforms.items():
-                    target = target_phase.setdefault(platform, {
-                        "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
-                        "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
-                        "external_classifications": {},
-                        "bands": {},
-                    })
-                    for key in ("sampled_queued", "started_tasks", "progress_tasks", "cards_persisted", "details_complete", "external_tasks"):
-                        target[key] += int(values.get(key, 0) or 0)
-                    for classification, count in values.get("external_classifications", {}).items():
-                        target["external_classifications"][classification] = target["external_classifications"].get(classification, 0) + int(count or 0)
-                    for band_name, band_values in values.get("bands", {}).items():
-                        band_target = target["bands"].setdefault(band_name, {
+            run_id = phase_result["final"].get("run_id")
+            if run_id is not None:
+                run_id = int(run_id)
+                for phase, platforms in _sampled_phase_counts(semi_bundle, run_id).items():
+                    for platform, count in platforms.items():
+                        sampled_phase_counts.setdefault(phase, {})[platform] = sampled_phase_counts.setdefault(phase, {}).get(platform, 0) + count
+                for phase, platforms in phase_result["execution"].items():
+                    target_phase = execution_evidence.setdefault(phase, {})
+                    for platform, values in platforms.items():
+                        target = target_phase.setdefault(platform, {
                             "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
                             "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
                             "external_classifications": {},
+                            "bands": {},
                         })
                         for key in ("sampled_queued", "started_tasks", "progress_tasks", "cards_persisted", "details_complete", "external_tasks"):
-                            band_target[key] += int(band_values.get(key, 0) or 0)
-                        for classification, count in band_values.get("external_classifications", {}).items():
-                            band_target["external_classifications"][classification] = band_target["external_classifications"].get(classification, 0) + int(count or 0)
+                            target[key] += int(values.get(key, 0) or 0)
+                        for classification, count in values.get("external_classifications", {}).items():
+                            target["external_classifications"][classification] = target["external_classifications"].get(classification, 0) + int(count or 0)
+                        for band_name, band_values in values.get("bands", {}).items():
+                            band_target = target["bands"].setdefault(band_name, {
+                                "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
+                                "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
+                                "external_classifications": {},
+                            })
+                            for key in ("sampled_queued", "started_tasks", "progress_tasks", "cards_persisted", "details_complete", "external_tasks"):
+                                band_target[key] += int(band_values.get(key, 0) or 0)
+                            for classification, count in band_values.get("external_classifications", {}).items():
+                                band_target["external_classifications"][classification] = band_target["external_classifications"].get(classification, 0) + int(count or 0)
             if phase_result.get("coverage_cell"):
                 coverage_cells.append(phase_result["coverage_cell"])
             phase = phase_result["phase"]
@@ -1609,6 +1790,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             "stage_deadline_seconds": semi_minutes * 60,
             "band_coverage_pass": _band_coverage_pass(coverage_cells),
             "phase_pass": phase_pass,
+            "external_blockers": stage_external_blockers,
             "supplemental": supplemental,
         }
         report["run_now_coverage"]["live_sampled_phase_counts"]["semi_production"] = sampled_phase_counts
@@ -1626,6 +1808,8 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             and semi["dashboard"]["workspace_isolation_ok"]
         )
         report["semi_production"] = semi
+        for blocker in stage_external_blockers:
+            report["external_blockers"].append({"stage": "semi_production", **blocker})
         if semi_cell_failure:
             report["internal_failures"].append(
                 "semi-production cell failed after its bounded execution opportunity: "

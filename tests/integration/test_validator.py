@@ -22,6 +22,10 @@ from jobbot.validator import (
     _phase_coverage_pass,
     _band_coverage_pass,
     _coverage_cell_evidence,
+    _active_stage_blocker,
+    _external_blocker_provenance,
+    _inherited_external_cell,
+    _inherited_semi_phase,
     _semi_cell_phase_seconds,
     _semi_probe_schedule,
     _stage_pass,
@@ -37,6 +41,25 @@ from jobbot.validator import (
 
 
 class ValidatorIntegrationTests(unittest.TestCase):
+    def _state_bundle(self, td: str, platform: str, auth_status: str, retry_at: str | None = None):
+        root = Path(td)
+        (root / "config").mkdir()
+        for item in (PROJECT_ROOT / "config").iterdir():
+            (root / "config" / item.name).write_bytes(item.read_bytes())
+        bundle = _isolated_bundle(root / "state.sqlite3", root / "out", 18766)
+        _prepare_validation_bundle(bundle)
+        conn = Database(bundle).connect()
+        try:
+            conn.execute(
+                "UPDATE platform_state SET auth_status=?,auth_reason=?,challenged_at=?,"
+                "manual_retry_requested_at=? WHERE platform=?",
+                (auth_status, "fixture external state", "2026-09-11T02:00:00+00:00", retry_at, platform),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        return bundle
+
     def test_micro_task_is_the_compiled_gold_recent_definition(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -352,6 +375,139 @@ class ValidatorIntegrationTests(unittest.TestCase):
                                          band="DEEP_TAIL", platform="glassdoor", run_id=9)
         self.assertFalse(queued["coverage_pass"])
         self.assertEqual(queued["coverage_reason"], "unsampled")
+        externally_deferred_before_start = _coverage_cell_evidence(
+            {"C_DEEP_BACKFILL": {"glassdoor": {"bands": {"DEEP_TAIL": {
+                "sampled_queued": 1, "started_tasks": 0, "progress_tasks": 0,
+                "cards_persisted": 0, "details_complete": 0, "external_tasks": 1,
+                "external_classifications": {"deferred_by_platform": 1},
+            }}}}},
+            phase="C_DEEP_BACKFILL", band="DEEP_TAIL", platform="glassdoor", run_id=10,
+        )
+        self.assertFalse(externally_deferred_before_start["coverage_pass"])
+        self.assertEqual(externally_deferred_before_start["coverage_reason"], "queued_only")
+
+    def test_stage_external_blockers_inherit_across_all_later_cells(self) -> None:
+        indeed_blocker = {
+            "platform": "indeed", "classification": "challenged",
+            "originating_cell": {"phase": "A_FASTEST_DOOR_RECENT", "band": "GOLD", "platform": "indeed"},
+            "originating_run_id": 2, "observed_at": "2026-09-11T02:39:37+00:00",
+        }
+        glassdoor_blocker = {
+            "platform": "glassdoor", "classification": "auth_required",
+            "originating_cell": {"phase": "A_FASTEST_DOOR_RECENT", "band": "GOLD", "platform": "glassdoor"},
+            "originating_run_id": 3, "observed_at": "2026-09-11T02:40:04+00:00",
+        }
+        cells = []
+        for phase, band, platform in _semi_probe_schedule():
+            blocker = {"indeed": indeed_blocker, "glassdoor": glassdoor_blocker}.get(platform)
+            if blocker:
+                cell = _inherited_external_cell(phase=phase, band=band, platform=platform, blocker=blocker)
+                self.assertIsNone(cell["run_id"])
+                self.assertEqual(cell["coverage_reason"], "inherited_external_blocked")
+                self.assertEqual(cell["inherited_from_run_id"], blocker["originating_run_id"])
+            else:
+                cell = {"phase": phase, "band": band, "platform": platform,
+                        "coverage_pass": True, "coverage_reason": "progress", "progress_count": 1}
+            cells.append(cell)
+        self.assertEqual(len(cells), 15)
+        self.assertTrue(_phase_coverage_pass(cells))
+        self.assertTrue(_band_coverage_pass(cells))
+        self.assertTrue(all(cell["progress_count"] == 0 for cell in cells if cell["platform"] != "linkedin"))
+
+    def test_active_stage_blocker_is_platform_and_stage_local(self) -> None:
+        blocker = {
+            "platform": "indeed", "classification": "challenged",
+            "originating_cell": {"phase": "A_FASTEST_DOOR_RECENT", "band": "GOLD", "platform": "indeed"},
+            "originating_run_id": 2, "observed_at": "2026-09-11T02:39:37+00:00",
+        }
+        with tempfile.TemporaryDirectory() as td:
+            bundle = self._state_bundle(td, "indeed", "challenged")
+            stage_blockers = {"indeed": blocker}
+            self.assertIsNotNone(_active_stage_blocker(bundle, stage_blockers, "indeed"))
+            self.assertIsNone(_active_stage_blocker(bundle, stage_blockers, "glassdoor"))
+            self.assertIsNone(_active_stage_blocker(bundle, {}, "indeed"))
+
+    def test_manual_retry_clears_inheritance_without_validator_retry_or_state_mutation(self) -> None:
+        blocker = {
+            "platform": "indeed", "classification": "challenged",
+            "originating_cell": {"phase": "A_FASTEST_DOOR_RECENT", "band": "GOLD", "platform": "indeed"},
+            "originating_run_id": 2, "observed_at": "2026-09-11T02:39:37+00:00",
+        }
+        with tempfile.TemporaryDirectory() as td:
+            bundle = self._state_bundle(td, "indeed", "challenged")
+            self.assertIsNotNone(_active_stage_blocker(bundle, {"indeed": blocker}, "indeed"))
+            conn = Database(bundle).connect()
+            try:
+                before = conn.execute(
+                    "SELECT auth_status,manual_retry_requested_at FROM platform_state WHERE platform='indeed'"
+                ).fetchone()
+                conn.execute(
+                    "UPDATE platform_state SET auth_status='unchecked',manual_retry_requested_at=? WHERE platform='indeed'",
+                    ("2026-09-11T02:45:00+00:00",),
+                )
+                conn.commit()
+                after = conn.execute(
+                    "SELECT auth_status,manual_retry_requested_at FROM platform_state WHERE platform='indeed'"
+                ).fetchone()
+            finally:
+                conn.close()
+            self.assertEqual(tuple(before), ("challenged", None))
+            self.assertEqual(tuple(after), ("unchecked", "2026-09-11T02:45:00+00:00"))
+            self.assertIsNone(_active_stage_blocker(bundle, {"indeed": blocker}, "indeed"))
+
+    def test_inherited_phase_has_no_browser_run_and_keeps_blocker_provenance(self) -> None:
+        blocker = {
+            "platform": "glassdoor", "classification": "auth_required",
+            "originating_cell": {"phase": "A_FASTEST_DOOR_RECENT", "band": "GOLD", "platform": "glassdoor"},
+            "originating_run_id": 3, "reason": "auth_required", "observed_event_id": 18,
+            "observed_at": "2026-09-11T02:40:04+00:00",
+        }
+        result = _inherited_semi_phase(
+            phase="B_REMAINING_CORE_RECENT", band="HEDGE", platform="glassdoor", blocker=blocker,
+        )
+        cell = result["coverage_cell"]
+        self.assertTrue(result["pass"])
+        self.assertIsNone(result["final"]["run_id"])
+        self.assertEqual(cell["coverage_reason"], "inherited_external_blocked")
+        self.assertEqual(cell["external_classification"], {"auth_required": 1})
+        self.assertEqual(cell["inherited_from_cell"], blocker["originating_cell"])
+        self.assertEqual(cell["inherited_from_run_id"], 3)
+
+    def test_direct_external_provenance_is_safe_and_run_scoped(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "config").mkdir()
+            for item in (PROJECT_ROOT / "config").iterdir():
+                (root / "config" / item.name).write_bytes(item.read_bytes())
+            bundle = load_bundle(root)
+            run_id = enqueue_validation_sample(
+                root, ["indeed"], phases=("A_FASTEST_DOOR_RECENT",),
+                sample_bands=("GOLD",), per_phase_per_platform=1, bundle=bundle,
+            )
+            conn = Database(bundle).connect()
+            try:
+                task_id = conn.execute(
+                    "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)
+                ).fetchone()[0]
+                conn.execute(
+                    "UPDATE browser_search_tasks SET status='challenged',started_at=?,challenge_reason=? WHERE task_id=?",
+                    ("2026-09-11T02:39:37+00:00", "captcha", task_id),
+                )
+                conn.execute(
+                    "INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)",
+                    (run_id, "2026-09-11T02:39:37+00:00", "platform_paused", "indeed: captcha", "{}"),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+            provenance = _external_blocker_provenance(bundle, cell={
+                "run_id": run_id, "phase": "A_FASTEST_DOOR_RECENT", "band": "GOLD",
+                "platform": "indeed", "external_classification": {"challenged": 1},
+            })
+            self.assertEqual(provenance["originating_run_id"], run_id)
+            self.assertEqual(provenance["classification"], "challenged")
+            self.assertEqual(provenance["reason"], "captcha")
+            self.assertIsInstance(provenance["observed_event_id"], int)
 
     def test_band_coverage_requires_progress_or_all_sampled_work_external(self) -> None:
         execution = {
