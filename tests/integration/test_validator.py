@@ -21,6 +21,9 @@ from jobbot.validator import (
     _scope_diagnostics,
     _phase_coverage_pass,
     _band_coverage_pass,
+    _coverage_cell_evidence,
+    _semi_cell_phase_seconds,
+    _semi_probe_schedule,
     _stage_pass,
     _write_report,
     _performance_summary,
@@ -233,6 +236,26 @@ class ValidatorIntegrationTests(unittest.TestCase):
         contaminated["scope"]["linkedin"]["contamination_persisted"] = 1
         self.assertFalse(_stage_pass(contaminated, bounded=True))
 
+    def test_bounded_external_only_cell_is_allowed_only_with_explicit_external_proof(self) -> None:
+        stage = {
+            "validation_classification": "COMPLETED_PARTIAL_EXTERNAL",
+            "validation_cutoff": False,
+            "validation_metrics": {
+                "integrity": "ok", "reconciliation": {"ok": True}, "unexplained": 0,
+                "extracted": 0, "persistence_attempted": 0, "persisted": 0, "persistence_failed": 0,
+                "attempted_tasks": 1, "progress_tasks": 0, "untouched_exhausted": 0,
+                "attempted_incomplete": 0, "attempted_failed": 0, "attempted_running": 0,
+                "task_states": {"queued": 0, "running": 0, "exhausted": 0, "incomplete": 0,
+                                 "challenged": 0, "auth_required": 1, "deferred_by_platform": 0,
+                                 "failed": 0, "paused": 0, "stopped": 0},
+            },
+            "scope": {"indeed": {"contamination_persisted": 0, "scope_missing_events": 0,
+                                   "attempted_pages": 0, "scope_found_events": 0}},
+            "extension_build_pass": True,
+        }
+        self.assertFalse(_stage_pass(stage, bounded=True))
+        self.assertTrue(_stage_pass(stage, bounded=True, allow_external_only=True))
+
     def test_phase_coverage_rejects_queued_only_b_and_c_and_accepts_progress(self) -> None:
         phases = {
             phase: {"linkedin": {"sampled_queued": 2, "started_tasks": 0, "progress_tasks": 0,
@@ -246,6 +269,89 @@ class ValidatorIntegrationTests(unittest.TestCase):
             phases[phase]["linkedin"]["started_tasks"] = 1
             phases[phase]["linkedin"]["progress_tasks"] = 1
         self.assertTrue(_phase_coverage_pass(phases))
+
+    def test_semi_schedule_gives_each_required_platform_cell_a_call(self) -> None:
+        schedule = _semi_probe_schedule()
+        self.assertEqual(len(schedule), 15)
+        self.assertEqual({platform for _, _, platform in schedule}, {"linkedin", "indeed", "glassdoor"})
+        for phase, band in (
+            ("A_FASTEST_DOOR_RECENT", "GOLD"),
+            ("A_FASTEST_DOOR_RECENT", "SILVER"),
+            ("B_REMAINING_CORE_RECENT", "GROWTH"),
+            ("B_REMAINING_CORE_RECENT", "HEDGE"),
+            ("C_DEEP_BACKFILL", "DEEP_TAIL"),
+        ):
+            self.assertEqual(
+                [platform for current_phase, current_band, platform in schedule
+                 if (current_phase, current_band) == (phase, band)],
+                ["linkedin", "indeed", "glassdoor"],
+            )
+
+    def test_semi_cell_budget_stays_within_the_fixed_30_minute_stage(self) -> None:
+        cell_count = len(_semi_probe_schedule())
+        per_cell = _semi_cell_phase_seconds(30, cell_count)
+        worst_case = cell_count * (per_cell + VALIDATION_STOP_GRACE_SECONDS) + VALIDATION_STOP_GRACE_SECONDS
+        self.assertLessEqual(worst_case, 30 * 60 - 12)
+
+    def test_platform_aware_coverage_cannot_be_masked_by_linkedin(self) -> None:
+        cells = []
+        for phase, band, platform in _semi_probe_schedule():
+            passed = platform == "linkedin"
+            cells.append({"phase": phase, "band": band, "platform": platform,
+                          "coverage_pass": passed, "coverage_reason": "progress" if passed else "queued_only"})
+        self.assertFalse(_phase_coverage_pass(cells))
+        self.assertFalse(_band_coverage_pass(cells))
+
+    def test_platform_aware_coverage_accepts_all_progress_or_external_third(self) -> None:
+        cells = [{"phase": phase, "band": band, "platform": platform,
+                  "coverage_pass": True, "coverage_reason": "progress"}
+                 for phase, band, platform in _semi_probe_schedule()]
+        self.assertTrue(_phase_coverage_pass(cells))
+        self.assertTrue(_band_coverage_pass(cells))
+        for index, cell in enumerate(cells):
+            if cell["platform"] == "glassdoor":
+                cell["coverage_reason"] = "external_blocked"
+        self.assertTrue(_phase_coverage_pass(cells))
+        self.assertTrue(_band_coverage_pass(cells))
+
+    def test_external_cell_does_not_exempt_another_unattempted_cell(self) -> None:
+        cells = [{"phase": phase, "band": band, "platform": platform,
+                  "coverage_pass": platform != "glassdoor",
+                  "coverage_reason": "progress" if platform == "linkedin" else (
+                      "external_blocked" if platform == "indeed" else "queued_only")}
+                 for phase, band, platform in _semi_probe_schedule()]
+        self.assertFalse(_phase_coverage_pass(cells))
+        self.assertFalse(_band_coverage_pass(cells))
+
+    def test_coverage_cell_evidence_requires_sampling_and_real_progress_or_external(self) -> None:
+        execution = {
+            "B_REMAINING_CORE_RECENT": {
+                "linkedin": {"bands": {"HEDGE": {
+                    "sampled_queued": 1, "started_tasks": 1, "progress_tasks": 1,
+                    "cards_persisted": 2, "details_complete": 1, "external_tasks": 0,
+                    "external_classifications": {},
+                }}}
+            },
+            "A_FASTEST_DOOR_RECENT": {
+                "indeed": {"bands": {"HEDGE": {
+                    "sampled_queued": 1, "started_tasks": 1, "progress_tasks": 0,
+                    "cards_persisted": 0, "details_complete": 0, "external_tasks": 1,
+                    "external_classifications": {"auth_required": 1},
+                }}},
+            },
+        }
+        progress = _coverage_cell_evidence(execution, phase="B_REMAINING_CORE_RECENT",
+                                           band="HEDGE", platform="linkedin", run_id=7)
+        self.assertTrue(progress["coverage_pass"])
+        self.assertEqual(progress["coverage_reason"], "progress")
+        external = _coverage_cell_evidence(execution, phase="A_FASTEST_DOOR_RECENT",
+                                            band="HEDGE", platform="indeed", run_id=8)
+        self.assertTrue(external["coverage_pass"])
+        self.assertEqual(external["external_classification"], {"auth_required": 1})
+        queued = _coverage_cell_evidence({}, phase="C_DEEP_BACKFILL",
+                                         band="DEEP_TAIL", platform="glassdoor", run_id=9)
+        self.assertFalse(queued["coverage_pass"])
+        self.assertEqual(queued["coverage_reason"], "unsampled")
 
     def test_band_coverage_requires_progress_or_all_sampled_work_external(self) -> None:
         execution = {

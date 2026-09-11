@@ -39,6 +39,13 @@ from .provenance import identity_unchanged, release_identity, source_identity, _
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
+SEMI_PROBES = (
+    ("A_FASTEST_DOOR_RECENT", "GOLD"),
+    ("A_FASTEST_DOOR_RECENT", "SILVER"),
+    ("B_REMAINING_CORE_RECENT", "GROWTH"),
+    ("B_REMAINING_CORE_RECENT", "HEDGE"),
+    ("C_DEEP_BACKFILL", "DEEP_TAIL"),
+)
 TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
 VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
@@ -852,7 +859,13 @@ def _resume_live(bundle: ConfigBundle, run_id: int, timeout_seconds: int,
     return result
 
 
-def _stage_pass(stage: dict[str, Any], *, bounded: bool = False, require_terminal: bool = True) -> bool:
+def _stage_pass(
+    stage: dict[str, Any],
+    *,
+    bounded: bool = False,
+    require_terminal: bool = True,
+    allow_external_only: bool = False,
+) -> bool:
     metrics = stage.get("validation_metrics", stage.get("metrics", {})) if bounded else stage.get("metrics", {})
     classification = stage.get("validation_classification", stage.get("terminal_classification")) if bounded else stage.get("terminal_classification")
     if bounded:
@@ -876,7 +889,13 @@ def _stage_pass(stage: dict[str, Any], *, bounded: bool = False, require_termina
     if bounded:
         if metrics.get("untouched_exhausted", 0) or metrics.get("attempted_false_exhausted", 0) or metrics.get("attempted_incomplete", 0) or metrics.get("attempted_failed", 0) or metrics.get("attempted_running", 0):
             return False
-        if not metrics.get("attempted_tasks", 0) or not metrics.get("progress_tasks", 0):
+        external_only = bool(
+            allow_external_only
+            and metrics.get("attempted_tasks", 0)
+            and not metrics.get("progress_tasks", 0)
+            and sum(int(states.get(state, 0) or 0) for state in TERMINAL_EXTERNAL) == int(metrics.get("attempted_tasks", 0) or 0)
+        )
+        if not metrics.get("attempted_tasks", 0) or (not metrics.get("progress_tasks", 0) and not external_only):
             return False
     elif any(states.get(state, 0) for state in ("queued", "running", "incomplete", "paused", "stopped", "failed")):
         return False
@@ -887,8 +906,89 @@ def _stage_pass(stage: dict[str, Any], *, bounded: bool = False, require_termina
     return True
 
 
-def _phase_coverage_pass(phase_metrics: dict[str, dict[str, dict[str, int | bool]]]) -> bool:
-    """Require real progress in every phase, allowing only fully blocked platforms to be exempt."""
+def _coverage_cell_pass(cell: dict[str, Any]) -> bool:
+    return bool(cell.get("coverage_pass"))
+
+
+def _semi_probe_schedule(platforms: tuple[str, ...] = PRIMARY) -> tuple[tuple[str, str, str], ...]:
+    """Return the explicit platform-aware semi-production coverage cells."""
+    return tuple(
+        (phase, band, platform)
+        for phase, band in SEMI_PROBES
+        for platform in platforms
+    )
+
+
+def _coverage_cell_evidence(
+    execution: dict[str, dict[str, dict[str, Any]]],
+    *,
+    phase: str,
+    band: str,
+    platform: str,
+    run_id: int,
+) -> dict[str, Any]:
+    values = execution.get(phase, {}).get(platform, {})
+    metrics = values.get("bands", {}).get(band, {})
+    sampled = int(metrics.get("sampled_queued", 0) or 0)
+    started = int(metrics.get("started_tasks", 0) or 0)
+    progress = int(metrics.get("progress_tasks", 0) or 0)
+    external = int(metrics.get("external_tasks", 0) or 0)
+    external_classifications = dict(metrics.get("external_classifications", {}) or {})
+    if progress > 0:
+        reason = "progress"
+        passed = True
+    elif sampled == 0:
+        reason = "unsampled"
+        passed = False
+    elif external == sampled:
+        reason = "external_blocked"
+        passed = True
+    elif started == 0:
+        reason = "queued_only"
+        passed = False
+    elif external:
+        reason = "partial_external_without_progress"
+        passed = False
+    else:
+        reason = "started_without_progress"
+        passed = False
+    return {
+        "phase": phase,
+        "band": band,
+        "platform": platform,
+        "run_id": run_id,
+        "sampled_count": sampled,
+        "started_count": started,
+        "progress_count": progress,
+        "persisted_count": int(metrics.get("cards_persisted", 0) or 0),
+        "complete_detail_count": int(metrics.get("details_complete", 0) or 0),
+        "external_count": external,
+        "external_classification": external_classifications,
+        "coverage_pass": passed,
+        "coverage_reason": reason,
+    }
+
+
+def _phase_coverage_pass(phase_metrics: Any) -> bool:
+    """Require every explicit phase/platform cell to have live evidence.
+
+    The legacy aggregate shape remains accepted for the soak tests.  Semi
+    production passes a list of explicit cell evidence, which cannot let one
+    platform's progress mask another platform's queued-only cell.
+    """
+    if isinstance(phase_metrics, list):
+        expected = set(_semi_probe_schedule())
+        observed = {
+            (str(cell.get("phase")), str(cell.get("band")), str(cell.get("platform"))): cell
+            for cell in phase_metrics
+        }
+        return bool(observed) and all(
+            key in observed and _coverage_cell_pass(observed[key])
+            for key in expected
+        )
+
+    # Compatibility path for the pre-cell aggregate shape used by existing
+    # soak coverage tests.  New semi reports never rely on this path.
     any_progress = False
     for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"):
         platforms = phase_metrics.get(phase, {})
@@ -989,7 +1089,7 @@ def _sampled_phase_counts(bundle: ConfigBundle, run_id: int) -> dict[str, dict[s
         conn.close()
 
 
-def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dict[str, dict[str, int | bool]]]:
+def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dict[str, dict[str, Any]]]:
     """Return queued, started, progressed, persisted, and detail-complete proof by phase/platform."""
     conn = Database(bundle).connect()
     try:
@@ -1004,6 +1104,7 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
             values = phases.setdefault(phase, {}).setdefault(platform, {
                 "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
                 "cards_persisted": 0, "details_complete": 0, "external_tasks": 0, "bands": {},
+                "external_classifications": {},
             })
             band_values = values["bands"].setdefault(band, {
                 "sampled_queued": 0,
@@ -1012,6 +1113,7 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
                 "cards_persisted": 0,
                 "details_complete": 0,
                 "external_tasks": 0,
+                "external_classifications": {},
             })
             values["sampled_queued"] = int(values["sampled_queued"]) + 1
             band_values["sampled_queued"] += 1
@@ -1028,6 +1130,11 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
             if str(row[3]) in TERMINAL_EXTERNAL:
                 values["external_tasks"] = int(values["external_tasks"]) + 1
                 band_values["external_tasks"] += 1
+                classification = str(row[3])
+                classifications = values["external_classifications"]
+                classifications[classification] = int(classifications.get(classification, 0)) + 1
+                band_classifications = band_values["external_classifications"]
+                band_classifications[classification] = int(band_classifications.get(classification, 0)) + 1
         for phase, platforms in phases.items():
             for platform, values in platforms.items():
                 values["details_complete"] = int(conn.execute(
@@ -1068,7 +1175,22 @@ def _band_execution_metrics(execution: dict[str, dict[str, dict[str, Any]]]) -> 
     return result
 
 
-def _band_coverage_pass(execution: dict[str, dict[str, dict[str, Any]]], *, required_bands: tuple[str, ...] = BANDS) -> bool:
+def _band_coverage_pass(execution: Any, *, required_bands: tuple[str, ...] = BANDS) -> bool:
+    if isinstance(execution, list):
+        expected = {
+            (phase, band, platform)
+            for phase, band, platform in _semi_probe_schedule()
+            if band in required_bands
+        }
+        observed = {
+            (str(cell.get("phase")), str(cell.get("band")), str(cell.get("platform"))): cell
+            for cell in execution
+            if str(cell.get("band")) in required_bands
+        }
+        return bool(observed) and all(
+            key in observed and _coverage_cell_pass(observed[key])
+            for key in expected
+        )
     evidence = _band_execution_metrics(execution)
     for band in required_bands:
         values = evidence[band]
@@ -1084,6 +1206,19 @@ def _band_coverage_pass(execution: dict[str, dict[str, dict[str, Any]]], *, requ
             continue
         return False
     return True
+
+
+def _semi_cell_phase_seconds(semi_minutes: int, cell_count: int) -> int:
+    """Partition the fixed semi stage among cells and one stop/resume proof."""
+    if cell_count < 1:
+        raise ValueError("semi-production requires at least one coverage cell")
+    total_seconds = int(semi_minutes) * 60
+    grace_budget = (
+        cell_count * VALIDATION_STOP_GRACE_SECONDS
+        + VALIDATION_STOP_GRACE_SECONDS  # one representative resume
+        + VALIDATION_CLEANUP_RESERVE_SECONDS
+    )
+    return max(30, (total_seconds - grace_budget) // cell_count)
 
 
 def _write_report(report: dict[str, Any], report_dir: Path, *, prefix: str = "") -> None:
@@ -1109,9 +1244,10 @@ def _run_semi_phase(
     active_runs: list[tuple[ConfigBundle, int]],
     stage_deadline: float | None = None,
     sample_band: str | None = None,
+    stop_resume: bool | None = None,
 ) -> dict[str, Any]:
     """Run one bounded phase window through the normal browser/bridge path."""
-    intentional_stop = phase == "A_FASTEST_DOOR_RECENT"
+    intentional_stop = phase == "A_FASTEST_DOOR_RECENT" if stop_resume is None else bool(stop_resume)
     first_window = min(60, max(15, phase_seconds // 6)) if intentional_stop else None
     # A bounded window must request an orderly stop before its hard timeout.
     # The grace period lets the extension finish the current atomic task and
@@ -1148,13 +1284,28 @@ def _run_semi_phase(
         )
         final = resumed
     execution = _phase_execution_metrics(bundle, int(final["run_id"]))
+    coverage_cell = None
+    if sample_band and len(platforms) == 1:
+        coverage_cell = _coverage_cell_evidence(
+            execution,
+            phase=phase,
+            band=sample_band,
+            platform=platforms[0],
+            run_id=int(final["run_id"]),
+        )
+    stage_pass = _stage_pass(
+        final,
+        bounded=True,
+        allow_external_only=bool(coverage_cell and coverage_cell["coverage_reason"] == "external_blocked"),
+    )
     return {
         "phase": phase,
         "initial": initial,
         "resume": resumed,
         "final": final,
         "execution": execution,
-        "pass": _stage_pass(final, bounded=True),
+        "coverage_cell": coverage_cell,
+        "pass": stage_pass,
         "stop_resume_pass": bool(initial["outcome"]["status"] == "stopped" and resumed),
     }
 
@@ -1361,38 +1512,58 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         report["dashboard_url"] = semi_url
         semi_started = time.monotonic()
         semi_deadline = semi_started + semi_minutes * 60
-        # Five controlled representative probes make band proof deterministic
+        # Fifteen controlled platform cells make band proof deterministic
         # without waiting for a long GOLD task to naturally drain into later
-        # bands.  The probes still use compiled SearchTasks and the normal
-        # browser/bridge path; only the validation queue is sampled.
-        probe_count = 5
-        grace_budget = probe_count * VALIDATION_STOP_GRACE_SECONDS + 60
-        phase_seconds = max(30, (semi_minutes * 60 - grace_budget) // probe_count)
+        # bands.  Each cell still uses a compiled SearchTask and the normal
+        # browser/bridge path; only the validation queue is sampled.  The
+        # fixed stage deadline is partitioned before any cell starts so one
+        # slow platform cannot starve the remaining Big-3 cells.
+        cell_schedule = _semi_probe_schedule()
+        phase_seconds = _semi_cell_phase_seconds(semi_minutes, len(cell_schedule))
         phase_runs: dict[str, Any] = {}
+        semi_cell_failure: dict[str, Any] | None = None
         with _isolated_environment(semi_bundle):
-            probes = (
-                ("A_FASTEST_DOOR_RECENT", "GOLD"),
-                ("A_FASTEST_DOOR_RECENT", "SILVER"),
-                ("B_REMAINING_CORE_RECENT", "GROWTH"),
-                ("B_REMAINING_CORE_RECENT", "HEDGE"),
-                ("C_DEEP_BACKFILL", "DEEP_TAIL"),
-            )
-            for phase, band in probes:
-                phase_runs[f"{phase}:{band}"] = _run_semi_phase(
+            for index, (phase, band, platform) in enumerate(cell_schedule):
+                cell_key = f"{phase}:{band}:{platform}"
+                phase_runs[cell_key] = _run_semi_phase(
                     semi_bundle,
                     phase=phase,
                     stage_id=stage_ids["semi_production"],
-                    platforms=list(PRIMARY),
+                    platforms=[platform],
                     phase_seconds=phase_seconds,
                     active_runs=active_runs,
                     stage_deadline=semi_deadline,
                     sample_band=band,
+                    # Retain one intentional stop/resume proof without
+                    # repeating it for every platform cell.
+                    stop_resume=index == 0,
                 )
-            last_run_id = int(phase_runs["C_DEEP_BACKFILL:DEEP_TAIL"]["final"]["run_id"])
-            supplemental = _run_supplemental(semi_bundle, last_run_id)
+                if not phase_runs[cell_key]["pass"]:
+                    semi_cell_failure = {
+                        "cell": {"phase": phase, "band": band, "platform": platform},
+                        "coverage": phase_runs[cell_key].get("coverage_cell"),
+                        "run_id": phase_runs[cell_key]["final"].get("run_id"),
+                    }
+                    break
+            last_key = next(reversed(phase_runs))
+            last_run_id = int(phase_runs[last_key]["final"]["run_id"])
+            supplemental = (
+                {
+                    "ok": False,
+                    "isolation_pass": False,
+                    "internal_failed": True,
+                    "exit_code": None,
+                    "error": "semi-production cell failed; supplemental stage was not started",
+                    "external_failures": [],
+                    "sources": {},
+                }
+                if semi_cell_failure
+                else _run_supplemental(semi_bundle, last_run_id)
+            )
         sampled_phase_counts: dict[str, dict[str, int]] = {}
         execution_evidence: dict[str, Any] = {}
         phase_pass: dict[str, bool] = {}
+        coverage_cells: list[dict[str, Any]] = []
         for probe_key, phase_result in phase_runs.items():
             run_id = int(phase_result["final"]["run_id"])
             for phase, platforms in _sampled_phase_counts(semi_bundle, run_id).items():
@@ -1404,17 +1575,25 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
                     target = target_phase.setdefault(platform, {
                         "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
                         "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
+                        "external_classifications": {},
                         "bands": {},
                     })
                     for key in ("sampled_queued", "started_tasks", "progress_tasks", "cards_persisted", "details_complete", "external_tasks"):
                         target[key] += int(values.get(key, 0) or 0)
+                    for classification, count in values.get("external_classifications", {}).items():
+                        target["external_classifications"][classification] = target["external_classifications"].get(classification, 0) + int(count or 0)
                     for band_name, band_values in values.get("bands", {}).items():
                         band_target = target["bands"].setdefault(band_name, {
                             "sampled_queued": 0, "started_tasks": 0, "progress_tasks": 0,
                             "cards_persisted": 0, "details_complete": 0, "external_tasks": 0,
+                            "external_classifications": {},
                         })
-                        for key in band_target:
+                        for key in ("sampled_queued", "started_tasks", "progress_tasks", "cards_persisted", "details_complete", "external_tasks"):
                             band_target[key] += int(band_values.get(key, 0) or 0)
+                        for classification, count in band_values.get("external_classifications", {}).items():
+                            band_target["external_classifications"][classification] = band_target["external_classifications"].get(classification, 0) + int(count or 0)
+            if phase_result.get("coverage_cell"):
+                coverage_cells.append(phase_result["coverage_cell"])
             phase = phase_result["phase"]
             phase_pass[phase] = phase_pass.get(phase, True) and bool(phase_result["pass"])
         band_evidence = _band_execution_metrics(execution_evidence)
@@ -1424,7 +1603,11 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             "sampled_phase_counts": sampled_phase_counts,
             "execution_evidence": execution_evidence,
             "band_execution_evidence": band_evidence,
-            "band_coverage_pass": _band_coverage_pass(execution_evidence),
+            "coverage_cells": coverage_cells,
+            "cell_execution_budget_seconds": phase_seconds,
+            "cell_count": len(cell_schedule),
+            "stage_deadline_seconds": semi_minutes * 60,
+            "band_coverage_pass": _band_coverage_pass(coverage_cells),
             "phase_pass": phase_pass,
             "supplemental": supplemental,
         }
@@ -1434,14 +1617,20 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         semi["dashboard"] = _dashboard_probe(semi_bundle, semi_url, recreation_stage_id=stage_ids["semi_production"])
         semi["pass"] = bool(
             all(phase_pass.values())
-            and _phase_coverage_pass(execution_evidence)
-            and _band_coverage_pass(execution_evidence)
+            and len(coverage_cells) == len(cell_schedule)
+            and _phase_coverage_pass(coverage_cells)
+            and _band_coverage_pass(coverage_cells)
             and semi["supplemental"]["isolation_pass"]
             and semi["dashboard"]["identity_ok"]
             and semi["dashboard"]["live_refresh_ok"]
             and semi["dashboard"]["workspace_isolation_ok"]
         )
         report["semi_production"] = semi
+        if semi_cell_failure:
+            report["internal_failures"].append(
+                "semi-production cell failed after its bounded execution opportunity: "
+                + json.dumps(semi_cell_failure, sort_keys=True, default=str)
+            )
         if semi["supplemental"].get("external_failures"):
             report["external_blockers"].append({"stage": "semi_supplemental", "error": semi["supplemental"]["error"],
                                                  "sources": semi["supplemental"].get("sources", {})})
