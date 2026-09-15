@@ -23,11 +23,35 @@ from jobbot.validator import (
     _isolated_bundle,
     _prepare_validation_bundle,
     _run_semi_phase,
+    _candidate_branch_check,
     VALIDATION_STOP_GRACE_SECONDS,
 )
 
 
 class ValidatorIntegrationTests(unittest.TestCase):
+    def test_candidate_branch_policy_accepts_canonical_fabric_candidates(self) -> None:
+        for branch in ("codex/CHG-22-r1", "codex/jobbot-CHG-22-r3", "codex/jobbot-FIX-7-r12"):
+            with self.subTest(branch=branch):
+                accepted, detail = _candidate_branch_check(branch)
+                self.assertTrue(accepted)
+                self.assertEqual(detail, branch)
+
+    def test_candidate_branch_policy_rejects_target_and_unsafe_refs(self) -> None:
+        cases = {
+            "main": "target branch",
+            "": "detached HEAD",
+            "codex/v3.2.2-prod-ready": "canonical Fabric candidate branch",
+            "codex/CHG-22": "canonical Fabric candidate branch",
+            "codex/jobbot-CHG-22-r0": "canonical Fabric candidate branch",
+            "codex/jobbot/CHG-22-r3": "canonical Fabric candidate branch",
+            "feature/codex-jobbot-CHG-22-r3": "canonical Fabric candidate branch",
+        }
+        for branch, expected_detail in cases.items():
+            with self.subTest(branch=branch):
+                accepted, detail = _candidate_branch_check(branch)
+                self.assertFalse(accepted)
+                self.assertIn(expected_detail, detail)
+
     def test_each_isolated_long_stage_is_migrated_before_dashboard_use(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

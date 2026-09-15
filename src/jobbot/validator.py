@@ -11,6 +11,7 @@ stage fails or is interrupted.
 import copy
 import json
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -33,6 +34,10 @@ from .search_plan import compile_plan, compile_staged_plan
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
+VALIDATION_TARGET_BRANCH = "main"
+CANONICAL_CANDIDATE_BRANCH = re.compile(
+    r"codex/(?:[a-z][a-z0-9]*(?:-[a-z0-9]+)*-)?[A-Z][A-Z0-9]*-[1-9][0-9]*-r[1-9][0-9]*"
+)
 EXPECTED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88"
 TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
@@ -129,6 +134,16 @@ def _git_state() -> dict[str, str]:
         return subprocess.check_output(["git", *args], cwd=PROJECT_ROOT, text=True).strip()
 
     return {"branch": read("branch", "--show-current"), "head": read("rev-parse", "HEAD")}
+
+
+def _candidate_branch_check(branch: str) -> tuple[bool, str]:
+    if branch == VALIDATION_TARGET_BRANCH:
+        return False, f"refusing target branch {VALIDATION_TARGET_BRANCH}"
+    if not branch:
+        return False, "detached HEAD or unnamed branch"
+    if not CANONICAL_CANDIDATE_BRANCH.fullmatch(branch):
+        return False, "expected canonical Fabric candidate branch codex/[project-]CHANGE-N-rM"
+    return True, branch
 
 
 def _dashboard_json(url: str, endpoint: str) -> dict[str, Any] | None:
@@ -726,8 +741,8 @@ def _fixture_and_deterministic(bundle: ConfigBundle) -> dict[str, Any]:
 def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     state = _git_state()
     checks: list[dict[str, Any]] = []
-    ok = state["branch"] == "codex/v3.2.2-prod-ready"
-    checks.append({"name": "forward branch", "ok": ok, "detail": state["branch"]})
+    branch_ok, branch_detail = _candidate_branch_check(state["branch"])
+    checks.append({"name": "candidate branch", "ok": branch_ok, "detail": branch_detail})
     executable = chrome_path()
     chrome_ok = bool(executable)
     checks.append({"name": "normal Chrome", "ok": chrome_ok, "detail": executable or "not found"})
