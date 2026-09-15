@@ -18,6 +18,10 @@ from jobbot.config import PROJECT_ROOT
 from jobbot.extension_identity import extension_build
 
 
+PREDECESSOR_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88"
+REPAIRED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.1"
+
+
 class ExtensionRefreshIntegrationTests(unittest.TestCase):
     def make_root(self, td: str) -> Path:
         root = Path(td)
@@ -88,17 +92,22 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
             self.assertEqual(status["status"], "failed")
             self.assertFalse(status["refreshed"])
 
-    def test_wrong_expected_and_stale_loaded_build_are_rejected(self) -> None:
+    def test_repaired_identity_is_distinct_and_predecessor_build_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = self.with_root(td)
+            expected = extension_build(root)
+            self.assertEqual(expected, REPAIRED_EXTENSION_BUILD)
+            self.assertNotEqual(expected, PREDECESSOR_EXTENSION_BUILD)
             wrong_expected = rpc.handle({
-                "action": "extension_refresh", "refresh_id": "wrong", "expected_build": "3.2.2-stale",
+                "action": "extension_refresh", "refresh_id": "wrong",
+                "expected_build": PREDECESSOR_EXTENSION_BUILD,
             })
             self.assertEqual(wrong_expected["error"], "expected_build_mismatch")
+            self.assertEqual(wrong_expected["expected_build"], expected)
             self.request(root, "stale")
             signal = rpc.handle({
-                "action": "extension_build", "refresh_id": "stale", "build": "3.2.2-old",
-                "expected_build": extension_build(root),
+                "action": "extension_build", "refresh_id": "stale", "build": PREDECESSOR_EXTENSION_BUILD,
+                "expected_build": expected,
             })
             self.assertFalse(signal["ok"])
             self.assertEqual(signal["error"], "stale_or_wrong_extension_build")
