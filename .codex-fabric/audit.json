@@ -1,0 +1,535 @@
+{
+  "accepted_at": "2026-09-15T03:47:23Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "docs/SEARCH_PLAN.md",
+      "status": "M"
+    },
+    {
+      "additions": 3,
+      "deletions": 2,
+      "path": "extension/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 1,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 15,
+      "deletions": 8,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 30,
+      "deletions": 2,
+      "path": "src/jobbot/db.py",
+      "status": "M"
+    },
+    {
+      "additions": 39,
+      "deletions": 0,
+      "path": "src/jobbot/exports.py",
+      "status": "M"
+    },
+    {
+      "additions": 20,
+      "deletions": 0,
+      "path": "src/jobbot/extension_identity.py",
+      "status": "A"
+    },
+    {
+      "additions": 8,
+      "deletions": 3,
+      "path": "src/jobbot/legacy_engine.py",
+      "status": "M"
+    },
+    {
+      "additions": 3,
+      "deletions": 0,
+      "path": "src/jobbot/orchestrator.py",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 1,
+      "path": "src/jobbot/run_now.py",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 8,
+      "path": "src/jobbot/search_plan.py",
+      "status": "M"
+    },
+    {
+      "additions": 38,
+      "deletions": 0,
+      "path": "src/jobbot/strategy_runtime.py",
+      "status": "A"
+    },
+    {
+      "additions": 22,
+      "deletions": 6,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 1,
+      "path": "tests/integration/test_browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_dashboard_exports_application.py",
+      "status": "M"
+    },
+    {
+      "additions": 29,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 3,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 29,
+      "deletions": 5,
+      "path": "tests/integration/test_run_now.py",
+      "status": "M"
+    },
+    {
+      "additions": 53,
+      "deletions": 0,
+      "path": "tests/integration/test_validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 21,
+      "deletions": 0,
+      "path": "tests/unit/test_strategy.py",
+      "status": "M"
+    },
+    {
+      "additions": 333,
+      "deletions": 0,
+      "path": "verification/CHG-22-r4.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '120,205p' src/jobbot/browser_tasks.py\nrtk rg -n \\\"CREATE TABLE.*browser_events|browser_events\\\" src/jobbot/migrations src/jobbot/db.py | head -60\nrtk sed -n '1,130p' src/jobbot/migrations/m0001_ledger.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"def enqueue_validation\\\" src/jobbot/browser_tasks.py\nrtk sed -n '55,140p' src/jobbot/browser_tasks.py\nrtk sed -n '38,78p' src/jobbot/migrations/m0002_browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '228,315p' src/jobbot/browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short\nrtk sed -n '1,16p' extension/dashboard.js\nrtk sed -n '20,45p' src/jobbot/validator.py\nrtk sed -n '1,22p' tests/integration/test_validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,16p' extension/dashboard.js\nrtk sed -n '20,45p' src/jobbot/validator.py\nrtk git diff --stat\nrtk git diff -- src/jobbot/extension_identity.py src/jobbot/validator.py extension/service_worker.js extension/dashboard.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short\nrtk git diff --stat\nrtk git diff --check\nrtk sed -n '1,18p' extension/dashboard.js\nrtk sed -n '1,55p' src/jobbot/extension_identity.py\nrtk sed -n '1,45p' tests/integration/test_validator.py\nrtk rg -n \\\"EXPECTED_EXTENSION_BUILD|JOBBOT_EXTENSION_BUILD|3\\\\.2\\\\.2-prod-ready\\\" src extension tests scripts | head -100\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,175p' extension/linkedin.js\nrtk sed -n '1,240p' tests/extension_linkedin_scope_test.js\nrtk rg -n \\\"BUILD_ID|extension_build\\\" extension tests src | head -160\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show origin/codex/v3.2.3-static-hardening:extension/linkedin.js | head -8\nrtk git show origin/codex/v3.2.3-static-hardening:tests/integration/test_extension_bridge.py | rg -n -C 3 'version_name|manifest\\\\[|extension JavaScript' | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"launch_browser_run|bridge_token|chrome-extension://|expected_build|dashboard.html\\\" tests | head -160\nrtk git diff --check\nrtk git diff --stat\nrtk rg -n \\\"3\\\\.2\\\\.2-prod-ready\\\\.672cf88|3\\\\.2\\\\.2-prod-ready\\\" src extension tests scripts | head -120\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest tests.integration.test_extension_bridge tests.integration.test_validator -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest tests.integration.test_extension_bridge tests.integration.test_validator -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest tests.integration.test_extension_bridge tests.integration.test_validator -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"def command_(doctor|audit)|add_parser\\\\(\\\\\\\"(doctor|audit)\\\\\\\"|audit\\\" src/jobbot/cli.py README.md | head -100\nrtk sed -n '240,335p' src/jobbot/cli.py\nrtk sed -n '1,220p' tests/integration/test_release_provenance.py 2>/dev/null || true\nrtk git diff -- src/jobbot/orchestrator.py src/jobbot/validator.py tests/integration/test_extension_bridge.py tests/integration/test_validator.py extension/service_worker.js extension/dashboard.js extension/linkedin.js\nrtk git diff --no-index /dev/null src/jobbot/extension_identity.py || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='%H %P %s' main\nrtk git show -s --format='%H %P %s' 1b25032\nrtk git show -s --format='%H %P %s' e50f45d\nrtk git show -s --format='%H %P %s' a02130b\nrtk git merge-base main e50f45d\nrtk git merge-base main 1b25032\nrtk git merge-base main a02130b\nrtk git diff --stat main..e50f45d\nrtk git diff --stat main..1b25032\nrtk git diff --stat main..a02130b\nrtk git log --oneline --decorate --first-parent --all --max-count=35\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git reset --mixed a02130bac2819b5c3ef22fd6da9106ad9c7254f3\nrtk git status --short --branch\nrtk git log --oneline --decorate -6\nrtk git merge-base --is-ancestor 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 HEAD; printf 'main-in-head=%s\\\\n' \\\"\"'$?\"\nrtk git merge-base --is-ancestor a02130bac2819b5c3ef22fd6da9106ad9c7254f3 HEAD; printf '\"'r4-in-head=%s\\\\n' \\\"\"'$?\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git restore --source=HEAD --staged --worktree .\nrtk git status --short --branch\nrtk git log --oneline --decorate -5\nrtk git diff --stat\nrtk git diff --cached --stat\nrtk git diff --no-index /dev/null src/jobbot/extension_identity.py || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"EXPECTED_EXTENSION_BUILD|JOBBOT_EXTENSION_BUILD|BUILD_ID=|version_name|extension_build\\\" src/jobbot/validator.py extension tests/integration/test_extension_bridge.py tests/integration/test_validator.py src/jobbot/orchestrator.py | head -160\nrtk sed -n '1,24p' extension/dashboard.js\nrtk sed -n '1,42p' src/jobbot/validator.py\nrtk sed -n '410,445p' src/jobbot/validator.py\nrtk sed -n '80,132p' src/jobbot/orchestrator.py\nrtk sed -n '1,25p' tests/integration/test_extension_bridge.py\nrtk sed -n '1,38p' tests/integration/test_validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '25,52p' src/jobbot/validator.py\nrtk sed -n '430,462p' src/jobbot/validator.py\nrtk sed -n '970,994p' src/jobbot/validator.py\nrtk sed -n '1,95p' tests/integration/test_extension_bridge.py\nrtk sed -n '68,86p' tests/integration/test_extension_bridge.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest tests.integration.test_extension_bridge tests.integration.test_validator -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch\nrtk git diff --stat\nrtk git diff --check\nrtk git diff --name-only\nrtk rg -n \\\"3\\\\.2\\\\.2-prod-ready\\\\.672cf88|3\\\\.2\\\\.2-prod-ready|EXPECTED_EXTENSION_BUILD\\\" src extension tests scripts | head -120\nrtk git diff -- src/jobbot/validator.py src/jobbot/orchestrator.py extension/dashboard.js extension/service_worker.js extension/linkedin.js tests/integration/test_extension_bridge.py tests/integration/test_validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m compileall -q src\ncompile_status=$?\nfor path in extension/*.js src/jobbot/web/*.js; do rtk node --check \"$path\" || exit 1; done\nnode_status=$?\nprintf '\"'compileall=%s node_syntax=%s\\\\n' \\\"\"'$compile_status\" \"$node_status\"\nexit $((compile_status || node_status))'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'which rtk\nrtk --version\nrtk node --check extension/service_worker.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m compileall -q src\ncompile_status=$?\nfor js_file in extension/*.js src/jobbot/web/*.js; do rtk node --check \"$js_file\" || exit 1; done\nnode_status=$?\nprintf '\"'compileall=%s node_syntax=%s\\\\n' \\\"\"'$compile_status\" \"$node_status\"\nexit $((compile_status || node_status))'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot audit'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 scripts/build_release.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk unzip -l dist/jobbot-3.2.0.zip | rtk rg 'extension_identity.py|extension/manifest.json|extension/service_worker.js|verification/CHG-22-r4.json'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot validate-production --stage micro'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{request,branch,head,target_sha,PROD_READY,internal_failures,external_blockers,preflight:{ok,git,checks:[.checks[]|{name,ok,detail}]},primary_live:{outcome,resume_outcome,terminal_classification,validation_classification,extension_build_pass,extension_unresponsive,pass,stop_resume_pass,bridge_restart_pass}}' out/production-validation/micro-latest.json\nrtk jq -r '.primary_live.outcome, .primary_live.resume_outcome, .primary_live.extension_build_pass, .primary_live.pass' out/production-validation/micro-latest.json\nrtk shasum -a 256 out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq 'keys' out/production-validation/micro-latest.json\nrtk jq '{request,branch,head,target_sha,PROD_READY,internal_failures,external_blockers,preflight:(.preflight|{ok,git,checks:(.checks // [])|map({name,ok,detail})}),primary_live:(.primary_live|{outcome,resume_outcome,terminal_classification,validation_classification,extension_build_pass,extension_unresponsive,pass,stop_resume_pass,bridge_restart_pass})}' out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch\nrtk git diff --check\nrtk git diff --stat\nrtk git diff --numstat\nrtk git diff --no-index /dev/null src/jobbot/extension_identity.py || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add extension/dashboard.js extension/linkedin.js extension/service_worker.js src/jobbot/extension_identity.py src/jobbot/orchestrator.py src/jobbot/validator.py tests/integration/test_extension_bridge.py tests/integration/test_validator.py\nrtk git diff --cached --check\nrtk git diff --cached --stat\nrtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"Fix extension build identity derivation\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch\nrtk git log --oneline --decorate -6\nrtk git show -s --format='%H%n%P%n%s' HEAD\nrtk git merge-base --is-ancestor 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 HEAD; printf 'main-in-head=%s\\\\n' \\\"\"'$?\"\nrtk git merge-base --is-ancestor a02130bac2819b5c3ef22fd6da9106ad9c7254f3 HEAD; printf '\"'r4-in-head=%s\\\\n' \\\"\"'$?\"\nrtk git diff --stat main..HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot validate-production --stage micro'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{branch,head,PROD_READY,internal_failures,external_blockers,preflight:(.preflight|{ok,git,checks:(.checks // [])|map({name,ok,detail})}),primary_live:(.primary_live|{outcome,resume_outcome,terminal_classification,validation_classification,extension_build_pass,extension_unresponsive,pass,stop_resume_pass,bridge_restart_pass})}' out/production-validation/micro-latest.json\nrtk shasum -a 256 out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.preflight.checks[] | [.name, (.ok|tostring)] | @tsv' out/production-validation/micro-latest.json\nrtk jq '{head,branch,PROD_READY,external_blockers,internal_failures,primary_live:{outcome, resume_outcome, terminal_classification, validation_classification, extension_build_pass, extension_unresponsive, pass, stop_resume_pass, bridge_restart_pass}}' out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '.primary_live | keys' out/production-validation/micro-latest.json\nrtk jq '{head,branch,PROD_READY,external_blockers,internal_failures,primary_live}' out/production-validation/micro-latest.json | head -240\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{outcome,stop_resume_pass,bridge_restart_pass,extension_build_pass,terminal_classification,validation_classification,validation_cutoff,pass,resume:(.resume|if .==null then null else {outcome,extension_build_pass,terminal_classification,validation_classification,validation_cutoff} end)}' out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '.primary_live | {outcome,stop_resume_pass,bridge_restart_pass,extension_build_pass,terminal_classification,validation_classification,validation_cutoff,pass,resume:(.resume|if .==null then null else {outcome,extension_build_pass,terminal_classification,validation_classification,validation_cutoff} end)}' out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.internal_failures[]' out/production-validation/micro-latest.json\nrtk jq -r '.external_blockers | tostring' out/production-validation/micro-latest.json\nrtk jq -r '.preflight.checks[] | select(.name==\\\"deterministic suite\\\") | .detail.output' out/production-validation/micro-latest.json | tail -8\nrtk shasum -a 256 out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy jq -r '.internal_failures[]' out/production-validation/micro-latest.json\nrtk proxy jq -r '.preflight.checks[] | select(.name==\\\"isolated database\\\") | .detail' out/production-validation/micro-latest.json\nrtk proxy jq -r '.primary_live.outcome, .primary_live.extension_build_pass, .primary_live.pass' out/production-validation/micro-latest.json\nrtk shasum -a 256 out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"verification/CHG|Fabric evidence|candidate_head|external_blockers|predecessor_candidate|evidence\\\" . --glob '\"'!out/**'\"' --glob '\"'!data/**'\"' | head -260\nrtk git remote -v\nrtk git show --format= --no-ext-diff a02130b -- verification/CHG-22-r4.json | head -30\nrtk git show c9f2d60 --stat --oneline\nrtk git show --format=fuller c9f2d60 | head -100\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la .codex-fabric 2>/dev/null || true\nrtk git ls-tree -r --name-only c9f2d60 | rtk rg 'codex-fabric|verification|audit' | head -80\nrtk git log --all --oneline -- .codex-fabric | head -40\nrtk git branch -a | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 scripts/build_release.py\nrtk unzip -l dist/jobbot-3.2.0.zip | rtk rg 'extension_identity.py|extension/manifest.json|extension/service_worker.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch\nrtk git show --stat --oneline HEAD\nrtk git diff --check HEAD''^ HEAD\nrtk git log --oneline --decorate --ancestry-path 61f4484c3b5159d6a64fd6a3eb88d6be32d39833..HEAD\nrtk git log --oneline -- verification/CHG-22-r4.json -1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git config --get branch.codex/jobbot-CHG-22-r5.remote || true\nrtk git config --get branch.codex/jobbot-CHG-22-r5.merge || true\nrtk git ls-remote --heads origin codex/jobbot-CHG-22-r5'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push -u origin codex/jobbot-CHG-22-r5'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote --heads origin codex/jobbot-CHG-22-r5 codex-fabric/evidence/jobbot/CHG-22-r5\nrtk git status --short --branch\nrtk git rev-parse HEAD\nrtk git rev-parse origin/main\nrtk git rev-parse HEAD''^'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 161,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.05,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 11083520,
+      "fresh_input_tokens": 220460,
+      "input_tokens": 11303980,
+      "non_reasoning_output_tokens": 20101,
+      "output_tokens": 39115,
+      "reasoning_output_tokens": 19014,
+      "total_processed_tokens": 11343095
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "7319ea2ef391795e30cdccba00b9ccce237f82dc",
+      "subject": "Fix extension build identity derivation"
+    },
+    {
+      "sha": "a02130bac2819b5c3ef22fd6da9106ad9c7254f3",
+      "subject": "chore(verification): record CHG-22 r4 validation"
+    },
+    {
+      "sha": "e50f45db73d654e23e6ff6073c07da223286e935",
+      "subject": "Fix production validator candidate branch gate"
+    },
+    {
+      "sha": "1b2503289aab4bb7fde07ee7809af6acf1434102",
+      "subject": "Implement CHG-22 baseline compliance"
+    }
+  ],
+  "diff": {
+    "additions": 688,
+    "changed_files": 24,
+    "commit_count": 4,
+    "deletions": 47
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 3,
+    "items": [
+      {
+        "bytes": 1487,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "b161d74e9af3e1b7ed355d4777d767f15b6af6fd57f890f5671a1b1432aaeacb"
+      },
+      {
+        "bytes": 1065,
+        "path": "docs/SEARCH_PLAN.md",
+        "sha256": "77ba6a4c19ad9c8eb0620c2ddadabe4692d418df74e6e7ff3a0d8e93927ede23"
+      },
+      {
+        "bytes": 17190,
+        "path": "verification/CHG-22-r4.json",
+        "sha256": "020d8923d9bd8671f06441c54baae50084928f96a25e5b46c020397c3ec7f590"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.2",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.2",
+  "failure_class": null,
+  "finished_at": "2026-09-15T04:20:29Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "61f4484c3b5159d6a64fd6a3eb88d6be32d39833",
+    "branch": "codex/jobbot-CHG-22-r5",
+    "head_sha": "7319ea2ef391795e30cdccba00b9ccce237f82dc",
+    "remote_exact_head": true,
+    "remote_head_sha": "7319ea2ef391795e30cdccba00b9ccce237f82dc",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "61f4484c3b5159d6a64fd6a3eb88d6be32d39833",
+    "work_branch": "codex/jobbot-CHG-22-r5",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-69b04df4cd5992ccc1693a9e",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-22-r5",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-22-r5"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.2",
+    "policy_sha256": "3778fba0755dd2f6b00268f73b7a589f93317203cc0603df2feff4e6d9c759f6",
+    "registry_sha256": "17d7db01a654a693b57af2b6fce2f676b1f883ea97564a690894b5f96df49aaa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-22-r5",
+  "schema_version": 1,
+  "started_at": "2026-09-15T04:01:43Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1126,
+    "queue_seconds": 860,
+    "total_seconds": 1986
+  },
+  "transport": {
+    "bytes": 2711,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2434,
+    "prompt_sha256": "ecb14a3ba583ea7d8628e8a62927cddc12f9fdea1945afb0bd83cc057dc22959",
+    "sha256": "69b04df4cd5992ccc1693a9ecaf6ba3f9c8262a025b573d766b0955e8286d548"
+  }
+}
