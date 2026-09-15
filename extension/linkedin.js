@@ -2,7 +2,7 @@
   'use strict';
   const C=globalThis.JobBotCommon, S=globalThis.JobBotSelectors?.linkedin;
   if(!C||!S)return;
-  const BUILD_ID='3.2.2-prod-ready',JOB_LINK_SELECTOR='a[href*="/jobs/view/"]',MAX_DIAGNOSTIC_ANCHORS=20,MAX_STRUCTURAL_SUMMARIES=30;
+  const BUILD_ID=String(chrome.runtime?.getManifest?.().version_name||'unknown'),JOB_LINK_SELECTOR='a[href*="/jobs/view/"]',MAX_DIAGNOSTIC_ANCHORS=20,MAX_STRUCTURAL_SUMMARIES=30;
   const sid=(url)=>{try{const u=new URL(url,location.href),m=u.pathname.match(/\/jobs\/view\/(\d+)/);return m?m[1]:C.clean(u.searchParams.get('currentJobId')||'');}catch(_){return '';}};
   const canon=(href)=>{try{const id=sid(href);return id?`https://www.linkedin.com/jobs/view/${id}/`:new URL(href,location.href).href;}catch(_){return '';}};
   const rawHref=(anchor)=>anchor?.getAttribute?.('href')||anchor?.href||'';

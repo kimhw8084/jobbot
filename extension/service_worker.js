@@ -1,7 +1,7 @@
 'use strict';
 
 let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTaskId=null, runPromise=null, heartbeatTimer=null;
-const JOBBOT_EXTENSION_BUILD='3.2.2-prod-ready';
+const JOBBOT_EXTENSION_BUILD=String(chrome.runtime?.getManifest?.().version_name||'unknown');
 let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
 const MAX_IDENTICAL_FINGERPRINTS=3;
 const AUTH_URLS={

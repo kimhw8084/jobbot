@@ -1,12 +1,13 @@
 'use strict';
 
-const EXPECTED_EXTENSION_VERSION = '3.2.1';
-const EXPECTED_EXTENSION_BUILD = '3.2.2-prod-ready.672cf88';
 const stateEl = document.getElementById('state');
 const startButton = document.getElementById('start');
 const stopButton = document.getElementById('stop');
 const emergencyButton = document.getElementById('emergency');
 const query = new URLSearchParams(location.search);
+const loadedManifest = chrome.runtime.getManifest();
+const EXPECTED_EXTENSION_VERSION = String(loadedManifest.version || '');
+const EXPECTED_EXTENSION_BUILD = String(query.get('expected_build') || loadedManifest.version_name || '');
 const runId = Number(query.get('run_id') || 0);
 const bridgePort = Number(query.get('bridge_port') || 0);
 const bridgeToken = String(query.get('bridge_token') || '');

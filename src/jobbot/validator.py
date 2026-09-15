@@ -28,6 +28,7 @@ from .audit import collect as collect_audit
 from .config import PROJECT_ROOT, ConfigBundle, load_bundle
 from .db import Database
 from .doctor import run as run_doctor
+from .extension_identity import extension_build
 from .orchestrator import chrome_path, launch_browser_run
 from .run_now import ensure_dashboard, preflight
 from .search_plan import compile_plan, compile_staged_plan
@@ -38,7 +39,6 @@ VALIDATION_TARGET_BRANCH = "main"
 CANONICAL_CANDIDATE_BRANCH = re.compile(
     r"codex/(?:[a-z][a-z0-9]*(?:-[a-z0-9]+)*-)?[A-Z][A-Z0-9]*-[1-9][0-9]*-r[1-9][0-9]*"
 )
-EXPECTED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88"
 TERMINAL_SUCCESS = {"COMPLETED_FULL", "COMPLETED_PARTIAL_EXTERNAL"}
 TERMINAL_EXTERNAL = {"challenged", "auth_required", "deferred_by_platform"}
 VALIDATION_WINDOW_COMPLETE = "VALIDATION_WINDOW_COMPLETE"
@@ -434,6 +434,7 @@ def _validation_metrics(bundle: ConfigBundle, run_id: int, audit: dict[str, Any]
 def _extension_build_seen(bundle: ConfigBundle, run_id: int | None) -> bool:
     import sqlite3
 
+    expected = extension_build(bundle.root)
     conn = sqlite3.connect(bundle.database_path)
     try:
         rows = conn.execute(
@@ -443,13 +444,13 @@ def _extension_build_seen(bundle: ConfigBundle, run_id: int | None) -> bool:
     finally:
         conn.close()
     for message, payload_json in rows:
-        if str(message) == EXPECTED_EXTENSION_BUILD:
+        if str(message) == expected:
             return True
         try:
             payload = json.loads(payload_json or "{}")
         except json.JSONDecodeError:
             payload = {}
-        if payload.get("build") == EXPECTED_EXTENSION_BUILD or payload.get("payload", {}).get("build") == EXPECTED_EXTENSION_BUILD:
+        if payload.get("build") == expected or payload.get("payload", {}).get("build") == expected:
             return True
     return False
 
@@ -982,7 +983,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             )
         if not primary.get("extension_build_pass"):
             report["internal_failures"].append(
-                f"loaded extension did not report build {EXPECTED_EXTENSION_BUILD}; reload the unpacked extension in chrome://extensions and rerun validator"
+                f"loaded extension did not report build {extension_build(PROJECT_ROOT)}; reload the unpacked extension in chrome://extensions and rerun validator"
             )
         for platform, values in final_primary.get("scope", {}).items():
             if values.get("scope_missing_events") or values.get("contamination_persisted"):

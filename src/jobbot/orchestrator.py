@@ -16,6 +16,7 @@ from pathlib import Path
 
 from . import browser_tasks
 from .config import ConfigBundle
+from .extension_identity import extension_build
 
 
 @dataclass(frozen=True)
@@ -85,6 +86,7 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
     token = secrets.token_urlsafe(48)
     port = _free_high_port()
     extension_id = (bundle.root / "config" / "EXTENSION_ID.txt").read_text(encoding="utf-8").strip()
+    expected_build = extension_build(bundle.root)
     log_path = bundle.output_dir / "logs" / f"run_{run_id}_bridge.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     restart_count = 0
@@ -120,6 +122,7 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
         url = (
             f"chrome-extension://{extension_id}/dashboard.html?autorun=1&run_id={run_id}"
             f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
+            f"&expected_build={urllib.parse.quote(expected_build, safe='')}"
         )
         if open_browser:
             _open_chrome(url)
