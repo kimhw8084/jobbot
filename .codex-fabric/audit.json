@@ -1,0 +1,503 @@
+{
+  "accepted_at": "2026-09-15T22:19:28Z",
+  "changed_files": [
+    {
+      "additions": 2,
+      "deletions": 1,
+      "path": "INSTALL_MAC.command",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 3,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 0,
+      "path": "REFRESH_EXTENSION.command",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "docs/ACCEPTANCE_TEST.md",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 0,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 0,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 1,
+      "path": "docs/TROUBLESHOOTING.md",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 3,
+      "path": "extension/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 57,
+      "deletions": 8,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 174,
+      "deletions": 0,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 1,
+      "path": "src/jobbot/cli.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 27,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0013_extension_refresh.py",
+      "status": "A"
+    },
+    {
+      "additions": 117,
+      "deletions": 1,
+      "path": "src/jobbot/orchestrator.py",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 4,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 188,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "tests/integration/test_launcher_environment.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' extension/manifest.json; rtk sed -n '1,360p' extension/service_worker.js; rtk sed -n '1,360p' extension/dashboard.js; rtk sed -n '1,260p' extension/dashboard.html\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,420p' src/jobbot/validator.py; rtk sed -n '1,520p' src/jobbot/orchestrator.py; rtk sed -n '1,360p' src/jobbot/cli.py; rtk sed -n '1,260p' src/jobbot/application.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,480p' tests/integration/test_extension_bridge.py; rtk sed -n '1,380p' tests/integration/test_validator.py; rtk sed -n '1,360p' tests/integration/test_browser_tasks.py; rtk sed -n '1,300p' tests/integration/test_launcher_environment.py; rtk sed -n '1,300p' tests/integration/test_run_now.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,300p' INSTALL_MAC.command; rtk sed -n '1,300p' VALIDATE_PRODUCTION.command; rtk sed -n '1,300p' VALIDATE_MICRO.command; rtk sed -n '1,340p' scripts/build_release.py; rtk sed -n '1,340p' docs/OPERATIONS.md; rtk sed -n '1,360p' docs/TROUBLESHOOTING.md; rtk sed -n '1,360p' docs/ACCEPTANCE_TEST.md; rtk sed -n '1,360p' docs/ARCHITECTURE.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"extension|build|refresh|reload|chrome://extensions|bridge|run_status|begin_run|active_run|heartbeat|next_task|authorize|token|rpc|production|manual\\\" extension src tests docs *.command scripts pyproject.toml README.md CHANGELOG.md | sed -n '1,520p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba extension/service_worker.js | sed -n '1,360p'; rtk nl -ba extension/dashboard.js | sed -n '1,280p'; rtk nl -ba extension/common.js | sed -n '1,300p'; rtk nl -ba extension/selectors.js | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba extension/service_worker.js | sed -n '235,330p'; rtk nl -ba extension/dashboard.html | sed -n '1,220p'; rtk nl -ba extension/manifest.json | sed -n '1,180p'; rtk nl -ba src/jobbot/extension_identity.py | sed -n '1,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/bridge/rpc.py | sed -n '1,520p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/bridge/server.py | sed -n '1,420p'; rtk nl -ba src/jobbot/validator.py | sed -n '1,520p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/validator.py | sed -n '520,1120p'; rtk nl -ba src/jobbot/orchestrator.py | sed -n '1,620p'; rtk nl -ba src/jobbot/run_now.py | sed -n '1,620p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba tests/integration/test_extension_bridge.py | sed -n '1,440p'; rtk nl -ba tests/integration/test_validator.py | sed -n '1,520p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/cli.py | sed -n '1,520p'; rtk nl -ba src/jobbot/__main__.py | sed -n '1,160p'; rtk nl -ba src/jobbot/application.py | sed -n '1,340p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/browser_tasks.py | sed -n '1,260p'; rtk nl -ba src/jobbot/browser_tasks.py | sed -n '360,560p'; rtk rg -n \\\"launch_browser_run|bridge_restart|extension_build|expected_build|dashboard\\\" src tests docs *.command README.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba INSTALL_MAC.command | sed -n '1,180p'; rtk nl -ba README.md | sed -n '1,180p'; rtk nl -ba docs/OPERATIONS.md | sed -n '1,260p'; rtk nl -ba docs/TROUBLESHOOTING.md | sed -n '1,220p'; rtk nl -ba docs/ACCEPTANCE_TEST.md | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba tests/integration/test_extension_bridge.py | sed -n '1,220p'; rtk nl -ba tests/integration/test_extension_bridge.py | sed -n '220,520p'; rtk nl -ba tests/integration/test_validator.py | sed -n '1,380p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/migrations/_sql.py | sed -n '1,260p'; rtk nl -ba src/jobbot/migrations/m0009_task_phases.py | sed -n '1,240p'; rtk nl -ba src/jobbot/db.py | sed -n '1,260p'; rtk nl -ba src/jobbot/browser_tasks.py | sed -n '1,130p'; rtk rg -n \\\"CREATE TABLE browser_events|browser_runs|schema_migrations|m001[0-9]\\\" src/jobbot/migrations src/jobbot/db.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/migrations/__init__.py | sed -n '1,160p'; rtk nl -ba src/jobbot/migrations/m0002_browser_tasks.py | sed -n '1,180p'; rtk nl -ba src/jobbot/migrations/m0001_ledger.py | sed -n '1,220p'; rtk nl -ba src/jobbot/browser_tasks.py | sed -n '120,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/browser_tasks.py | sed -n '360,460p'; rtk nl -ba src/jobbot/browser_tasks.py | sed -n '260,370p'; rtk nl -ba src/jobbot/dashboard.py | sed -n '120,320p'; rtk nl -ba src/jobbot/dashboard.py | sed -n '400,520p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cat pyproject.toml; rtk sed -n '1,120p' INSTALL_MAC.command; rtk sed -n '1,160p' scripts/mac_python.sh; rtk sed -n '1,140p' RUN_NOW.command; rtk sed -n '1,160p' DOCTOR.command; rtk sed -n '1,160p' VALIDATE_PRODUCTION.command; rtk sed -n '1,180p' docs/OPERATIONS.md; rtk sed -n '1,120p' docs/ACCEPTANCE_TEST.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"RunOutcome\\\\(|bridge_restarts|extension_unresponsive|launch_browser_run\\\\(\\\" tests src | sed -n '1,260p'; rtk rg -n \\\"_run_live|_resume_live|RunOutcome\\\" tests/integration/test_validator.py | sed -n '1,200p'; rtk nl -ba src/jobbot/validator.py | sed -n '900,1040p'; rtk nl -ba src/jobbot/validator.py | sed -n '1120,1170p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba README.md | sed -n '1,55p'; rtk nl -ba docs/TROUBLESHOOTING.md | sed -n '1,100p'; rtk nl -ba docs/OPERATIONS.md | sed -n '1,100p'; rtk nl -ba docs/ARCHITECTURE.md | sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk chmod +x REFRESH_EXTENSION.command; rtk git diff --stat; rtk git diff -- src/jobbot/bridge/rpc.py extension/service_worker.js extension/dashboard.js src/jobbot/orchestrator.py | sed -n '1,620p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check; rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m unittest tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_launcher_environment -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/service_worker.js && rtk node --check extension/dashboard.js && rtk python -m compileall -q src'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m jobbot --help | sed -n '1,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_launcher_environment -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba tests/integration/test_database_ledger.py | sed -n '1,80p'; rtk rg -n \\\"range\\\\(1, 13\\\\)|12\\\\)|VERSION = 12|m0012\\\" tests src | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba tests/helpers.py | sed -n '1,240p'; rtk nl -ba tests/integration/test_browser_tasks.py | sed -n '1,115p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_database_ledger -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/bridge/rpc.py | sed -n '250,330p'; rtk nl -ba extension/service_worker.js | sed -n '88,132p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/service_worker.js && rtk node --check extension/dashboard.js && rtk env PYTHONPATH=src python -m compileall -q src && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_database_ledger -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/bridge/rpc.py | sed -n '1,250p'; rtk nl -ba src/jobbot/orchestrator.py | sed -n '1,330p'; rtk nl -ba extension/dashboard.js | sed -n '1,140p'; rtk nl -ba extension/service_worker.js | sed -n '80,125p'; rtk nl -ba extension/service_worker.js | sed -n '250,355p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_launcher_environment -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"chrome://extensions|reload the unpacked|click \\\\*\\\\*Reload|Install/reload|runtime.reload|extension_refresh|refresh-extension|REFRESH_EXTENSION\\\" README.md docs INSTALL_MAC.command REFRESH_EXTENSION.command src extension tests | sed -n '1,320p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba tests/integration/test_extension_refresh.py | sed -n '145,185p'; rtk env PYTHONPATH=src python -m unittest tests.integration.test_extension_refresh -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check; rtk git status --short; rtk git diff --stat; rtk git diff --summary; rtk git diff -- tests/integration/test_extension_refresh.py src/jobbot/migrations/m0013_extension_refresh.py INSTALL_MAC.command README.md docs/OPERATIONS.md docs/TROUBLESHOOTING.md docs/ACCEPTANCE_TEST.md docs/ARCHITECTURE.md src/jobbot/cli.py src/jobbot/validator.py tests/integration/test_database_ledger.py tests/integration/test_extension_bridge.py tests/integration/test_launcher_environment.py | sed -n '1,700p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=/Users/haewonkim/.codex-fabric/worktrees/CF-f52b526c7a1c659dbf9705b4 JOBBOT_DATABASE_PATH=/tmp/jobbot-chg69-refresh-test.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg69-refresh-test-out python -m jobbot refresh-extension --no-open --timeout 1'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg69-refresh-test.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg69-refresh-test-out python -c 'import sys; print(sys.path); import jobbot; print(jobbot.__file__)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg69-refresh-test.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg69-refresh-test-out python -m jobbot refresh-extension --no-open --timeout 1'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short; rtk git diff --check; rtk git diff --numstat; rtk git diff -- extension/service_worker.js extension/dashboard.js src/jobbot/bridge/rpc.py src/jobbot/orchestrator.py | sed -n '1,900p'; rtk sed -n '1,220p' src/jobbot/migrations/m0013_extension_refresh.py; rtk sed -n '1,260p' tests/integration/test_extension_refresh.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/service_worker.js && rtk node --check extension/dashboard.js && rtk env PYTHONPATH=src python -m compileall -q src && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk stat -f '%A %N' REFRESH_EXTENSION.command; rtk git diff --check; rtk git status --short --branch; rtk git diff --name-only | sed -n '1,200p'; rtk git ls-files --others --exclude-standard | sed -n '1,100p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add INSTALL_MAC.command README.md REFRESH_EXTENSION.command docs/ACCEPTANCE_TEST.md docs/ARCHITECTURE.md docs/OPERATIONS.md docs/TROUBLESHOOTING.md extension/dashboard.js extension/service_worker.js src/jobbot/bridge/rpc.py src/jobbot/cli.py src/jobbot/migrations/__init__.py src/jobbot/migrations/m0013_extension_refresh.py src/jobbot/orchestrator.py src/jobbot/validator.py tests/integration/test_database_ledger.py tests/integration/test_extension_bridge.py tests/integration/test_extension_refresh.py tests/integration/test_launcher_environment.py && rtk git diff --cached --check && rtk git diff --cached --stat && rtk git commit -m \"Build CHG-69 extension refresh control\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch; rtk git log -2 --oneline --decorate; rtk git rev-parse HEAD; rtk git rev-parse origin/main; rtk git diff --name-only origin/main...HEAD | sed -n '1,160p'; rtk git diff --name-only origin/main...HEAD | rtk rg '\"'^(docs/history/|verification/)'\"' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch; rtk git log -1 --oneline --decorate; rtk git rev-parse HEAD; rtk git rev-parse origin/main; rtk git diff --name-only origin/main...HEAD | rtk rg '\"'^(docs/history/|verification/)'\"' || true; rtk git show --stat --oneline --summary HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 176,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.41,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 10573312,
+      "fresh_input_tokens": 281358,
+      "input_tokens": 10854670,
+      "non_reasoning_output_tokens": 28858,
+      "output_tokens": 58802,
+      "reasoning_output_tokens": 29944,
+      "total_processed_tokens": 10913472
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "48e3181b8482670669f138b241631dae795f7888",
+      "subject": "Build CHG-69 extension refresh control"
+    }
+  ],
+  "diff": {
+    "additions": 640,
+    "changed_files": 19,
+    "commit_count": 1,
+    "deletions": 24
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 5,
+    "items": [
+      {
+        "bytes": 7223,
+        "path": "README.md",
+        "sha256": "11b1237c0dcd95aa681e2a8c92de7dca751778e85b73fdf1b2beda60aaf7798d"
+      },
+      {
+        "bytes": 1355,
+        "path": "docs/ACCEPTANCE_TEST.md",
+        "sha256": "a135de0403c4baed603185bdbf6523d5f67f6d7405fe2d263b2e63277fe1b16e"
+      },
+      {
+        "bytes": 2787,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "b5da05a3f408743f4cd8085c100997b4b01d5655dc36a78f12884a400970dedd"
+      },
+      {
+        "bytes": 1975,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "f5c3f75a38afa47c7ca14d3f44096b886d3711b7742a36fbf70202fe1768073b"
+      },
+      {
+        "bytes": 2962,
+        "path": "docs/TROUBLESHOOTING.md",
+        "sha256": "3e611f14433c79331782c05f4e1b7ee1f82c3b32f37650987ee7cde9a7ae6029"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.2",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.2",
+  "failure_class": null,
+  "finished_at": "2026-09-15T22:44:06Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "bc665269e8832ac0f1485a09e3096715ac5754f6",
+    "branch": "codex/jobbot-CHG-69-r1",
+    "head_sha": "48e3181b8482670669f138b241631dae795f7888",
+    "remote_exact_head": true,
+    "remote_head_sha": "48e3181b8482670669f138b241631dae795f7888",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "bc665269e8832ac0f1485a09e3096715ac5754f6",
+    "work_branch": "codex/jobbot-CHG-69-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-f52b526c7a1c659dbf9705b4",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-69-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-69-r1"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.2",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "ac9bd8dedb364d22fc9c0fc6a50334cbf5b7f53a5a0602aa17553d680a87690e"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-69-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-15T22:19:28Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1478,
+    "queue_seconds": 0,
+    "total_seconds": 1478
+  },
+  "transport": {
+    "bytes": 3723,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3444,
+    "prompt_sha256": "439929d80802dd9fea0f2a53a32ecf9924bcd58945ce36a5f6cede6dfe464746",
+    "sha256": "f52b526c7a1c659dbf9705b4c176e5a0a707dc99ee2a4857f9c7312acc292d2d"
+  }
+}
