@@ -1,0 +1,411 @@
+{
+  "accepted_at": "2026-09-15T23:08:12Z",
+  "changed_files": [
+    {
+      "additions": 2,
+      "deletions": 1,
+      "path": "INSTALL_MAC.command",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 3,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 0,
+      "path": "REFRESH_EXTENSION.command",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "docs/ACCEPTANCE_TEST.md",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 0,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 0,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 1,
+      "path": "docs/TROUBLESHOOTING.md",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 3,
+      "path": "extension/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 57,
+      "deletions": 8,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 174,
+      "deletions": 0,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 1,
+      "path": "src/jobbot/cli.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 27,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0013_extension_refresh.py",
+      "status": "A"
+    },
+    {
+      "additions": 117,
+      "deletions": 1,
+      "path": "src/jobbot/orchestrator.py",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 4,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 197,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "tests/integration/test_launcher_environment.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && sed -n '1,240p' /Users/haewonkim/.codex/RTK.md && sed -n '1,260p' /Users/haewonkim/.codex/law.md && git status --short --branch && git log --oneline --decorate -8\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"git show --no-ext-diff --stat --oneline 48e3181b8482670669f138b241631dae795f7888 && git show --no-ext-diff --format=fuller --summary 48e3181b8482670669f138b241631dae795f7888 && git merge-base --is-ancestor bc665269e8832ac0f1485a09e3096715ac5754f6 48e3181b8482670669f138b241631dae795f7888; printf 'ancestor_status=%s\\\\n' \\\"\"'$?\" && git branch -a --contains 48e3181b8482670669f138b241631dae795f7888 && git log --all --oneline --decorate --ancestry-path bc665269e8832ac0f1485a09e3096715ac5754f6..48e3181b8482670669f138b241631dae795f7888'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'git rev-list --parents -n 1 48e3181b8482670669f138b241631dae795f7888 && git diff --no-ext-diff --stat bc665269e8832ac0f1485a09e3096715ac5754f6 48e3181b8482670669f138b241631dae795f7888 && git diff --no-ext-diff bc665269e8832ac0f1485a09e3096715ac5754f6 48e3181b8482670669f138b241631dae795f7888 -- extension/manifest.json && git show 48e3181b8482670669f138b241631dae795f7888:extension/manifest.json && git show bc665269e8832ac0f1485a09e3096715ac5754f6:extension/manifest.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'git cherry-pick 48e3181b8482670669f138b241631dae795f7888 && git log --oneline --decorate -4 && git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'git reset --hard 48e3181b8482670669f138b241631dae795f7888 && git log --oneline --decorate -4 && git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rg -n --hidden --glob '\"'!'\"\\\\.git/**' 'version_name|build identity|build_id|BUILD_ID|extension version|3\\\\.2\\\\.2-prod-ready|672cf88|version' extension src tests docs README.md pyproject.toml setup.cfg package.json 2>/dev/null\"",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"sed -n '1,220p' src/jobbot/extension_identity.py; sed -n '1,240p' src/jobbot/validator.py; sed -n '1,240p' tests/integration/test_extension_bridge.py; sed -n '1,280p' tests/integration/test_extension_refresh.py; git show --no-ext-diff --format=fuller 7319ea2 -- src/jobbot/extension_identity.py src/jobbot/validator.py tests/integration/test_extension_bridge.py extension/manifest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"for c in bc665269e8832ac0f1485a09e3096715ac5754f6 7319ea2ef391795e30cdccba00b9ccce237f82dc 61f4484; do printf '%s ' \\\"\"'$c\"; git show \"$c:extension/manifest.json\" | sed -n '\"'4,7p'; done; git log --all --oneline -- extension/manifest.json; git log --all -p -- extension/manifest.json | sed -n '1,260p'; sed -n '1,180p' README.md; sed -n '1,160p' docs/OPERATIONS.md; sed -n '1,160p' docs/ARCHITECTURE.md; sed -n '1,160p' docs/TROUBLESHOOTING.md; sed -n '1,160p' docs/ACCEPTANCE_TEST.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"git log --all --format='%H %s' -- extension/manifest.json | while read h rest; do v=\"'$(git show \"${h}:extension/manifest.json\" 2>/dev/null | sed -n '\"'s/\"'^[[:space:]]*\"version_name\": \"'\"\\\\([\"'^\"]*'\"\\\\)\\\".*/\\\\1/p' | head -1); [ -n \\\"\"'$v\" ] && printf '\"'%s %s\\\\n' \\\"\"'$h\" \"$v\"; done; rg -n --hidden --glob '\"'\"'!'\"\\\\.git/**' 'static-hardening|prod-ready|version_name|extension_build\\\\(' .github scripts tests docs README.md src extension | head -240; sed -n '1,240p' scripts/build_release.py; git diff --no-ext-diff bc665269e8832ac0f1485a09e3096715ac5754f6..HEAD -- extension/manifest.json tests src/jobbot/extension_identity.py src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"git rev-list --parents -n 1 61f4484c3b5159d6a64fd6a3eb88d6be32d39833; git show --no-ext-diff --format='%H%n%P%n%s' 672cf88; git merge-base --is-ancestor 672cf88 bc665269e8832ac0f1485a09e3096715ac5754f6; printf 'base_contains_672cf88=%s\\\\n' \\\"\"'$?\"; git log --oneline --decorate --all --ancestry-path 61f4484..bc665269 | head -60; git show --no-ext-diff --format='\"'%H%n%P%n%s' bc665269e8832ac0f1485a09e3096715ac5754f6\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"for c in 3c538b7 7d6a754 67e1608 843ae13 cea7222 7231cd2; do git show --no-ext-diff --format='%H%n%P%n%s' -s \\\"\"'$c\"; git show \"${c}:extension/manifest.json\" 2>/dev/null | sed -n '\"'4,7p'; done\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"sed -n '1,190p' src/jobbot/bridge/rpc.py; sed -n '190,340p' src/jobbot/bridge/rpc.py; sed -n '80,240p' src/jobbot/orchestrator.py; sed -n '400,465p' src/jobbot/validator.py; sed -n '1,120p' tests/integration/test_validator.py; rg -n 'test_extension_refresh|test_validator|unittest discover|pytest|build_release|git diff' Makefile pyproject.toml scripts .github tests -g '*.py' -g '*.sh' -g '*.command' -g '*.yml' -g '*.yaml' 2>/dev/null | head -240\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 38529,
+        "output_sha256": "77836c68462bcc8ac27481ff7253403eaccad520750e32d39b3b396665b63a3b",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'git diff --no-ext-diff -- extension/manifest.json tests/integration/test_extension_refresh.py && git diff --check && git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk .venv/bin/python -m unittest -v tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'command -v rtk || true; test -x .venv/bin/python && .venv/bin/python -m unittest -v tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger || python3 -m unittest -v tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk --version; rtk env PYTHONPATH=src python3 -m unittest -v tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'set -e; for file in extension/*.js src/jobbot/web/dashboard.js tests/*.js; do node --check \\\"\"'$file\"; done; echo javascript-syntax-ok'\"' && rtk env PYTHONPATH=src python3 -m compileall -q src tests && echo python-compile-ok && rtk git diff --check && echo git-diff-check-ok\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"git status --short --branch && git diff --no-ext-diff --stat 48e3181b8482670669f138b241631dae795f7888..HEAD && git diff --no-ext-diff --name-status 48e3181b8482670669f138b241631dae795f7888..HEAD && git diff --no-ext-diff --check && git merge-base --is-ancestor bc665269e8832ac0f1485a09e3096715ac5754f6 48e3181b8482670669f138b241631dae795f7888; printf 'base_is_predecessor_ancestor=%s\\\\n' \\\"\"'$?\"; git rev-list --parents -n 1 48e3181b8482670669f138b241631dae795f7888; git show 48e3181b8482670669f138b241631dae795f7888:extension/manifest.json | sed -n '\"'4,7p'; git show HEAD:extension/manifest.json | sed -n '4,7p'; git show bc665269e8832ac0f1485a09e3096715ac5754f6:extension/manifest.json | sed -n '4,7p'; git rev-parse origin/main\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"git show --no-ext-diff --stat --oneline 8acdca3 && git show --no-ext-diff --format=fuller --name-status 8acdca3 | sed -n '1,100p'; git ls-tree -r --name-only 8acdca3 | rg 'evidence|CHG|validation|latest|artifacts' | head -80; git remote -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"find . -maxdepth 3 -type f | sort | sed -n '1,220p'; rg -n --hidden --glob '\"'!**/.git/**'\"' 'audit\\\\.json|publish audit evidence|Codex Fabric|CF-' . .github /Users/haewonkim/.codex-fabric 2>/dev/null | head -240\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{job_id,request,project_id,operation,expected_target,routes}' /Users/haewonkim/.codex-fabric/jobs/CF-502db0670e0bd81fe190bf1f.running/job.json 2>/dev/null || true; rtk find /Users/haewonkim/.codex-fabric/jobs/CF-502db0670e0bd81fe190bf1f.running -maxdepth 2 -type f -print 2>/dev/null | sort; rtk rg -n -A35 -B15 'evidence_publication|publish audit evidence|finalizer|push_and_verify' /Users/haewonkim/.codex-fabric/releases/1.2.2-candidate/fabric.py | head -320\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add extension/manifest.json tests/integration/test_extension_refresh.py && rtk git commit -m \"Fix CHG-69 extension build identity\" && rtk git status --short --branch && rtk git log --oneline --decorate -4'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git rev-list --parents -n 1 HEAD && rtk git diff --stat 48e3181b8482670669f138b241631dae795f7888..HEAD && rtk git diff --name-status 48e3181b8482670669f138b241631dae795f7888..HEAD && rtk git diff --check 48e3181b8482670669f138b241631dae795f7888..HEAD && rtk git merge-base --is-ancestor bc665269e8832ac0f1485a09e3096715ac5754f6 48e3181b8482670669f138b241631dae795f7888; printf 'base_is_predecessor_ancestor=%s\\\\n' \\\"\"'$?\"; rtk git merge-base --is-ancestor 48e3181b8482670669f138b241631dae795f7888 HEAD; printf '\"'predecessor_is_head_ancestor=%s\\\\n' \\\"\"'$?\"; rtk git rev-parse origin/main; rtk git show HEAD:extension/manifest.json | sed -n '\"'4,7p'; rtk git show 48e3181b8482670669f138b241631dae795f7888:extension/manifest.json | sed -n '4,7p'; rtk git show bc665269e8832ac0f1485a09e3096715ac5754f6:extension/manifest.json | sed -n '4,7p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote --heads origin codex/jobbot-CHG-69-r2 codex-fabric/evidence/jobbot/CHG-69-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push --set-upstream origin HEAD:codex/jobbot-CHG-69-r2 && rtk git ls-remote --heads origin codex/jobbot-CHG-69-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git rev-parse HEAD && rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-CHG-69-r2 && rtk git merge-base --is-ancestor 48e3181b8482670669f138b241631dae795f7888 HEAD; printf 'predecessor_ancestor_exit=%s\\\\n' \\\"\"'$?\" && rtk git diff --check 48e3181b8482670669f138b241631dae795f7888..HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 72,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 92.66,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 1885184,
+      "fresh_input_tokens": 149432,
+      "input_tokens": 2034616,
+      "non_reasoning_output_tokens": 6852,
+      "output_tokens": 14572,
+      "reasoning_output_tokens": 7720,
+      "total_processed_tokens": 2049188
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "1801247ead7d442110e809dbfbf12128af68c3df",
+      "subject": "Fix CHG-69 extension build identity"
+    },
+    {
+      "sha": "48e3181b8482670669f138b241631dae795f7888",
+      "subject": "Build CHG-69 extension refresh control"
+    }
+  ],
+  "diff": {
+    "additions": 650,
+    "changed_files": 20,
+    "commit_count": 2,
+    "deletions": 25
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 6,
+    "items": [
+      {
+        "bytes": 7223,
+        "path": "README.md",
+        "sha256": "11b1237c0dcd95aa681e2a8c92de7dca751778e85b73fdf1b2beda60aaf7798d"
+      },
+      {
+        "bytes": 1355,
+        "path": "docs/ACCEPTANCE_TEST.md",
+        "sha256": "a135de0403c4baed603185bdbf6523d5f67f6d7405fe2d263b2e63277fe1b16e"
+      },
+      {
+        "bytes": 2787,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "b5da05a3f408743f4cd8085c100997b4b01d5655dc36a78f12884a400970dedd"
+      },
+      {
+        "bytes": 1975,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "f5c3f75a38afa47c7ca14d3f44096b886d3711b7742a36fbf70202fe1768073b"
+      },
+      {
+        "bytes": 2962,
+        "path": "docs/TROUBLESHOOTING.md",
+        "sha256": "3e611f14433c79331782c05f4e1b7ee1f82c3b32f37650987ee7cde9a7ae6029"
+      },
+      {
+        "bytes": 1941,
+        "path": "extension/manifest.json",
+        "sha256": "94d076baffa241afba3513d3b4154f0b818203d3d1f4a4b80c6b38bd65988e85"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.2",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.2",
+  "failure_class": null,
+  "finished_at": "2026-09-15T23:14:38Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "bc665269e8832ac0f1485a09e3096715ac5754f6",
+    "branch": "codex/jobbot-CHG-69-r2",
+    "head_sha": "1801247ead7d442110e809dbfbf12128af68c3df",
+    "remote_exact_head": true,
+    "remote_head_sha": "1801247ead7d442110e809dbfbf12128af68c3df",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "bc665269e8832ac0f1485a09e3096715ac5754f6",
+    "work_branch": "codex/jobbot-CHG-69-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-502db0670e0bd81fe190bf1f",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-69-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-69-r2"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.2",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "ac9bd8dedb364d22fc9c0fc6a50334cbf5b7f53a5a0602aa17553d680a87690e"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-69-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-15T23:08:12Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 386,
+    "queue_seconds": 0,
+    "total_seconds": 386
+  },
+  "transport": {
+    "bytes": 3219,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2942,
+    "prompt_sha256": "cf1da0936122f9e87e3f34219c6780718935826004e40da969ce65567c6ec301",
+    "sha256": "502db0670e0bd81fe190bf1f6a0e3047f56eca2e6cc467b12c7f10cf291a88fb"
+  }
+}
