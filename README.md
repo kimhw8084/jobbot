@@ -15,15 +15,16 @@ Requirements: macOS, Python 3.11 or newer, normal Google Chrome, and enough disk
    ./INSTALL_MAC.command
    ```
 
-2. In `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this repository’s `extension` directory. If the extension was already installed, click **Reload**. The stable extension ID is recorded in `config/EXTENSION_ID.txt`.
+2. In `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this repository’s `extension` directory. This is the one-time bootstrap for the canonical unpacked install. The stable extension ID is recorded in `config/EXTENSION_ID.txt`.
 3. In that same normal Chrome profile, sign in normally to LinkedIn, Indeed, and Glassdoor. JobBot does not read or export cookies or passwords.
-4. Run the controlled Indeed acceptance gate before a full search:
+4. For a routine source/build refresh after installation, run `./REFRESH_EXTENSION.command`. It requests `chrome.runtime.reload()` through the authenticated loopback bridge and exits successfully only after the extension reports the expected `manifest.json` `version_name`. Run launchers perform the same freshness gate automatically.
+5. Run the controlled Indeed acceptance gate before a full search:
 
    ```bash
    ./RUN_ACCEPTANCE_INDEED.command
    ```
 
-For a final release proof after reloading the unpacked extension, run
+For a final release proof after the canonical extension is loaded, run
 `./VALIDATE_PRODUCTION.command`. It creates timestamped isolated validation,
 soak, and semi-production databases; it never opens `data/jobs.sqlite3`.
 

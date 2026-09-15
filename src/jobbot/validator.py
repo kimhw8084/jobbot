@@ -979,11 +979,11 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
         report["primary_live"] = primary
         if primary["outcome"]["status"] == "extension_unresponsive":
             report["internal_failures"].append(
-                "Chrome extension did not start the validation run within 45 seconds; reload the unpacked extension in chrome://extensions and rerun validator"
+                "Chrome extension did not start the validation run within 45 seconds; run REFRESH_EXTENSION.command and rerun validator"
             )
         if not primary.get("extension_build_pass"):
             report["internal_failures"].append(
-                f"loaded extension did not report build {extension_build(PROJECT_ROOT)}; reload the unpacked extension in chrome://extensions and rerun validator"
+                f"loaded extension did not report build {extension_build(PROJECT_ROOT)}; REFRESH_EXTENSION.command did not confirm the expected build"
             )
         for platform, values in final_primary.get("scope", {}).items():
             if values.get("scope_missing_events") or values.get("contamination_persisted"):
@@ -1031,7 +1031,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             report["external_blockers"].append({"stage": "soak_supplemental", "error": soak["supplemental"]["error"],
                                                  "sources": soak["supplemental"].get("sources", {})})
         if soak["outcome"]["status"] == "extension_unresponsive":
-            report["internal_failures"].append("Chrome extension did not start the soak run; reload the unpacked extension and rerun validator")
+            report["internal_failures"].append("Chrome extension did not start the soak run; run REFRESH_EXTENSION.command and rerun validator")
         if not soak["pass"]:
             report["internal_failures"].append("15-minute isolated soak failed")
             return 1
@@ -1090,7 +1090,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             phase_result["final"]["outcome"]["status"] == "extension_unresponsive"
             for phase_result in phase_runs.values()
         ):
-            report["internal_failures"].append("Chrome extension did not start a semi-production phase; reload the unpacked extension and rerun validator")
+            report["internal_failures"].append("Chrome extension did not start a semi-production phase; run REFRESH_EXTENSION.command and rerun validator")
         if not semi["pass"]:
             report["internal_failures"].append("semi-production validation failed")
             return 1

@@ -68,6 +68,28 @@ def _health(port: int, token: str) -> dict[str, object]:
         return json.loads(response.read().decode("utf-8"))
 
 
+def _bridge_rpc(port: int, token: str, payload: dict[str, object], *, timeout: float = 10) -> dict[str, object]:
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}/rpc",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-JobBot-Token": token},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        value = json.loads(response.read().decode("utf-8"))
+    if not isinstance(value, dict):
+        raise RuntimeError("loopback bridge returned a non-object response")
+    return value
+
+
+def _request_extension_refresh(port: int, token: str, *, run_id: int = 0,
+                               expected_build: str, refresh_id: str) -> dict[str, object]:
+    return _bridge_rpc(port, token, {
+        "action": "extension_refresh", "request_id": refresh_id, "refresh_id": refresh_id,
+        "run_id": run_id, "expected_build": expected_build,
+    })
+
+
 def _run_status(bundle: ConfigBundle, run_id: int) -> str:
     conn = sqlite3.connect(bundle.database_path)
     try:
@@ -119,10 +141,15 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
 
     try:
         process = start()
+        refresh_id = f"run-{run_id}-{expected_build}"
+        refresh = _request_extension_refresh(port, token, run_id=run_id,
+                                             expected_build=expected_build, refresh_id=refresh_id)
+        if not refresh.get("ok"):
+            raise RuntimeError(f"extension refresh request rejected: {refresh.get('error', 'unknown error')}")
         url = (
             f"chrome-extension://{extension_id}/dashboard.html?autorun=1&run_id={run_id}"
             f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
-            f"&expected_build={urllib.parse.quote(expected_build, safe='')}"
+            f"&expected_build={urllib.parse.quote(expected_build, safe='')}&refresh_id={urllib.parse.quote(refresh_id, safe='')}"
         )
         if open_browser:
             _open_chrome(url)
@@ -158,6 +185,95 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
                 restart_count += 1
                 process = start()
             time.sleep(2)
+    finally:
+        if process is not None and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+        log_handle.close()
+        ready_dir.cleanup()
+
+
+def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
+                      open_browser: bool = True) -> dict[str, object]:
+    """Ask the installed unpacked extension to refresh and prove its build.
+
+    The temporary bridge carries the same token-authenticated control path as a
+    browser run. It is intentionally independent of the production database
+    run queue, so this maintenance action cannot start or mutate a search run.
+    """
+    token = secrets.token_urlsafe(48)
+    extension_id = (bundle.root / "config" / "EXTENSION_ID.txt").read_text(encoding="utf-8").strip()
+    expected_build = extension_build(bundle.root)
+    refresh_id = f"maintenance-{secrets.token_urlsafe(18)}"
+    log_path = bundle.output_dir / "logs" / "extension_refresh_bridge.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    ready_dir = tempfile.TemporaryDirectory(prefix="jobbot-extension-refresh-")
+    ready_path = Path(ready_dir.name) / "ready.json"
+    log_handle = log_path.open("ab")
+    process: subprocess.Popen[bytes] | None = None
+
+    def start() -> subprocess.Popen[bytes]:
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "jobbot.bridge.server", "--port", "0", "--token", token,
+             "--ready-file", str(ready_path)],
+            cwd=bundle.root, stdout=log_handle, stderr=subprocess.STDOUT,
+        )
+        deadline = time.monotonic() + 12
+        while time.monotonic() < deadline:
+            if proc.poll() is not None:
+                raise RuntimeError(f"loopback bridge exited during extension refresh; see {log_path}")
+            if ready_path.is_file():
+                ready = json.loads(ready_path.read_text(encoding="utf-8"))
+                port = int(ready["port"])
+                if _health(port, token).get("ok"):
+                    return proc
+            time.sleep(0.1)
+        proc.terminate()
+        raise RuntimeError(f"loopback bridge health check timed out; see {log_path}")
+
+    try:
+        process = start()
+        ready = json.loads(ready_path.read_text(encoding="utf-8"))
+        port = int(ready["port"])
+        request = _request_extension_refresh(port, token, expected_build=expected_build, refresh_id=refresh_id)
+        if not request.get("ok"):
+            return {"ok": False, "refresh_id": refresh_id, **request}
+        url = (
+            f"chrome-extension://{extension_id}/dashboard.html?maintenance=1"
+            f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
+            f"&expected_build={urllib.parse.quote(expected_build, safe='')}"
+            f"&refresh_id={urllib.parse.quote(refresh_id, safe='')}"
+        )
+        if open_browser:
+            _open_chrome(url)
+        else:
+            print(url)
+        deadline = time.monotonic() + max(1, timeout_seconds)
+        while time.monotonic() < deadline:
+            try:
+                status = _bridge_rpc(port, token, {"action": "extension_refresh_status", "refresh_id": refresh_id}, timeout=5)
+            except Exception as exc:
+                return {"ok": False, "refresh_id": refresh_id, "error": f"bridge_unavailable: {exc}"}
+            if status.get("status") == "confirmed" and status.get("identity_confirmed") is True:
+                return status
+            if status.get("status") == "failed":
+                return status
+            time.sleep(0.5)
+        try:
+            failed = _bridge_rpc(
+                port, token,
+                {"action": "extension_refresh_failed", "refresh_id": refresh_id,
+                 "error": "extension_unavailable_or_unreachable"},
+                timeout=5,
+            )
+        except Exception:
+            failed = {}
+        return {**failed, "ok": False, "refresh_id": refresh_id,
+                "status": failed.get("status", "failed"),
+                "error": "extension_unavailable_or_unreachable", "expected_build": expected_build}
     finally:
         if process is not None and process.poll() is None:
             process.terminate()

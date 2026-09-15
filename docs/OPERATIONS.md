@@ -2,6 +2,14 @@
 
 Run `python -m jobbot doctor` before live work. Inspect `python -m jobbot search-plan --mode deep --open` before starting. Complete a per-platform acceptance run before the full strategy.
 
+After the one-time `Load unpacked` installation in the ordinary Chrome
+profile, use `./REFRESH_EXTENSION.command` for a maintenance refresh. It uses
+the authenticated loopback bridge and succeeds only after the loaded extension
+confirms the repository manifest `version_name`; the run and validation
+launchers request the same gate automatically. An absent, unreachable, stale,
+or wrong-build extension is a failed operation, not a success. The command
+never edits Chrome profile files.
+
 The macOS full launcher uses `caffeinate -dimsu` only while JobBot runs. The
 extension receives heartbeat, lease, and watchdog values from `config/runtime.toml`.
 Persistent leases reclaim stale running tasks after crashes. Restart with

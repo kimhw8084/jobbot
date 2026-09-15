@@ -89,6 +89,33 @@ function requireRpcOk(response,action,context={}){
 async function requiredRequest(action,payload={},timeoutMs=60000){
   return requireRpcOk(await nativeRequest(action,payload,timeoutMs),action,payload);
 }
+async function reportExtensionBuild(runId=0,expectedBuild='',refreshId=''){
+  return nativeRequest('extension_build',{
+    run_id:Number(runId||0), build:JOBBOT_EXTENSION_BUILD,
+    expected_build:String(expectedBuild||JOBBOT_EXTENSION_BUILD), refresh_id:String(refreshId||''),
+  },10000);
+}
+async function requestExtensionRefresh(runId=0,expectedBuild='',refreshId=''){
+  const expected=String(expectedBuild||JOBBOT_EXTENSION_BUILD), rid=Number(runId||0), key=String(refreshId||'');
+  if(!expected)throw new Error('missing expected extension build');
+  if(JOBBOT_EXTENSION_BUILD===expected){
+    const signal=await reportExtensionBuild(rid,expected,key);
+    if(!signal?.ok)return signal;
+    return {...signal,refresh_id:signal.refresh_id||key,status:signal.status||'confirmed',refreshed:false,reload_required:false};
+  }
+  const request=await nativeRequest('extension_refresh',{run_id:rid,expected_build:expected,refresh_id:key},10000);
+  if(!request?.ok)return request;
+  const reloading=await nativeRequest('extension_refresh_reloading',{refresh_id:request.refresh_id||key},10000);
+  if(!reloading?.ok)return reloading;
+  await chrome.storage.local.set({jobbot_expected_extension_build:expected,jobbot_refresh_id:request.refresh_id||key});
+  return {...reloading,loaded_build:JOBBOT_EXTENSION_BUILD,reload_required:true,refreshed:false};
+}
+async function confirmStoredBuild(){
+  const x=await chrome.storage.local.get(['jobbot_expected_extension_build','jobbot_refresh_id','jobbot_active_run_id']);
+  const expected=String(x.jobbot_expected_extension_build||''), refreshId=String(x.jobbot_refresh_id||'');
+  if(!expected||!refreshId||expected!==JOBBOT_EXTENSION_BUILD)return;
+  await reportExtensionBuild(Number(x.jobbot_active_run_id||0),expected,refreshId);
+}
 async function waitTabComplete(tabId,timeoutMs=45000){const deadline=Date.now()+timeoutMs;while(Date.now()<deadline){const tab=await chrome.tabs.get(tabId);if(tab.status==='complete')return tab;await sleep(400);}throw new Error('page load timed out');}
 async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4){for(let i=0;i<retries;i++){try{await waitTabComplete(tabId,45000);const resp=await chrome.tabs.sendMessage(tabId,{type,...extra});if(resp)return resp;}catch(e){if(i===retries-1)throw e;}await sleep(700+i*220);}throw new Error('content script did not respond');}
 function fp(items){return (items||[]).map(x=>x.source_job_id||x.url).filter(Boolean).sort().join('|');}
@@ -243,13 +270,17 @@ async function processTask(runId,task){
   finally{activeTaskId=null;await closeBackgroundTarget(searchTarget,[searchTab?.id,detailTab?.id]);}
 }
 
-async function runProduction(runId){
-  activeRunId=Number(runId); await chrome.storage.local.set({jobbot_active_run_id:activeRunId});
+async function runProduction(runId,expectedBuild='',refreshId=''){
+  const expected=String(expectedBuild||JOBBOT_EXTENSION_BUILD);
+  if(JOBBOT_EXTENSION_BUILD!==expected)throw new Error(`loaded extension build ${JOBBOT_EXTENSION_BUILD} does not match expected ${expected}`);
+  const buildSignal=await reportExtensionBuild(runId,expected,refreshId);
+  requireRpcOk(buildSignal,'extension_build',{run_id:runId,expected_build:expected,refresh_id:refreshId});
+  activeRunId=Number(runId); await chrome.storage.local.set({jobbot_active_run_id:activeRunId,jobbot_expected_extension_build:expected,jobbot_refresh_id:String(refreshId||'')});
   runtimeConfig=await requiredRequest('runtime_config',{},10000);
   startHeartbeat();
   try{
     await requiredRequest('begin_run',{run_id:activeRunId});
-    await nativeRequest('browser_event',{run_id:activeRunId,event_type:'extension_build',message:JOBBOT_EXTENSION_BUILD,payload:{build:JOBBOT_EXTENSION_BUILD}});
+    await nativeRequest('browser_event',{run_id:activeRunId,event_type:'extension_build',message:JOBBOT_EXTENSION_BUILD,payload:{build:JOBBOT_EXTENSION_BUILD,expected_build:expected,refresh_id:refreshId}});
     const authChecked=new Map();
     while(true){
       const n=await requiredRequest('next_task',{run_id:activeRunId,worker_id:`extension-run-${activeRunId}`}); if(n.stop||n.done)break; if(!n.task)break;
@@ -274,25 +305,42 @@ async function runProduction(runId){
 async function ensureResume(){
   if(runPromise)return;
   try{
-    const x=await chrome.storage.local.get('jobbot_active_run_id'); const rid=Number(x.jobbot_active_run_id||0); if(!rid)return;
+    const x=await chrome.storage.local.get(['jobbot_active_run_id','jobbot_expected_extension_build','jobbot_refresh_id']);
+    const rid=Number(x.jobbot_active_run_id||0); if(!rid)return;
+    const expected=String(x.jobbot_expected_extension_build||JOBBOT_EXTENSION_BUILD), refreshId=String(x.jobbot_refresh_id||'');
+    if(expected!==JOBBOT_EXTENSION_BUILD){
+      const refresh=await requestExtensionRefresh(rid,expected,refreshId);
+      if(refresh?.ok&&refresh.reload_required&&typeof chrome.runtime.reload==='function')chrome.runtime.reload();
+      return;
+    }
     const st=await nativeRequest('run_status',{run_id:rid}); const status=st?.run?.status;
     if(st?.ok&&!['completed','partial','stopped','failed'].includes(status)){
-      runPromise=runProduction(rid).catch(()=>{}).finally(()=>{runPromise=null;});
+      runPromise=runProduction(rid,expected,refreshId).catch(()=>{}).finally(()=>{runPromise=null;});
     }
   }catch(_){}
 }
 
 chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
   if(msg?.type==='JOBBOT_CONFIGURE_BRIDGE'){configureBridge(msg.port,msg.token).then(x=>sendResponse({ok:true,version:x.version,bridge:'loopback'})).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;}
+  if(msg?.type==='JOBBOT_REFRESH_EXTENSION'){
+    requestExtensionRefresh(Number(msg.run_id||0),String(msg.expected_build||''),String(msg.refresh_id||''))
+      .then(sendResponse).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;
+  }
+  if(msg?.type==='JOBBOT_EXTENSION_REFRESH_STATUS'){
+    nativeRequest('extension_refresh_status',{refresh_id:String(msg.refresh_id||'')},10000)
+      .then(sendResponse).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;
+  }
   if(msg?.type==='JOBBOT_START_RUN'){
     const rid=Number(msg.run_id||0); if(!rid){sendResponse({ok:false,error:'missing run_id'});return false;}
+    const expected=String(msg.expected_build||JOBBOT_EXTENSION_BUILD),refreshId=String(msg.refresh_id||'');
+    if(expected!==JOBBOT_EXTENSION_BUILD){sendResponse({ok:false,error:'extension_build_mismatch',loaded_build:JOBBOT_EXTENSION_BUILD,expected_build:expected});return false;}
     if(runPromise){
       const active=Number(activeRunId||0);
       if(active===rid){sendResponse({ok:true,started:true,resumed:true,run_id:rid});}
       else{sendResponse({ok:false,error:'another browser run is still active',active_run_id:active,run_id:rid});}
       return false;
     }
-    runPromise=runProduction(rid).catch(()=>{}).finally(()=>{runPromise=null;});
+    runPromise=runProduction(rid,expected,refreshId).catch(()=>{}).finally(()=>{runPromise=null;});
     sendResponse({ok:true,started:true,run_id:rid}); return false;
   }
   if(msg?.type==='JOBBOT_STOP_AFTER_CURRENT'||msg?.type==='JOBBOT_EMERGENCY_STOP'){
@@ -307,8 +355,9 @@ chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
   return false;
 });
 function ensureResumeAlarm(){chrome.alarms.create('jobbot-resume',{periodInMinutes:1});}
-chrome.runtime.onStartup.addListener(()=>{ensureResumeAlarm();ensureResume();});
-chrome.runtime.onInstalled.addListener(()=>{ensureResumeAlarm();ensureResume();});
+chrome.runtime.onStartup.addListener(()=>{ensureResumeAlarm();confirmStoredBuild().catch(()=>{});ensureResume();});
+chrome.runtime.onInstalled.addListener(()=>{ensureResumeAlarm();confirmStoredBuild().catch(()=>{});ensureResume();});
 chrome.alarms.onAlarm.addListener((a)=>{if(a.name==='jobbot-resume')ensureResume();});
 ensureResumeAlarm();
+confirmStoredBuild().catch(()=>{});
 ensureResume();

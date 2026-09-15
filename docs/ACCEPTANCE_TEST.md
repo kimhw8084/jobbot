@@ -1,6 +1,6 @@
 # v3.2.0 Live Acceptance
 
-Install/reload `extension/` in the same normal Chrome profile used for each job platform. Run one platform at a time:
+Install `extension/` once in the same normal Chrome profile used for each job platform. Before an acceptance run, use `./REFRESH_EXTENSION.command` if source files changed; routine run launchers request and verify this refresh automatically. Run one platform at a time:
 
 ```bash
 python -m jobbot acceptance --platform indeed
