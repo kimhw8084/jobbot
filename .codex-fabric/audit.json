@@ -1,0 +1,404 @@
+{
+  "accepted_at": "2026-09-15T02:41:55Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "docs/SEARCH_PLAN.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 1,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 15,
+      "deletions": 8,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 30,
+      "deletions": 2,
+      "path": "src/jobbot/db.py",
+      "status": "M"
+    },
+    {
+      "additions": 39,
+      "deletions": 0,
+      "path": "src/jobbot/exports.py",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 3,
+      "path": "src/jobbot/legacy_engine.py",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 1,
+      "path": "src/jobbot/run_now.py",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 8,
+      "path": "src/jobbot/search_plan.py",
+      "status": "M"
+    },
+    {
+      "additions": 38,
+      "deletions": 0,
+      "path": "src/jobbot/strategy_runtime.py",
+      "status": "A"
+    },
+    {
+      "additions": 17,
+      "deletions": 2,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 1,
+      "path": "tests/integration/test_browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_dashboard_exports_application.py",
+      "status": "M"
+    },
+    {
+      "additions": 29,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 29,
+      "deletions": 5,
+      "path": "tests/integration/test_run_now.py",
+      "status": "M"
+    },
+    {
+      "additions": 24,
+      "deletions": 0,
+      "path": "tests/integration/test_validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 21,
+      "deletions": 0,
+      "path": "tests/unit/test_strategy.py",
+      "status": "M"
+    },
+    {
+      "additions": 333,
+      "deletions": 0,
+      "path": "verification/CHG-22-r4.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && printf '%s\\\\n' '--- RTK.md ---' && sed -n '1,240p' /Users/haewonkim/.codex/RTK.md && printf '%s\\\\n' '--- law.md ---' && sed -n '1,260p' /Users/haewonkim/.codex/law.md && printf '%s\\\\n' '--- repo status ---' && git status --short --branch && printf '%s\\\\n' '--- top-level ---' && rg --files -g 'AGENTS.md' -g 'pyproject.toml' -g 'pytest.ini' -g 'setup.cfg' -g 'requirements*.txt' -g 'Makefile' -g 'README*' -g '*validation*' | head -200\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 3023,
+        "output_sha256": "9d0be0cc13643bef2cc49b8da3739108de6837627413e3f12fac47f1a4a4765d",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git log --oneline --decorate -12 && rtk git branch --all --contains 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 && rtk git show-ref --heads | head -80 && rtk git rev-parse HEAD main e50f45db73d654e23e6ff6073c07da223286e935 61f4484c3b5159d6a64fd6a3eb88d6be32d39833'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git log --graph --oneline --decorate --all --max-count=35 && printf '%s\\\\n' '--- candidate ---' && rtk git show --no-ext-diff --stat --summary e50f45db73d654e23e6ff6073c07da223286e935 && printf '%s\\\\n' '--- candidate parents ---' && rtk git rev-list --parents -n 1 e50f45db73d654e23e6ff6073c07da223286e935 && printf '%s\\\\n' '--- ancestry ---' && rtk git merge-base 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 e50f45db73d654e23e6ff6073c07da223286e935 && rtk git diff --stat 61f4484c3b5159d6a64fd6a3eb88d6be32d39833..e50f45db73d654e23e6ff6073c07da223286e935\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --format=fuller --stat origin/codex-fabric/evidence/jobbot/CHG-22-r3 && printf '%s\\\\n' '--- r3 evidence tree ---' && rtk git ls-tree -r --name-only origin/codex-fabric/evidence/jobbot/CHG-22-r3 | rg '(\"'^|/)(verification|evidence)|CHG-22'\"' | head -100 && printf '%s\\\\n' '--- repository references ---' && rg -n \\\"production-validation|validate-production|micro-latest|candidate branch|PROD_READY|external_blockers|internal_failures\\\" README.md pyproject.toml src tests docs verification 2>/dev/null | head -240\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --no-ext-diff --format=fuller e50f45db73d654e23e6ff6073c07da223286e935 -- src/jobbot/validator.py tests/integration/test_validator.py && printf '%s\\\\n' '--- current gate ---' && rg -n -C 5 \\\"candidate branch|candidate_branch|branch.*main|git branch|current branch|PROD_READY\\\" src/jobbot/validator.py tests/integration/test_validator.py && printf '%s\\\\n' '--- project test config ---' && sed -n '1,220p' pyproject.toml && printf '%s\\\\n' '--- README validation section ---' && sed -n '45,100p' README.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- base validator gate ---' && rtk git show 61f4484c3b5159d6a64fd6a3eb88d6be32d39833:src/jobbot/validator.py | sed -n '25,165p' && printf '%s\\\\n' '--- base validator tests ---' && rtk git show 61f4484c3b5159d6a64fd6a3eb88d6be32d39833:tests/integration/test_validator.py | sed -n '1,100p' && printf '%s\\\\n' '--- diff base to candidate, validator only ---' && rtk git diff --no-ext-diff 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 e50f45db73d654e23e6ff6073c07da223286e935 -- src/jobbot/validator.py tests/integration/test_validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git cherry-pick -x e50f45db73d654e23e6ff6073c07da223286e935 && printf '%s\\\\n' '--- resulting state ---' && rtk git status --short --branch && rtk git log --oneline --decorate -4 && printf '%s\\\\n' '--- base-to-head files ---' && rtk git diff --name-status 61f4484c3b5159d6a64fd6a3eb88d6be32d39833..HEAD && printf '%s\\\\n' '--- candidate patch equivalence ---' && rtk git diff --stat e50f45db73d654e23e6ff6073c07da223286e935\"'^ e50f45db73d654e23e6ff6073c07da223286e935 && rtk git diff --stat HEAD''^ HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- validator setup ---' && sed -n '880,1135p' src/jobbot/validator.py && printf '%s\\\\n' '--- available runtimes/output state ---' && command -v rtk && command -v python3 && python3 --version && rtk find out/production-validation -maxdepth 2 -type f -print 2>/dev/null | head -80 && printf '%s\\\\n' '--- data files ---' && rtk find data -maxdepth 2 -type f -print 2>/dev/null | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 -m unittest discover -s tests/integration -p 'test_validator.py' -v\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la && printf '%s\\\\n' '--- package availability ---' && PYTHONPATH=src rtk python3 -m jobbot --help | head -80 && printf '%s\\\\n' '--- test discovery with source path ---' && PYTHONPATH=src rtk python3 -m unittest discover -s tests/integration -p 'test_validator.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python3 -m jobbot validate-production --stage micro'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"REPORT=out/production-validation/micro-latest.json; printf '%s\\\\n' '--- report top-level keys and identity ---'; rtk jq '{keys:(keys), branch, head, validation_stage, validation_database, PROD_READY}' \\\"\"'$REPORT\"; printf '\"'%s\\\\n' '--- complete preflight ---'; rtk jq '.preflight' \\\"\"'$REPORT\"; printf '\"'%s\\\\n' '--- failure/blocker arrays ---'; rtk jq '{internal_failures, external_blockers}' \\\"\"'$REPORT\"; printf '\"'%s\\\\n' '--- primary outcome shapes ---'; rtk jq '{primary_live_keys:(.primary_live|keys), outcome:.primary_live.outcome, resume_outcome:(.primary_live.resume.outcome // null), extension_build_pass:.primary_live.extension_build_pass, primary_pass:.primary_live.pass, audit_platforms:(.primary_live.audit.platforms // {}), resume_audit_platforms:(.primary_live.resume.audit.platforms // {})}' \\\"\"'$REPORT\"; printf '\"'%s\\\\n' '--- report sha256 ---'; shasum -a 256 \\\"\"'$REPORT\"; printf '\"'%s\\\\n' '--- validation db isolation ---'; VALID_DB=\"'$(rtk jq -r '\"'.validation_database' \\\"\"'$REPORT\"); PROD_DB=\"$PWD/data/jobs.sqlite3\"; realpath \"$VALID_DB\"; realpath \"$PROD_DB\"; test \"$(realpath \"$VALID_DB\")\" != \"$(realpath \"$PROD_DB\")\"; printf '\"'isolated=true\\\\n'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import json; p=json.load(open(\\\"out/production-validation/micro-latest.json\\\")); print(json.dumps({\\\"preflight\\\":p[\\\"preflight\\\"],\\\"internal_failures\\\":p[\\\"internal_failures\\\"],\\\"external_blockers\\\":p[\\\"external_blockers\\\"],\\\"primary_live\\\":{\\\"outcome\\\":p[\\\"primary_live\\\"].get(\\\"outcome\\\"),\\\"resume_outcome\\\":(p[\\\"primary_live\\\"].get(\\\"resume\\\") or {}).get(\\\"outcome\\\"),\\\"terminal_classification\\\":p[\\\"primary_live\\\"].get(\\\"terminal_classification\\\"),\\\"validation_classification\\\":p[\\\"primary_live\\\"].get(\\\"validation_classification\\\"),\\\"extension_build_pass\\\":p[\\\"primary_live\\\"].get(\\\"extension_build_pass\\\"),\\\"audit_platforms\\\":{k:{x:v.get(x,0) for x in (\\\"challenged\\\",\\\"auth_required\\\",\\\"deferred_by_platform\\\")} for k,v in p[\\\"primary_live\\\"].get(\\\"audit\\\",{}).get(\\\"platforms\\\",{}).items()},\\\"resume_audit_platforms\\\":{k:{x:v.get(x,0) for x in (\\\"challenged\\\",\\\"auth_required\\\",\\\"deferred_by_platform\\\")} for k,v in (p[\\\"primary_live\\\"].get(\\\"resume\\\") or {}).get(\\\"audit\\\",{}).get(\\\"platforms\\\",{}).items()}}}, indent=2, ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mkdir -p verification'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk test -e verification/CHG-22-r4.json; printf 'artifact_exists=%s\\\\n' \\\"\"'$?\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -l verification'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import json; p=json.load(open(\\\"out/production-validation/micro-latest.json\\\")); primary=p[\\\"primary_live\\\"]; artifact={\\\"request\\\":\\\"CHG-22-r4\\\",\\\"candidate_branch\\\":\\\"codex/jobbot-CHG-22-r4\\\",\\\"candidate_head\\\":p[\\\"head\\\"],\\\"predecessor_candidate\\\":\\\"e50f45db73d654e23e6ff6073c07da223286e935\\\",\\\"target_branch\\\":\\\"main\\\",\\\"target_sha\\\":\\\"61f4484c3b5159d6a64fd6a3eb88d6be32d39833\\\",\\\"validator\\\":{\\\"command\\\":[\\\"python3\\\",\\\"-m\\\",\\\"jobbot\\\",\\\"validate-production\\\",\\\"--stage\\\",\\\"micro\\\"],\\\"effective_environment\\\":{\\\"PYTHONPATH\\\":\\\"src\\\"},\\\"exit_code\\\":1,\\\"report_path\\\":\\\"out/production-validation/micro-latest.json\\\",\\\"report_sha256\\\":\\\"52433742b7c798e846d4109cd58e0932dafbc5b86a4a4ad4ac02365c042a0547\\\"},\\\"validation_database\\\":p[\\\"validation_database\\\"],\\\"database_isolation\\\":{\\\"production_database\\\":\\\"/Users/haewonkim/.codex-fabric/worktrees/CF-50e0b137cca63545b9e8cdab/data/jobs.sqlite3\\\",\\\"isolated\\\":p[\\\"validation_database\\\"] \"'!= \"/Users/haewonkim/.codex-fabric/worktrees/CF-50e0b137cca63545b9e8cdab/data/jobs.sqlite3\"},\"PROD_READY\":p[\"PROD_READY\"],\"preflight\":p[\"preflight\"],\"internal_failures\":p[\"internal_failures\"],\"external_blockers\":p[\"external_blockers\"],\"primary_live\":{\"outcome\":primary[\"outcome\"],\"resume_outcome\":(primary.get(\"resume\") or {}).get(\"outcome\"),\"terminal_classification\":primary.get(\"terminal_classification\"),\"validation_classification\":primary.get(\"validation_classification\"),\"extension_build_pass\":primary.get(\"extension_build_pass\"),\"extension_unresponsive\":any((x or {}).get(\"status\")==\"extension_unresponsive\" for x in (primary.get(\"outcome\"),primary.get(\"resume\"), (primary.get(\"resume\") or {}).get(\"outcome\"))),\"audit_platforms\":{k:{x:v.get(x,0) for x in (\"challenged\",\"auth_required\",\"deferred_by_platform\")} for k,v in primary.get(\"audit\",{}).get(\"platforms\",{}).items()},\"resume_audit_platforms\":{k:{x:v.get(x,0) for x in (\"challenged\",\"auth_required\",\"deferred_by_platform\")} for k,v in (primary.get(\"resume\") or {}).get(\"audit\",{}).get(\"platforms\",{}).items()}}}; print(json.dumps(artifact,indent=2,ensure_ascii=False))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import hashlib,json; from pathlib import Path; report=json.loads(Path(\\\"out/production-validation/micro-latest.json\\\").read_text()); artifact=json.loads(Path(\\\"verification/CHG-22-r4.json\\\").read_text()); assert artifact[\\\"candidate_branch\\\"]==report[\\\"branch\\\"]==\\\"codex/jobbot-CHG-22-r4\\\"; assert artifact[\\\"candidate_head\\\"]==report[\\\"head\\\"]==\\\"03d3b16c4387f60a8ab2a9161142982290280f66\\\"; assert artifact[\\\"preflight\\\"]==report[\\\"preflight\\\"]; assert artifact[\\\"internal_failures\\\"]==report[\\\"internal_failures\\\"]; assert artifact[\\\"external_blockers\\\"]==report[\\\"external_blockers\\\"]; assert artifact[\\\"validation_database\\\"]==report[\\\"validation_database\\\"]; assert artifact[\\\"PROD_READY\\\"]==report[\\\"PROD_READY\\\"] is False; assert artifact[\\\"validator\\\"][\\\"exit_code\\\"]==1; assert hashlib.sha256(Path(\\\"out/production-validation/micro-latest.json\\\").read_bytes()).hexdigest()==artifact[\\\"validator\\\"][\\\"report_sha256\\\"]; assert artifact[\\\"database_isolation\\\"][\\\"isolated\\\"] is True; assert artifact[\\\"primary_live\\\"][\\\"outcome\\\"]==report[\\\"primary_live\\\"][\\\"outcome\\\"]; assert artifact[\\\"primary_live\\\"][\\\"resume_outcome\\\"]==report[\\\"primary_live\\\"][\\\"resume\\\"][\\\"outcome\\\"]; assert artifact[\\\"primary_live\\\"][\\\"extension_unresponsive\\\"] is False; print(\\\"artifact/report equivalence: PASS\\\"); print(\\\"report sha256:\\\",artifact[\\\"validator\\\"][\\\"report_sha256\\\"]); print(\\\"internal failures:\\\",len(artifact[\\\"internal_failures\\\"])); print(\\\"external blockers:\\\",len(artifact[\\\"external_blockers\\\"])); print(\\\"candidate HEAD:\\\",artifact[\\\"candidate_head\\\"])' && printf '%s\\\\n' '--- diff check ---' && rtk git diff --check && printf '%s\\\\n' '--- tracked diff scope ---' && rtk git status --short --branch && rtk git diff --stat -- verification/CHG-22-r4.json && rtk git diff --name-only\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git add verification/CHG-22-r4.json && rtk git commit -m \\\"chore(verification): record CHG-22 r4 validation\\\" && printf '%s\\\\n' '--- committed state ---' && rtk git status --short --branch && rtk git show --stat --oneline --decorate HEAD && printf '%s\\\\n' '--- committed paths ---' && rtk git show --format= --name-only HEAD && printf '%s\\\\n' '--- refs ---' && rtk git rev-parse HEAD main codex/jobbot-CHG-22-r4 && rtk git rev-parse 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 e50f45db73d654e23e6ff6073c07da223286e935\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git log --format='%H%n%P%n%s%n%b' -2 && printf '%s\\\\n' '--- candidate ancestry check ---' && if rtk git merge-base --is-ancestor e50f45db73d654e23e6ff6073c07da223286e935 HEAD; then printf 'predecessor_in_ancestry=true\\\\n'; else printf 'predecessor_in_ancestry=false\\\\n'; fi && printf '%s\\\\n' '--- tree delta from target base ---' && rtk git diff --name-status 61f4484c3b5159d6a64fd6a3eb88d6be32d39833..HEAD && printf '%s\\\\n' '--- main unchanged ---' && rtk git rev-parse main && printf '%s\\\\n' '--- final status ---' && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --format=fuller --stat --summary 1b2503289aab4bb7fde07ee7809af6acf1434102 && printf '%s\\\\n' '--- base to r1 files ---' && rtk git diff --name-status 61f4484c3b5159d6a64fd6a3eb88d6be32d39833..1b2503289aab4bb7fde07ee7809af6acf1434102 && printf '%s\\\\n' '--- base commit date ---' && rtk git show -s --format='%H %ad %s' --date=iso-strict 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 && rtk git show -s --format='%H %ad %s' --date=iso-strict 1b2503289aab4bb7fde07ee7809af6acf1434102\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git reset --hard e50f45db73d654e23e6ff6073c07da223286e935 && rtk git status --short --branch && rtk git log --oneline --decorate -4 && if rtk git merge-base --is-ancestor 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 HEAD; then printf 'target_base_ancestor=true\\\\n'; else printf 'target_base_ancestor=false\\\\n'; fi\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk python3 -m unittest discover -s tests/integration -p 'test_validator.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python3 -m jobbot validate-production --stage micro'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import hashlib,json; from pathlib import Path; report_path=Path(\\\"out/production-validation/micro-latest.json\\\"); p=json.loads(report_path.read_text()); primary=p[\\\"primary_live\\\"]; print(json.dumps({\\\"branch\\\":p[\\\"branch\\\"],\\\"head\\\":p[\\\"head\\\"],\\\"validation_database\\\":p[\\\"validation_database\\\"],\\\"PROD_READY\\\":p[\\\"PROD_READY\\\"],\\\"report_sha256\\\":hashlib.sha256(report_path.read_bytes()).hexdigest(),\\\"preflight\\\":p[\\\"preflight\\\"],\\\"internal_failures\\\":p[\\\"internal_failures\\\"],\\\"external_blockers\\\":p[\\\"external_blockers\\\"],\\\"primary_live\\\":{\\\"outcome\\\":primary[\\\"outcome\\\"],\\\"resume_outcome\\\":(primary.get(\\\"resume\\\") or {}).get(\\\"outcome\\\"),\\\"terminal_classification\\\":primary.get(\\\"terminal_classification\\\"),\\\"validation_classification\\\":primary.get(\\\"validation_classification\\\"),\\\"extension_build_pass\\\":primary.get(\\\"extension_build_pass\\\"),\\\"extension_unresponsive\\\":any((x or {}).get(\\\"status\\\")==\\\"extension_unresponsive\\\" for x in (primary.get(\\\"outcome\\\"), (primary.get(\\\"resume\\\") or {}).get(\\\"outcome\\\"))),\\\"audit_platforms\\\":{k:{x:v.get(x,0) for x in (\\\"challenged\\\",\\\"auth_required\\\",\\\"deferred_by_platform\\\")} for k,v in primary.get(\\\"audit\\\",{}).get(\\\"platforms\\\",{}).items()},\\\"resume_audit_platforms\\\":{k:{x:v.get(x,0) for x in (\\\"challenged\\\",\\\"auth_required\\\",\\\"deferred_by_platform\\\")} for k,v in (primary.get(\\\"resume\\\") or {}).get(\\\"audit\\\",{}).get(\\\"platforms\\\",{}).items()}}},indent=2,ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import hashlib,json; from pathlib import Path; report_path=Path(\\\"out/production-validation/micro-latest.json\\\"); p=json.loads(report_path.read_text()); primary=p[\\\"primary_live\\\"]; artifact={\\\"request\\\":\\\"CHG-22-r4\\\",\\\"candidate_branch\\\":\\\"codex/jobbot-CHG-22-r4\\\",\\\"candidate_head\\\":p[\\\"head\\\"],\\\"predecessor_candidate\\\":\\\"e50f45db73d654e23e6ff6073c07da223286e935\\\",\\\"target_branch\\\":\\\"main\\\",\\\"target_sha\\\":\\\"61f4484c3b5159d6a64fd6a3eb88d6be32d39833\\\",\\\"validator\\\":{\\\"command\\\":[\\\"python3\\\",\\\"-m\\\",\\\"jobbot\\\",\\\"validate-production\\\",\\\"--stage\\\",\\\"micro\\\"],\\\"effective_environment\\\":{\\\"PYTHONPATH\\\":\\\"src\\\"},\\\"exit_code\\\":1,\\\"report_path\\\":\\\"out/production-validation/micro-latest.json\\\",\\\"report_sha256\\\":hashlib.sha256(report_path.read_bytes()).hexdigest()},\\\"validation_database\\\":p[\\\"validation_database\\\"],\\\"database_isolation\\\":{\\\"production_database\\\":\\\"/Users/haewonkim/.codex-fabric/worktrees/CF-50e0b137cca63545b9e8cdab/data/jobs.sqlite3\\\",\\\"isolated\\\":p[\\\"validation_database\\\"] \"'!= \"/Users/haewonkim/.codex-fabric/worktrees/CF-50e0b137cca63545b9e8cdab/data/jobs.sqlite3\"},\"PROD_READY\":p[\"PROD_READY\"],\"preflight\":p[\"preflight\"],\"internal_failures\":p[\"internal_failures\"],\"external_blockers\":p[\"external_blockers\"],\"primary_live\":{\"outcome\":primary[\"outcome\"],\"resume_outcome\":(primary.get(\"resume\") or {}).get(\"outcome\"),\"terminal_classification\":primary.get(\"terminal_classification\"),\"validation_classification\":primary.get(\"validation_classification\"),\"extension_build_pass\":primary.get(\"extension_build_pass\"),\"extension_unresponsive\":any((x or {}).get(\"status\")==\"extension_unresponsive\" for x in (primary.get(\"outcome\"), (primary.get(\"resume\") or {}).get(\"outcome\"))),\"audit_platforms\":{k:{x:v.get(x,0) for x in (\"challenged\",\"auth_required\",\"deferred_by_platform\")} for k,v in primary.get(\"audit\",{}).get(\"platforms\",{}).items()},\"resume_audit_platforms\":{k:{x:v.get(x,0) for x in (\"challenged\",\"auth_required\",\"deferred_by_platform\")} for k,v in (primary.get(\"resume\") or {}).get(\"audit\",{}).get(\"platforms\",{}).items()}}}; print(json.dumps(artifact,indent=2,ensure_ascii=False))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import hashlib,json; from pathlib import Path; report=json.loads(Path(\\\"out/production-validation/micro-latest.json\\\").read_text()); artifact=json.loads(Path(\\\"verification/CHG-22-r4.json\\\").read_text()); assert artifact[\\\"candidate_branch\\\"]==report[\\\"branch\\\"]==\\\"codex/jobbot-CHG-22-r4\\\"; assert artifact[\\\"candidate_head\\\"]==report[\\\"head\\\"]==\\\"e50f45db73d654e23e6ff6073c07da223286e935\\\"; assert artifact[\\\"predecessor_candidate\\\"]==artifact[\\\"candidate_head\\\"]; assert artifact[\\\"target_branch\\\"]==\\\"main\\\"; assert artifact[\\\"target_sha\\\"]==\\\"61f4484c3b5159d6a64fd6a3eb88d6be32d39833\\\"; assert artifact[\\\"preflight\\\"]==report[\\\"preflight\\\"]; assert artifact[\\\"internal_failures\\\"]==report[\\\"internal_failures\\\"]; assert artifact[\\\"external_blockers\\\"]==report[\\\"external_blockers\\\"]; assert artifact[\\\"validation_database\\\"]==report[\\\"validation_database\\\"]; assert artifact[\\\"PROD_READY\\\"] is False; assert artifact[\\\"validator\\\"][\\\"exit_code\\\"]==1; assert artifact[\\\"validator\\\"][\\\"report_sha256\\\"]==hashlib.sha256(Path(\\\"out/production-validation/micro-latest.json\\\").read_bytes()).hexdigest(); assert artifact[\\\"database_isolation\\\"][\\\"isolated\\\"] is True; assert artifact[\\\"primary_live\\\"][\\\"outcome\\\"]==report[\\\"primary_live\\\"][\\\"outcome\\\"]; assert artifact[\\\"primary_live\\\"][\\\"resume_outcome\\\"]==report[\\\"primary_live\\\"][\\\"resume\\\"][\\\"outcome\\\"]; print(\\\"artifact/report equivalence: PASS\\\"); print(\\\"report sha256:\\\",artifact[\\\"validator\\\"][\\\"report_sha256\\\"]); print(\\\"validation database:\\\",artifact[\\\"validation_database\\\"]); print(\\\"internal failures:\\\",artifact[\\\"internal_failures\\\"]); print(\\\"external blockers:\\\",artifact[\\\"external_blockers\\\"]); print(\\\"candidate HEAD:\\\",artifact[\\\"candidate_head\\\"])' && printf '%s\\\\n' '--- ancestry and scope ---' && if rtk git merge-base --is-ancestor 61f4484c3b5159d6a64fd6a3eb88d6be32d39833 HEAD; then printf 'target_base_ancestor=true\\\\n'; fi && if rtk git merge-base --is-ancestor e50f45db73d654e23e6ff6073c07da223286e935 HEAD; then printf 'predecessor_in_ancestry=true\\\\n'; fi && rtk git status --short --branch && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git add verification/CHG-22-r4.json && rtk git commit -m \\\"chore(verification): record CHG-22 r4 validation\\\" && printf '%s\\\\n' '--- final commit ---' && rtk git show --stat --oneline --decorate HEAD && printf '%s\\\\n' '--- final state ---' && rtk git status --short --branch && printf '%s\\\\n' '--- refs ---' && rtk git rev-parse HEAD main codex/jobbot-CHG-22-r4 && printf '%s\\\\n' '--- base delta ---' && rtk git diff --name-status 61f4484c3b5159d6a64fd6a3eb88d6be32d39833..HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import hashlib,json; from pathlib import Path; report=json.loads(Path(\\\"out/production-validation/micro-latest.json\\\").read_text()); artifact=json.loads(Path(\\\"verification/CHG-22-r4.json\\\").read_text()); assert artifact[\\\"candidate_head\\\"]==\\\"e50f45db73d654e23e6ff6073c07da223286e935\\\"; assert artifact[\\\"preflight\\\"]==report[\\\"preflight\\\"]; assert artifact[\\\"internal_failures\\\"]==report[\\\"internal_failures\\\"]; assert artifact[\\\"external_blockers\\\"]==report[\\\"external_blockers\\\"]; assert artifact[\\\"validator\\\"][\\\"report_sha256\\\"]==hashlib.sha256(Path(\\\"out/production-validation/micro-latest.json\\\").read_bytes()).hexdigest(); print(\\\"post-commit evidence check: PASS\\\"); print(\\\"sha256:\\\",artifact[\\\"validator\\\"][\\\"report_sha256\\\"]); print(\\\"PROD_READY:\\\",artifact[\\\"PROD_READY\\\"]); print(\\\"exit_code:\\\",artifact[\\\"validator\\\"][\\\"exit_code\\\"])' && printf '%s\\\\n' '--- only artifact commit ---' && rtk git diff-tree --no-commit-id --name-status -r HEAD && printf '%s\\\\n' '--- exact candidate commit files ---' && rtk git diff-tree --no-commit-id --name-status -r e50f45db73d654e23e6ff6073c07da223286e935 && printf '%s\\\\n' '--- final refs/status ---' && rtk git rev-parse main HEAD && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 80,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 92.87,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 2402816,
+      "fresh_input_tokens": 184557,
+      "input_tokens": 2587373,
+      "non_reasoning_output_tokens": 14674,
+      "output_tokens": 29845,
+      "reasoning_output_tokens": 15171,
+      "total_processed_tokens": 2617218
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "a02130bac2819b5c3ef22fd6da9106ad9c7254f3",
+      "subject": "chore(verification): record CHG-22 r4 validation"
+    },
+    {
+      "sha": "e50f45db73d654e23e6ff6073c07da223286e935",
+      "subject": "Fix production validator candidate branch gate"
+    },
+    {
+      "sha": "1b2503289aab4bb7fde07ee7809af6acf1434102",
+      "subject": "Implement CHG-22 baseline compliance"
+    }
+  ],
+  "diff": {
+    "additions": 620,
+    "changed_files": 19,
+    "commit_count": 3,
+    "deletions": 36
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 3,
+    "items": [
+      {
+        "bytes": 1487,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "b161d74e9af3e1b7ed355d4777d767f15b6af6fd57f890f5671a1b1432aaeacb"
+      },
+      {
+        "bytes": 1065,
+        "path": "docs/SEARCH_PLAN.md",
+        "sha256": "77ba6a4c19ad9c8eb0620c2ddadabe4692d418df74e6e7ff3a0d8e93927ede23"
+      },
+      {
+        "bytes": 17190,
+        "path": "verification/CHG-22-r4.json",
+        "sha256": "020d8923d9bd8671f06441c54baae50084928f96a25e5b46c020397c3ec7f590"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.2",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.2",
+  "failure_class": null,
+  "finished_at": "2026-09-15T03:33:29Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "61f4484c3b5159d6a64fd6a3eb88d6be32d39833",
+    "branch": "codex/jobbot-CHG-22-r4",
+    "head_sha": "a02130bac2819b5c3ef22fd6da9106ad9c7254f3",
+    "remote_exact_head": true,
+    "remote_head_sha": "a02130bac2819b5c3ef22fd6da9106ad9c7254f3",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "61f4484c3b5159d6a64fd6a3eb88d6be32d39833",
+    "work_branch": "codex/jobbot-CHG-22-r4",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-50e0b137cca63545b9e8cdab",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-22-r4",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-22-r4"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.2",
+    "policy_sha256": "3778fba0755dd2f6b00268f73b7a589f93317203cc0603df2feff4e6d9c759f6",
+    "registry_sha256": "17d7db01a654a693b57af2b6fce2f676b1f883ea97564a690894b5f96df49aaa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-22-r4",
+  "schema_version": 1,
+  "started_at": "2026-09-15T03:16:17Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1032,
+    "queue_seconds": 2062,
+    "total_seconds": 3094
+  },
+  "transport": {
+    "bytes": 2428,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2148,
+    "prompt_sha256": "2dff91755cfe339b3f2dcf13ab301bc437f82c3ffda0f29c0b221a51e8fdc845",
+    "sha256": "50e0b137cca63545b9e8cdab3c1e8d6aa027a8146dcdccea9dcb53bb83519247"
+  }
+}
