@@ -1,0 +1,1582 @@
+{
+  "schema_version": 1,
+  "request": "CHG-22-r6",
+  "operation": "VERIFY",
+  "candidate_branch": "codex/jobbot-CHG-22-r6",
+  "code_candidate": "7319ea2ef391795e30cdccba00b9ccce237f82dc",
+  "predecessor_candidate": "7319ea2ef391795e30cdccba00b9ccce237f82dc",
+  "fabric_verification_branch_head_before_evidence_commit": "7319ea2ef391795e30cdccba00b9ccce237f82dc",
+  "fabric_verification_branch_head_capture": "pre-verification-artifact/evidence-publication candidate HEAD",
+  "target_branch": "main",
+  "target_sha": "61f4484c3b5159d6a64fd6a3eb88d6be32d39833",
+  "ancestry": {
+    "method": "fast-forward",
+    "base": "61f4484c3b5159d6a64fd6a3eb88d6be32d39833",
+    "carried_forward_exact_candidate": true,
+    "ancestry_preserved": true,
+    "commits_between_target_and_candidate": [
+      "1b2503289aab4bb7fde07ee7809af6acf1434102",
+      "e50f45db73d654e23e6ff6073c07da223286e935",
+      "a02130bac2819b5c3ef22fd6da9106ad9c7254f3",
+      "7319ea2ef391795e30cdccba00b9ccce237f82dc"
+    ]
+  },
+  "repository_extension_build": {
+    "source": "extension/manifest.json",
+    "field": "version_name",
+    "expected": "3.2.2-prod-ready.672cf88",
+    "repository_source_consistent": true
+  },
+  "focused_tests": [
+    {
+      "command": "PYTHONPATH=src python3 -m unittest tests.integration.test_extension_bridge tests.integration.test_validator",
+      "exit_code": 0,
+      "tests_run": 20,
+      "result": "OK",
+      "coverage_relevance": [
+        "manifest-derived extension build identity",
+        "stale extension identity rejection",
+        "runtime identity derivation",
+        "validator candidate-branch policy"
+      ]
+    }
+  ],
+  "validator": {
+    "command": "PYTHONPATH=src python3 -m jobbot validate-production --stage micro",
+    "argv": [
+      "python3",
+      "-m",
+      "jobbot",
+      "validate-production",
+      "--stage",
+      "micro"
+    ],
+    "effective_environment": {
+      "PYTHONPATH": "src"
+    },
+    "exit_code": 1,
+    "report_path": "out/production-validation/micro-latest.json",
+    "report_sha256": "9abf6621274f97a76f5aacfd0bab95abb7f84dd1d4bf2175fa0ed933f3a3f72e"
+  },
+  "validation_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3",
+  "database_isolation": {
+    "validation_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3",
+    "production_database": "data/jobs.sqlite3",
+    "validation_database_resolved": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3",
+    "production_database_resolved": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/jobs.sqlite3",
+    "resolved_paths_differ": true,
+    "same_file": false,
+    "proof": "Validator report names a timestamped validation_*.sqlite3 path; it is distinct from data/jobs.sqlite3."
+  },
+  "extension_build_observations": {
+    "expected_build": "3.2.2-prod-ready.672cf88",
+    "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3",
+    "query": "SELECT event_type, message, payload_json FROM browser_events WHERE browser_run_id=1 AND event_type='extension_build' ORDER BY event_id",
+    "observed_event_count": 0,
+    "observed_events": [],
+    "freshness_classification": "No extension_build event, message, or payload was observed because the loaded extension did not start the validation run."
+  },
+  "freshness_classification": {
+    "classification": "already-loaded stale Chrome extension",
+    "mismatch_due_to_stale_loaded_extension": true,
+    "repository_source_inconsistency": false,
+    "repository_manifest_build": "3.2.2-prod-ready.672cf88",
+    "loaded_extension_manifest_path": "/Users/haewonkim/Library/Mobile Documents/com~apple~CloudDocs/gpt/jobbot/extension/manifest.json",
+    "loaded_extension_build": "3.2.3-static-hardening.4",
+    "loaded_extension_path": "/Users/haewonkim/Library/Mobile Documents/com~apple~CloudDocs/gpt/jobbot/extension",
+    "loaded_extension_profile": "/Users/haewonkim/Library/Application Support/Google/Chrome/Default",
+    "rationale": "Chrome's registered unpacked extension points outside this verification worktree and reports a different manifest version_name. The repository manifest, Python derivation, extension runtime derivation, validator expectation, and focused tests agree."
+  },
+  "preflight": {
+    "ok": true,
+    "git": {
+      "branch": "codex/jobbot-CHG-22-r6",
+      "head": "7319ea2ef391795e30cdccba00b9ccce237f82dc"
+    },
+    "checks": [
+      {
+        "name": "candidate branch",
+        "ok": true,
+        "detail": "codex/jobbot-CHG-22-r6"
+      },
+      {
+        "name": "normal Chrome",
+        "ok": true,
+        "detail": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      },
+      {
+        "name": "current unpacked extension",
+        "ok": true,
+        "detail": []
+      },
+      {
+        "name": "isolated database",
+        "ok": true,
+        "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3"
+      },
+      {
+        "name": "doctor",
+        "ok": true,
+        "detail": [
+          {
+            "name": "Python",
+            "ok": true,
+            "detail": "3.11.7"
+          },
+          {
+            "name": "Configuration",
+            "ok": true,
+            "detail": "strategy 3.2.0; candidate Elizabeth Kim-Ortiz"
+          },
+          {
+            "name": "Database migration",
+            "ok": true,
+            "detail": "applied=(); backup=not needed"
+          },
+          {
+            "name": "Migrations current",
+            "ok": true,
+            "detail": "(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"
+          },
+          {
+            "name": "Extension manifest",
+            "ok": true,
+            "detail": "3.2.1"
+          },
+          {
+            "name": "Extension ID",
+            "ok": true,
+            "detail": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+          },
+          {
+            "name": "Loopback bridge RPC",
+            "ok": true,
+            "detail": "token auth and unauthorized rejection"
+          },
+          {
+            "name": "Writable data",
+            "ok": true,
+            "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data"
+          },
+          {
+            "name": "Writable out",
+            "ok": true,
+            "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/out"
+          },
+          {
+            "name": "Writable logs",
+            "ok": true,
+            "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/logs"
+          },
+          {
+            "name": "Normal Google Chrome",
+            "ok": true,
+            "detail": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+          },
+          {
+            "name": "Search plan",
+            "ok": true,
+            "detail": "fast=315 deep=417; production caps=none"
+          },
+          {
+            "name": "Scoring regressions",
+            "ok": true,
+            "detail": "boundaries, role family, remote precedence"
+          },
+          {
+            "name": "Exports",
+            "ok": true,
+            "detail": "13 artifacts"
+          },
+          {
+            "name": "Resume registry",
+            "ok": true,
+            "detail": "0/4 private files present; missing files are optional and never packaged"
+          }
+        ]
+      },
+      {
+        "name": "compileall",
+        "ok": true,
+        "detail": {
+          "command": [
+            "/opt/anaconda3/bin/python3",
+            "-m",
+            "compileall",
+            "-q",
+            "src"
+          ],
+          "returncode": 0,
+          "output": ""
+        }
+      },
+      {
+        "name": "node syntax",
+        "ok": true,
+        "detail": [
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/common.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/dashboard.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/glassdoor.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/indeed.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/linkedin.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/selectors.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/service_worker.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/src/jobbot/web/dashboard.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          }
+        ]
+      },
+      {
+        "name": "uncapped staged/deep search plan",
+        "ok": true,
+        "detail": {
+          "staged": 834,
+          "deep": 417
+        }
+      },
+      {
+        "name": "deterministic suite",
+        "ok": true,
+        "detail": {
+          "command": [
+            "/opt/anaconda3/bin/python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-v"
+          ],
+          "returncode": 0,
+          "output": "c_phases) ... ok\ntest_validator_refuses_production_database (integration.test_validator.ValidatorIntegrationTests.test_validator_refuses_production_database) ... ok\ntest_stop_latch_blocks_due_work_until_explicit_restart (integration.test_watch.WatchIntegrationTests.test_stop_latch_blocks_due_work_until_explicit_restart) ... ok\ntest_stopped_watcher_cannot_reawaken_when_time_becomes_due (integration.test_watch.WatchIntegrationTests.test_stopped_watcher_cannot_reawaken_when_time_becomes_due) ... ok\ntest_boundary_and_requirement_parser_regressions (regression.test_scoring.ScoringRegressionTests.test_boundary_and_requirement_parser_regressions) ... ok\ntest_complete_trusted_primary_detail_can_enter_qualified_queue (regression.test_scoring.ScoringRegressionTests.test_complete_trusted_primary_detail_can_enter_qualified_queue) ... ok\ntest_fuzzy_title_and_section_heading_precision (regression.test_scoring.ScoringRegressionTests.test_fuzzy_title_and_section_heading_precision) ... ok\ntest_growth_roles_do_not_reward_job_owned_technical_skills (regression.test_scoring.ScoringRegressionTests.test_growth_roles_do_not_reward_job_owned_technical_skills) ... ok\ntest_negative_occupation_families (regression.test_scoring.ScoringRegressionTests.test_negative_occupation_families) ... ok\ntest_positive_role_families (regression.test_scoring.ScoringRegressionTests.test_positive_role_families) ... ok\ntest_remote_clinical_management_and_employment_gates (regression.test_scoring.ScoringRegressionTests.test_remote_clinical_management_and_employment_gates) ... ok\ntest_auth_challenge_exhaustion_and_progress_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_auth_challenge_exhaustion_and_progress_fixtures) ... ok\ntest_closed_and_updated_detail_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_closed_and_updated_detail_fixtures) ... ok\ntest_jsonld_details_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_jsonld_details_for_all_primary_platforms) ... ok\ntest_search_cards_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_search_cards_for_all_primary_platforms) ... ok\ntest_explicit_end_and_age_boundary_are_exhausted (unit.test_crawl_state.ExhaustionTrackerTests.test_explicit_end_and_age_boundary_are_exhausted) ... ok\ntest_safety_guards_never_claim_exhaustion (unit.test_crawl_state.ExhaustionTrackerTests.test_safety_guards_never_claim_exhaustion) ... ok\ntest_authoritative_primary_urls_and_query_normalization (unit.test_strategy.StrategyTests.test_authoritative_primary_urls_and_query_normalization) ... ok\ntest_exact_portfolio_and_taxonomy_counts (unit.test_strategy.StrategyTests.test_exact_portfolio_and_taxonomy_counts) ... ok\ntest_fallback_is_not_actionable_until_explicitly_activated (unit.test_strategy.StrategyTests.test_fallback_is_not_actionable_until_explicitly_activated) ... ok\ntest_fast_execution_order_is_explicit_fastest_door (unit.test_strategy.StrategyTests.test_fast_execution_order_is_explicit_fastest_door) ... ok\ntest_plan_counts_and_no_production_caps (unit.test_strategy.StrategyTests.test_plan_counts_and_no_production_caps) ... ok\ntest_same_query_different_window_remains_distinct (unit.test_strategy.StrategyTests.test_same_query_different_window_remains_distinct) ... ok\ntest_staged_plan_covers_recent_and_deep_core_universe (unit.test_strategy.StrategyTests.test_staged_plan_covers_recent_and_deep_core_universe) ... ok\ntest_strategy_validator_rejects_allocation_drift (unit.test_strategy.StrategyTests.test_strategy_validator_rejects_allocation_drift) ... ok\ntest_fake_clock_persists_cadence_and_explicit_states (unit.test_watch.WatchSchedulerTests.test_fake_clock_persists_cadence_and_explicit_states) ... ok\ntest_watch_schema_is_isolated_from_production_path (unit.test_watch.WatchSchedulerTests.test_watch_schema_is_isolated_from_production_path) ... ok\n\n----------------------------------------------------------------------\nRan 75 tests in 5.495s\n\nOK\n"
+        }
+      }
+    ],
+    "deterministic": {
+      "local_tests": {
+        "command": [
+          "/opt/anaconda3/bin/python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tests",
+          "-v"
+        ],
+        "returncode": 0,
+        "output": "c_phases) ... ok\ntest_validator_refuses_production_database (integration.test_validator.ValidatorIntegrationTests.test_validator_refuses_production_database) ... ok\ntest_stop_latch_blocks_due_work_until_explicit_restart (integration.test_watch.WatchIntegrationTests.test_stop_latch_blocks_due_work_until_explicit_restart) ... ok\ntest_stopped_watcher_cannot_reawaken_when_time_becomes_due (integration.test_watch.WatchIntegrationTests.test_stopped_watcher_cannot_reawaken_when_time_becomes_due) ... ok\ntest_boundary_and_requirement_parser_regressions (regression.test_scoring.ScoringRegressionTests.test_boundary_and_requirement_parser_regressions) ... ok\ntest_complete_trusted_primary_detail_can_enter_qualified_queue (regression.test_scoring.ScoringRegressionTests.test_complete_trusted_primary_detail_can_enter_qualified_queue) ... ok\ntest_fuzzy_title_and_section_heading_precision (regression.test_scoring.ScoringRegressionTests.test_fuzzy_title_and_section_heading_precision) ... ok\ntest_growth_roles_do_not_reward_job_owned_technical_skills (regression.test_scoring.ScoringRegressionTests.test_growth_roles_do_not_reward_job_owned_technical_skills) ... ok\ntest_negative_occupation_families (regression.test_scoring.ScoringRegressionTests.test_negative_occupation_families) ... ok\ntest_positive_role_families (regression.test_scoring.ScoringRegressionTests.test_positive_role_families) ... ok\ntest_remote_clinical_management_and_employment_gates (regression.test_scoring.ScoringRegressionTests.test_remote_clinical_management_and_employment_gates) ... ok\ntest_auth_challenge_exhaustion_and_progress_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_auth_challenge_exhaustion_and_progress_fixtures) ... ok\ntest_closed_and_updated_detail_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_closed_and_updated_detail_fixtures) ... ok\ntest_jsonld_details_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_jsonld_details_for_all_primary_platforms) ... ok\ntest_search_cards_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_search_cards_for_all_primary_platforms) ... ok\ntest_explicit_end_and_age_boundary_are_exhausted (unit.test_crawl_state.ExhaustionTrackerTests.test_explicit_end_and_age_boundary_are_exhausted) ... ok\ntest_safety_guards_never_claim_exhaustion (unit.test_crawl_state.ExhaustionTrackerTests.test_safety_guards_never_claim_exhaustion) ... ok\ntest_authoritative_primary_urls_and_query_normalization (unit.test_strategy.StrategyTests.test_authoritative_primary_urls_and_query_normalization) ... ok\ntest_exact_portfolio_and_taxonomy_counts (unit.test_strategy.StrategyTests.test_exact_portfolio_and_taxonomy_counts) ... ok\ntest_fallback_is_not_actionable_until_explicitly_activated (unit.test_strategy.StrategyTests.test_fallback_is_not_actionable_until_explicitly_activated) ... ok\ntest_fast_execution_order_is_explicit_fastest_door (unit.test_strategy.StrategyTests.test_fast_execution_order_is_explicit_fastest_door) ... ok\ntest_plan_counts_and_no_production_caps (unit.test_strategy.StrategyTests.test_plan_counts_and_no_production_caps) ... ok\ntest_same_query_different_window_remains_distinct (unit.test_strategy.StrategyTests.test_same_query_different_window_remains_distinct) ... ok\ntest_staged_plan_covers_recent_and_deep_core_universe (unit.test_strategy.StrategyTests.test_staged_plan_covers_recent_and_deep_core_universe) ... ok\ntest_strategy_validator_rejects_allocation_drift (unit.test_strategy.StrategyTests.test_strategy_validator_rejects_allocation_drift) ... ok\ntest_fake_clock_persists_cadence_and_explicit_states (unit.test_watch.WatchSchedulerTests.test_fake_clock_persists_cadence_and_explicit_states) ... ok\ntest_watch_schema_is_isolated_from_production_path (unit.test_watch.WatchSchedulerTests.test_watch_schema_is_isolated_from_production_path) ... ok\n\n----------------------------------------------------------------------\nRan 75 tests in 5.495s\n\nOK\n"
+      },
+      "scope_fixtures": true,
+      "platform_isolation": true,
+      "watch_cadence": true,
+      "watch_stop_latch": true
+    }
+  },
+  "PROD_READY": false,
+  "internal_failures": [
+    "Chrome extension did not start the validation run within 45 seconds; reload the unpacked extension in chrome://extensions and rerun validator",
+    "loaded extension did not report build 3.2.2-prod-ready.672cf88; reload the unpacked extension in chrome://extensions and rerun validator",
+    "primary live micro-validation failed"
+  ],
+  "external_blockers": [],
+  "primary_live": {
+    "run_id": 1,
+    "outcome": {
+      "run_id": 1,
+      "status": "extension_unresponsive",
+      "bridge_restarts": 1
+    },
+    "duration_seconds": 45.5,
+    "terminal_classification": "STOPPED",
+    "metrics": {
+      "extracted": 0,
+      "persistence_attempted": 0,
+      "persisted": 0,
+      "persistence_failed": 0,
+      "duplicates": 0,
+      "detail_pending": 0,
+      "detail_running": 0,
+      "detail_complete": 0,
+      "detail_retryable": 0,
+      "detail_failed": 0,
+      "detail_external_blocked": 0,
+      "canonical_jobs": 0,
+      "actionable": 0,
+      "apply_now": 0,
+      "apply_volume": 0,
+      "out_of_scope": 0,
+      "unexplained": 0,
+      "task_states": {
+        "queued": 3,
+        "running": 0,
+        "exhausted": 0,
+        "incomplete": 0,
+        "challenged": 0,
+        "auth_required": 0,
+        "deferred_by_platform": 0,
+        "failed": 0,
+        "paused": 0,
+        "stopped": 0
+      },
+      "reconciliation": {
+        "ok": true,
+        "failures": []
+      },
+      "integrity": "ok"
+    },
+    "audit": {
+      "current_run_id": 1,
+      "terminal_classification": "STOPPED",
+      "platforms": {
+        "linkedin": {
+          "queued": 1,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 0,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0,
+          "failed": 0,
+          "paused": 0,
+          "stopped": 0,
+          "planned": 1,
+          "results_encountered": 0,
+          "details_read": 0,
+          "cards_extracted": 0,
+          "cards_persistence_attempted": 0,
+          "cards_persisted": 0,
+          "cards_persistence_failed": 0,
+          "duplicate_sightings": 0,
+          "unexplained": 0,
+          "phases": {
+            "A_FASTEST_DOOR_RECENT": 1
+          }
+        },
+        "indeed": {
+          "queued": 1,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 0,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0,
+          "failed": 0,
+          "paused": 0,
+          "stopped": 0,
+          "planned": 1,
+          "results_encountered": 0,
+          "details_read": 0,
+          "cards_extracted": 0,
+          "cards_persistence_attempted": 0,
+          "cards_persisted": 0,
+          "cards_persistence_failed": 0,
+          "duplicate_sightings": 0,
+          "unexplained": 0,
+          "phases": {
+            "A_FASTEST_DOOR_RECENT": 1
+          }
+        },
+        "glassdoor": {
+          "queued": 1,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 0,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0,
+          "failed": 0,
+          "paused": 0,
+          "stopped": 0,
+          "planned": 1,
+          "results_encountered": 0,
+          "details_read": 0,
+          "cards_extracted": 0,
+          "cards_persistence_attempted": 0,
+          "cards_persisted": 0,
+          "cards_persistence_failed": 0,
+          "duplicate_sightings": 0,
+          "unexplained": 0,
+          "phases": {
+            "A_FASTEST_DOOR_RECENT": 1
+          }
+        }
+      },
+      "global": {
+        "sightings": 0,
+        "canonical_jobs": 0,
+        "detail_pending": 0,
+        "detail_running": 0,
+        "detail_complete": 0,
+        "detail_retryable": 0,
+        "detail_failed": 0,
+        "detail_external_blocked": 0,
+        "relevant": 0,
+        "qualified": 0,
+        "apply_now": 0,
+        "apply_volume": 0,
+        "stretch": 0,
+        "out_of_scope": 0,
+        "description_complete": 0,
+        "description_missing": 0,
+        "description_partial": 0,
+        "applied": 0
+      },
+      "cumulative": {
+        "global": {
+          "sightings": 0,
+          "canonical_jobs": 0,
+          "detail_pending": 0,
+          "detail_running": 0,
+          "detail_complete": 0,
+          "detail_retryable": 0,
+          "detail_failed": 0,
+          "detail_external_blocked": 0,
+          "relevant": 0,
+          "qualified": 0,
+          "apply_now": 0,
+          "apply_volume": 0,
+          "stretch": 0,
+          "out_of_scope": 0,
+          "description_complete": 0,
+          "description_missing": 0,
+          "description_partial": 0,
+          "applied": 0
+        },
+        "platforms": {
+          "linkedin": {
+            "queued": 1,
+            "running": 0,
+            "exhausted": 0,
+            "incomplete": 0,
+            "challenged": 0,
+            "auth_required": 0,
+            "deferred_by_platform": 0,
+            "failed": 0,
+            "paused": 0,
+            "stopped": 0,
+            "planned": 1,
+            "results_encountered": 0,
+            "details_read": 0,
+            "cards_extracted": 0,
+            "cards_persistence_attempted": 0,
+            "cards_persisted": 0,
+            "cards_persistence_failed": 0,
+            "duplicate_sightings": 0,
+            "unexplained": 0,
+            "phases": {
+              "A_FASTEST_DOOR_RECENT": 1
+            }
+          },
+          "indeed": {
+            "queued": 1,
+            "running": 0,
+            "exhausted": 0,
+            "incomplete": 0,
+            "challenged": 0,
+            "auth_required": 0,
+            "deferred_by_platform": 0,
+            "failed": 0,
+            "paused": 0,
+            "stopped": 0,
+            "planned": 1,
+            "results_encountered": 0,
+            "details_read": 0,
+            "cards_extracted": 0,
+            "cards_persistence_attempted": 0,
+            "cards_persisted": 0,
+            "cards_persistence_failed": 0,
+            "duplicate_sightings": 0,
+            "unexplained": 0,
+            "phases": {
+              "A_FASTEST_DOOR_RECENT": 1
+            }
+          },
+          "glassdoor": {
+            "queued": 1,
+            "running": 0,
+            "exhausted": 0,
+            "incomplete": 0,
+            "challenged": 0,
+            "auth_required": 0,
+            "deferred_by_platform": 0,
+            "failed": 0,
+            "paused": 0,
+            "stopped": 0,
+            "planned": 1,
+            "results_encountered": 0,
+            "details_read": 0,
+            "cards_extracted": 0,
+            "cards_persistence_attempted": 0,
+            "cards_persisted": 0,
+            "cards_persistence_failed": 0,
+            "duplicate_sightings": 0,
+            "unexplained": 0,
+            "phases": {
+              "A_FASTEST_DOOR_RECENT": 1
+            }
+          }
+        }
+      },
+      "reconciliation": {
+        "ok": true,
+        "failures": []
+      },
+      "diagnosis": [
+        "Search coverage is internally incomplete: planned tasks remain non-terminal."
+      ],
+      "integrity": "ok"
+    },
+    "validation_metrics": {
+      "extracted": 0,
+      "persistence_attempted": 0,
+      "persisted": 0,
+      "persistence_failed": 0,
+      "duplicates": 0,
+      "detail_pending": 0,
+      "detail_running": 0,
+      "detail_complete": 0,
+      "detail_retryable": 0,
+      "detail_failed": 0,
+      "detail_external_blocked": 0,
+      "canonical_jobs": 0,
+      "actionable": 0,
+      "apply_now": 0,
+      "apply_volume": 0,
+      "out_of_scope": 0,
+      "unexplained": 0,
+      "task_states": {
+        "queued": 0,
+        "running": 0,
+        "exhausted": 0,
+        "incomplete": 0,
+        "challenged": 0,
+        "auth_required": 0,
+        "deferred_by_platform": 0,
+        "failed": 0,
+        "paused": 0,
+        "stopped": 0
+      },
+      "reconciliation": {
+        "ok": true,
+        "attempted_tasks": 0,
+        "task_failures": 0
+      },
+      "integrity": "ok",
+      "attempted_tasks": 0,
+      "progress_tasks": 0,
+      "untouched_queued": 3,
+      "untouched_exhausted": 0,
+      "attempted_false_exhausted": 0,
+      "attempted_failed": 0,
+      "attempted_incomplete": 0,
+      "attempted_running": 0,
+      "attempted_stopped": 0,
+      "canonical_jobs_attempted": 0
+    },
+    "validation_cutoff": false,
+    "validation_classification": "STOPPED",
+    "scope": {
+      "linkedin": {
+        "candidate_links_total": 0,
+        "candidate_links_in_scope": 0,
+        "candidate_links_outside_scope": 0,
+        "persisted_in_scope": 0,
+        "persisted_outside_scope": 0,
+        "contamination_persisted": 0,
+        "scope_found_events": 0,
+        "scope_missing_events": 0,
+        "attempted_pages": 0,
+        "outside_only_ids": [],
+        "outside_only_urls": []
+      },
+      "indeed": {
+        "candidate_links_total": 0,
+        "candidate_links_in_scope": 0,
+        "candidate_links_outside_scope": 0,
+        "persisted_in_scope": 0,
+        "persisted_outside_scope": 0,
+        "contamination_persisted": 0,
+        "scope_found_events": 0,
+        "scope_missing_events": 0,
+        "attempted_pages": 0,
+        "outside_only_ids": [],
+        "outside_only_urls": []
+      },
+      "glassdoor": {
+        "candidate_links_total": 0,
+        "candidate_links_in_scope": 0,
+        "candidate_links_outside_scope": 0,
+        "persisted_in_scope": 0,
+        "persisted_outside_scope": 0,
+        "contamination_persisted": 0,
+        "scope_found_events": 0,
+        "scope_missing_events": 0,
+        "attempted_pages": 0,
+        "outside_only_ids": [],
+        "outside_only_urls": []
+      }
+    },
+    "extension_build_pass": false,
+    "bridge_restart_pass": true,
+    "resume": null,
+    "stop_resume_pass": false,
+    "dashboard": {
+      "identity": {
+        "jobbot_version": "3.2.1",
+        "workspace_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4",
+        "resolved_database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3",
+        "database_identity": "aa46a8b707202929",
+        "pid": 37939
+      },
+      "identity_ok": true,
+      "summary": {
+        "total": 0,
+        "active": 0,
+        "updated": 0,
+        "descriptions_complete": 0,
+        "remote_confirmed": 0,
+        "remote_review": 0,
+        "remote_rejected": 0,
+        "qualified": 0,
+        "apply_now": 0,
+        "apply_volume": 0,
+        "stretch": 0,
+        "reservoir": 0,
+        "applied": 0,
+        "screens": 0,
+        "interviews": 0,
+        "finals": 0,
+        "offers": 0,
+        "applications": 0,
+        "discoveries": 0,
+        "detail_pending": 0,
+        "details_complete": 0
+      },
+      "run": {
+        "run": {
+          "browser_run_id": 1,
+          "version": "3.2.1",
+          "mode": "validation_micro",
+          "platform": "linkedin,indeed,glassdoor",
+          "status": "stopped",
+          "created_at": "2026-09-15T12:46:59+00:00",
+          "started_at": null,
+          "completed_at": "2026-09-15T12:47:44+00:00",
+          "stop_requested": 1,
+          "auth_status": "unchecked",
+          "jobs_new": 0,
+          "jobs_updated": 0,
+          "jobs_unchanged": 0,
+          "jobs_recorded": 0,
+          "tasks_completed": 0,
+          "tasks_challenged": 0,
+          "tasks_incomplete": 0,
+          "current_task_id": null,
+          "last_progress_at": "2026-09-15T12:47:44+00:00",
+          "last_error": "manual emergency stop",
+          "stop_after_current": 0,
+          "notes": "Bounded <=5 minute production proof; runtime bounds the validation; production retrieval remains uncapped. stop requested"
+        },
+        "current_task": null,
+        "platforms": [
+          {
+            "browser_run_id": 1,
+            "platform": "linkedin",
+            "auth_status": "unchecked",
+            "auth_reason": "",
+            "auth_checked_at": null,
+            "tasks_total": 1,
+            "tasks_completed": 0,
+            "tasks_challenged": 0,
+            "tasks_failed": 0,
+            "tasks_incomplete": 0,
+            "jobs_recorded": 0,
+            "cooldown_until": null,
+            "running": 0,
+            "deferred": 0,
+            "discoveries": 0,
+            "details_complete": 0,
+            "cards_extracted": 0,
+            "cards_persisted": 0,
+            "cards_failed": 0,
+            "duplicate_cards": 0
+          },
+          {
+            "browser_run_id": 1,
+            "platform": "indeed",
+            "auth_status": "unchecked",
+            "auth_reason": "",
+            "auth_checked_at": null,
+            "tasks_total": 1,
+            "tasks_completed": 0,
+            "tasks_challenged": 0,
+            "tasks_failed": 0,
+            "tasks_incomplete": 0,
+            "jobs_recorded": 0,
+            "cooldown_until": null,
+            "running": 0,
+            "deferred": 0,
+            "discoveries": 0,
+            "details_complete": 0,
+            "cards_extracted": 0,
+            "cards_persisted": 0,
+            "cards_failed": 0,
+            "duplicate_cards": 0
+          },
+          {
+            "browser_run_id": 1,
+            "platform": "glassdoor",
+            "auth_status": "unchecked",
+            "auth_reason": "",
+            "auth_checked_at": null,
+            "tasks_total": 1,
+            "tasks_completed": 0,
+            "tasks_challenged": 0,
+            "tasks_failed": 0,
+            "tasks_incomplete": 0,
+            "jobs_recorded": 0,
+            "cooldown_until": null,
+            "running": 0,
+            "deferred": 0,
+            "discoveries": 0,
+            "details_complete": 0,
+            "cards_extracted": 0,
+            "cards_persisted": 0,
+            "cards_failed": 0,
+            "duplicate_cards": 0
+          }
+        ],
+        "watch": null
+      },
+      "live_refresh_ok": true
+    },
+    "pass": false,
+    "resume_outcome": null,
+    "extension_unresponsive": true
+  },
+  "validation_report": {
+    "PROD_READY": false,
+    "started_at": "2026-09-15T12:46:52+00:00",
+    "validation_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3",
+    "soak_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_soak_20260915T124652Z.sqlite3",
+    "semi_production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_semiprod_20260915T124652Z.sqlite3",
+    "dashboard_url": "http://127.0.0.1:51841/",
+    "validation_stage": "micro",
+    "external_blockers": [],
+    "internal_failures": [
+      "Chrome extension did not start the validation run within 45 seconds; reload the unpacked extension in chrome://extensions and rerun validator",
+      "loaded extension did not report build 3.2.2-prod-ready.672cf88; reload the unpacked extension in chrome://extensions and rerun validator",
+      "primary live micro-validation failed"
+    ],
+    "run_now_coverage": {
+      "configured_production_phase_counts": {
+        "A_FASTEST_DOOR_RECENT": {
+          "linkedin": 105,
+          "indeed": 105,
+          "glassdoor": 105
+        },
+        "B_REMAINING_CORE_RECENT": {
+          "linkedin": 34,
+          "indeed": 34,
+          "glassdoor": 34
+        },
+        "C_DEEP_BACKFILL": {
+          "linkedin": 139,
+          "indeed": 139,
+          "glassdoor": 139
+        }
+      },
+      "live_sampled_phase_counts": {}
+    },
+    "branch": "codex/jobbot-CHG-22-r6",
+    "head": "7319ea2ef391795e30cdccba00b9ccce237f82dc",
+    "preflight": {
+      "ok": true,
+      "git": {
+        "branch": "codex/jobbot-CHG-22-r6",
+        "head": "7319ea2ef391795e30cdccba00b9ccce237f82dc"
+      },
+      "checks": [
+        {
+          "name": "candidate branch",
+          "ok": true,
+          "detail": "codex/jobbot-CHG-22-r6"
+        },
+        {
+          "name": "normal Chrome",
+          "ok": true,
+          "detail": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        },
+        {
+          "name": "current unpacked extension",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "name": "isolated database",
+          "ok": true,
+          "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3"
+        },
+        {
+          "name": "doctor",
+          "ok": true,
+          "detail": [
+            {
+              "name": "Python",
+              "ok": true,
+              "detail": "3.11.7"
+            },
+            {
+              "name": "Configuration",
+              "ok": true,
+              "detail": "strategy 3.2.0; candidate Elizabeth Kim-Ortiz"
+            },
+            {
+              "name": "Database migration",
+              "ok": true,
+              "detail": "applied=(); backup=not needed"
+            },
+            {
+              "name": "Migrations current",
+              "ok": true,
+              "detail": "(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"
+            },
+            {
+              "name": "Extension manifest",
+              "ok": true,
+              "detail": "3.2.1"
+            },
+            {
+              "name": "Extension ID",
+              "ok": true,
+              "detail": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+            },
+            {
+              "name": "Loopback bridge RPC",
+              "ok": true,
+              "detail": "token auth and unauthorized rejection"
+            },
+            {
+              "name": "Writable data",
+              "ok": true,
+              "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data"
+            },
+            {
+              "name": "Writable out",
+              "ok": true,
+              "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/out"
+            },
+            {
+              "name": "Writable logs",
+              "ok": true,
+              "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/logs"
+            },
+            {
+              "name": "Normal Google Chrome",
+              "ok": true,
+              "detail": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+            },
+            {
+              "name": "Search plan",
+              "ok": true,
+              "detail": "fast=315 deep=417; production caps=none"
+            },
+            {
+              "name": "Scoring regressions",
+              "ok": true,
+              "detail": "boundaries, role family, remote precedence"
+            },
+            {
+              "name": "Exports",
+              "ok": true,
+              "detail": "13 artifacts"
+            },
+            {
+              "name": "Resume registry",
+              "ok": true,
+              "detail": "0/4 private files present; missing files are optional and never packaged"
+            }
+          ]
+        },
+        {
+          "name": "compileall",
+          "ok": true,
+          "detail": {
+            "command": [
+              "/opt/anaconda3/bin/python3",
+              "-m",
+              "compileall",
+              "-q",
+              "src"
+            ],
+            "returncode": 0,
+            "output": ""
+          }
+        },
+        {
+          "name": "node syntax",
+          "ok": true,
+          "detail": [
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/common.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            },
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/dashboard.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            },
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/glassdoor.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            },
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/indeed.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            },
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/linkedin.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            },
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/selectors.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            },
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/extension/service_worker.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            },
+            {
+              "command": [
+                "node",
+                "--check",
+                "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/src/jobbot/web/dashboard.js"
+              ],
+              "returncode": 0,
+              "output": ""
+            }
+          ]
+        },
+        {
+          "name": "uncapped staged/deep search plan",
+          "ok": true,
+          "detail": {
+            "staged": 834,
+            "deep": 417
+          }
+        },
+        {
+          "name": "deterministic suite",
+          "ok": true,
+          "detail": {
+            "command": [
+              "/opt/anaconda3/bin/python3",
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tests",
+              "-v"
+            ],
+            "returncode": 0,
+            "output": "c_phases) ... ok\ntest_validator_refuses_production_database (integration.test_validator.ValidatorIntegrationTests.test_validator_refuses_production_database) ... ok\ntest_stop_latch_blocks_due_work_until_explicit_restart (integration.test_watch.WatchIntegrationTests.test_stop_latch_blocks_due_work_until_explicit_restart) ... ok\ntest_stopped_watcher_cannot_reawaken_when_time_becomes_due (integration.test_watch.WatchIntegrationTests.test_stopped_watcher_cannot_reawaken_when_time_becomes_due) ... ok\ntest_boundary_and_requirement_parser_regressions (regression.test_scoring.ScoringRegressionTests.test_boundary_and_requirement_parser_regressions) ... ok\ntest_complete_trusted_primary_detail_can_enter_qualified_queue (regression.test_scoring.ScoringRegressionTests.test_complete_trusted_primary_detail_can_enter_qualified_queue) ... ok\ntest_fuzzy_title_and_section_heading_precision (regression.test_scoring.ScoringRegressionTests.test_fuzzy_title_and_section_heading_precision) ... ok\ntest_growth_roles_do_not_reward_job_owned_technical_skills (regression.test_scoring.ScoringRegressionTests.test_growth_roles_do_not_reward_job_owned_technical_skills) ... ok\ntest_negative_occupation_families (regression.test_scoring.ScoringRegressionTests.test_negative_occupation_families) ... ok\ntest_positive_role_families (regression.test_scoring.ScoringRegressionTests.test_positive_role_families) ... ok\ntest_remote_clinical_management_and_employment_gates (regression.test_scoring.ScoringRegressionTests.test_remote_clinical_management_and_employment_gates) ... ok\ntest_auth_challenge_exhaustion_and_progress_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_auth_challenge_exhaustion_and_progress_fixtures) ... ok\ntest_closed_and_updated_detail_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_closed_and_updated_detail_fixtures) ... ok\ntest_jsonld_details_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_jsonld_details_for_all_primary_platforms) ... ok\ntest_search_cards_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_search_cards_for_all_primary_platforms) ... ok\ntest_explicit_end_and_age_boundary_are_exhausted (unit.test_crawl_state.ExhaustionTrackerTests.test_explicit_end_and_age_boundary_are_exhausted) ... ok\ntest_safety_guards_never_claim_exhaustion (unit.test_crawl_state.ExhaustionTrackerTests.test_safety_guards_never_claim_exhaustion) ... ok\ntest_authoritative_primary_urls_and_query_normalization (unit.test_strategy.StrategyTests.test_authoritative_primary_urls_and_query_normalization) ... ok\ntest_exact_portfolio_and_taxonomy_counts (unit.test_strategy.StrategyTests.test_exact_portfolio_and_taxonomy_counts) ... ok\ntest_fallback_is_not_actionable_until_explicitly_activated (unit.test_strategy.StrategyTests.test_fallback_is_not_actionable_until_explicitly_activated) ... ok\ntest_fast_execution_order_is_explicit_fastest_door (unit.test_strategy.StrategyTests.test_fast_execution_order_is_explicit_fastest_door) ... ok\ntest_plan_counts_and_no_production_caps (unit.test_strategy.StrategyTests.test_plan_counts_and_no_production_caps) ... ok\ntest_same_query_different_window_remains_distinct (unit.test_strategy.StrategyTests.test_same_query_different_window_remains_distinct) ... ok\ntest_staged_plan_covers_recent_and_deep_core_universe (unit.test_strategy.StrategyTests.test_staged_plan_covers_recent_and_deep_core_universe) ... ok\ntest_strategy_validator_rejects_allocation_drift (unit.test_strategy.StrategyTests.test_strategy_validator_rejects_allocation_drift) ... ok\ntest_fake_clock_persists_cadence_and_explicit_states (unit.test_watch.WatchSchedulerTests.test_fake_clock_persists_cadence_and_explicit_states) ... ok\ntest_watch_schema_is_isolated_from_production_path (unit.test_watch.WatchSchedulerTests.test_watch_schema_is_isolated_from_production_path) ... ok\n\n----------------------------------------------------------------------\nRan 75 tests in 5.495s\n\nOK\n"
+          }
+        }
+      ],
+      "deterministic": {
+        "local_tests": {
+          "command": [
+            "/opt/anaconda3/bin/python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-v"
+          ],
+          "returncode": 0,
+          "output": "c_phases) ... ok\ntest_validator_refuses_production_database (integration.test_validator.ValidatorIntegrationTests.test_validator_refuses_production_database) ... ok\ntest_stop_latch_blocks_due_work_until_explicit_restart (integration.test_watch.WatchIntegrationTests.test_stop_latch_blocks_due_work_until_explicit_restart) ... ok\ntest_stopped_watcher_cannot_reawaken_when_time_becomes_due (integration.test_watch.WatchIntegrationTests.test_stopped_watcher_cannot_reawaken_when_time_becomes_due) ... ok\ntest_boundary_and_requirement_parser_regressions (regression.test_scoring.ScoringRegressionTests.test_boundary_and_requirement_parser_regressions) ... ok\ntest_complete_trusted_primary_detail_can_enter_qualified_queue (regression.test_scoring.ScoringRegressionTests.test_complete_trusted_primary_detail_can_enter_qualified_queue) ... ok\ntest_fuzzy_title_and_section_heading_precision (regression.test_scoring.ScoringRegressionTests.test_fuzzy_title_and_section_heading_precision) ... ok\ntest_growth_roles_do_not_reward_job_owned_technical_skills (regression.test_scoring.ScoringRegressionTests.test_growth_roles_do_not_reward_job_owned_technical_skills) ... ok\ntest_negative_occupation_families (regression.test_scoring.ScoringRegressionTests.test_negative_occupation_families) ... ok\ntest_positive_role_families (regression.test_scoring.ScoringRegressionTests.test_positive_role_families) ... ok\ntest_remote_clinical_management_and_employment_gates (regression.test_scoring.ScoringRegressionTests.test_remote_clinical_management_and_employment_gates) ... ok\ntest_auth_challenge_exhaustion_and_progress_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_auth_challenge_exhaustion_and_progress_fixtures) ... ok\ntest_closed_and_updated_detail_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_closed_and_updated_detail_fixtures) ... ok\ntest_jsonld_details_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_jsonld_details_for_all_primary_platforms) ... ok\ntest_search_cards_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_search_cards_for_all_primary_platforms) ... ok\ntest_explicit_end_and_age_boundary_are_exhausted (unit.test_crawl_state.ExhaustionTrackerTests.test_explicit_end_and_age_boundary_are_exhausted) ... ok\ntest_safety_guards_never_claim_exhaustion (unit.test_crawl_state.ExhaustionTrackerTests.test_safety_guards_never_claim_exhaustion) ... ok\ntest_authoritative_primary_urls_and_query_normalization (unit.test_strategy.StrategyTests.test_authoritative_primary_urls_and_query_normalization) ... ok\ntest_exact_portfolio_and_taxonomy_counts (unit.test_strategy.StrategyTests.test_exact_portfolio_and_taxonomy_counts) ... ok\ntest_fallback_is_not_actionable_until_explicitly_activated (unit.test_strategy.StrategyTests.test_fallback_is_not_actionable_until_explicitly_activated) ... ok\ntest_fast_execution_order_is_explicit_fastest_door (unit.test_strategy.StrategyTests.test_fast_execution_order_is_explicit_fastest_door) ... ok\ntest_plan_counts_and_no_production_caps (unit.test_strategy.StrategyTests.test_plan_counts_and_no_production_caps) ... ok\ntest_same_query_different_window_remains_distinct (unit.test_strategy.StrategyTests.test_same_query_different_window_remains_distinct) ... ok\ntest_staged_plan_covers_recent_and_deep_core_universe (unit.test_strategy.StrategyTests.test_staged_plan_covers_recent_and_deep_core_universe) ... ok\ntest_strategy_validator_rejects_allocation_drift (unit.test_strategy.StrategyTests.test_strategy_validator_rejects_allocation_drift) ... ok\ntest_fake_clock_persists_cadence_and_explicit_states (unit.test_watch.WatchSchedulerTests.test_fake_clock_persists_cadence_and_explicit_states) ... ok\ntest_watch_schema_is_isolated_from_production_path (unit.test_watch.WatchSchedulerTests.test_watch_schema_is_isolated_from_production_path) ... ok\n\n----------------------------------------------------------------------\nRan 75 tests in 5.495s\n\nOK\n"
+        },
+        "scope_fixtures": true,
+        "platform_isolation": true,
+        "watch_cadence": true,
+        "watch_stop_latch": true
+      }
+    },
+    "primary_live": {
+      "run_id": 1,
+      "outcome": {
+        "run_id": 1,
+        "status": "extension_unresponsive",
+        "bridge_restarts": 1
+      },
+      "duration_seconds": 45.5,
+      "terminal_classification": "STOPPED",
+      "metrics": {
+        "extracted": 0,
+        "persistence_attempted": 0,
+        "persisted": 0,
+        "persistence_failed": 0,
+        "duplicates": 0,
+        "detail_pending": 0,
+        "detail_running": 0,
+        "detail_complete": 0,
+        "detail_retryable": 0,
+        "detail_failed": 0,
+        "detail_external_blocked": 0,
+        "canonical_jobs": 0,
+        "actionable": 0,
+        "apply_now": 0,
+        "apply_volume": 0,
+        "out_of_scope": 0,
+        "unexplained": 0,
+        "task_states": {
+          "queued": 3,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 0,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0,
+          "failed": 0,
+          "paused": 0,
+          "stopped": 0
+        },
+        "reconciliation": {
+          "ok": true,
+          "failures": []
+        },
+        "integrity": "ok"
+      },
+      "audit": {
+        "current_run_id": 1,
+        "terminal_classification": "STOPPED",
+        "platforms": {
+          "linkedin": {
+            "queued": 1,
+            "running": 0,
+            "exhausted": 0,
+            "incomplete": 0,
+            "challenged": 0,
+            "auth_required": 0,
+            "deferred_by_platform": 0,
+            "failed": 0,
+            "paused": 0,
+            "stopped": 0,
+            "planned": 1,
+            "results_encountered": 0,
+            "details_read": 0,
+            "cards_extracted": 0,
+            "cards_persistence_attempted": 0,
+            "cards_persisted": 0,
+            "cards_persistence_failed": 0,
+            "duplicate_sightings": 0,
+            "unexplained": 0,
+            "phases": {
+              "A_FASTEST_DOOR_RECENT": 1
+            }
+          },
+          "indeed": {
+            "queued": 1,
+            "running": 0,
+            "exhausted": 0,
+            "incomplete": 0,
+            "challenged": 0,
+            "auth_required": 0,
+            "deferred_by_platform": 0,
+            "failed": 0,
+            "paused": 0,
+            "stopped": 0,
+            "planned": 1,
+            "results_encountered": 0,
+            "details_read": 0,
+            "cards_extracted": 0,
+            "cards_persistence_attempted": 0,
+            "cards_persisted": 0,
+            "cards_persistence_failed": 0,
+            "duplicate_sightings": 0,
+            "unexplained": 0,
+            "phases": {
+              "A_FASTEST_DOOR_RECENT": 1
+            }
+          },
+          "glassdoor": {
+            "queued": 1,
+            "running": 0,
+            "exhausted": 0,
+            "incomplete": 0,
+            "challenged": 0,
+            "auth_required": 0,
+            "deferred_by_platform": 0,
+            "failed": 0,
+            "paused": 0,
+            "stopped": 0,
+            "planned": 1,
+            "results_encountered": 0,
+            "details_read": 0,
+            "cards_extracted": 0,
+            "cards_persistence_attempted": 0,
+            "cards_persisted": 0,
+            "cards_persistence_failed": 0,
+            "duplicate_sightings": 0,
+            "unexplained": 0,
+            "phases": {
+              "A_FASTEST_DOOR_RECENT": 1
+            }
+          }
+        },
+        "global": {
+          "sightings": 0,
+          "canonical_jobs": 0,
+          "detail_pending": 0,
+          "detail_running": 0,
+          "detail_complete": 0,
+          "detail_retryable": 0,
+          "detail_failed": 0,
+          "detail_external_blocked": 0,
+          "relevant": 0,
+          "qualified": 0,
+          "apply_now": 0,
+          "apply_volume": 0,
+          "stretch": 0,
+          "out_of_scope": 0,
+          "description_complete": 0,
+          "description_missing": 0,
+          "description_partial": 0,
+          "applied": 0
+        },
+        "cumulative": {
+          "global": {
+            "sightings": 0,
+            "canonical_jobs": 0,
+            "detail_pending": 0,
+            "detail_running": 0,
+            "detail_complete": 0,
+            "detail_retryable": 0,
+            "detail_failed": 0,
+            "detail_external_blocked": 0,
+            "relevant": 0,
+            "qualified": 0,
+            "apply_now": 0,
+            "apply_volume": 0,
+            "stretch": 0,
+            "out_of_scope": 0,
+            "description_complete": 0,
+            "description_missing": 0,
+            "description_partial": 0,
+            "applied": 0
+          },
+          "platforms": {
+            "linkedin": {
+              "queued": 1,
+              "running": 0,
+              "exhausted": 0,
+              "incomplete": 0,
+              "challenged": 0,
+              "auth_required": 0,
+              "deferred_by_platform": 0,
+              "failed": 0,
+              "paused": 0,
+              "stopped": 0,
+              "planned": 1,
+              "results_encountered": 0,
+              "details_read": 0,
+              "cards_extracted": 0,
+              "cards_persistence_attempted": 0,
+              "cards_persisted": 0,
+              "cards_persistence_failed": 0,
+              "duplicate_sightings": 0,
+              "unexplained": 0,
+              "phases": {
+                "A_FASTEST_DOOR_RECENT": 1
+              }
+            },
+            "indeed": {
+              "queued": 1,
+              "running": 0,
+              "exhausted": 0,
+              "incomplete": 0,
+              "challenged": 0,
+              "auth_required": 0,
+              "deferred_by_platform": 0,
+              "failed": 0,
+              "paused": 0,
+              "stopped": 0,
+              "planned": 1,
+              "results_encountered": 0,
+              "details_read": 0,
+              "cards_extracted": 0,
+              "cards_persistence_attempted": 0,
+              "cards_persisted": 0,
+              "cards_persistence_failed": 0,
+              "duplicate_sightings": 0,
+              "unexplained": 0,
+              "phases": {
+                "A_FASTEST_DOOR_RECENT": 1
+              }
+            },
+            "glassdoor": {
+              "queued": 1,
+              "running": 0,
+              "exhausted": 0,
+              "incomplete": 0,
+              "challenged": 0,
+              "auth_required": 0,
+              "deferred_by_platform": 0,
+              "failed": 0,
+              "paused": 0,
+              "stopped": 0,
+              "planned": 1,
+              "results_encountered": 0,
+              "details_read": 0,
+              "cards_extracted": 0,
+              "cards_persistence_attempted": 0,
+              "cards_persisted": 0,
+              "cards_persistence_failed": 0,
+              "duplicate_sightings": 0,
+              "unexplained": 0,
+              "phases": {
+                "A_FASTEST_DOOR_RECENT": 1
+              }
+            }
+          }
+        },
+        "reconciliation": {
+          "ok": true,
+          "failures": []
+        },
+        "diagnosis": [
+          "Search coverage is internally incomplete: planned tasks remain non-terminal."
+        ],
+        "integrity": "ok"
+      },
+      "validation_metrics": {
+        "extracted": 0,
+        "persistence_attempted": 0,
+        "persisted": 0,
+        "persistence_failed": 0,
+        "duplicates": 0,
+        "detail_pending": 0,
+        "detail_running": 0,
+        "detail_complete": 0,
+        "detail_retryable": 0,
+        "detail_failed": 0,
+        "detail_external_blocked": 0,
+        "canonical_jobs": 0,
+        "actionable": 0,
+        "apply_now": 0,
+        "apply_volume": 0,
+        "out_of_scope": 0,
+        "unexplained": 0,
+        "task_states": {
+          "queued": 0,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 0,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0,
+          "failed": 0,
+          "paused": 0,
+          "stopped": 0
+        },
+        "reconciliation": {
+          "ok": true,
+          "attempted_tasks": 0,
+          "task_failures": 0
+        },
+        "integrity": "ok",
+        "attempted_tasks": 0,
+        "progress_tasks": 0,
+        "untouched_queued": 3,
+        "untouched_exhausted": 0,
+        "attempted_false_exhausted": 0,
+        "attempted_failed": 0,
+        "attempted_incomplete": 0,
+        "attempted_running": 0,
+        "attempted_stopped": 0,
+        "canonical_jobs_attempted": 0
+      },
+      "validation_cutoff": false,
+      "validation_classification": "STOPPED",
+      "scope": {
+        "linkedin": {
+          "candidate_links_total": 0,
+          "candidate_links_in_scope": 0,
+          "candidate_links_outside_scope": 0,
+          "persisted_in_scope": 0,
+          "persisted_outside_scope": 0,
+          "contamination_persisted": 0,
+          "scope_found_events": 0,
+          "scope_missing_events": 0,
+          "attempted_pages": 0,
+          "outside_only_ids": [],
+          "outside_only_urls": []
+        },
+        "indeed": {
+          "candidate_links_total": 0,
+          "candidate_links_in_scope": 0,
+          "candidate_links_outside_scope": 0,
+          "persisted_in_scope": 0,
+          "persisted_outside_scope": 0,
+          "contamination_persisted": 0,
+          "scope_found_events": 0,
+          "scope_missing_events": 0,
+          "attempted_pages": 0,
+          "outside_only_ids": [],
+          "outside_only_urls": []
+        },
+        "glassdoor": {
+          "candidate_links_total": 0,
+          "candidate_links_in_scope": 0,
+          "candidate_links_outside_scope": 0,
+          "persisted_in_scope": 0,
+          "persisted_outside_scope": 0,
+          "contamination_persisted": 0,
+          "scope_found_events": 0,
+          "scope_missing_events": 0,
+          "attempted_pages": 0,
+          "outside_only_ids": [],
+          "outside_only_urls": []
+        }
+      },
+      "extension_build_pass": false,
+      "bridge_restart_pass": true,
+      "resume": null,
+      "stop_resume_pass": false,
+      "dashboard": {
+        "identity": {
+          "jobbot_version": "3.2.1",
+          "workspace_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4",
+          "resolved_database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3",
+          "database_identity": "aa46a8b707202929",
+          "pid": 37939
+        },
+        "identity_ok": true,
+        "summary": {
+          "total": 0,
+          "active": 0,
+          "updated": 0,
+          "descriptions_complete": 0,
+          "remote_confirmed": 0,
+          "remote_review": 0,
+          "remote_rejected": 0,
+          "qualified": 0,
+          "apply_now": 0,
+          "apply_volume": 0,
+          "stretch": 0,
+          "reservoir": 0,
+          "applied": 0,
+          "screens": 0,
+          "interviews": 0,
+          "finals": 0,
+          "offers": 0,
+          "applications": 0,
+          "discoveries": 0,
+          "detail_pending": 0,
+          "details_complete": 0
+        },
+        "run": {
+          "run": {
+            "browser_run_id": 1,
+            "version": "3.2.1",
+            "mode": "validation_micro",
+            "platform": "linkedin,indeed,glassdoor",
+            "status": "stopped",
+            "created_at": "2026-09-15T12:46:59+00:00",
+            "started_at": null,
+            "completed_at": "2026-09-15T12:47:44+00:00",
+            "stop_requested": 1,
+            "auth_status": "unchecked",
+            "jobs_new": 0,
+            "jobs_updated": 0,
+            "jobs_unchanged": 0,
+            "jobs_recorded": 0,
+            "tasks_completed": 0,
+            "tasks_challenged": 0,
+            "tasks_incomplete": 0,
+            "current_task_id": null,
+            "last_progress_at": "2026-09-15T12:47:44+00:00",
+            "last_error": "manual emergency stop",
+            "stop_after_current": 0,
+            "notes": "Bounded <=5 minute production proof; runtime bounds the validation; production retrieval remains uncapped. stop requested"
+          },
+          "current_task": null,
+          "platforms": [
+            {
+              "browser_run_id": 1,
+              "platform": "linkedin",
+              "auth_status": "unchecked",
+              "auth_reason": "",
+              "auth_checked_at": null,
+              "tasks_total": 1,
+              "tasks_completed": 0,
+              "tasks_challenged": 0,
+              "tasks_failed": 0,
+              "tasks_incomplete": 0,
+              "jobs_recorded": 0,
+              "cooldown_until": null,
+              "running": 0,
+              "deferred": 0,
+              "discoveries": 0,
+              "details_complete": 0,
+              "cards_extracted": 0,
+              "cards_persisted": 0,
+              "cards_failed": 0,
+              "duplicate_cards": 0
+            },
+            {
+              "browser_run_id": 1,
+              "platform": "indeed",
+              "auth_status": "unchecked",
+              "auth_reason": "",
+              "auth_checked_at": null,
+              "tasks_total": 1,
+              "tasks_completed": 0,
+              "tasks_challenged": 0,
+              "tasks_failed": 0,
+              "tasks_incomplete": 0,
+              "jobs_recorded": 0,
+              "cooldown_until": null,
+              "running": 0,
+              "deferred": 0,
+              "discoveries": 0,
+              "details_complete": 0,
+              "cards_extracted": 0,
+              "cards_persisted": 0,
+              "cards_failed": 0,
+              "duplicate_cards": 0
+            },
+            {
+              "browser_run_id": 1,
+              "platform": "glassdoor",
+              "auth_status": "unchecked",
+              "auth_reason": "",
+              "auth_checked_at": null,
+              "tasks_total": 1,
+              "tasks_completed": 0,
+              "tasks_challenged": 0,
+              "tasks_failed": 0,
+              "tasks_incomplete": 0,
+              "jobs_recorded": 0,
+              "cooldown_until": null,
+              "running": 0,
+              "deferred": 0,
+              "discoveries": 0,
+              "details_complete": 0,
+              "cards_extracted": 0,
+              "cards_persisted": 0,
+              "cards_failed": 0,
+              "duplicate_cards": 0
+            }
+          ],
+          "watch": null
+        },
+        "live_refresh_ok": true
+      },
+      "pass": false
+    },
+    "exit_integrity": {
+      "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_20260915T124652Z.sqlite3": "ok",
+      "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_soak_20260915T124652Z.sqlite3": "missing",
+      "/Users/haewonkim/.codex-fabric/worktrees/CF-7d99b56a6a4a6ca0a82532e4/data/validation_semiprod_20260915T124652Z.sqlite3": "missing"
+    },
+    "finished_at": "2026-09-15T12:47:44+00:00"
+  }
+}
