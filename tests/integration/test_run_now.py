@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 from jobbot import browser_tasks
 from jobbot.cli import command_acceptance, parser
-from jobbot.config import PROJECT_ROOT
+from jobbot.config import PROJECT_ROOT, load_bundle
 from jobbot.dashboard import create_server
 from jobbot import run_now
 from jobbot.run_now import preflight
@@ -28,7 +28,7 @@ class RunNowIntegrationTests(unittest.TestCase):
             bundle = bundle_with_database(root / "jobs.sqlite3", root / "out")
             self.assertFalse(bundle.database_path.exists())
             result = preflight(bundle, ["linkedin"])
-            self.assertEqual(result.task_count, 278)
+            self.assertEqual(result.task_count, 288)
             self.assertTrue(result.database_path.is_file())
             self.assertTrue((root / "out" / "search_plan.json").is_file())
         args = parser().parse_args(["run-now", "--platform", "linkedin", "--enqueue-only", "--no-open"])
@@ -69,14 +69,38 @@ class RunNowIntegrationTests(unittest.TestCase):
             run_id = browser_tasks.enqueue_production(root, "staged")
             conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
             try:
-                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 834)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 864)
                 phases = dict(conn.execute("SELECT phase,COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? GROUP BY phase", (run_id,)).fetchall())
                 self.assertEqual(phases, {
-                    "A_FASTEST_DOOR_RECENT": 315,
+                    "A_FASTEST_DOOR_RECENT": 330,
                     "B_REMAINING_CORE_RECENT": 102,
-                    "C_DEEP_BACKFILL": 417,
+                    "C_DEEP_BACKFILL": 432,
                 })
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND max_results IS NOT NULL", (run_id,)).fetchone()[0], 0)
+            finally:
+                conn.close()
+
+    def test_staged_plan_suppresses_fallback_when_reservoir_is_full(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            shutil.copytree(PROJECT_ROOT / "config", root / "config")
+            bundle = load_bundle(root)
+            run_now.Database(bundle).migrate()
+            conn = run_now.Database(bundle).connect()
+            try:
+                conn.executemany(
+                    """INSERT INTO jobs(job_id,remote_gate,recommendation,application_status,is_active,posting_status,first_seen,last_seen)
+                       VALUES(?,?,?,?,?,?,?,?)""",
+                    [(f"reservoir-{index}", "pass", "APPLY_NOW", "NEW", 1, "", "2026-09-14T00:00:00+00:00", "2026-09-14T00:00:00+00:00") for index in range(50)],
+                )
+                conn.commit()
+            finally:
+                conn.close()
+            run_id = browser_tasks.enqueue_production(root, "staged", ["linkedin"])
+            conn = sqlite3.connect(bundle.database_path)
+            try:
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 278)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND career_lane='FALLBACK_TRANSFERABLE'", (run_id,)).fetchone()[0], 0)
             finally:
                 conn.close()
 

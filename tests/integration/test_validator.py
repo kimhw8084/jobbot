@@ -10,6 +10,7 @@ from unittest.mock import patch
 from jobbot.browser_tasks import enqueue_validation, enqueue_validation_sample
 from jobbot.config import PROJECT_ROOT, load_bundle
 from jobbot.db import Database
+from jobbot.extension_identity import extension_build
 from jobbot.validator import (
     VALIDATION_WINDOW_COMPLETE,
     _assert_isolated,
@@ -21,13 +22,65 @@ from jobbot.validator import (
     _stage_pass,
     _write_report,
     _isolated_bundle,
+    _extension_build_seen,
     _prepare_validation_bundle,
     _run_semi_phase,
+    _candidate_branch_check,
     VALIDATION_STOP_GRACE_SECONDS,
 )
 
 
 class ValidatorIntegrationTests(unittest.TestCase):
+    def test_extension_build_accepts_manifest_identity_and_rejects_stale_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            bundle = _isolated_bundle(root / "validation.sqlite3", root / "out", 18765)
+            run_id = enqueue_validation(PROJECT_ROOT, ["linkedin"], bundle=bundle)
+            conn = Database(bundle).connect()
+            try:
+                task_id = conn.execute(
+                    "SELECT task_id FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)
+                ).fetchone()[0]
+                conn.execute(
+                    "INSERT INTO browser_events(browser_run_id,task_id,event_at,event_type,message,payload_json) "
+                    "VALUES(?,?,?,?,?,?)",
+                    (run_id, task_id, "now", "extension_build", "", json.dumps({"build": extension_build(PROJECT_ROOT)})),
+                )
+                conn.commit()
+                self.assertTrue(_extension_build_seen(bundle, run_id))
+                conn.execute(
+                    "UPDATE browser_events SET message='',payload_json=? "
+                    "WHERE browser_run_id=? AND event_type='extension_build'",
+                    (json.dumps({"build": "3.2.2-prod-ready"}), run_id),
+                )
+                conn.commit()
+                self.assertFalse(_extension_build_seen(bundle, run_id))
+            finally:
+                conn.close()
+
+    def test_candidate_branch_policy_accepts_canonical_fabric_candidates(self) -> None:
+        for branch in ("codex/CHG-22-r1", "codex/jobbot-CHG-22-r3", "codex/jobbot-FIX-7-r12"):
+            with self.subTest(branch=branch):
+                accepted, detail = _candidate_branch_check(branch)
+                self.assertTrue(accepted)
+                self.assertEqual(detail, branch)
+
+    def test_candidate_branch_policy_rejects_target_and_unsafe_refs(self) -> None:
+        cases = {
+            "main": "target branch",
+            "": "detached HEAD",
+            "codex/v3.2.2-prod-ready": "canonical Fabric candidate branch",
+            "codex/CHG-22": "canonical Fabric candidate branch",
+            "codex/jobbot-CHG-22-r0": "canonical Fabric candidate branch",
+            "codex/jobbot/CHG-22-r3": "canonical Fabric candidate branch",
+            "feature/codex-jobbot-CHG-22-r3": "canonical Fabric candidate branch",
+        }
+        for branch, expected_detail in cases.items():
+            with self.subTest(branch=branch):
+                accepted, detail = _candidate_branch_check(branch)
+                self.assertFalse(accepted)
+                self.assertIn(expected_detail, detail)
+
     def test_each_isolated_long_stage_is_migrated_before_dashboard_use(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

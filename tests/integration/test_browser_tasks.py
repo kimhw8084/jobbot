@@ -51,7 +51,12 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 self.assertFalse(rpc.handle(result)["duplicate"])
                 db = root / "data" / "jobs.sqlite3"; conn = sqlite3.connect(db)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results").fetchone()[0], 1); conn.close()
-                rpc.handle({"action": "detail_read", "run_id": run_id, "task_id": task_id, "source_site": "indeed", "source_job_id": "write-1", "source_url": "https://www.indeed.com/viewjob?jk=write-1"})
+                detail_evidence = {"page_url": "https://www.indeed.com/viewjob?jk=write-1", "job": {"title": "Patient Enrollment Specialist", "description": "detail evidence"}}
+                rpc.handle({"action": "detail_read", "run_id": run_id, "task_id": task_id, "source_site": "indeed", "source_job_id": "write-1", "source_url": "https://www.indeed.com/viewjob?jk=write-1", "detail_evidence": detail_evidence})
+                conn = sqlite3.connect(db)
+                evidence_event = conn.execute("SELECT payload_json FROM browser_events WHERE browser_run_id=? AND event_type='detail_read' ORDER BY event_id DESC LIMIT 1", (run_id,)).fetchone()
+                self.assertEqual(json.loads(evidence_event[0])["detail_evidence"], detail_evidence)
+                conn.close()
                 saved = rpc.handle({"action": "record_job", "run_id": run_id, "task_id": task_id, "job": {"source_job_id": "write-1", "canonical_url": "https://www.indeed.com/viewjob?jk=write-1", "title": "Patient Enrollment Specialist", "company": "Example Health", "location": "United States", "employment_type": "Full-time permanent", "description": "Healthcare enrollment. Required Qualifications: 2 years relevant experience. Full-time permanent."}})
                 self.assertTrue(saved["ok"])
                 conn = sqlite3.connect(db)

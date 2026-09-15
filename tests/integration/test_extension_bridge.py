@@ -8,6 +8,7 @@ from pathlib import Path
 
 from jobbot.bridge.server import self_test
 from jobbot.config import PROJECT_ROOT
+from jobbot.extension_identity import extension_build
 
 
 class ExtensionBridgeTests(unittest.TestCase):
@@ -18,7 +19,7 @@ class ExtensionBridgeTests(unittest.TestCase):
         manifest = json.loads((PROJECT_ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["manifest_version"], 3)
         self.assertEqual(manifest["version"], "3.2.1")
-        self.assertEqual(manifest["version_name"], "3.2.2-prod-ready.672cf88")
+        self.assertEqual(manifest["version_name"], extension_build(PROJECT_ROOT))
         self.assertNotIn("nativeMessaging", manifest["permissions"])
         self.assertIn("windows", manifest["permissions"])
         self.assertIn("http://127.0.0.1/*", manifest["host_permissions"])
@@ -40,6 +41,7 @@ class ExtensionBridgeTests(unittest.TestCase):
         if node.returncode: self.skipTest("Node is unavailable")
         for path in sorted((PROJECT_ROOT / "extension").glob("*.js")):
             with self.subTest(path=path.name):
+                self.assertNotIn(manifest["version_name"], path.read_text(encoding="utf-8"))
                 checked = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
                 self.assertEqual(checked.returncode, 0, checked.stderr)
         dashboard_js = subprocess.run(["node", "--check", str(PROJECT_ROOT / "src/jobbot/web/dashboard.js")], capture_output=True, text=True)
@@ -72,8 +74,9 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("another browser run is still active", worker)
         self.assertIn("active_run_id:active", worker)
         dashboard_worker = (PROJECT_ROOT / "extension" / "dashboard.js").read_text(encoding="utf-8")
-        self.assertIn("EXPECTED_EXTENSION_BUILD = '3.2.2-prod-ready.672cf88'", dashboard_worker)
-        self.assertIn("manifest.version_name", dashboard_worker)
+        self.assertIn("chrome.runtime.getManifest()", dashboard_worker)
+        self.assertIn("query.get('expected_build')", dashboard_worker)
+        self.assertIn("loadedManifest.version_name", dashboard_worker)
         self.assertNotIn("const HEARTBEAT_MS", worker)
         self.assertNotIn("const WATCHDOG_MS", worker)
 

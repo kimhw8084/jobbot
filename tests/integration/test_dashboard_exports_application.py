@@ -68,7 +68,7 @@ class DashboardExportApplicationTests(unittest.TestCase):
             self.assertEqual(len(history(conn, "J000000")), 1)
             funnel = analyze(conn); self.assertTrue(any(row.applications for row in funnel))
             paths = export_all(conn, bundle.output_dir, batch_size=2); conn.close()
-            expected = {"all_jobs.csv", "active_jobs.csv", "qualified_jobs.csv", "unapplied_jobs.csv", "apply_now.csv", "apply_volume.csv", "stretch.csv", "application_tracker.csv", "jobs.jsonl", "recent_updates.csv", "chatgpt_batch.md"}
+            expected = {"all_jobs.csv", "active_jobs.csv", "qualified_jobs.csv", "unapplied_jobs.csv", "apply_now.csv", "apply_volume.csv", "stretch.csv", "application_tracker.csv", "live_discoveries.csv", "application_history.csv", "jobs.jsonl", "recent_updates.csv", "chatgpt_batch.md"}
             self.assertEqual(set(paths), expected); self.assertTrue(all(path.is_file() for path in paths.values()))
             with paths["all_jobs.csv"].open(encoding="utf-8-sig", newline="") as handle:
                 rows = list(csv.DictReader(handle))
