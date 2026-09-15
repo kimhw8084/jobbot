@@ -6,6 +6,7 @@ import urllib.parse
 
 from jobbot.config import ConfigBundle, PROJECT_ROOT, load_bundle, validate_strategy
 from jobbot.search_plan import build_search_url, compile_plan, compile_staged_plan, normalize_search_query, plan_counts
+from jobbot.scoring import Job, score_job
 
 
 class StrategyTests(unittest.TestCase):
@@ -102,6 +103,26 @@ class StrategyTests(unittest.TestCase):
         strategy = copy.deepcopy(self.bundle.strategy)
         strategy["lanes"][0]["allocation_percent"] = 34
         with self.assertRaises(ValueError): validate_strategy(strategy)
+
+    def test_fallback_is_not_actionable_until_explicitly_activated(self) -> None:
+        description = "Fully remote data quality operations. Required Qualifications: 2 years relevant experience. Full-time permanent. " + "Data quality documentation and validation. " * 80
+
+        def scored_with(enabled: bool) -> Job:
+            job = Job(
+                source_site="greenhouse", source_job_id="fallback-1",
+                canonical_url="https://boards.greenhouse.io/example/jobs/12345",
+                apply_url="https://boards.greenhouse.io/example/jobs/12345",
+                title="Data Quality Specialist", company="Example Health",
+                location_raw="Remote — United States", remote_status="remote",
+                employment_type="Full-time permanent", description=description,
+            )
+            strategy = copy.deepcopy(self.bundle.strategy)
+            strategy["_fallback_enabled"] = enabled
+            setattr(job, "_mode", "deep")
+            return score_job(job, strategy, self.bundle.legacy_runtime()["candidate"])
+
+        self.assertEqual(scored_with(False).recommendation, "OUT_OF_SCOPE")
+        self.assertEqual(scored_with(True).career_lane, "FALLBACK_TRANSFERABLE")
 
 
 if __name__ == "__main__": unittest.main()

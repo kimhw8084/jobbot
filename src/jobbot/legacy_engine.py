@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from . import legacy_core as c
+from .strategy_runtime import FALLBACK_LANE_ID, fallback_activation_enabled, with_fallback_activation
 
 VERSION = "3.2.0"
 c.VERSION = VERSION
@@ -434,7 +435,8 @@ def classify_role(job: Job, strategy: dict[str,Any], mode: str) -> tuple[Optiona
     if not health_in_title and any(phrase_present(x,title) for x in recall_cfg.get("recall_exclusion_terms",[])):
         return None,[],0.0,"",0.0
 
-    profiles=[p for p in strategy.get("searches",[]) if p.get("enabled",True)]
+    fallback_enabled=bool(strategy.get("_fallback_enabled",False))
+    profiles=[p for p in strategy.get("searches",[]) if p.get("enabled",True) and (fallback_enabled or p.get("career_lane") != FALLBACK_LANE_ID)]
     allowed=set(scfg.get("run_modes",{}).get(mode,{}).get("profiles",[]))
     if allowed: profiles=[p for p in profiles if p.get("name") in allowed]
     byname={clean_text(p.get("name")):p for p in profiles}
@@ -1689,7 +1691,8 @@ def fetch_direct_ats_watch_resilient(client:HttpClient,watch:dict[str,Any],runti
 
 def _bundle_queries(strategy:dict[str,Any],mode:str,bundle_size:int=4)->list[tuple[str,str]]:
     allowed=set(strategy.get("strategy",{}).get("run_modes",{}).get(mode,{}).get("profiles",[])); pairs=[]
-    for p in sorted([x for x in strategy.get("searches",[]) if x.get("enabled",True) and (not allowed or x.get("name") in allowed)],key=lambda x:int(x.get("priority",3))):
+    fallback_enabled=bool(strategy.get("_fallback_enabled",False))
+    for p in sorted([x for x in strategy.get("searches",[]) if x.get("enabled",True) and (fallback_enabled or x.get("career_lane") != FALLBACK_LANE_ID) and (not allowed or x.get("name") in allowed)],key=lambda x:int(x.get("priority",3))):
         kws=[clean_text(x) for x in p.get("keywords",[]) if clean_text(x)]
         for i in range(0,len(kws),bundle_size):
             chunk=kws[i:i+bundle_size]
@@ -1738,7 +1741,9 @@ def build_coverage_dashboard(store:PrecisionStore,out:Path)->None:
 def run_search(config:dict[str,Any],strategy:dict[str,Any],mode:str)->int:
     started=now_iso(); base=Path(config["_base"]); ac=config.get("app",{}); out=abs_path(base,ac.get("output_dir","out")); db=abs_path(base,ac.get("db_path","data/jobs.sqlite3")); cache=abs_path(base,ac.get("cache_dir","cache"))
     client=HttpClient(cache,int(ac.get("cache_minutes",45)),int(ac.get("http_timeout_seconds",25)),clean_text(ac.get("user_agent")) or "RemoteCareerJobSearch/2.0")
-    store=PrecisionStore(db); run_id=store.begin_run(started,mode); source_status={}; jobs:list[Job]=[]; board_scans:dict[tuple[str,str],set[str]]={}
+    store=PrecisionStore(db)
+    strategy=with_fallback_activation(strategy, fallback_activation_enabled(store.conn, config))
+    run_id=store.begin_run(started,mode); source_status={}; jobs:list[Job]=[]; board_scans:dict[tuple[str,str],set[str]]={}
     safety_max=int(ac.get("safety_max_jobs_per_source",50000))
     # Upgrade/migration path: reclassify the persistent ledger with the current strategy BEFORE
     # discovery. This lets a v2.0 database recover previously missed empty-description ATS leads.

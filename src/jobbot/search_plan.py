@@ -119,21 +119,29 @@ def compile_plan(
     return tasks
 
 
-def compile_staged_plan(bundle: ConfigBundle, platforms: Iterable[str] | None = None, phases: Iterable[str] | None = None) -> list[SearchTask]:
+def compile_staged_plan(
+    bundle: ConfigBundle,
+    platforms: Iterable[str] | None = None,
+    phases: Iterable[str] | None = None,
+    *,
+    include_fallback: bool = False,
+) -> list[SearchTask]:
     """Compile the complete primary production cycle as explicit phases.
 
     Phase A preserves the researched fastest-door order. Phase B fills the
     remaining enabled core titles at their recent window. Phase C repeats all
     enabled core titles at each lane's deep window; durable dedupe/versioning
-    is expected to absorb the intentional overlap.
+    is expected to absorb the intentional overlap. When the configured
+    fallback is active, its recent and deep tasks are included in phases A and
+    C without displacing the core universe.
     """
     selected = tuple(platforms or bundle.strategy["strategy"]["primary_platforms"])
-    phase_a = compile_plan(bundle, "fast", selected, phase="A_FASTEST_DOOR_RECENT")
+    phase_a = compile_plan(bundle, "fast", selected, include_fallback=include_fallback, phase="A_FASTEST_DOOR_RECENT")
     phase_b = compile_plan(
         bundle, "fast", selected, priority_min=2, priority_max=3,
         phase="B_REMAINING_CORE_RECENT",
     )
-    phase_c = compile_plan(bundle, "deep", selected, phase="C_DEEP_BACKFILL")
+    phase_c = compile_plan(bundle, "deep", selected, include_fallback=include_fallback, phase="C_DEEP_BACKFILL")
     phase_order = {"A_FASTEST_DOOR_RECENT": 0, "B_REMAINING_CORE_RECENT": 1, "C_DEEP_BACKFILL": 2}
     selected_phases = set(phases or phase_order)
     return sorted(
@@ -190,16 +198,16 @@ def write_plan(tasks: list[SearchTask], output_dir: Path, mode: str) -> dict[str
     return {"json": json_path, "csv": csv_path, "html": html_path}
 
 
-def compile_and_write(bundle: ConfigBundle, mode: str, platforms: Iterable[str] | None = None, *, open_browser: bool = False) -> tuple[list[SearchTask], dict[str, Path]]:
-    tasks = compile_plan(bundle, mode, platforms)
+def compile_and_write(bundle: ConfigBundle, mode: str, platforms: Iterable[str] | None = None, *, open_browser: bool = False, include_fallback: bool = False) -> tuple[list[SearchTask], dict[str, Path]]:
+    tasks = compile_plan(bundle, mode, platforms, include_fallback=include_fallback)
     paths = write_plan(tasks, bundle.output_dir, mode)
     if open_browser:
         webbrowser.open(paths["html"].as_uri())
     return tasks, paths
 
 
-def compile_staged_and_write(bundle: ConfigBundle, platforms: Iterable[str] | None = None, *, open_browser: bool = False) -> tuple[list[SearchTask], dict[str, Path]]:
-    tasks = compile_staged_plan(bundle, platforms)
+def compile_staged_and_write(bundle: ConfigBundle, platforms: Iterable[str] | None = None, *, open_browser: bool = False, include_fallback: bool = False) -> tuple[list[SearchTask], dict[str, Path]]:
+    tasks = compile_staged_plan(bundle, platforms, include_fallback=include_fallback)
     paths = write_plan(tasks, bundle.output_dir, "staged")
     if open_browser:
         webbrowser.open(paths["html"].as_uri())

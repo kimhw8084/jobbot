@@ -14,6 +14,7 @@ from .db import Database
 from .dashboard import database_identity
 from .orchestrator import chrome_path
 from .search_plan import compile_staged_and_write
+from .strategy_runtime import fallback_activation_enabled
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,12 @@ def preflight(bundle: ConfigBundle, platforms: list[str] | None = None) -> Prefl
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise RuntimeError(f"extension files missing: {', '.join(missing)}")
-    tasks, _ = compile_staged_and_write(bundle, platforms)
+    conn = Database(bundle).connect()
+    try:
+        include_fallback = fallback_activation_enabled(conn, bundle.runtime)
+    finally:
+        conn.close()
+    tasks, _ = compile_staged_and_write(bundle, platforms, include_fallback=include_fallback)
     if not tasks or any(task.max_results is not None for task in tasks):
         raise RuntimeError("staged production search plan is empty or contains a result cap")
     port = int(bundle.runtime["runtime"]["dashboard_port"])

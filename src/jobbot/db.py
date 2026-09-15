@@ -40,10 +40,38 @@ def current_versions(conn: sqlite3.Connection) -> tuple[int, ...]:
     return tuple(int(row[0]) for row in conn.execute("SELECT version FROM schema_migrations ORDER BY version"))
 
 
+def _validated_migrations(conn: sqlite3.Connection):
+    migrations = all_migrations()
+    expected = tuple(range(1, len(migrations) + 1))
+    declared = tuple(int(migration.VERSION) for migration in migrations)
+    if declared != expected:
+        raise RuntimeError(f"migration declarations are not sequential: {declared}; expected {expected}")
+    ensure_migration_table(conn)
+    rows = conn.execute("SELECT version,name FROM schema_migrations ORDER BY version").fetchall()
+    versions = tuple(int(row[0]) for row in rows)
+    if versions != tuple(range(1, len(versions) + 1)):
+        raise RuntimeError(
+            "schema_migrations is not a sequential prefix; refusing to guess which migration ran: "
+            f"{versions}"
+        )
+    names = {int(migration.VERSION): str(migration.NAME) for migration in migrations}
+    unknown = sorted(set(versions) - set(names))
+    if unknown:
+        raise RuntimeError(f"schema_migrations contains unknown versions: {unknown}")
+    mismatched = []
+    for row in rows:
+        version = int(row[0])
+        if str(row[1]) != names[version]:
+            mismatched.append(f"{version}={row[1]!r} (expected {names[version]!r})")
+    if mismatched:
+        raise RuntimeError("schema_migrations contains unexpected names: " + ", ".join(mismatched))
+    return migrations, set(versions)
+
+
 def apply_pending(conn: sqlite3.Connection) -> tuple[int, ...]:
-    present = set(current_versions(conn))
+    migrations, present = _validated_migrations(conn)
     applied: list[int] = []
-    for migration in all_migrations():
+    for migration in migrations:
         if migration.VERSION in present:
             continue
         conn.execute("BEGIN IMMEDIATE")

@@ -11,6 +11,7 @@ from ..config import PROJECT_ROOT
 from .. import legacy_engine as j
 from .. import browser_tasks as v3
 from ..discoveries import block_detail, claim_next_detail, fail_detail, finish_detail, upsert_card
+from ..strategy_runtime import fallback_activation_enabled, with_fallback_activation
 
 BASE = PROJECT_ROOT
 j.VERSION=v3.V3_VERSION; j.c.VERSION=v3.V3_VERSION
@@ -22,7 +23,9 @@ def lease_time(seconds:int=180)->str:
     return (datetime.now(timezone.utc)+timedelta(seconds=max(1,int(seconds)))).isoformat(timespec='seconds')
 
 def open_store():
-    db,out,_,cfg,strategy=v3.paths(BASE);store=j.PrecisionStore(db);v3.init_browser_schema(store.conn);return store,cfg,strategy,out
+    db,out,_,cfg,strategy=v3.paths(BASE);store=j.PrecisionStore(db);v3.init_browser_schema(store.conn)
+    strategy=with_fallback_activation(strategy, fallback_activation_enabled(store.conn, cfg))
+    return store,cfg,strategy,out
 
 def run_log(out:Path,run_id:int|None,message:str)->None:
     if not run_id:return

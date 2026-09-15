@@ -12,6 +12,7 @@ from . import legacy_engine as j
 from .config import PROJECT_ROOT, load_bundle
 from .db import Database, apply_pending
 from .search_plan import build_search_url, compile_plan, compile_staged_plan, normalize_search_query
+from .strategy_runtime import fallback_activation_enabled
 
 V3_VERSION = "3.2.1"
 EXTENSION_ID = "jfdlmelgonjhgnabpbipjefgamedpgfb"
@@ -102,14 +103,16 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
     chosen = platforms or list(PLATFORMS)
     bad = [p for p in chosen if p not in PLATFORMS]
     if bad: raise ValueError(f"unsupported platform(s): {', '.join(bad)}")
+    store = j.PrecisionStore(db); init_browser_schema(store.conn)
+    include_fallback = fallback_activation_enabled(store.conn, bundle.runtime)
     if mode == "staged":
-        planned = compile_staged_plan(bundle, chosen)
+        planned = compile_staged_plan(bundle, chosen, include_fallback=include_fallback)
     elif mode == "staged_recent":
-        planned = compile_staged_plan(bundle, chosen, ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT"))
+        planned = compile_staged_plan(bundle, chosen, ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT"), include_fallback=include_fallback)
     elif mode == "staged_deep":
-        planned = compile_staged_plan(bundle, chosen, ("C_DEEP_BACKFILL",))
+        planned = compile_staged_plan(bundle, chosen, ("C_DEEP_BACKFILL",), include_fallback=include_fallback)
     else:
-        planned = compile_plan(bundle, mode, chosen)
+        planned = compile_plan(bundle, mode, chosen, include_fallback=include_fallback)
     tasks = [{
         "task_key": task.task_key, "platform": task.platform, "query_text": task.query,
         "window_days": task.age_days, "search_profile": task.profile,
@@ -117,7 +120,6 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         "priority": task.priority, "search_url": task.search_url,
         "execution_rank": task.execution_rank, "phase": task.phase,
     } for task in planned]
-    store = j.PrecisionStore(db); init_browser_schema(store.conn)
     now = j.now_iso()
     cur = store.conn.execute(
         "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
@@ -170,7 +172,14 @@ def enqueue_validation_sample(
     if bad:
         raise ValueError(f"unsupported platform(s): {', '.join(bad)}")
     active_bundle = bundle or load_bundle(base)
-    planned = compile_staged_plan(active_bundle, chosen, phases)
+    db = active_bundle.database_path
+    Database(active_bundle).migrate()
+    probe = Database(active_bundle).connect()
+    try:
+        include_fallback = fallback_activation_enabled(probe, active_bundle.runtime)
+    finally:
+        probe.close()
+    planned = compile_staged_plan(active_bundle, chosen, phases, include_fallback=include_fallback)
     selected: list[Any] = []
     counts: dict[tuple[str, str], int] = {}
     for task in planned:
@@ -179,8 +188,6 @@ def enqueue_validation_sample(
             continue
         selected.append(task)
         counts[key] = counts.get(key, 0) + 1
-    db = active_bundle.database_path
-    Database(active_bundle).migrate()
     store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
     rid = int(store.conn.execute(
         "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",

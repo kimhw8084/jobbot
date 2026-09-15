@@ -16,6 +16,17 @@ EXPORT_COLUMNS = (
     "requirement_gaps_json", "remote_evidence_json", "schedule_requirement", "score_components_json", "score_reasons_json",
 )
 
+DISCOVERY_COLUMNS = (
+    "result_id", "browser_run_id", "task_id", "source_site", "source_job_id", "source_url",
+    "first_seen_at", "last_seen_at", "sighting_count", "detail_read", "canonical_job_id",
+    "title_hint", "company_hint", "location_hint", "posted_text", "posted_age_days", "observed_at",
+    "card_json", "detail_status", "detail_attempts", "detail_started_at", "detail_completed_at", "detail_error",
+)
+
+APPLICATION_HISTORY_COLUMNS = (
+    "event_id", "job_id", "event_type", "event_at", "source", "notes", "title", "company", "application_status",
+)
+
 
 def safe_cell(value: Any) -> Any:
     if value is None:
@@ -34,6 +45,14 @@ def _csv(path: Path, rows: Iterable[sqlite3.Row]) -> None:
         writer.writerow(EXPORT_COLUMNS)
         for row in rows:
             writer.writerow([safe_cell(row[column]) for column in EXPORT_COLUMNS])
+
+
+def _write_columns(path: Path, columns: Sequence[str], rows: Iterable[sqlite3.Row]) -> None:
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(columns)
+        for row in rows:
+            writer.writerow([safe_cell(row[column]) for column in columns])
 
 
 def export_selected(conn: sqlite3.Connection, output_dir: Path, job_ids: Sequence[str]) -> Path:
@@ -68,6 +87,26 @@ def export_all(conn: sqlite3.Connection, output_dir: Path, *, batch_size: int = 
         path = output_dir / name
         _csv(path, _rows(conn, where, args))
         paths[name] = path
+
+    discoveries_path = output_dir / "live_discoveries.csv"
+    _write_columns(
+        discoveries_path,
+        DISCOVERY_COLUMNS,
+        conn.execute(f"SELECT {','.join(DISCOVERY_COLUMNS)} FROM search_task_results ORDER BY result_id"),
+    )
+    paths[discoveries_path.name] = discoveries_path
+
+    history_path = output_dir / "application_history.csv"
+    _write_columns(
+        history_path,
+        APPLICATION_HISTORY_COLUMNS,
+        conn.execute(
+            """SELECT e.event_id,e.job_id,e.event_type,e.event_at,COALESCE(e.source,'legacy') AS source,e.notes,
+                      j.title,j.company,j.application_status
+               FROM application_events e JOIN jobs j ON j.job_id=e.job_id ORDER BY e.event_id"""
+        ),
+    )
+    paths[history_path.name] = history_path
 
     jsonl_path = output_dir / "jobs.jsonl"
     with jsonl_path.open("w", encoding="utf-8") as handle:

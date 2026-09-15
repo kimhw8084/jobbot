@@ -7,8 +7,9 @@ import unittest
 from pathlib import Path
 
 from jobbot.config import PROJECT_ROOT
-from jobbot.db import Database
+from jobbot.db import Database, apply_pending
 from jobbot.legacy_engine import PrecisionStore, select_daily_plan
+from jobbot.strategy_runtime import fallback_activation_enabled
 
 from tests.helpers import bundle_with_database, scored
 
@@ -56,6 +57,33 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
             conn = sqlite3.connect(target)
             try: self.assertEqual(conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], before)
             finally: conn.close()
+
+    def test_migration_history_must_remain_a_sequential_prefix(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "jobs.sqlite3"
+            conn = sqlite3.connect(path)
+            conn.execute("CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)")
+            conn.execute("INSERT INTO schema_migrations VALUES(2,'durable normal-Chrome search tasks','2026-09-07T00:00:00+00:00')")
+            conn.commit()
+            with self.assertRaisesRegex(RuntimeError, "sequential prefix"):
+                apply_pending(conn)
+            self.assertEqual(conn.execute("SELECT version FROM schema_migrations").fetchall(), [(2,)])
+            conn.close()
+
+    def test_fallback_activation_uses_the_configured_unapplied_reservoir_threshold(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
+            Database(bundle).migrate()
+            conn = Database(bundle).connect()
+            self.assertTrue(fallback_activation_enabled(conn, bundle.runtime))
+            conn.executemany(
+                """INSERT INTO jobs(job_id,remote_gate,recommendation,application_status,is_active,posting_status,first_seen,last_seen)
+                   VALUES(?,?,?,?,?,?,?,?)""",
+                [(f"reservoir-{index}", "pass", "APPLY_NOW", "NEW", 1, "", "2026-09-14T00:00:00+00:00", "2026-09-14T00:00:00+00:00") for index in range(50)],
+            )
+            conn.commit()
+            self.assertFalse(fallback_activation_enabled(conn, bundle.runtime))
+            conn.close()
 
     def test_new_unchanged_updated_closed_reopened_and_cross_source_dedupe(self) -> None:
         with tempfile.TemporaryDirectory() as td:
