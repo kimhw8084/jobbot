@@ -1,0 +1,375 @@
+{
+  "accepted_at": "2026-09-16T11:59:49Z",
+  "changed_files": [
+    {
+      "additions": 681,
+      "deletions": 0,
+      "path": "verification/CHG-39-r2.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot --version; echo RC:$?'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'set +e; JOBBOT_DATABASE_PATH=\"$PWD/data/refresh_verify_20260916.sqlite3\" JOBBOT_OUTPUT_DIR=\"$PWD/out/refresh-verification-20260916\" PYTHONPATH=src rtk /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 45; rc=$?; echo \"RC=$rc\"; exit 0'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/refresh_verify_20260916b.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/out/refresh-verification-20260916b PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 8'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ps aux | rg -i '[G]oogle Chrome|Chromium' || true; rtk ls -l /Applications/Google\\\\ Chrome.app/Contents/MacOS/Google\\\\ Chrome\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ps -ww -p 5129,87483 -o pid,command'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy ps -ww -p 5129,87483 -o pid,command'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy pgrep -af 'Google Chrome' | head -30\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy ps -ww -p 4816,5109,5130,5135,86734,86737,86738,86741,86743,86744,86745,86767,86776,86940,90280,90927,90929 -o pid,ppid,command'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy open -a 'Google Chrome' 'chrome://extensions'; echo RC:\"'$?'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/refresh_verify_20260916c.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/out/refresh-verification-20260916c PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 45'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,160p' extension/dashboard.js; rtk sed -n '90,140p' extension/service_worker.js; rtk git log --oneline --all -- extension/manifest.json | head -20; rtk git show codex/jobbot-CHG-69-r2:extension/manifest.json | rtk head -20\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -m compileall -q src'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/plan_verify_deep_20260916.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/out/plan-verification-deep-20260916 PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot search-plan --mode deep'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/plan_verify_fast_20260916.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/out/plan-verification-fast-20260916 PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot search-plan --mode fast'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'set -e; for file in extension/*.js src/jobbot/web/*.js; do node --check \\\"\"'$file\"; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/doctor_verify_20260916.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/out/doctor-verification-20260916 PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -m unittest tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot validate-production --stage micro'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find data -maxdepth 1 -type f -name 'validation_*.sqlite3' -print | sort | tail -20\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' out/production-validation/micro-latest.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat out/production-validation/micro-latest.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{PROD_READY,validation_stage,validation_database,soak_database,semi_production_database,branch,head,external_blockers,internal_failures,primary_live:{run_id:.primary_live.run_id,outcome:.primary_live.outcome,terminal_classification:.primary_live.terminal_classification,validation_classification:.primary_live.validation_classification,extension_build_pass:.primary_live.extension_build_pass,bridge_restart_pass:.primary_live.bridge_restart_pass,stop_resume_pass:.primary_live.stop_resume_pass,extension_unresponsive:.primary_live.outcome.status,metrics:.primary_live.metrics,audit_platforms:.primary_live.audit.platforms}}' out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show --stat --oneline codex-fabric/evidence/jobbot/CHG-22-r4'",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git log --oneline --decorate -5 codex-fabric/evidence/jobbot/CHG-22-r4'",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"Publish|evidence branch|verification/CHG|Fabric evidence|normal Fabric\\\" -g '*.md' -g '*.command' -g '*.py' .\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git log --all --oneline -- verification/CHG-39-r2.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git log --oneline --decorate -5 codex/jobbot-CHG-22-r4; rtk git show --stat --oneline codex/jobbot-CHG-22-r4; rtk git ls-tree --name-only codex/jobbot-CHG-22-r4 verification'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -c 'import json,hashlib,sqlite3, pathlib; root=pathlib.Path.cwd(); report=root/\\\"out/production-validation/micro-latest.json\\\"; data=json.loads(report.read_text()); print(json.dumps({\\\"report_sha256\\\":hashlib.sha256(report.read_bytes()).hexdigest(),\\\"expected_manifest_build\\\":json.loads((root/\\\"extension/manifest.json\\\").read_text())[\\\"version_name\\\"],\\\"production_db\\\":str((root/\\\"data/jobs.sqlite3\\\").resolve()),\\\"validation_db\\\":data[\\\"validation_database\\\"],\\\"validation_db_differs\\\":pathlib.Path(data[\\\"validation_database\\\"]).resolve()\"'!=(root/\"data/jobs.sqlite3\").resolve(),\"refresh_dbs\":[],\"primary_outcome\":data[\"primary_live\"][\"outcome\"],\"primary_terminal\":data[\"primary_live\"][\"terminal_classification\"],\"primary_validation_classification\":data[\"primary_live\"][\"validation_classification\"],\"extension_build_pass\":data[\"primary_live\"][\"extension_build_pass\"],\"bridge_restart_pass\":data[\"primary_live\"][\"bridge_restart_pass\"],\"resume\":data[\"primary_live\"].get(\"resume\"),\"audit_platforms\":data[\"primary_live\"][\"audit\"][\"platforms\"],\"internal_failures\":data[\"internal_failures\"],\"external_blockers\":data[\"external_blockers\"],\"exit_integrity\":data[\"exit_integrity\"]},indent=2))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -c 'import json,sqlite3,pathlib; root=pathlib.Path.cwd(); out=[]; paths=[root/\\\"data/refresh_verify_20260916.sqlite3\\\",root/\\\"data/refresh_verify_20260916b.sqlite3\\\",root/\\\"data/refresh_verify_20260916c.sqlite3\\\"]; [out.append({\\\"path\\\":str(p.resolve()),\\\"exists\\\":p.exists(),\\\"differs\\\":p.resolve()\"'!=(root/\"data/jobs.sqlite3\").resolve(),\"rows\":([dict(zip([d[0] for d in c.execute(\"select * from extension_refresh_requests limit 0\").description],row)) for row in c.execute(\"select * from extension_refresh_requests\") ] if p.exists() else [])}) if p.exists() else out.append({\"path\":str(p.resolve()),\"exists\":False}) for p in paths]; print(json.dumps(out,indent=2,default=str))'\"'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -c 'import json,sqlite3,pathlib; root=pathlib.Path.cwd(); result=[]; prod=(root/\\\"data/jobs.sqlite3\\\").resolve(); paths=[root/\\\"data/refresh_verify_20260916.sqlite3\\\",root/\\\"data/refresh_verify_20260916b.sqlite3\\\",root/\\\"data/refresh_verify_20260916c.sqlite3\\\"]; \nfor p in paths:\n  item={\\\"path\\\":str(p.resolve()),\\\"exists\\\":p.exists(),\\\"differs\\\":p.resolve()\"'!=prod}\n  if p.exists():\n    c=sqlite3.connect(p); c.row_factory=sqlite3.Row\n    item[\"rows\"]=[dict(row) for row in c.execute(\"select refresh_id,browser_run_id,expected_build,status,requested_at,confirmed_at,observed_build,last_error,reload_count from extension_refresh_requests order by requested_at\")]; item[\"events\"]=[dict(row) for row in c.execute(\"select event_type,message,payload_json from browser_events order by event_id\")]; c.close()\n  result.append(item)\nprint(json.dumps(result,indent=2))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -c 'import sqlite3,json,pathlib; p=pathlib.Path(\\\"data/jobs.sqlite3\\\"); c=sqlite3.connect(p); c.row_factory=sqlite3.Row; print(json.dumps([dict(x) for x in c.execute(\\\"select refresh_id,expected_build,status,requested_at,confirmed_at,observed_build,last_error,reload_count from extension_refresh_requests order by requested_at\\\" )],indent=2)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env EXPECTED_BUILD=3.2.2-prod-ready.672cf88.1 /opt/anaconda3/bin/python3 -c 'import json,subprocess,pathlib; target=\\\"ba551d474f04b850e46aa49eb81b39f1a6ab760a\\\"; def run(*args): return subprocess.check_output([\\\"git\\\",*args],text=True).strip(); print(json.dumps({\\\"head\\\":run(\\\"rev-parse\\\",\\\"HEAD\\\"),\\\"origin_main\\\":run(\\\"rev-parse\\\",\\\"origin/main\\\"),\\\"target_tree\\\":run(\\\"show\\\",\\\"-s\\\",\\\"--format=%T\\\",target),\\\"head_tree\\\":run(\\\"show\\\",\\\"-s\\\",\\\"--format=%T\\\",\\\"HEAD\\\"),\\\"diff_name_status_target\\\":subprocess.check_output([\\\"git\\\",\\\"diff\\\",\\\"--name-status\\\",target],text=True).splitlines(),\\\"status\\\":subprocess.check_output([\\\"git\\\",\\\"status\\\",\\\"--short\\\"],text=True).splitlines(),\\\"manifest_build\\\":json.loads((pathlib.Path(\\\"extension/manifest.json\\\")).read_text())[\\\"version_name\\\"]},indent=2))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3 -c 'import json,subprocess,pathlib; target=\\\"ba551d474f04b850e46aa49eb81b39f1a6ab760a\\\"; run=lambda *args: subprocess.check_output([\\\"git\\\",*args],text=True).strip(); print(json.dumps({\\\"head\\\":run(\\\"rev-parse\\\",\\\"HEAD\\\"),\\\"origin_main\\\":run(\\\"rev-parse\\\",\\\"origin/main\\\"),\\\"target_tree\\\":run(\\\"show\\\",\\\"-s\\\",\\\"--format=%T\\\",target),\\\"head_tree\\\":run(\\\"show\\\",\\\"-s\\\",\\\"--format=%T\\\",\\\"HEAD\\\"),\\\"diff_name_status_target\\\":subprocess.check_output([\\\"git\\\",\\\"diff\\\",\\\"--name-status\\\",target],text=True).splitlines(),\\\"status\\\":subprocess.check_output([\\\"git\\\",\\\"status\\\",\\\"--short\\\"],text=True).splitlines(),\\\"manifest_build\\\":json.loads(pathlib.Path(\\\"extension/manifest.json\\\").read_text())[\\\"version_name\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -c '{preflight_ok:.preflight.ok,preflight_checks:[.preflight.checks[]|{name,ok}],micro_pass:.micro_pass,primary_live:{outcome:.primary_live.outcome,terminal_classification:.primary_live.terminal_classification,validation_classification:.primary_live.validation_classification,extension_build_pass:.primary_live.extension_build_pass,bridge_restart_pass:.primary_live.bridge_restart_pass,stop_resume_pass:.primary_live.stop_resume_pass,auth_status:(.primary_live.audit.platforms|with_entries(.value={auth_status:(.value.auth_status // \\\"unchecked\\\"),challenged:.value.challenged,auth_required:.value.auth_required,deferred_by_platform:.value.deferred_by_platform})),metrics:.primary_live.validation_metrics}}' out/production-validation/micro-latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3 -c 'import json; d=json.load(open(\\\"out/production-validation/micro-latest.json\\\")); p=d[\\\"preflight\\\"]; x=d[\\\"primary_live\\\"]; print(json.dumps({\\\"preflight_ok\\\":p[\\\"ok\\\"],\\\"preflight_checks\\\":[(c[\\\"name\\\"],c[\\\"ok\\\"]) for c in p[\\\"checks\\\"]],\\\"micro_pass\\\":d.get(\\\"micro_pass\\\",False),\\\"outcome\\\":x[\\\"outcome\\\"],\\\"terminal_classification\\\":x[\\\"terminal_classification\\\"],\\\"validation_classification\\\":x[\\\"validation_classification\\\"],\\\"extension_build_pass\\\":x[\\\"extension_build_pass\\\"],\\\"bridge_restart_pass\\\":x[\\\"bridge_restart_pass\\\"],\\\"stop_resume_pass\\\":x[\\\"stop_resume_pass\\\"],\\\"auth_challenge\\\":{k:{\\\"challenged\\\":v[\\\"challenged\\\"],\\\"auth_required\\\":v[\\\"auth_required\\\"],\\\"deferred_by_platform\\\":v[\\\"deferred_by_platform\\\"]} for k,v in x[\\\"audit\\\"][\\\"platforms\\\"].items()},\\\"validation_metrics\\\":x[\\\"validation_metrics\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3 - <<'PY'\nimport json, hashlib, pathlib, sqlite3, subprocess\nroot = pathlib.Path.cwd()\ntarget = 'ba551d474f04b850e46aa49eb81b39f1a6ab760a'\nreport_path = root / 'out/production-validation/micro-latest.json'\nreport = json.loads(report_path.read_text())\nprod = (root/'data/jobs.sqlite3').resolve()\n\ndef git(*args):\n    return subprocess.check_output(['git', *args], text=True).strip()\n\ndef refresh_rows(path):\n    p = pathlib.Path(path)\n    if not p.exists():\n        return {'path': str(p.resolve()), 'exists': False}\n    con = sqlite3.connect(p)\n    con.row_factory = sqlite3.Row\n    rows = [dict(row) for row in con.execute('SELECT refresh_id,browser_run_id,expected_build,status,requested_at,confirmed_at,observed_build,last_error,reload_count FROM extension_refresh_requests ORDER BY requested_at')]\n    events = [dict(row) for row in con.execute(\\\"SELECT event_type,message,payload_json FROM browser_events WHERE event_type LIKE 'extension_%' ORDER BY event_id\\\")]\n    con.close()\n    return {'path': str(p.resolve()), 'exists': True, 'differs_from_production': p.resolve() \"'!= prod, '\"'rows': rows, 'extension_events': events}\n\nrefresh_isolated = [refresh_rows(root/'data/refresh_verify_20260916.sqlite3'), refresh_rows(root/'data/refresh_verify_20260916b.sqlite3'), refresh_rows(root/'data/refresh_verify_20260916c.sqlite3')]\nrefresh_default = refresh_rows(prod)\npreflight = report['preflight']\nprimary = report['primary_live']\naudit_platforms = primary['audit']['platforms']\n\nartifact = {\n  'request': 'CHG-39-r2',\n  'verification_kind': 'verification_only',\n  'candidate_branch': git('branch','--show-current'),\n  'candidate_head': git('rev-parse','HEAD'),\n  'target_branch': 'main',\n  'target_sha': target,\n  'target_drift': {\n    'head_equals_target': git('rev-parse','HEAD') == target,\n    'origin_main_equals_target': git('rev-parse','origin/main') == target,\n    'target_tree': git('show','-s','--format=%T',target),\n    'head_tree': git('show','-s','--format=%T','HEAD'),\n    'git_diff_name_status_target_before_artifact': subprocess.check_output(['git','diff','--name-status',target], text=True).splitlines(),\n    'worktree_status_before_artifact': subprocess.check_output(['git','status','--short'], text=True).splitlines(),\n  },\n  'extension': {\n    'manifest_path': 'extension/manifest.json',\n    'expected_build': '3.2.2-prod-ready.672cf88.1',\n    'manifest_build_observed': report['preflight']['checks'][2]['detail'] if False else json.loads((root/'extension/manifest.json').read_text())['version_name'],\n    'runtime_observed_build': '',\n    'runtime_build_signals': [],\n    'refresh_freshness_confirmed': False,\n    'refresh_attempts_isolated': refresh_isolated,\n    'refresh_default_path_observation': refresh_default,\n    'refresh_rule': 'pass requires confirmed identity and observed_build exactly equal to expected_build; missing/unreachable/wrong build remains failed',\n  },\n  'database_isolation': {\n    'production_database': str(prod),\n    'validation_database': report['validation_database'],\n    'validation_database_differs_from_production': pathlib.Path(report['validation_database']).resolve() \"'!= prod,\n    '\"'validation_database_integrity': report['exit_integrity'].get(report['validation_database']),\n    'soak_database': {'path': report['soak_database'], 'executed': False, 'exists_after_micro': pathlib.Path(report['soak_database']).exists(), 'reason': 'micro failed; full gates are conditional on micro pass'},\n    'semi_production_database': {'path': report['semi_production_database'], 'executed': False, 'exists_after_micro': pathlib.Path(report['semi_production_database']).exists(), 'reason': 'micro failed; full gates are conditional on micro pass'},\n    'production_database_used_by_validator': False,\n    'isolation_proof': 'validator preflight isolated database check passed; validator refusal test passed; validation path resolves differently from data/jobs.sqlite3',\n  },\n  'preflight': {\n    'command': 'repository-native validator._preflight via jobbot validate-production --stage micro',\n    'ok': preflight['ok'],\n    'checks': [{'name': c['name'], 'ok': c['ok'], 'detail': c.get('detail')} for c in preflight['checks']],\n  },\n  'doctor': {\n    'command': 'JOBBOT_DATABASE_PATH=<isolated> JOBBOT_OUTPUT_DIR=<isolated> PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot doctor',\n    'exit_code': 0,\n    'database': str((root/'data/doctor_verify_20260916.sqlite3').resolve()),\n    'database_differs_from_production': (root/'data/doctor_verify_20260916.sqlite3').resolve() \"'!= prod,\n    '\"'result': 'PASS',\n  },\n  'focused_deterministic_tests': {\n    'command': 'PYTHONPATH=src /opt/anaconda3/bin/python3 -m unittest tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger -v',\n    'exit_code': 0,\n    'tests_run': 32,\n    'result': 'PASS',\n  },\n  'full_deterministic_tests': {\n    'command': 'PYTHONPATH=src /opt/anaconda3/bin/python3 -m unittest discover -s tests -v',\n    'exit_code': 0,\n    'tests_run': 81,\n    'result': 'PASS',\n  },\n  'syntax_checks': {\n    'python_compile': {'command': 'PYTHONPATH=src /opt/anaconda3/bin/python3 -m compileall -q src', 'exit_code': 0, 'result': 'PASS'},\n    'javascript_node_check': {'command': 'for file in extension/*.js src/jobbot/web/*.js; do node --check \\\"\"'$file\"; done'\"', 'exit_code': 0, 'files_checked': 8, 'result': 'PASS'},\n  },\n  'search_plan_config_validation': {\n    'fast': {'command': 'PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot search-plan --mode fast', 'exit_code': 0, 'task_count': 315, 'result': 'PASS'},\n    'deep': {'command': 'PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot search-plan --mode deep', 'exit_code': 0, 'task_count': 417, 'result': 'PASS'},\n    'validator_uncapped_plan_check': {'staged_tasks': 834, 'deep_tasks': 417, 'production_caps': 'none', 'result': 'PASS'},\n  },\n  'production_validation': {\n    'micro': {\n      'command': 'PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot validate-production --stage micro',\n      'exit_code': 1,\n      'report_path': str(report_path),\n      'report_sha256': hashlib.sha256(report_path.read_bytes()).hexdigest(),\n      'validation_stage': report['validation_stage'],\n      'run_id': primary['run_id'],\n      'outcome': primary['outcome'],\n      'terminal_classification': primary['terminal_classification'],\n      'validation_classification': primary['validation_classification'],\n      'extension_build_pass': primary['extension_build_pass'],\n      'extension_unresponsive': primary['outcome']['status'] == 'extension_unresponsive',\n      'bridge_restart_pass': primary['bridge_restart_pass'],\n      'resume_executed': primary.get('resume') is not None,\n      'stop_resume_pass': primary['stop_resume_pass'],\n      'metrics': primary['metrics'],\n      'validation_metrics': primary['validation_metrics'],\n      'auth_challenge_by_platform': {p: {'challenged': v['challenged'], 'auth_required': v['auth_required'], 'deferred_by_platform': v['deferred_by_platform']} for p,v in audit_platforms.items()},\n      'internal_failures': report['internal_failures'],\n      'external_blockers': report['external_blockers'],\n    },\n    'full': {'executed': False, 'reason': 'repository-native validator stops after failed micro; soak and semi-production gates are conditional on micro pass'},\n  },\n  'runtime_state': {\n    'primary_live_classification': primary['terminal_classification'],\n    'extension_unresponsive': primary['outcome']['status'] == 'extension_unresponsive',\n    'challenge_auth_state': 'not reached; all three platform auth states remained unchecked and no challenge/auth events were recorded',\n    'challenge_auth_by_platform': {p: {'challenged': v['challenged'], 'auth_required': v['auth_required'], 'deferred_by_platform': v['deferred_by_platform']} for p,v in audit_platforms.items()},\n    'bridge_restart_resume_state': {'forced_bridge_restart_count': primary['outcome']['bridge_restarts'], 'bridge_restart_pass': primary['bridge_restart_pass'], 'resume_attempted': primary.get('resume') is not None, 'stop_resume_pass': primary['stop_resume_pass']},\n    'terminal_classification': primary['terminal_classification'],\n  },\n  'internal_failures': report['internal_failures'],\n  'external_blockers': report['external_blockers'],\n  'PROD_READY': False,\n  'pass': False,\n  'terminal_classification': primary['terminal_classification'],\n  'no_product_source_changed': True,\n  'product_source_changes': [],\n  'commands_executed': [\n    {'command': 'rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 45', 'exit_code': 2, 'result': 'FAIL_CLOSED', 'note': 'initial maintenance invocation used default data/jobs.sqlite3 path; no validator stage used production DB'},\n    {'command': 'rtk proxy env JOBBOT_DATABASE_PATH=<isolated> JOBBOT_OUTPUT_DIR=<isolated> PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 8', 'exit_code': 2, 'result': 'FAIL_CLOSED'},\n    {'command': 'rtk proxy env JOBBOT_DATABASE_PATH=<isolated> JOBBOT_OUTPUT_DIR=<isolated> PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 45', 'exit_code': 2, 'result': 'FAIL_CLOSED'},\n    {'command': 'focused deterministic test set', 'exit_code': 0, 'result': 'PASS'},\n    {'command': 'full deterministic unittest suite', 'exit_code': 0, 'result': 'PASS'},\n    {'command': 'Python compileall', 'exit_code': 0, 'result': 'PASS'},\n    {'command': 'Node JavaScript syntax checks', 'exit_code': 0, 'result': 'PASS'},\n    {'command': 'isolated doctor', 'exit_code': 0, 'result': 'PASS'},\n    {'command': 'isolated fast search-plan', 'exit_code': 0, 'result': 'PASS'},\n    {'command': 'isolated deep search-plan', 'exit_code': 0, 'result': 'PASS'},\n    {'command': 'jobbot validate-production --stage micro', 'exit_code': 1, 'result': 'FAIL_CLOSED'},\n  ],\n  'verification_notes': [\n    'The user bootstrap report was treated only as a changed condition; runtime freshness was independently checked.',\n    'No exact expected extension_build signal was observed from the loaded runtime.',\n    'Because micro failed, repository-defined full validation gates were correctly not executed.',\n    'No source-site authentication or challenge was reached; this is not a pass.',\n    'No product integration candidate was created from verification evidence.',\n  ],\n}\npath = root/'verification/CHG-39-r2.json'\npath.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + '\\\\n')\nprint(path)\nPY\nrtk git status --short\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq empty verification/CHG-39-r2.json; rtk wc -l -c verification/CHG-39-r2.json; rtk jq '{request,candidate_head,target_sha,target_drift,extension:{expected_build,runtime_observed_build,refresh_freshness_confirmed},database_isolation,focused_deterministic_tests,full_deterministic_tests,production_validation:{micro:{exit_code,terminal_classification,validation_classification,extension_build_pass,extension_unresponsive,bridge_restart_pass,resume_executed,stop_resume_pass,internal_failures,external_blockers},full:.production_validation.full},PROD_READY,pass,no_product_source_changed,product_source_changes}' verification/CHG-39-r2.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '.extension | {expected_build,manifest_build_observed,runtime_observed_build,refresh_freshness_confirmed}' verification/CHG-39-r2.json; rtk jq '.production_validation.micro | {exit_code,terminal_classification,validation_classification,extension_build_pass,extension_unresponsive,bridge_restart_pass,resume_executed,stop_resume_pass,internal_failures,external_blockers}' verification/CHG-39-r2.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch; rtk git config --get branch.codex/jobbot-CHG-39-r2.remote || true; rtk git config --get branch.codex/jobbot-CHG-39-r2.merge || true; rtk git remote -v; rtk jq 'keys' verification/CHG-39-r2.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git ls-remote --heads origin 'codex/jobbot-CHG-39-r2' 'codex-fabric/evidence/jobbot/CHG-39-r2'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check -- verification/CHG-39-r2.json; rtk jq empty verification/CHG-39-r2.json; rtk git add verification/CHG-39-r2.json; rtk git commit -m 'chore(verification): record CHG-39-r2 validation'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sha256sum verification/CHG-39-r2.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{candidate_head,target_sha,PROD_READY,pass,no_product_source_changed,extension_freshness:.extension.refresh_freshness_confirmed,expected_build:.extension.expected_build,observed_build:.extension.runtime_observed_build,validation_db:.database_isolation.validation_database,validation_db_differs:.database_isolation.validation_database_differs_from_production,micro_exit:.production_validation.micro.exit_code,micro_status:.production_validation.micro.outcome.status,internal_failures,external_blockers}' verification/CHG-39-r2.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-status ba551d474f04b850e46aa49eb81b39f1a6ab760a -- extension src config'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-status ba551d474f04b850e46aa49eb81b39f1a6ab760a --'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 243,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.99,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 5932032,
+      "fresh_input_tokens": 184224,
+      "input_tokens": 6116256,
+      "non_reasoning_output_tokens": 13825,
+      "output_tokens": 27632,
+      "reasoning_output_tokens": 13807,
+      "total_processed_tokens": 6143888
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "9c4ad0173e52f66e1a829139ff905dc7f0c4c03e",
+      "subject": "chore(verification): record CHG-39-r2 validation"
+    }
+  ],
+  "diff": {
+    "additions": 681,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 27334,
+        "path": "verification/CHG-39-r2.json",
+        "sha256": "07725a60726593272819252314a968af5b0a0af9124f14ab0a976e43b4ff4896"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.2",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.2",
+  "failure_class": null,
+  "finished_at": "2026-09-16T12:12:56Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "ba551d474f04b850e46aa49eb81b39f1a6ab760a",
+    "branch": "codex/jobbot-CHG-39-r2",
+    "head_sha": "9c4ad0173e52f66e1a829139ff905dc7f0c4c03e",
+    "remote_exact_head": true,
+    "remote_head_sha": "9c4ad0173e52f66e1a829139ff905dc7f0c4c03e",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "ba551d474f04b850e46aa49eb81b39f1a6ab760a",
+    "work_branch": "codex/jobbot-CHG-39-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-650e2b23cff4ca73efdb48b7",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r2"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.2",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "6316fd785c456db605cb8cd3f359ac0b65cfd957f2546ebe5d596f3115bd2a61"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-16T11:59:49Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 787,
+    "queue_seconds": 0,
+    "total_seconds": 787
+  },
+  "transport": {
+    "bytes": 3942,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3662,
+    "prompt_sha256": "acd14c984114c38f1b0477270386a4cb721c32fc6317c5c777a29ce64abfa5ad",
+    "sha256": "650e2b23cff4ca73efdb48b7a3cb4052e114587d67cbf539246e6d61d7900ca4"
+  }
+}
