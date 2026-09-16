@@ -8,16 +8,29 @@ The search objective is exhaustive coverage of the configured query/platform/age
 
 Requirements: macOS, Python 3.11 or newer, normal Google Chrome, and enough disk space for the cumulative ledger.
 
-1. Double-click `INSTALL_MAC.command`, or run:
+1. Open `chrome://version` in the ordinary Chrome profile that will hold the
+   JobBot extension. Record the final component of **Profile Path** (for
+   example, `Default` or `Profile 1`). Double-click `INSTALL_MAC.command`, or
+   run it with that exact directory:
 
    ```bash
    cd "/path/containing spaces/jobbot"
-   ./INSTALL_MAC.command
+   ./INSTALL_MAC.command --profile-directory "Profile 1"
    ```
 
-2. In `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this repository’s `extension` directory. This is the one-time bootstrap for the canonical unpacked install. The stable extension ID is recorded in `config/EXTENSION_ID.txt`.
+2. In the targeted profile’s `chrome://extensions`, enable Developer mode,
+   choose **Load unpacked**, and select the exact machine-local path printed by
+   the bootstrap (macOS: `~/Library/Application Support/JobBot/extension`).
+   Never load a repository or Fabric worktree `extension` directory. The
+   stable extension ID remains recorded in `config/EXTENSION_ID.txt`.
 3. In that same normal Chrome profile, sign in normally to LinkedIn, Indeed, and Glassdoor. JobBot does not read or export cookies or passwords.
-4. For a routine source/build refresh after installation, run `./REFRESH_EXTENSION.command`. It requests `chrome.runtime.reload()` through the authenticated loopback bridge and exits successfully only after the extension reports the expected `manifest.json` `version_name`. Run launchers perform the same freshness gate automatically.
+4. After integrated source changes, run `./SYNC_EXTENSION.command` to copy the
+   exact current extension source and identity to the stable path. A routine
+   `./REFRESH_EXTENSION.command` performs that sync and then requests
+   `chrome.runtime.reload()` through the authenticated loopback bridge; it exits
+   successfully only after the intended installed instance reports a runtime
+   build exactly equal to `manifest.json` `version_name`. Run/resume launchers
+   perform the same freshness gate automatically.
 5. Run the controlled Indeed acceptance gate before a full search:
 
    ```bash

@@ -76,6 +76,8 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("JOBBOT_REFRESH_EXTENSION", worker)
         self.assertIn("extension_refresh", worker)
         self.assertIn("extension_build", worker)
+        self.assertIn("deployment_identity.json", worker)
+        self.assertIn("deployment_identity", worker)
         self.assertIn("chrome.runtime.reload", worker)
         dashboard_worker = (PROJECT_ROOT / "extension" / "dashboard.js").read_text(encoding="utf-8")
         self.assertIn("chrome.runtime.getManifest()", dashboard_worker)

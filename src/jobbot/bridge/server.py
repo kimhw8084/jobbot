@@ -69,7 +69,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urllib.parse.urlsplit(self.path)
         if not self._authorized():
-            self._json(403, {"ok": False, "error": "unauthorized"}); return
+            self._json(403, {"ok": False, "error": "unauthorized",
+                             "classification": "bridge_auth_or_configuration_failure"}); return
         if parsed.path == "/health":
             self._json(200, {"ok": True, "version": v3.V3_VERSION, "bridge": "loopback"}); return
         query = urllib.parse.parse_qs(parsed.query)
@@ -83,7 +84,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path != "/rpc":
             self._json(404, {"ok": False, "error": "not_found"}); return
         if not self._authorized():
-            self._json(403, {"ok": False, "error": "unauthorized"}); return
+            self._json(403, {"ok": False, "error": "unauthorized",
+                             "classification": "bridge_auth_or_configuration_failure"}); return
         try:
             n = int(self.headers.get("Content-Length", "0") or 0)
         except Exception:

@@ -44,7 +44,10 @@ class ValidatorIntegrationTests(unittest.TestCase):
                 conn.execute(
                     "INSERT INTO browser_events(browser_run_id,task_id,event_at,event_type,message,payload_json) "
                     "VALUES(?,?,?,?,?,?)",
-                    (run_id, task_id, "now", "extension_build", "", json.dumps({"build": extension_build(PROJECT_ROOT)})),
+                    (run_id, task_id, "now", "extension_build", extension_build(PROJECT_ROOT), json.dumps({
+                        "build": extension_build(PROJECT_ROOT),
+                        "diagnostics": {"classification": "intended_extension_reachable_and_current"},
+                    })),
                 )
                 conn.commit()
                 self.assertTrue(_extension_build_seen(bundle, run_id))

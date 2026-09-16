@@ -2,15 +2,28 @@
 
 ## Extension says disconnected or `Failed to fetch`
 
-Start the run through `python -m jobbot run-now`, `python -m jobbot resume`, or a `.command` launcher. Those commands generate the per-run port/token, request the freshness gate, and open `dashboard.html` in normal Chrome. For a maintenance-only check use `./REFRESH_EXTENSION.command`; it confirms the loaded `manifest.json` `version_name` before reporting success. Confirm the ID matches `config/EXTENSION_ID.txt`.
+Run `./INSTALL_MAC.command --profile-directory "<Profile Path final component>"`
+once, then load the exact stable path it prints (macOS:
+`~/Library/Application Support/JobBot/extension`) in that targeted ordinary
+Chrome profile. Use `./SYNC_EXTENSION.command` after integrated source changes.
+Start through `python -m jobbot run-now`, `python -m jobbot resume`, or a
+`.command` launcher. Those commands use the machine-local profile binding,
+generate the per-run port/token, request the freshness gate, and open
+`dashboard.html` in ordinary Chrome. For a maintenance-only check use
+`./REFRESH_EXTENSION.command`; it confirms the loaded `manifest.json`
+`version_name` and deployment identity before reporting success. Confirm the ID
+matches `config/EXTENSION_ID.txt`.
 
 The first `Load unpacked` installation remains a manual Chrome bootstrap. A
-refresh failure is fail-closed: `extension_unavailable_or_unreachable` means
-the installed extension did not answer before the timeout, `active_run` means
-an active browser run was protected from interruption, and
-`stale_or_wrong_extension_build` means the post-refresh identity did not match.
-Do not click Reload in `chrome://extensions` as a routine step; resolve the
-reported boundary and rerun the supported command.
+refresh failure is fail-closed and includes a structured classification:
+`intended_extension_reachable_and_current`, `wrong_or_stale_build`,
+`extension_absent_disabled_or_unavailable`,
+`wrong_or_untargeted_chrome_profile_or_instance`,
+`bridge_auth_or_configuration_failure`, or
+`bootstrap_or_deployment_source_mismatch`. `active_run` means an active browser
+run was protected from interruption. Do not click Reload in
+`chrome://extensions` as a routine step; resolve the reported boundary and
+rerun the supported command.
 
 The bridge is intentionally an ephemeral `127.0.0.1` process. When a run
 finishes or is stopped, the launcher tears it down; an extension dashboard

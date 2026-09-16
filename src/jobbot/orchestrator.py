@@ -17,6 +17,7 @@ from pathlib import Path
 from . import browser_tasks
 from .config import ConfigBundle
 from .extension_identity import extension_build
+from .runtime_binding import chrome_open_command, chrome_target_diagnostics, sync_extension
 
 
 @dataclass(frozen=True)
@@ -43,15 +44,10 @@ def chrome_path() -> str | None:
 
 
 def _open_chrome(url: str) -> None:
-    if sys.platform == "darwin":
-        # LaunchServices' background flag prevents a long read-only crawl from
-        # activating Chrome and stealing the user's current workspace.
-        subprocess.Popen(["open", "-g", "-a", "Google Chrome", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        return
+    # macOS keeps the supported background argv ["open", "-g", ...] inside
+    # chrome_open_command while adding the bound --profile-directory.
     executable = chrome_path()
-    if not executable:
-        raise RuntimeError("normal installed Google Chrome was not found")
-    subprocess.Popen([executable, url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.Popen(chrome_open_command(url, executable), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def _free_high_port() -> int:
@@ -99,10 +95,40 @@ def _run_status(bundle: ConfigBundle, run_id: int) -> str:
         conn.close()
 
 
+def _active_run_id(bundle: ConfigBundle) -> int | None:
+    """Read the durable run latch before replacing the loaded extension tree."""
+    database = bundle.database_path
+    if not database.is_file():
+        return None
+    conn = sqlite3.connect(database)
+    try:
+        row = conn.execute(
+            "SELECT browser_run_id FROM browser_runs WHERE status='running' ORDER BY browser_run_id DESC LIMIT 1"
+        ).fetchone()
+        return int(row[0]) if row else None
+    finally:
+        conn.close()
+
+
 def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, open_browser: bool = True,
                        timeout_seconds: float | None = None, stop_after_seconds: float | None = None,
                        test_bridge_restart_after: float | None = None,
                        startup_timeout_seconds: float | None = None) -> RunOutcome:
+    active_run_id = _active_run_id(bundle)
+    if active_run_id is not None:
+        raise RuntimeError(json.dumps({
+            "classification": "active_run",
+            "error": "active_run",
+            "active_run_id": active_run_id,
+        }, ensure_ascii=False, sort_keys=True))
+    sync_extension(bundle.root)
+    target = chrome_target_diagnostics()
+    if not target.get("ok"):
+        raise RuntimeError(json.dumps({
+            "classification": "wrong_or_untargeted_chrome_profile_or_instance",
+            "error": "chrome_profile_binding_required",
+            "chrome_target": target,
+        }, ensure_ascii=False, sort_keys=True))
     runtime = bundle.runtime["runtime"]
     restarts_allowed = int(runtime["bridge_restart_limit"])
     token = secrets.token_urlsafe(48)
@@ -204,9 +230,54 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
     browser run. It is intentionally independent of the production database
     run queue, so this maintenance action cannot start or mutate a search run.
     """
-    token = secrets.token_urlsafe(48)
-    extension_id = (bundle.root / "config" / "EXTENSION_ID.txt").read_text(encoding="utf-8").strip()
     expected_build = extension_build(bundle.root)
+    active_run_id = _active_run_id(bundle)
+    if active_run_id is not None:
+        return {
+            "ok": False,
+            "status": "failed",
+            "error": "active_run",
+            "active_run_id": active_run_id,
+            "diagnostics": {
+                "classification": "active_run",
+                "active_run_id": active_run_id,
+                "message": "maintenance refresh is blocked while a browser run is active",
+            },
+        }
+    try:
+        deployment = sync_extension(bundle.root)
+    except Exception as exc:
+        return {
+            "ok": False,
+            "status": "failed",
+            "error": "bootstrap_or_deployment_source_mismatch",
+            "expected_build": expected_build,
+            "diagnostics": {
+                "classification": "bootstrap_or_deployment_source_mismatch",
+                "error": str(exc),
+            },
+        }
+    target = chrome_target_diagnostics()
+    if not target.get("ok"):
+        return {
+            "ok": False,
+            "status": "failed",
+            "error": "chrome_profile_binding_required",
+            "expected_build": expected_build,
+            "deployment": deployment.as_dict(),
+            "diagnostics": {
+                "classification": "wrong_or_untargeted_chrome_profile_or_instance",
+                "chrome_target": target,
+            },
+        }
+    runtime_binding = {
+        "ok": True,
+        "classification": "runtime_binding_ready",
+        "deployment": deployment.as_dict(),
+        "chrome_target": target,
+    }
+    token = secrets.token_urlsafe(48)
+    extension_id = deployment.extension_id
     refresh_id = f"maintenance-{secrets.token_urlsafe(18)}"
     log_path = bundle.output_dir / "logs" / "extension_refresh_bridge.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -240,7 +311,7 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
         port = int(ready["port"])
         request = _request_extension_refresh(port, token, expected_build=expected_build, refresh_id=refresh_id)
         if not request.get("ok"):
-            return {"ok": False, "refresh_id": refresh_id, **request}
+            return {"ok": False, "refresh_id": refresh_id, "runtime_binding": runtime_binding, **request}
         url = (
             f"chrome-extension://{extension_id}/dashboard.html?maintenance=1"
             f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
@@ -256,11 +327,17 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
             try:
                 status = _bridge_rpc(port, token, {"action": "extension_refresh_status", "refresh_id": refresh_id}, timeout=5)
             except Exception as exc:
-                return {"ok": False, "refresh_id": refresh_id, "error": f"bridge_unavailable: {exc}"}
+                return {
+                    "ok": False,
+                    "refresh_id": refresh_id,
+                    "error": "bridge_auth_or_configuration_failure",
+                    "runtime_binding": runtime_binding,
+                    "diagnostics": {"classification": "bridge_auth_or_configuration_failure", "error": str(exc)},
+                }
             if status.get("status") == "confirmed" and status.get("identity_confirmed") is True:
-                return status
+                return {**status, "runtime_binding": runtime_binding}
             if status.get("status") == "failed":
-                return status
+                return {**status, "runtime_binding": runtime_binding}
             time.sleep(0.5)
         try:
             failed = _bridge_rpc(
@@ -273,7 +350,14 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
             failed = {}
         return {**failed, "ok": False, "refresh_id": refresh_id,
                 "status": failed.get("status", "failed"),
-                "error": "extension_unavailable_or_unreachable", "expected_build": expected_build}
+                "error": "extension_unavailable_or_unreachable", "expected_build": expected_build,
+                "runtime_binding": runtime_binding,
+                "diagnostics": {
+                    "classification": "extension_absent_disabled_or_unavailable",
+                    "expected_build": expected_build,
+                    "chrome_target": target,
+                    "deployment": deployment.as_dict(),
+                }}
     finally:
         if process is not None and process.poll() is None:
             process.terminate()

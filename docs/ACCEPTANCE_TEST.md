@@ -1,6 +1,13 @@
 # v3.2.0 Live Acceptance
 
-Install `extension/` once in the same normal Chrome profile used for each job platform. Before an acceptance run, use `./REFRESH_EXTENSION.command` if source files changed; routine run launchers request and verify this refresh automatically. Run one platform at a time:
+Complete the one-time bootstrap with `./INSTALL_MAC.command
+--profile-directory "<final component from chrome://version Profile Path>"` and
+load the exact machine-local stable extension path it prints. Do not load a
+repository or Fabric worktree path. Before an acceptance run, use
+`./SYNC_EXTENSION.command` after source changes and then
+`./REFRESH_EXTENSION.command`; routine run launchers request and verify the
+same stable-source/profile/build contract automatically. Run one platform at a
+time:
 
 ```bash
 python -m jobbot acceptance --platform indeed

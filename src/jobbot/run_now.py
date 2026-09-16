@@ -13,6 +13,7 @@ from .config import ConfigBundle
 from .db import Database
 from .dashboard import database_identity
 from .orchestrator import chrome_path
+from .runtime_binding import runtime_binding_diagnostics, sync_extension
 from .search_plan import compile_staged_and_write
 from .strategy_runtime import fallback_activation_enabled
 
@@ -24,7 +25,8 @@ class PreflightResult:
     dashboard_url: str
 
 
-def preflight(bundle: ConfigBundle, platforms: list[str] | None = None) -> PreflightResult:
+def preflight(bundle: ConfigBundle, platforms: list[str] | None = None,
+              *, require_runtime_binding: bool = False) -> PreflightResult:
     migration = Database(bundle).migrate()
     if migration.integrity_after != "ok":
         raise RuntimeError(f"database integrity check failed: {migration.integrity_after}")
@@ -38,6 +40,17 @@ def preflight(bundle: ConfigBundle, platforms: list[str] | None = None) -> Prefl
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise RuntimeError(f"extension files missing: {', '.join(missing)}")
+    if require_runtime_binding:
+        try:
+            sync_extension(bundle.root)
+        except Exception as exc:
+            raise RuntimeError(json.dumps({
+                "classification": "bootstrap_or_deployment_source_mismatch",
+                "error": str(exc),
+            }, ensure_ascii=False, sort_keys=True)) from exc
+        binding = runtime_binding_diagnostics(bundle.root)
+        if not binding.get("ok"):
+            raise RuntimeError(json.dumps(binding, ensure_ascii=False, sort_keys=True))
     conn = Database(bundle).connect()
     try:
         include_fallback = fallback_activation_enabled(conn, bundle.runtime)

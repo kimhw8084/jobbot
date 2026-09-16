@@ -17,6 +17,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0011_watch_state",
     "jobbot.migrations.m0012_watch_stop_latch",
     "jobbot.migrations.m0013_extension_refresh",
+    "jobbot.migrations.m0014_extension_runtime_binding",
 )
 
 

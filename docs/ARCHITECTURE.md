@@ -4,13 +4,22 @@
 
 The primary discovery path is ordinary installed Google Chrome → Manifest V3 extension → token-authenticated loopback bridge → Python/SQLite. The bridge binds only to `127.0.0.1`, chooses an available high port per run, requires a cryptographically random token on every request, and accepts the stable extension origin. SQLite is the source of truth after extension service-worker suspension or process failure.
 
-Routine extension freshness uses that same control plane. A launcher or the
-`refresh-extension` command records an idempotent SQLite refresh request; the
-extension dashboard asks its service worker to call `chrome.runtime.reload()`
-when the loaded code is stale, and the bridge confirms the request only after
-receiving the loaded `manifest.json` `version_name`. Requests are fail-closed
-for absent/unreachable or wrong-build extensions and are rejected while any
-browser run is active, so refresh cannot interrupt a checkpointed crawl.
+Routine extension freshness uses that same control plane. The repository-owned
+extension is first copied by `sync-extension` to the machine-local stable
+deployment path, whose marker records the exact source content identity,
+`version_name`, stable ID, and integrated source head. Chrome is bootstrapped
+once from that path; a separate machine-local binding records the selected
+ordinary-Chrome `--profile-directory`. Launchers target that profile with
+supported Chrome command-line behavior, including after Chrome restarts; they
+never inspect or modify Chrome profile files. A launcher or the
+`refresh-extension` command then records an idempotent SQLite refresh request;
+the extension dashboard asks its service worker to call
+`chrome.runtime.reload()` when the loaded code is stale, and the bridge
+confirms the request only after receiving the loaded `manifest.json`
+`version_name` plus the stable deployment identity. Requests are fail-closed
+for absent/unreachable, wrong-profile, wrong-source, or wrong-build extensions
+and are rejected while any browser run is active, so refresh cannot interrupt a
+checkpointed crawl.
 
 The extension uses one persistent search tab and one reused detail tab per task. A result card is committed to `search_task_results` before age or semantic qualification. The detail is then read and committed before normalization, canonicalization, requirement extraction, remote/employment/credential gates, and scoring.
 
