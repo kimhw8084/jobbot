@@ -31,6 +31,7 @@ from .doctor import run as run_doctor
 from .extension_identity import extension_build
 from .orchestrator import chrome_path, launch_browser_run
 from .run_now import ensure_dashboard, preflight
+from .runtime_binding import runtime_binding_diagnostics, sync_extension
 from .search_plan import compile_plan, compile_staged_plan
 
 
@@ -80,6 +81,21 @@ def _prepare_validation_bundle(bundle: ConfigBundle) -> None:
 
 def _production_db() -> Path:
     return (PROJECT_ROOT / "data" / "jobs.sqlite3").resolve()
+
+
+def _production_active_run_id() -> int | None:
+    database = _production_db()
+    if not database.is_file():
+        return None
+    import sqlite3
+    conn = sqlite3.connect(database)
+    try:
+        row = conn.execute(
+            "SELECT browser_run_id FROM browser_runs WHERE status='running' ORDER BY browser_run_id DESC LIMIT 1"
+        ).fetchone()
+        return int(row[0]) if row else None
+    finally:
+        conn.close()
 
 
 def _assert_isolated(path: Path) -> None:
@@ -444,13 +460,16 @@ def _extension_build_seen(bundle: ConfigBundle, run_id: int | None) -> bool:
     finally:
         conn.close()
     for message, payload_json in rows:
-        if str(message) == expected:
-            return True
         try:
             payload = json.loads(payload_json or "{}")
         except json.JSONDecodeError:
             payload = {}
-        if payload.get("build") == expected or payload.get("payload", {}).get("build") == expected:
+        if not isinstance(payload, dict):
+            payload = {}
+        nested = payload.get("payload", {}) if isinstance(payload.get("payload", {}), dict) else {}
+        build = payload.get("build") or nested.get("build")
+        diagnostics = payload.get("diagnostics") or nested.get("diagnostics") or {}
+        if str(message) == expected and build == expected and diagnostics.get("classification") == "intended_extension_reachable_and_current":
             return True
     return False
 
@@ -750,6 +769,24 @@ def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     required = [bundle.root / "extension" / name for name in ("manifest.json", "service_worker.js", "dashboard.html")]
     extension_ok = all(path.is_file() for path in required)
     checks.append({"name": "current unpacked extension", "ok": extension_ok, "detail": [str(x) for x in required if not x.is_file()]})
+    active_run_id = _production_active_run_id()
+    if active_run_id is not None:
+        checks.append({"name": "stable extension deployment", "ok": False, "detail": {
+            "classification": "active_run", "active_run_id": active_run_id,
+            "message": "validator preflight will not replace the deployed extension during an active production run",
+        }})
+        checks.append({"name": "targeted Chrome profile", "ok": False, "detail": {
+            "classification": "active_run", "active_run_id": active_run_id,
+        }})
+    else:
+        try:
+            sync_extension(bundle.root)
+            binding = runtime_binding_diagnostics(bundle.root)
+            checks.append({"name": "stable extension deployment", "ok": binding["deployment"]["ok"], "detail": binding["deployment"]})
+            checks.append({"name": "targeted Chrome profile", "ok": binding["chrome_target"]["ok"], "detail": binding["chrome_target"]})
+        except Exception as exc:
+            checks.append({"name": "stable extension deployment", "ok": False,
+                           "detail": {"classification": "bootstrap_or_deployment_source_mismatch", "error": str(exc)}})
     Database(bundle).migrate()
     checks.append({"name": "isolated database", "ok": bundle.database_path.resolve() != _production_db(), "detail": str(bundle.database_path)})
     doctor_ok, doctor_checks = run_doctor(bundle)

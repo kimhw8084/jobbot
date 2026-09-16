@@ -2,13 +2,21 @@
 
 Run `python -m jobbot doctor` before live work. Inspect `python -m jobbot search-plan --mode deep --open` before starting. Complete a per-platform acceptance run before the full strategy.
 
-After the one-time `Load unpacked` installation in the ordinary Chrome
-profile, use `./REFRESH_EXTENSION.command` for a maintenance refresh. It uses
-the authenticated loopback bridge and succeeds only after the loaded extension
-confirms the repository manifest `version_name`; the run and validation
-launchers request the same gate automatically. An absent, unreachable, stale,
-or wrong-build extension is a failed operation, not a success. The command
-never edits Chrome profile files.
+Complete the one-time bootstrap with `./INSTALL_MAC.command
+--profile-directory "<final component from chrome://version Profile Path>"`.
+It deploys the exact integrated extension source to the machine-local stable
+path printed by the command and records the selected profile in a separate
+machine-local binding file. Load unpacked from that stable path only. The
+repository and Fabric worktree paths are never Chrome extension sources.
+
+After bootstrap, use `./SYNC_EXTENSION.command` to deploy source changes and
+`./REFRESH_EXTENSION.command` for a maintenance refresh. Refresh uses the
+authenticated loopback bridge and succeeds only after the targeted installed
+instance reports a runtime `manifest.json` `version_name` exactly equal to the
+integrated source. The run, resume, and validation launchers request the same
+gate automatically. An absent, unreachable, stale, wrong-profile, or
+wrong-source extension is a failed operation, not a success. JobBot never
+reads or edits Chrome profile files.
 
 The macOS full launcher uses `caffeinate -dimsu` only while JobBot runs. The
 extension receives heartbeat, lease, and watchdog values from `config/runtime.toml`.

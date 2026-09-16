@@ -19,7 +19,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 14)))
+            self.assertEqual(result.applied, tuple(range(1, 15)))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -36,6 +36,8 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 self.assertTrue({"title_hint", "card_json", "detail_status", "detail_lease_until"} <= fields)
                 self.assertTrue({"cards_extracted", "cards_persistence_succeeded", "execution_rank", "phase"} <= task_fields)
                 self.assertEqual(conn.execute("SELECT type FROM sqlite_master WHERE name='extension_refresh_requests'").fetchone()[0], "table")
+                refresh_fields = {row[1] for row in conn.execute("PRAGMA table_info(extension_refresh_requests)")}
+                self.assertTrue({"observed_source_identity", "observed_deployment_root", "diagnostics_json"} <= refresh_fields)
             finally: conn.close()
 
     def test_existing_ledger_migration_uses_sqlite_backup_and_preserves_count(self) -> None:

@@ -20,8 +20,9 @@ from .doctor import run as run_doctor
 from .exports import export_all
 from .funnel import analyze
 from .ledger import open_ledger
-from .orchestrator import enqueue, launch_browser_run, refresh_extension, resume
+from .orchestrator import _open_chrome, enqueue, launch_browser_run, refresh_extension, resume
 from .run_now import ensure_dashboard, preflight
+from .runtime_binding import bind_chrome_profile, sync_extension, stable_extension_root
 from .watch import DEEP, RECENT, SUPPLEMENTAL, WatchScheduler
 from .search_plan import compile_and_write, plan_counts
 from .validator import run as run_validator
@@ -96,7 +97,7 @@ def command_run(args: argparse.Namespace) -> int:
 
 def command_run_now(args: argparse.Namespace) -> int:
     bundle = _bundle()
-    check = preflight(bundle, args.platform or None)
+    check = preflight(bundle, args.platform or None, require_runtime_binding=True)
     dashboard_url, dashboard_started = ensure_dashboard(bundle, open_browser=not args.no_open)
     print(
         f"RUN NOW preflight passed: tasks={check.task_count} database={check.database_path}\n"
@@ -146,7 +147,7 @@ def command_watch(args: argparse.Namespace) -> int:
             outcome = None
             browser_ok = True
             if has_browser:
-                preflight(bundle, args.platform or None)
+                preflight(bundle, args.platform or None, require_runtime_binding=True)
                 if RECENT in plan and DEEP in plan:
                     browser_mode = "staged"
                 elif RECENT in plan:
@@ -291,6 +292,32 @@ def command_refresh_extension(args: argparse.Namespace) -> int:
     return 0 if result.get("ok") and result.get("identity_confirmed") is True else 2
 
 
+def command_sync_extension(_args: argparse.Namespace) -> int:
+    info = sync_extension(PROJECT_ROOT)
+    print(json.dumps({
+        "ok": True,
+        "classification": "deployment_source_current",
+        "deployment": info.as_dict(),
+    }, indent=2, ensure_ascii=False))
+    return 0
+
+
+def command_bootstrap_extension(args: argparse.Namespace) -> int:
+    info = sync_extension(PROJECT_ROOT)
+    binding = bind_chrome_profile(args.profile_directory)
+    result = {
+        "ok": True,
+        "classification": "bootstrap_complete_load_unpacked_once",
+        "deployment": info.as_dict(),
+        "chrome_profile_binding": binding,
+        "next_step": f"In the targeted Chrome profile, load unpacked: {stable_extension_root()}",
+    }
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if not args.no_open:
+        _open_chrome("chrome://extensions/")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="jobbot", description=f"JobBot v{__version__} local remote-career search")
     root.add_argument("--version", action="version", version=__version__)
@@ -314,6 +341,12 @@ def parser() -> argparse.ArgumentParser:
     importer = sub.add_parser("import-db"); importer.add_argument("path"); importer.set_defaults(func=command_import)
     validator = sub.add_parser("validate-production"); validator.add_argument("--stage", choices=("micro", "full"), default="full"); validator.add_argument("--semi-minutes", type=int, default=30); validator.set_defaults(func=command_validate_production)
     refresh = sub.add_parser("refresh-extension", help="refresh the installed unpacked extension and confirm its manifest build"); refresh.add_argument("--timeout", type=float, default=45); refresh.add_argument("--no-open", action="store_true"); refresh.set_defaults(func=command_refresh_extension)
+    sync = sub.add_parser("sync-extension", help="copy the exact integrated extension source to the stable machine-local deployment")
+    sync.set_defaults(func=command_sync_extension)
+    bootstrap = sub.add_parser("bootstrap-extension", help="perform the one-time stable-source and Chrome-profile binding bootstrap")
+    bootstrap.add_argument("--profile-directory", required=True, help="Chrome profile directory from chrome://version, for example Default or Profile 1")
+    bootstrap.add_argument("--no-open", action="store_true")
+    bootstrap.set_defaults(func=command_bootstrap_extension)
     return root
 
 

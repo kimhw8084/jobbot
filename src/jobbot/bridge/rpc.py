@@ -13,6 +13,7 @@ from .. import legacy_engine as j
 from .. import browser_tasks as v3
 from ..discoveries import block_detail, claim_next_detail, fail_detail, finish_detail, upsert_card
 from ..extension_identity import extension_build as expected_extension_build
+from ..runtime_binding import deployment_diagnostics
 from ..strategy_runtime import fallback_activation_enabled, with_fallback_activation
 
 BASE = PROJECT_ROOT
@@ -46,13 +47,26 @@ def get_run(conn,rid):return conn.execute("SELECT * FROM browser_runs WHERE brow
 def _refresh_value(row):
     if row is None:
         return None
-    confirmed = str(row['status']) == 'confirmed' and str(row['observed_build']) == str(row['expected_build'])
+    try:
+        diagnostics = json.loads(row['diagnostics_json'] or '{}')
+    except (AttributeError, TypeError, json.JSONDecodeError):
+        diagnostics = {}
+    if not isinstance(diagnostics, dict):
+        diagnostics = {}
+    confirmed = (
+        str(row['status']) == 'confirmed'
+        and str(row['observed_build']) == str(row['expected_build'])
+        and diagnostics.get('classification') == 'intended_extension_reachable_and_current'
+    )
     return {
         'refresh_id': str(row['refresh_id']), 'browser_run_id': row['browser_run_id'],
         'expected_build': str(row['expected_build']), 'status': str(row['status']),
         'requested_at': row['requested_at'], 'confirmed_at': row['confirmed_at'],
         'observed_build': str(row['observed_build'] or ''),
         'last_error': str(row['last_error'] or ''), 'reload_count': int(row['reload_count'] or 0),
+        'observed_source_identity': str(row['observed_source_identity'] or ''),
+        'observed_deployment_root': str(row['observed_deployment_root'] or ''),
+        'diagnostics': diagnostics,
         'identity_confirmed': confirmed, 'refreshed': confirmed,
     }
 
@@ -76,6 +90,36 @@ def _active_run(conn, requested_run_id: int | None):
         "SELECT * FROM browser_runs WHERE status='running' ORDER BY browser_run_id DESC LIMIT 1"
     ).fetchone()
     return (active, 'active_run') if active is not None else (None, '')
+
+
+def _runtime_diagnostics(build: str, expected: str, observed: dict[str, Any]) -> tuple[bool, str, dict[str, Any]]:
+    deployment = deployment_diagnostics(BASE)
+    expected_deployment = deployment.get('expected', {})
+    build_ok = bool(build) and build == expected
+    source_ok = bool(
+        deployment.get('ok')
+        and observed.get('extension_id') == expected_deployment.get('extension_id')
+        and observed.get('version_name') == expected
+        and observed.get('source_identity') == expected_deployment.get('source_identity')
+        and observed.get('deployed_extension_root') == expected_deployment.get('extension_root')
+    )
+    if build_ok and source_ok:
+        classification = 'intended_extension_reachable_and_current'
+    elif not build_ok:
+        classification = 'wrong_or_stale_build'
+    else:
+        classification = 'bootstrap_or_deployment_source_mismatch'
+    diagnostics = {
+        'classification': classification,
+        'expected_build': expected,
+        'observed_build': build,
+        'expected_source_identity': expected_deployment.get('source_identity', ''),
+        'observed_source_identity': str(observed.get('source_identity') or ''),
+        'expected_extension_root': expected_deployment.get('extension_root', ''),
+        'observed_deployment_root': str(observed.get('deployed_extension_root') or ''),
+        'deployment': deployment,
+    }
+    return build_ok and source_ok, classification, diagnostics
 
 def _refresh_request(conn, msg, out):
     expected = j.clean_text(msg.get('expected_build') or '')
@@ -139,27 +183,34 @@ def _report_extension_build(conn, msg, out):
     row = conn.execute(
         "SELECT * FROM extension_refresh_requests WHERE refresh_id=?", (refresh_id,)
     ).fetchone() if refresh_id else None
-    valid = bool(build) and build == expected
+    observed_deployment = msg.get('deployment_identity')
+    if not isinstance(observed_deployment, dict):
+        observed_deployment = {}
+    valid, classification, diagnostics = _runtime_diagnostics(build, expected, observed_deployment)
     now = j.now_iso()
     if row is not None:
         if valid and str(row['expected_build']) == expected:
             conn.execute(
-                "UPDATE extension_refresh_requests SET status='confirmed',confirmed_at=?,observed_build=?,last_error='',reload_count=reload_count+? WHERE refresh_id=?",
-                (now, build, 1 if str(row['status']) == 'reloading' else 0, refresh_id),
+                "UPDATE extension_refresh_requests SET status='confirmed',confirmed_at=?,observed_build=?,last_error='',observed_source_identity=?,observed_deployment_root=?,diagnostics_json=?,reload_count=reload_count+? WHERE refresh_id=?",
+                (now, build, observed_deployment.get('source_identity', ''), observed_deployment.get('deployed_extension_root', ''),
+                 json.dumps(diagnostics, ensure_ascii=False), 1 if str(row['status']) == 'reloading' else 0, refresh_id),
             )
         else:
             conn.execute(
-                "UPDATE extension_refresh_requests SET status='failed',observed_build=?,last_error=? WHERE refresh_id=?",
-                (build, 'loaded extension build does not match expected manifest build', refresh_id),
+                "UPDATE extension_refresh_requests SET status='failed',observed_build=?,last_error=?,observed_source_identity=?,observed_deployment_root=?,diagnostics_json=? WHERE refresh_id=?",
+                (build, 'stale_or_wrong_extension_build' if classification == 'wrong_or_stale_build' else classification,
+                 observed_deployment.get('source_identity', ''), observed_deployment.get('deployed_extension_root', ''),
+                 json.dumps(diagnostics, ensure_ascii=False), refresh_id),
             )
     elif refresh_id and valid:
         conn.execute(
-            "INSERT INTO extension_refresh_requests(refresh_id,browser_run_id,expected_build,status,requested_at,confirmed_at,observed_build) VALUES(?,?,?,?,?,?,?)",
-            (refresh_id, rid, expected, 'confirmed', now, now, build),
+            "INSERT INTO extension_refresh_requests(refresh_id,browser_run_id,expected_build,status,requested_at,confirmed_at,observed_build,observed_source_identity,observed_deployment_root,diagnostics_json) VALUES(?,?,?,?,?,?,?,?,?,?)",
+            (refresh_id, rid, expected, 'confirmed', now, now, build, observed_deployment.get('source_identity', ''),
+             observed_deployment.get('deployed_extension_root', ''), json.dumps(diagnostics, ensure_ascii=False)),
         )
     event(conn, rid, None, 'extension_build', build or 'unknown',
           {'build': build, 'expected_build': expected, 'refresh_id': refresh_id,
-           'identity_confirmed': valid}, out)
+           'identity_confirmed': valid, 'diagnostics': diagnostics}, out)
     conn.commit()
     row = conn.execute(
         "SELECT * FROM extension_refresh_requests WHERE refresh_id=?", (refresh_id,)
@@ -170,7 +221,7 @@ def _report_extension_build(conn, msg, out):
     }
     response.update({'ok': valid and bool(response.get('ok', True)), 'build': build, 'expected_build': expected})
     if not valid:
-        response['error'] = 'stale_or_wrong_extension_build'
+        response['error'] = 'stale_or_wrong_extension_build' if classification == 'wrong_or_stale_build' else classification
     return response
 
 def platform_order_sql()->str:return "CASE platform WHEN 'linkedin' THEN 0 WHEN 'indeed' THEN 1 WHEN 'glassdoor' THEN 2 ELSE 99 END"
@@ -278,9 +329,20 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if row is None:return {'ok':False,'error':'refresh_not_found','refresh_id':refresh_id}
             if str(row['status']) == 'confirmed':return _refresh_response(row)
             if str(row['status']) != 'confirmed':
-                conn.execute("UPDATE extension_refresh_requests SET status='failed',last_error=? WHERE refresh_id=?", (reason,refresh_id))
+                classification = {
+                    'extension_unavailable_or_unreachable': 'extension_absent_disabled_or_unavailable',
+                    'bridge_auth_or_configuration_failure': 'bridge_auth_or_configuration_failure',
+                    'chrome_profile_binding_required': 'wrong_or_untargeted_chrome_profile_or_instance',
+                }.get(reason, reason)
+                diagnostics = {
+                    'classification': classification,
+                    'error': reason,
+                    'expected_build': str(row['expected_build']),
+                }
+                conn.execute("UPDATE extension_refresh_requests SET status='failed',last_error=?,diagnostics_json=? WHERE refresh_id=?",
+                             (reason, json.dumps(diagnostics, ensure_ascii=False), refresh_id))
                 event(conn, row['browser_run_id'], None, 'extension_refresh_failed', reason,
-                      {'refresh_id': refresh_id, 'expected_build': row['expected_build']}, out)
+                      {'refresh_id': refresh_id, 'expected_build': row['expected_build'], 'diagnostics': diagnostics}, out)
                 conn.commit()
                 row=conn.execute("SELECT * FROM extension_refresh_requests WHERE refresh_id=?", (refresh_id,)).fetchone()
             return {'ok':False,**(_refresh_value(row) or {}), 'error':reason}

@@ -86,13 +86,22 @@ function requireRpcOk(response,action,context={}){
   }
   return response;
 }
+async function deploymentIdentity(){
+  try{
+    const response=await fetch(chrome.runtime.getURL('deployment_identity.json'),{cache:'no-store'});
+    if(!response.ok)return{state:'missing',error:`deployment identity returned HTTP ${response.status}`};
+    const value=await response.json();
+    return value&&typeof value==='object'?{state:'present',...value}:{state:'invalid'};
+  }catch(e){return{state:'unavailable',error:String(e?.message||e)}}
+}
 async function requiredRequest(action,payload={},timeoutMs=60000){
   return requireRpcOk(await nativeRequest(action,payload,timeoutMs),action,payload);
 }
 async function reportExtensionBuild(runId=0,expectedBuild='',refreshId=''){
+  const deployment_identity=await deploymentIdentity();
   return nativeRequest('extension_build',{
     run_id:Number(runId||0), build:JOBBOT_EXTENSION_BUILD,
-    expected_build:String(expectedBuild||JOBBOT_EXTENSION_BUILD), refresh_id:String(refreshId||''),
+    expected_build:String(expectedBuild||JOBBOT_EXTENSION_BUILD), refresh_id:String(refreshId||''), deployment_identity,
   },10000);
 }
 async function requestExtensionRefresh(runId=0,expectedBuild='',refreshId=''){
@@ -100,7 +109,13 @@ async function requestExtensionRefresh(runId=0,expectedBuild='',refreshId=''){
   if(!expected)throw new Error('missing expected extension build');
   if(JOBBOT_EXTENSION_BUILD===expected){
     const signal=await reportExtensionBuild(rid,expected,key);
-    if(!signal?.ok)return signal;
+    if(!signal?.ok){
+      await nativeRequest('extension_refresh_failed',{
+        refresh_id:key,
+        error:String(signal?.error||'bootstrap_or_deployment_source_mismatch'),
+      },10000).catch(()=>{});
+      return signal;
+    }
     return {...signal,refresh_id:signal.refresh_id||key,status:signal.status||'confirmed',refreshed:false,reload_required:false};
   }
   const request=await nativeRequest('extension_refresh',{run_id:rid,expected_build:expected,refresh_id:key},10000);

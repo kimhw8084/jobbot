@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import shutil
 import sqlite3
@@ -16,10 +17,11 @@ from jobbot.bridge import rpc
 from jobbot.bridge.server import BridgeServer, Handler
 from jobbot.config import PROJECT_ROOT
 from jobbot.extension_identity import extension_build
+from jobbot.runtime_binding import DEPLOYMENT_MARKER, sync_extension
 
 
 PREDECESSOR_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88"
-REPAIRED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.1"
+REPAIRED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.2"
 
 
 class ExtensionRefreshIntegrationTests(unittest.TestCase):
@@ -33,10 +35,23 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
 
     def with_root(self, td: str):
         root = self.make_root(td)
+        self.previous_deploy_dir = os.environ.get("JOBBOT_EXTENSION_DEPLOY_DIR")
+        os.environ["JOBBOT_EXTENSION_DEPLOY_DIR"] = str(root / "deployment")
+        self.addCleanup(self.restore_deploy_dir)
+        sync_extension(root)
         previous = rpc.BASE
         rpc.BASE = root
         self.addCleanup(setattr, rpc, "BASE", previous)
         return root
+
+    def restore_deploy_dir(self) -> None:
+        if self.previous_deploy_dir is None:
+            os.environ.pop("JOBBOT_EXTENSION_DEPLOY_DIR", None)
+        else:
+            os.environ["JOBBOT_EXTENSION_DEPLOY_DIR"] = self.previous_deploy_dir
+
+    def runtime_identity(self, root: Path) -> dict[str, object]:
+        return json.loads((root / "deployment" / "extension" / DEPLOYMENT_MARKER).read_text(encoding="utf-8"))
 
     def request(self, root: Path, refresh_id: str, **extra):
         return rpc.handle({
@@ -60,6 +75,10 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
                 with self.assertRaises(urllib.error.HTTPError) as caught:
                     urllib.request.urlopen(unauthenticated, timeout=5)
                 self.assertEqual(caught.exception.code, 403)
+                self.assertEqual(
+                    json.loads(caught.exception.read().decode())["classification"],
+                    "bridge_auth_or_configuration_failure",
+                )
                 authorized = urllib.request.Request(
                     f"http://127.0.0.1:{server.server_port}/rpc", data=body,
                     headers={"Content-Type": "application/json", "X-JobBot-Token": token}, method="POST",
@@ -91,6 +110,7 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
             self.assertTrue(status["ok"])
             self.assertEqual(status["status"], "failed")
             self.assertFalse(status["refreshed"])
+            self.assertEqual(status["diagnostics"]["classification"], "extension_absent_disabled_or_unavailable")
 
     def test_repaired_identity_is_distinct_and_predecessor_build_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -108,12 +128,29 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
             signal = rpc.handle({
                 "action": "extension_build", "refresh_id": "stale", "build": PREDECESSOR_EXTENSION_BUILD,
                 "expected_build": expected,
+                "deployment_identity": self.runtime_identity(root),
             })
             self.assertFalse(signal["ok"])
             self.assertEqual(signal["error"], "stale_or_wrong_extension_build")
             status = rpc.handle({"action": "extension_refresh_status", "refresh_id": "stale"})
             self.assertEqual(status["status"], "failed")
             self.assertFalse(status["refreshed"])
+            self.assertEqual(status["diagnostics"]["classification"], "wrong_or_stale_build")
+
+    def test_wrong_deployment_source_is_rejected_even_when_build_matches(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = self.with_root(td)
+            expected = extension_build(root)
+            self.request(root, "wrong-source")
+            observed = self.runtime_identity(root)
+            observed["source_identity"] = "sha256:wrong"
+            signal = rpc.handle({
+                "action": "extension_build", "refresh_id": "wrong-source", "build": expected,
+                "expected_build": expected, "deployment_identity": observed,
+            })
+            self.assertFalse(signal["ok"])
+            self.assertEqual(signal["error"], "bootstrap_or_deployment_source_mismatch")
+            self.assertEqual(signal["diagnostics"]["classification"], "bootstrap_or_deployment_source_mismatch")
 
     def test_successful_identity_confirmation_is_idempotent_and_survives_bridge_reopen(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -129,6 +166,7 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
             confirmed = rpc.handle({
                 "action": "extension_build", "refresh_id": "success", "build": expected,
                 "expected_build": expected,
+                "deployment_identity": self.runtime_identity(root),
             })
             self.assertTrue(confirmed["ok"])
             self.assertTrue(confirmed["identity_confirmed"])
@@ -147,6 +185,28 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
                 ).fetchone()[0], 1)
             finally:
                 conn.close()
+
+    def test_legacy_build_only_confirmation_cannot_prove_the_repaired_runtime(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = self.with_root(td)
+            expected = extension_build(root)
+            self.request(root, "legacy-confirmed")
+            conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+            try:
+                conn.execute(
+                    "UPDATE extension_refresh_requests SET status='confirmed',observed_build=? WHERE refresh_id=?",
+                    (expected, "legacy-confirmed"),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+            legacy = rpc.handle({"action": "extension_refresh_status", "refresh_id": "legacy-confirmed"})
+            self.assertFalse(legacy["identity_confirmed"])
+            confirmed = rpc.handle({
+                "action": "extension_build", "refresh_id": "legacy-confirmed", "build": expected,
+                "expected_build": expected, "deployment_identity": self.runtime_identity(root),
+            })
+            self.assertTrue(confirmed["identity_confirmed"])
 
     def test_active_run_is_never_reloaded_or_mutated(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -174,6 +234,7 @@ class ExtensionRefreshIntegrationTests(unittest.TestCase):
             self.assertTrue(rpc.handle({
                 "action": "extension_build", "run_id": run_id, "refresh_id": "resume", "build": expected,
                 "expected_build": expected,
+                "deployment_identity": self.runtime_identity(root),
             })["ok"])
             self.assertTrue(rpc.handle({"action": "begin_run", "run_id": run_id})["ok"])
             task = rpc.handle({"action": "next_task", "run_id": run_id, "worker_id": "refresh-test"})["task"]
