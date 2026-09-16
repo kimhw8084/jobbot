@@ -9,5 +9,6 @@ PYTHON="$(command -v python3)"
 mkdir -p data out logs cache resumes
 "$BASE/.venv/bin/python" -m jobbot doctor
 echo
-echo "Install/reload the unpacked extension from: $BASE/extension"
+echo "One-time setup: load the unpacked extension from: $BASE/extension"
+echo "After it is loaded, routine refreshes use ./REFRESH_EXTENSION.command or the run launchers."
 open -a "Google Chrome" "chrome://extensions/"

@@ -24,6 +24,7 @@ PRODUCTION_LAUNCHERS = (
     "RUN_PLATFORM_LINKEDIN.command",
     "RUN_PLATFORM_INDEED.command",
     "RUN_PLATFORM_GLASSDOOR.command",
+    "REFRESH_EXTENSION.command",
 )
 
 

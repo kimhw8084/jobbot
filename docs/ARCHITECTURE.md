@@ -4,6 +4,14 @@
 
 The primary discovery path is ordinary installed Google Chrome → Manifest V3 extension → token-authenticated loopback bridge → Python/SQLite. The bridge binds only to `127.0.0.1`, chooses an available high port per run, requires a cryptographically random token on every request, and accepts the stable extension origin. SQLite is the source of truth after extension service-worker suspension or process failure.
 
+Routine extension freshness uses that same control plane. A launcher or the
+`refresh-extension` command records an idempotent SQLite refresh request; the
+extension dashboard asks its service worker to call `chrome.runtime.reload()`
+when the loaded code is stale, and the bridge confirms the request only after
+receiving the loaded `manifest.json` `version_name`. Requests are fail-closed
+for absent/unreachable or wrong-build extensions and are rejected while any
+browser run is active, so refresh cannot interrupt a checkpointed crawl.
+
 The extension uses one persistent search tab and one reused detail tab per task. A result card is committed to `search_task_results` before age or semantic qualification. The detail is then read and committed before normalization, canonicalization, requirement extraction, remote/employment/credential gates, and scoring.
 
 Big-3 browsing never uses Playwright, Selenium, Puppeteer, Chrome-for-Testing, cookie export, stealth, CAPTCHA solving, proxy evasion, or fingerprint alteration.

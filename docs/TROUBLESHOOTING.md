@@ -2,7 +2,15 @@
 
 ## Extension says disconnected or `Failed to fetch`
 
-Start the run through `python -m jobbot run-now`, `python -m jobbot resume`, or a `.command` launcher. Those commands generate the per-run port/token and open `dashboard.html` in normal Chrome. Reload the unpacked extension after source updates. Confirm the ID matches `config/EXTENSION_ID.txt`.
+Start the run through `python -m jobbot run-now`, `python -m jobbot resume`, or a `.command` launcher. Those commands generate the per-run port/token, request the freshness gate, and open `dashboard.html` in normal Chrome. For a maintenance-only check use `./REFRESH_EXTENSION.command`; it confirms the loaded `manifest.json` `version_name` before reporting success. Confirm the ID matches `config/EXTENSION_ID.txt`.
+
+The first `Load unpacked` installation remains a manual Chrome bootstrap. A
+refresh failure is fail-closed: `extension_unavailable_or_unreachable` means
+the installed extension did not answer before the timeout, `active_run` means
+an active browser run was protected from interruption, and
+`stale_or_wrong_extension_build` means the post-refresh identity did not match.
+Do not click Reload in `chrome://extensions` as a routine step; resolve the
+reported boundary and rerun the supported command.
 
 The bridge is intentionally an ephemeral `127.0.0.1` process. When a run
 finishes or is stopped, the launcher tears it down; an extension dashboard

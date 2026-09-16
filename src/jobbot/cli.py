@@ -20,7 +20,7 @@ from .doctor import run as run_doctor
 from .exports import export_all
 from .funnel import analyze
 from .ledger import open_ledger
-from .orchestrator import enqueue, launch_browser_run, resume
+from .orchestrator import enqueue, launch_browser_run, refresh_extension, resume
 from .run_now import ensure_dashboard, preflight
 from .watch import DEEP, RECENT, SUPPLEMENTAL, WatchScheduler
 from .search_plan import compile_and_write, plan_counts
@@ -285,6 +285,12 @@ def command_validate_production(args: argparse.Namespace) -> int:
     return run_validator(semi_minutes=args.semi_minutes, stage=args.stage)
 
 
+def command_refresh_extension(args: argparse.Namespace) -> int:
+    result = refresh_extension(_bundle(), timeout_seconds=args.timeout, open_browser=not args.no_open)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result.get("ok") and result.get("identity_confirmed") is True else 2
+
+
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="jobbot", description=f"JobBot v{__version__} local remote-career search")
     root.add_argument("--version", action="version", version=__version__)
@@ -307,6 +313,7 @@ def parser() -> argparse.ArgumentParser:
     acceptance = sub.add_parser("acceptance"); acceptance.add_argument("--platform", choices=browser_tasks.PLATFORMS, required=True); acceptance.add_argument("--days", type=int, default=7); acceptance.add_argument("--max-results", type=int, default=20); acceptance.add_argument("--enqueue-only", action="store_true"); acceptance.add_argument("--no-open", action="store_true"); acceptance.add_argument("--use-production", action="store_true"); acceptance.set_defaults(func=command_acceptance)
     importer = sub.add_parser("import-db"); importer.add_argument("path"); importer.set_defaults(func=command_import)
     validator = sub.add_parser("validate-production"); validator.add_argument("--stage", choices=("micro", "full"), default="full"); validator.add_argument("--semi-minutes", type=int, default=30); validator.set_defaults(func=command_validate_production)
+    refresh = sub.add_parser("refresh-extension", help="refresh the installed unpacked extension and confirm its manifest build"); refresh.add_argument("--timeout", type=float, default=45); refresh.add_argument("--no-open", action="store_true"); refresh.set_defaults(func=command_refresh_extension)
     return root
 
 
