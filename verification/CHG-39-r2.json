@@ -1,0 +1,681 @@
+{
+  "request": "CHG-39-r2",
+  "verification_kind": "verification_only",
+  "candidate_branch": "codex/jobbot-CHG-39-r2",
+  "candidate_head": "ba551d474f04b850e46aa49eb81b39f1a6ab760a",
+  "target_branch": "main",
+  "target_sha": "ba551d474f04b850e46aa49eb81b39f1a6ab760a",
+  "target_drift": {
+    "head_equals_target": true,
+    "origin_main_equals_target": true,
+    "target_tree": "5ac74b192ddf2313f538f1d9e51d64be454cb64b",
+    "head_tree": "5ac74b192ddf2313f538f1d9e51d64be454cb64b",
+    "git_diff_name_status_target_before_artifact": [],
+    "worktree_status_before_artifact": []
+  },
+  "extension": {
+    "manifest_path": "extension/manifest.json",
+    "expected_build": "3.2.2-prod-ready.672cf88.1",
+    "manifest_build_observed": "3.2.2-prod-ready.672cf88.1",
+    "runtime_observed_build": "",
+    "runtime_build_signals": [],
+    "refresh_freshness_confirmed": false,
+    "refresh_attempts_isolated": [
+      {
+        "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/refresh_verify_20260916.sqlite3",
+        "exists": true,
+        "differs_from_production": true,
+        "rows": [
+          {
+            "refresh_id": "maintenance--b8p8pEHd2rJsW_3psSx60Su",
+            "browser_run_id": null,
+            "expected_build": "3.2.2-prod-ready.672cf88.1",
+            "status": "failed",
+            "requested_at": "2026-09-16T12:03:07+00:00",
+            "confirmed_at": null,
+            "observed_build": "",
+            "last_error": "extension_unavailable_or_unreachable",
+            "reload_count": 0
+          }
+        ],
+        "extension_events": [
+          {
+            "event_type": "extension_refresh_requested",
+            "message": "refresh maintenance--b8p8pEHd2rJsW_3psSx60Su requested for 3.2.2-prod-ready.672cf88.1",
+            "payload_json": "{\"refresh_id\": \"maintenance--b8p8pEHd2rJsW_3psSx60Su\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+          },
+          {
+            "event_type": "extension_refresh_failed",
+            "message": "extension_unavailable_or_unreachable",
+            "payload_json": "{\"refresh_id\": \"maintenance--b8p8pEHd2rJsW_3psSx60Su\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+          }
+        ]
+      },
+      {
+        "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/refresh_verify_20260916b.sqlite3",
+        "exists": true,
+        "differs_from_production": true,
+        "rows": [
+          {
+            "refresh_id": "maintenance-7HjNfRG7VaG9vswpCZE2Vi91",
+            "browser_run_id": null,
+            "expected_build": "3.2.2-prod-ready.672cf88.1",
+            "status": "failed",
+            "requested_at": "2026-09-16T12:03:55+00:00",
+            "confirmed_at": null,
+            "observed_build": "",
+            "last_error": "extension_unavailable_or_unreachable",
+            "reload_count": 0
+          }
+        ],
+        "extension_events": [
+          {
+            "event_type": "extension_refresh_requested",
+            "message": "refresh maintenance-7HjNfRG7VaG9vswpCZE2Vi91 requested for 3.2.2-prod-ready.672cf88.1",
+            "payload_json": "{\"refresh_id\": \"maintenance-7HjNfRG7VaG9vswpCZE2Vi91\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+          },
+          {
+            "event_type": "extension_refresh_failed",
+            "message": "extension_unavailable_or_unreachable",
+            "payload_json": "{\"refresh_id\": \"maintenance-7HjNfRG7VaG9vswpCZE2Vi91\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+          }
+        ]
+      },
+      {
+        "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/refresh_verify_20260916c.sqlite3",
+        "exists": true,
+        "differs_from_production": true,
+        "rows": [
+          {
+            "refresh_id": "maintenance-7RaMJ5LyjGCAxF4cS2CbhmGX",
+            "browser_run_id": null,
+            "expected_build": "3.2.2-prod-ready.672cf88.1",
+            "status": "failed",
+            "requested_at": "2026-09-16T12:05:21+00:00",
+            "confirmed_at": null,
+            "observed_build": "",
+            "last_error": "extension_unavailable_or_unreachable",
+            "reload_count": 0
+          }
+        ],
+        "extension_events": [
+          {
+            "event_type": "extension_refresh_requested",
+            "message": "refresh maintenance-7RaMJ5LyjGCAxF4cS2CbhmGX requested for 3.2.2-prod-ready.672cf88.1",
+            "payload_json": "{\"refresh_id\": \"maintenance-7RaMJ5LyjGCAxF4cS2CbhmGX\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+          },
+          {
+            "event_type": "extension_refresh_failed",
+            "message": "extension_unavailable_or_unreachable",
+            "payload_json": "{\"refresh_id\": \"maintenance-7RaMJ5LyjGCAxF4cS2CbhmGX\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+          }
+        ]
+      }
+    ],
+    "refresh_default_path_observation": {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/jobs.sqlite3",
+      "exists": true,
+      "differs_from_production": false,
+      "rows": [
+        {
+          "refresh_id": "maintenance-ZrTG8xl2_JUja4QUxXkf91pP",
+          "browser_run_id": null,
+          "expected_build": "3.2.2-prod-ready.672cf88.1",
+          "status": "failed",
+          "requested_at": "2026-09-16T12:01:26+00:00",
+          "confirmed_at": null,
+          "observed_build": "",
+          "last_error": "extension_unavailable_or_unreachable",
+          "reload_count": 0
+        }
+      ],
+      "extension_events": [
+        {
+          "event_type": "extension_refresh_requested",
+          "message": "refresh maintenance-ZrTG8xl2_JUja4QUxXkf91pP requested for 3.2.2-prod-ready.672cf88.1",
+          "payload_json": "{\"refresh_id\": \"maintenance-ZrTG8xl2_JUja4QUxXkf91pP\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+        },
+        {
+          "event_type": "extension_refresh_failed",
+          "message": "extension_unavailable_or_unreachable",
+          "payload_json": "{\"refresh_id\": \"maintenance-ZrTG8xl2_JUja4QUxXkf91pP\", \"expected_build\": \"3.2.2-prod-ready.672cf88.1\"}"
+        }
+      ]
+    },
+    "refresh_rule": "pass requires confirmed identity and observed_build exactly equal to expected_build; missing/unreachable/wrong build remains failed"
+  },
+  "database_isolation": {
+    "production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/jobs.sqlite3",
+    "validation_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/validation_20260916T120645Z.sqlite3",
+    "validation_database_differs_from_production": true,
+    "validation_database_integrity": "ok",
+    "soak_database": {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/validation_soak_20260916T120645Z.sqlite3",
+      "executed": false,
+      "exists_after_micro": false,
+      "reason": "micro failed; full gates are conditional on micro pass"
+    },
+    "semi_production_database": {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/validation_semiprod_20260916T120645Z.sqlite3",
+      "executed": false,
+      "exists_after_micro": false,
+      "reason": "micro failed; full gates are conditional on micro pass"
+    },
+    "production_database_used_by_validator": false,
+    "isolation_proof": "validator preflight isolated database check passed; validator refusal test passed; validation path resolves differently from data/jobs.sqlite3"
+  },
+  "preflight": {
+    "command": "repository-native validator._preflight via jobbot validate-production --stage micro",
+    "ok": true,
+    "checks": [
+      {
+        "name": "candidate branch",
+        "ok": true,
+        "detail": "codex/jobbot-CHG-39-r2"
+      },
+      {
+        "name": "normal Chrome",
+        "ok": true,
+        "detail": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      },
+      {
+        "name": "current unpacked extension",
+        "ok": true,
+        "detail": []
+      },
+      {
+        "name": "isolated database",
+        "ok": true,
+        "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/validation_20260916T120645Z.sqlite3"
+      },
+      {
+        "name": "doctor",
+        "ok": true,
+        "detail": [
+          {
+            "name": "Python",
+            "ok": true,
+            "detail": "3.11.7"
+          },
+          {
+            "name": "Configuration",
+            "ok": true,
+            "detail": "strategy 3.2.0; candidate Elizabeth Kim-Ortiz"
+          },
+          {
+            "name": "Database migration",
+            "ok": true,
+            "detail": "applied=(); backup=not needed"
+          },
+          {
+            "name": "Migrations current",
+            "ok": true,
+            "detail": "(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)"
+          },
+          {
+            "name": "Extension manifest",
+            "ok": true,
+            "detail": "3.2.1"
+          },
+          {
+            "name": "Extension ID",
+            "ok": true,
+            "detail": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+          },
+          {
+            "name": "Loopback bridge RPC",
+            "ok": true,
+            "detail": "token auth and unauthorized rejection"
+          },
+          {
+            "name": "Writable data",
+            "ok": true,
+            "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data"
+          },
+          {
+            "name": "Writable out",
+            "ok": true,
+            "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/out"
+          },
+          {
+            "name": "Writable logs",
+            "ok": true,
+            "detail": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/logs"
+          },
+          {
+            "name": "Normal Google Chrome",
+            "ok": true,
+            "detail": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+          },
+          {
+            "name": "Search plan",
+            "ok": true,
+            "detail": "fast=315 deep=417; production caps=none"
+          },
+          {
+            "name": "Scoring regressions",
+            "ok": true,
+            "detail": "boundaries, role family, remote precedence"
+          },
+          {
+            "name": "Exports",
+            "ok": true,
+            "detail": "13 artifacts"
+          },
+          {
+            "name": "Resume registry",
+            "ok": true,
+            "detail": "0/4 private files present; missing files are optional and never packaged"
+          }
+        ]
+      },
+      {
+        "name": "compileall",
+        "ok": true,
+        "detail": {
+          "command": [
+            "/opt/anaconda3/bin/python3",
+            "-m",
+            "compileall",
+            "-q",
+            "src"
+          ],
+          "returncode": 0,
+          "output": ""
+        }
+      },
+      {
+        "name": "node syntax",
+        "ok": true,
+        "detail": [
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/extension/common.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/extension/dashboard.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/extension/glassdoor.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/extension/indeed.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/extension/linkedin.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/extension/selectors.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/extension/service_worker.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          },
+          {
+            "command": [
+              "node",
+              "--check",
+              "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/src/jobbot/web/dashboard.js"
+            ],
+            "returncode": 0,
+            "output": ""
+          }
+        ]
+      },
+      {
+        "name": "uncapped staged/deep search plan",
+        "ok": true,
+        "detail": {
+          "staged": 834,
+          "deep": 417
+        }
+      },
+      {
+        "name": "deterministic suite",
+        "ok": true,
+        "detail": {
+          "command": [
+            "/opt/anaconda3/bin/python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-v"
+          ],
+          "returncode": 0,
+          "output": "c_phases) ... ok\ntest_validator_refuses_production_database (integration.test_validator.ValidatorIntegrationTests.test_validator_refuses_production_database) ... ok\ntest_stop_latch_blocks_due_work_until_explicit_restart (integration.test_watch.WatchIntegrationTests.test_stop_latch_blocks_due_work_until_explicit_restart) ... ok\ntest_stopped_watcher_cannot_reawaken_when_time_becomes_due (integration.test_watch.WatchIntegrationTests.test_stopped_watcher_cannot_reawaken_when_time_becomes_due) ... ok\ntest_boundary_and_requirement_parser_regressions (regression.test_scoring.ScoringRegressionTests.test_boundary_and_requirement_parser_regressions) ... ok\ntest_complete_trusted_primary_detail_can_enter_qualified_queue (regression.test_scoring.ScoringRegressionTests.test_complete_trusted_primary_detail_can_enter_qualified_queue) ... ok\ntest_fuzzy_title_and_section_heading_precision (regression.test_scoring.ScoringRegressionTests.test_fuzzy_title_and_section_heading_precision) ... ok\ntest_growth_roles_do_not_reward_job_owned_technical_skills (regression.test_scoring.ScoringRegressionTests.test_growth_roles_do_not_reward_job_owned_technical_skills) ... ok\ntest_negative_occupation_families (regression.test_scoring.ScoringRegressionTests.test_negative_occupation_families) ... ok\ntest_positive_role_families (regression.test_scoring.ScoringRegressionTests.test_positive_role_families) ... ok\ntest_remote_clinical_management_and_employment_gates (regression.test_scoring.ScoringRegressionTests.test_remote_clinical_management_and_employment_gates) ... ok\ntest_auth_challenge_exhaustion_and_progress_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_auth_challenge_exhaustion_and_progress_fixtures) ... ok\ntest_closed_and_updated_detail_fixtures (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_closed_and_updated_detail_fixtures) ... ok\ntest_jsonld_details_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_jsonld_details_for_all_primary_platforms) ... ok\ntest_search_cards_for_all_primary_platforms (unit.test_browser_adapters.BrowserAdapterFixtureTests.test_search_cards_for_all_primary_platforms) ... ok\ntest_explicit_end_and_age_boundary_are_exhausted (unit.test_crawl_state.ExhaustionTrackerTests.test_explicit_end_and_age_boundary_are_exhausted) ... ok\ntest_safety_guards_never_claim_exhaustion (unit.test_crawl_state.ExhaustionTrackerTests.test_safety_guards_never_claim_exhaustion) ... ok\ntest_authoritative_primary_urls_and_query_normalization (unit.test_strategy.StrategyTests.test_authoritative_primary_urls_and_query_normalization) ... ok\ntest_exact_portfolio_and_taxonomy_counts (unit.test_strategy.StrategyTests.test_exact_portfolio_and_taxonomy_counts) ... ok\ntest_fallback_is_not_actionable_until_explicitly_activated (unit.test_strategy.StrategyTests.test_fallback_is_not_actionable_until_explicitly_activated) ... ok\ntest_fast_execution_order_is_explicit_fastest_door (unit.test_strategy.StrategyTests.test_fast_execution_order_is_explicit_fastest_door) ... ok\ntest_plan_counts_and_no_production_caps (unit.test_strategy.StrategyTests.test_plan_counts_and_no_production_caps) ... ok\ntest_same_query_different_window_remains_distinct (unit.test_strategy.StrategyTests.test_same_query_different_window_remains_distinct) ... ok\ntest_staged_plan_covers_recent_and_deep_core_universe (unit.test_strategy.StrategyTests.test_staged_plan_covers_recent_and_deep_core_universe) ... ok\ntest_strategy_validator_rejects_allocation_drift (unit.test_strategy.StrategyTests.test_strategy_validator_rejects_allocation_drift) ... ok\ntest_fake_clock_persists_cadence_and_explicit_states (unit.test_watch.WatchSchedulerTests.test_fake_clock_persists_cadence_and_explicit_states) ... ok\ntest_watch_schema_is_isolated_from_production_path (unit.test_watch.WatchSchedulerTests.test_watch_schema_is_isolated_from_production_path) ... ok\n\n----------------------------------------------------------------------\nRan 81 tests in 6.182s\n\nOK\n"
+        }
+      }
+    ]
+  },
+  "doctor": {
+    "command": "JOBBOT_DATABASE_PATH=<isolated> JOBBOT_OUTPUT_DIR=<isolated> PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot doctor",
+    "exit_code": 0,
+    "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/data/doctor_verify_20260916.sqlite3",
+    "database_differs_from_production": true,
+    "result": "PASS"
+  },
+  "focused_deterministic_tests": {
+    "command": "PYTHONPATH=src /opt/anaconda3/bin/python3 -m unittest tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger -v",
+    "exit_code": 0,
+    "tests_run": 32,
+    "result": "PASS"
+  },
+  "full_deterministic_tests": {
+    "command": "PYTHONPATH=src /opt/anaconda3/bin/python3 -m unittest discover -s tests -v",
+    "exit_code": 0,
+    "tests_run": 81,
+    "result": "PASS"
+  },
+  "syntax_checks": {
+    "python_compile": {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python3 -m compileall -q src",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    "javascript_node_check": {
+      "command": "for file in extension/*.js src/jobbot/web/*.js; do node --check \"$file\"; done",
+      "exit_code": 0,
+      "files_checked": 8,
+      "result": "PASS"
+    }
+  },
+  "search_plan_config_validation": {
+    "fast": {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot search-plan --mode fast",
+      "exit_code": 0,
+      "task_count": 315,
+      "result": "PASS"
+    },
+    "deep": {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot search-plan --mode deep",
+      "exit_code": 0,
+      "task_count": 417,
+      "result": "PASS"
+    },
+    "validator_uncapped_plan_check": {
+      "staged_tasks": 834,
+      "deep_tasks": 417,
+      "production_caps": "none",
+      "result": "PASS"
+    }
+  },
+  "production_validation": {
+    "micro": {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot validate-production --stage micro",
+      "exit_code": 1,
+      "report_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-650e2b23cff4ca73efdb48b7/out/production-validation/micro-latest.json",
+      "report_sha256": "f9e6b8017ee137808e7c0009b195de4a2f86a67382623b24e5965ac16f55e7a3",
+      "validation_stage": "micro",
+      "run_id": 1,
+      "outcome": {
+        "run_id": 1,
+        "status": "extension_unresponsive",
+        "bridge_restarts": 1
+      },
+      "terminal_classification": "STOPPED",
+      "validation_classification": "STOPPED",
+      "extension_build_pass": false,
+      "extension_unresponsive": true,
+      "bridge_restart_pass": true,
+      "resume_executed": false,
+      "stop_resume_pass": false,
+      "metrics": {
+        "extracted": 0,
+        "persistence_attempted": 0,
+        "persisted": 0,
+        "persistence_failed": 0,
+        "duplicates": 0,
+        "detail_pending": 0,
+        "detail_running": 0,
+        "detail_complete": 0,
+        "detail_retryable": 0,
+        "detail_failed": 0,
+        "detail_external_blocked": 0,
+        "canonical_jobs": 0,
+        "actionable": 0,
+        "apply_now": 0,
+        "apply_volume": 0,
+        "out_of_scope": 0,
+        "unexplained": 0,
+        "task_states": {
+          "queued": 3,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 0,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0,
+          "failed": 0,
+          "paused": 0,
+          "stopped": 0
+        },
+        "reconciliation": {
+          "ok": true,
+          "failures": []
+        },
+        "integrity": "ok"
+      },
+      "validation_metrics": {
+        "extracted": 0,
+        "persistence_attempted": 0,
+        "persisted": 0,
+        "persistence_failed": 0,
+        "duplicates": 0,
+        "detail_pending": 0,
+        "detail_running": 0,
+        "detail_complete": 0,
+        "detail_retryable": 0,
+        "detail_failed": 0,
+        "detail_external_blocked": 0,
+        "canonical_jobs": 0,
+        "actionable": 0,
+        "apply_now": 0,
+        "apply_volume": 0,
+        "out_of_scope": 0,
+        "unexplained": 0,
+        "task_states": {
+          "queued": 0,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 0,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0,
+          "failed": 0,
+          "paused": 0,
+          "stopped": 0
+        },
+        "reconciliation": {
+          "ok": true,
+          "attempted_tasks": 0,
+          "task_failures": 0
+        },
+        "integrity": "ok",
+        "attempted_tasks": 0,
+        "progress_tasks": 0,
+        "untouched_queued": 3,
+        "untouched_exhausted": 0,
+        "attempted_false_exhausted": 0,
+        "attempted_failed": 0,
+        "attempted_incomplete": 0,
+        "attempted_running": 0,
+        "attempted_stopped": 0,
+        "canonical_jobs_attempted": 0
+      },
+      "auth_challenge_by_platform": {
+        "linkedin": {
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0
+        },
+        "indeed": {
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0
+        },
+        "glassdoor": {
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 0
+        }
+      },
+      "internal_failures": [
+        "Chrome extension did not start the validation run within 45 seconds; run REFRESH_EXTENSION.command and rerun validator",
+        "loaded extension did not report build 3.2.2-prod-ready.672cf88.1; REFRESH_EXTENSION.command did not confirm the expected build",
+        "primary live micro-validation failed"
+      ],
+      "external_blockers": []
+    },
+    "full": {
+      "executed": false,
+      "reason": "repository-native validator stops after failed micro; soak and semi-production gates are conditional on micro pass"
+    }
+  },
+  "runtime_state": {
+    "primary_live_classification": "STOPPED",
+    "extension_unresponsive": true,
+    "challenge_auth_state": "not reached; all three platform auth states remained unchecked and no challenge/auth events were recorded",
+    "challenge_auth_by_platform": {
+      "linkedin": {
+        "challenged": 0,
+        "auth_required": 0,
+        "deferred_by_platform": 0
+      },
+      "indeed": {
+        "challenged": 0,
+        "auth_required": 0,
+        "deferred_by_platform": 0
+      },
+      "glassdoor": {
+        "challenged": 0,
+        "auth_required": 0,
+        "deferred_by_platform": 0
+      }
+    },
+    "bridge_restart_resume_state": {
+      "forced_bridge_restart_count": 1,
+      "bridge_restart_pass": true,
+      "resume_attempted": false,
+      "stop_resume_pass": false
+    },
+    "terminal_classification": "STOPPED"
+  },
+  "internal_failures": [
+    "Chrome extension did not start the validation run within 45 seconds; run REFRESH_EXTENSION.command and rerun validator",
+    "loaded extension did not report build 3.2.2-prod-ready.672cf88.1; REFRESH_EXTENSION.command did not confirm the expected build",
+    "primary live micro-validation failed"
+  ],
+  "external_blockers": [],
+  "PROD_READY": false,
+  "pass": false,
+  "terminal_classification": "STOPPED",
+  "no_product_source_changed": true,
+  "product_source_changes": [],
+  "commands_executed": [
+    {
+      "command": "rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 45",
+      "exit_code": 2,
+      "result": "FAIL_CLOSED",
+      "note": "initial maintenance invocation used default data/jobs.sqlite3 path; no validator stage used production DB"
+    },
+    {
+      "command": "rtk proxy env JOBBOT_DATABASE_PATH=<isolated> JOBBOT_OUTPUT_DIR=<isolated> PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 8",
+      "exit_code": 2,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "command": "rtk proxy env JOBBOT_DATABASE_PATH=<isolated> JOBBOT_OUTPUT_DIR=<isolated> PYTHONPATH=src /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 45",
+      "exit_code": 2,
+      "result": "FAIL_CLOSED"
+    },
+    {
+      "command": "focused deterministic test set",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "full deterministic unittest suite",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "Python compileall",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "Node JavaScript syntax checks",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "isolated doctor",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "isolated fast search-plan",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "isolated deep search-plan",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "jobbot validate-production --stage micro",
+      "exit_code": 1,
+      "result": "FAIL_CLOSED"
+    }
+  ],
+  "verification_notes": [
+    "The user bootstrap report was treated only as a changed condition; runtime freshness was independently checked.",
+    "No exact expected extension_build signal was observed from the loaded runtime.",
+    "Because micro failed, repository-defined full validation gates were correctly not executed.",
+    "No source-site authentication or challenge was reached; this is not a pass.",
+    "No product integration candidate was created from verification evidence."
+  ]
+}
