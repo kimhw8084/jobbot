@@ -4,12 +4,16 @@ import json
 import os
 import shutil
 import sqlite3
+import subprocess
 import tempfile
+import urllib.parse
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from jobbot import browser_tasks
+from jobbot import orchestrator
+from jobbot import runtime_binding
 from jobbot.config import PROJECT_ROOT, load_bundle
 from jobbot.extension_identity import extension_build
 from jobbot.orchestrator import refresh_extension
@@ -94,6 +98,30 @@ class RuntimeBindingIntegrationTests(unittest.TestCase):
                 # A Chrome restart does not change the persisted binding file.
                 self.assertEqual(chrome_target_diagnostics()["state"], "bound")
 
+    def test_already_running_chrome_delivery_uses_new_bound_normal_instance(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            url = "chrome-extension://jfdlmelgonjhgnabpbipjefgamedpgfb/dashboard.html?bridge_token=secret"
+            with patch.dict(os.environ, self.runtime_env(root), clear=False), \
+                    patch.object(runtime_binding.sys, "platform", "darwin"):
+                sync_extension(root)
+                bind_chrome_profile("Default")
+                command = chrome_open_command(url, "/ordinary/chrome")
+                self.assertEqual(command, [
+                    "open", "-n", "-g", "-a", "Google Chrome", "--args",
+                    "--profile-directory=Default", url,
+                ])
+                with patch.object(orchestrator, "chrome_path", return_value="/ordinary/chrome"), \
+                        patch.object(orchestrator.subprocess, "run", return_value=subprocess.CompletedProcess(command, 0)) as opened:
+                    receipt = orchestrator._open_chrome(url)
+            self.assertTrue(receipt["ok"])
+            self.assertTrue(receipt["issued"])
+            self.assertEqual(receipt["returncode"], 0)
+            self.assertEqual(receipt["profile_directory"], "Default")
+            self.assertEqual(receipt["url"]["extension_id"], "jfdlmelgonjhgnabpbipjefgamedpgfb")
+            self.assertEqual(opened.call_args.args[0], command)
+            self.assertNotIn("secret", receipt["command"][-1])
+
     def test_runtime_diagnostics_distinguish_bootstrap_and_profile_boundaries(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = self.make_root(td)
@@ -140,6 +168,71 @@ class RuntimeBindingIntegrationTests(unittest.TestCase):
                 self.assertEqual(result["active_run_id"], run_id)
                 self.assertEqual(result["diagnostics"]["classification"], "active_run")
                 self.assertEqual(deployment_diagnostics(root)["deployed_identity"], info.source_identity)
+
+    def _capture_launcher_url(self, root: Path, action):
+        bundle = load_bundle(root)
+        opened: list[str] = []
+
+        class FakeProcess:
+            def poll(self):
+                return None
+
+            def terminate(self):
+                return None
+
+            def wait(self, timeout=None):
+                return 0
+
+        def fake_popen(command, **_kwargs):
+            ready_path = Path(command[command.index("--ready-file") + 1])
+            ready_path.write_text(json.dumps({"port": 43123}), encoding="utf-8")
+            return FakeProcess()
+
+        def fake_open(url: str):
+            opened.append(url)
+            return {
+                "ok": True, "issued": True, "delivery": "unconfirmed",
+                "url": orchestrator._chrome_url_diagnostics(url),
+            }
+
+        with patch.dict(os.environ, self.runtime_env(root), clear=False), \
+                patch.object(runtime_binding, "_source_head", return_value="test-head"), \
+                patch.object(orchestrator, "chrome_target_diagnostics", return_value={"ok": True}), \
+                patch.object(orchestrator.subprocess, "Popen", side_effect=fake_popen), \
+                patch.object(orchestrator, "_health", return_value={"ok": True}), \
+                patch.object(orchestrator, "_request_extension_refresh", return_value={"ok": True}), \
+                patch.object(orchestrator, "_bridge_rpc", return_value={"ok": True, "status": "confirmed", "identity_confirmed": True}), \
+                patch.object(orchestrator, "_run_status", return_value="missing"), \
+                patch.object(orchestrator, "_open_chrome", side_effect=fake_open):
+            result = action(bundle)
+        return result, opened
+
+    def test_maintenance_refresh_opens_autorun_dashboard_and_confirms_delivery(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            result, opened = self._capture_launcher_url(
+                root, lambda bundle: orchestrator.refresh_extension(bundle, timeout_seconds=1)
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(len(opened), 1)
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(opened[0]).query)
+            self.assertEqual(query["maintenance"], ["1"])
+            self.assertEqual(query["autorun"], ["1"])
+            self.assertEqual(result["browser_launch"]["delivery"], "confirmed_by_extension_identity")
+
+    def test_run_and_resume_launcher_keep_autorun_dashboard_trigger(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            outcome, opened = self._capture_launcher_url(
+                root, lambda bundle: orchestrator.launch_browser_run(bundle, 42, wait=False)
+            )
+
+            self.assertEqual(outcome.status, "missing")
+            self.assertEqual(len(opened), 1)
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(opened[0]).query)
+            self.assertEqual(query["autorun"], ["1"])
+            self.assertNotIn("maintenance", query)
 
 
 if __name__ == "__main__":
