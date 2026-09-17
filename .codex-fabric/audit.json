@@ -1,0 +1,381 @@
+{
+  "accepted_at": "2026-09-17T01:56:40Z",
+  "changed_files": [
+    {
+      "additions": 115,
+      "deletions": 8,
+      "path": "src/jobbot/orchestrator.py",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 1,
+      "path": "src/jobbot/runtime_binding.py",
+      "status": "M"
+    },
+    {
+      "additions": 93,
+      "deletions": 0,
+      "path": "tests/integration/test_runtime_binding.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"config check|config|search-plan|doctor|plan_counts|compile_and_write\\\" docs verification README.md src/jobbot/cli.py | head -240; rtk sed -n '320,380p' src/jobbot/cli.py; rtk sed -n '1,140p' src/jobbot/doctor.py; rtk sed -n '1,240p' src/jobbot/config.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short && rtk git diff --check && rtk git diff --stat && rtk git diff --name-only'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=\"$PWD/data/jobs.sqlite3\" JOBBOT_OUTPUT_DIR=\"$PWD/out\" python -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=\"$PWD/data/jobs.sqlite3\" JOBBOT_OUTPUT_DIR=\"$PWD/out\" python -m jobbot search-plan --mode deep --platform linkedin'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_runtime_binding tests.integration.test_extension_refresh tests.integration.test_validator tests.integration.test_run_now tests.integration.test_browser_tasks tests.integration.test_watch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -t .'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=\"$PWD/data/jobs.sqlite3\" JOBBOT_OUTPUT_DIR=\"$PWD/out\" python -m jobbot refresh-extension --timeout 45'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git diff -- src/jobbot/runtime_binding.py src/jobbot/orchestrator.py tests/integration/test_runtime_binding.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g '*.js' -g '*.command' -g '*.sh' | sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'extension/dashboard.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'extension/glassdoor.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'extension/indeed.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'extension/common.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'extension/linkedin.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'extension/selectors.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'AUDIT.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'extension/service_worker.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'tests/extension_linkedin_scope_test.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'src/jobbot/web/dashboard.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'DOCTOR.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'INSTALL_MAC.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'IMPORT_EXISTING_DB.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk node --check 'tests/extension_primary_scope_test.js'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'OPEN_BIG3_LOGINS.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'OPEN_DASHBOARD.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'REFRESH_EXTENSION.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RESUME_SEARCH.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_ACCEPTANCE_INDEED.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_CONTINUOUS.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_FULL_SEARCH.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_FAST_SEARCH.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_NOW.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_PLATFORM_GLASSDOOR.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_PLATFORM_INDEED.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'RUN_PLATFORM_LINKEDIN.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'STOP_SEARCH.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'SYNC_EXTENSION.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'scripts/jobbot.sh'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'VALIDATE_PRODUCTION.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'VALIDATE_MICRO.command'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'scripts/mac_python.sh'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk bash -n 'scripts/production_env.sh'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=\"$PWD/data/jobs.sqlite3\" JOBBOT_OUTPUT_DIR=\"$PWD/out\" python -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=\"$PWD/data/jobs.sqlite3\" JOBBOT_OUTPUT_DIR=\"$PWD/out\" python -m jobbot search-plan --mode deep --platform linkedin'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git status --short --branch && rtk git diff --stat && rtk git diff --name-only -- extension && rtk git rev-parse main && rtk git rev-parse HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add src/jobbot/orchestrator.py src/jobbot/runtime_binding.py tests/integration/test_runtime_binding.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"fix CHG-86 already-running Chrome delivery\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push origin codex/jobbot-CHG-86-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse main && rtk git rev-parse origin/codex/jobbot-CHG-86-r2 && rtk git show --stat --oneline --decorate HEAD && rtk git diff --name-only main..HEAD && rtk git diff --name-only HEAD -- extension && rtk rg -n '\\\"version_name\\\"|version_name' extension/manifest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 267,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.3,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 7527936,
+      "fresh_input_tokens": 208775,
+      "input_tokens": 7736711,
+      "non_reasoning_output_tokens": 12785,
+      "output_tokens": 31270,
+      "reasoning_output_tokens": 18485,
+      "total_processed_tokens": 7767981
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "7680cfb849d8b7d226ab2b518b0aa997140cb22f",
+      "subject": "fix CHG-86 already-running Chrome delivery"
+    }
+  ],
+  "diff": {
+    "additions": 212,
+    "changed_files": 3,
+    "commit_count": 1,
+    "deletions": 9
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-17T02:19:52Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "59ea04fa7fb37ef3f74c938e1acde6bf91bb2c62",
+    "branch": "codex/jobbot-CHG-86-r2",
+    "head_sha": "7680cfb849d8b7d226ab2b518b0aa997140cb22f",
+    "remote_exact_head": true,
+    "remote_head_sha": "7680cfb849d8b7d226ab2b518b0aa997140cb22f",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "59ea04fa7fb37ef3f74c938e1acde6bf91bb2c62",
+    "work_branch": "codex/jobbot-CHG-86-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-3b93813f32e78bf4daa5c321",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-86-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-86-r2"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-86-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-17T02:08:00Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 712,
+    "queue_seconds": 680,
+    "total_seconds": 1392
+  },
+  "transport": {
+    "bytes": 3865,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3588,
+    "prompt_sha256": "c2187d1d68e198b8c518fc0355d0bfc9467fb48a0a6d959ddedbab8fc8d0b86c",
+    "sha256": "3b93813f32e78bf4daa5c32112bdc86757c02cb6650d091d2d8c93e77f1b26dd"
+  }
+}
