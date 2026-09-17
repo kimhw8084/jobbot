@@ -1,0 +1,269 @@
+{
+  "request": "CHG-39-r3",
+  "verification_kind": "verification_only",
+  "candidate_branch": "codex/jobbot-CHG-39-r3",
+  "candidate_head": "59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e",
+  "target_branch": "main",
+  "target_ref_checked": "origin/main",
+  "target_sha": "59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e",
+  "target_drift": {
+    "head_equals_target": true,
+    "origin_main_equals_target": true,
+    "head_tree": "9cd42b9914f90dfbc40e7473975e2de9a9fb3e92",
+    "target_tree": "9cd42b9914f90dfbc40e7473975e2de9a9fb3e92",
+    "diff_origin_main_to_head": [],
+    "worktree_status_before_artifact": [],
+    "local_main_pointer_observed": "59ea04fa7fb37ef3f74c938e1acde6bf91bb2c62",
+    "local_main_pointer_mutated": false
+  },
+  "product_source_changes": {
+    "changed": false,
+    "diff_target_to_head": [],
+    "product_source_paths_modified": [],
+    "worktree_clean_after_validation_before_artifact": true
+  },
+  "extension": {
+    "manifest_path": "extension/manifest.json",
+    "manifest_version": 3,
+    "expected_build": "3.2.2-prod-ready.672cf88.2",
+    "manifest_build_observed": "3.2.2-prod-ready.672cf88.2",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "profile_binding_path": "/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json",
+    "browser": "Google Chrome",
+    "profile_directory": "Default",
+    "source_identity": "sha256:bdbe175cf0808f92781427470558856ad4789c7261edfc795927070fad049374",
+    "deployed_identity": "sha256:bdbe175cf0808f92781427470558856ad4789c7261edfc795927070fad049374",
+    "deployment_diagnostics": "deployed_source_current",
+    "runtime_binding_diagnostics": "runtime_binding_ready",
+    "content_identity_matches_current_head": true,
+    "marker_source_head_observed": "59ea04fa7fb37ef3f74c938e1acde6bf91bb2c62",
+    "marker_source_head_note": "historical marker head differs, but the deployed content identity matches the current integrated extension tree and the repository runtime contract passes"
+  },
+  "maintenance_refresh": {
+    "command": "./REFRESH_EXTENSION.command",
+    "exit_code": 0,
+    "refresh_id": "maintenance-5NhFXiT1TNDcItdq9LH5xypu",
+    "browser_run_id": null,
+    "ok": true,
+    "identity_confirmed": true,
+    "refreshed": true,
+    "status": "confirmed",
+    "expected_build": "3.2.2-prod-ready.672cf88.2",
+    "observed_build": "3.2.2-prod-ready.672cf88.2",
+    "observed_source_identity": "sha256:bdbe175cf0808f92781427470558856ad4789c7261edfc795927070fad049374",
+    "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "diagnostics_classification": "intended_extension_reachable_and_current",
+    "browser_launch": {
+      "delivery": "confirmed_by_extension_identity",
+      "returncode": 0,
+      "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+      "profile_directory": "Default",
+      "command": [
+        "open", "-n", "-g", "-a", "Google Chrome", "--args",
+        "--profile-directory=Default",
+        "chrome-extension://jfdlmelgonjhgnabpbipjefgamedpgfb/dashboard.html?maintenance=1&autorun=1&bridge_port=59693&bridge_token=%3Credacted%3E&expected_build=3.2.2-prod-ready.672cf88.2&refresh_id=maintenance-5NhFXiT1TNDcItdq9LH5xypu"
+      ]
+    },
+    "bridge_auth": "token-authenticated 127.0.0.1 bridge health/RPC passed; unauthorized request rejected"
+  },
+  "deterministic_prerequisites": {
+    "focused_runtime_refresh_bridge_validator_database_run_tests": {
+      "command": ".venv/bin/python -m unittest -v tests.integration.test_runtime_binding tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_validator tests.integration.test_database_ledger tests.integration.test_run_now",
+      "exit_code": 0,
+      "tests": 49
+    },
+    "full_unittest": {
+      "command": ".venv/bin/python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "tests": 92
+    },
+    "python_compile": {
+      "command": ".venv/bin/python -m compileall -q src tests",
+      "exit_code": 0
+    },
+    "javascript_syntax_and_scope": {
+      "files": [
+        "extension/common.js", "extension/dashboard.js", "extension/glassdoor.js",
+        "extension/indeed.js", "extension/linkedin.js", "extension/selectors.js",
+        "extension/service_worker.js", "src/jobbot/web/dashboard.js"
+      ],
+      "syntax_exit_code": 0,
+      "scope_fixture_commands_exit_code": 0
+    },
+    "shell_syntax": {
+      "files": "all *.command launchers plus scripts/mac_python.sh scripts/production_env.sh scripts/jobbot.sh",
+      "command": "zsh -n",
+      "exit_code": 0
+    },
+    "config_validation": {
+      "exit_code": 0,
+      "strategy_version": "3.2.0",
+      "core_allocations": {
+        "HEALTHCARE_OPS_ACCESS": 35,
+        "HEALTHCARE_INFO_QA": 15,
+        "HEALTHCARE_QUALITY_DATA": 20,
+        "HEALTHCARE_IMPLEMENTATION": 10,
+        "HIGHER_ED_EDTECH": 15,
+        "CONTENT_AI_QUALITY": 5
+      },
+      "bridge_host": "127.0.0.1",
+      "production_max_results": null
+    },
+    "doctor": {
+      "command": "JOBBOT_DATABASE_PATH=data/verification-prereq-20260916.sqlite3 JOBBOT_OUTPUT_DIR=out/verification-prereq-20260916 JOBBOT_DASHBOARD_PORT=18765 .venv/bin/python -m jobbot doctor",
+      "exit_code": 0,
+      "database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/verification-prereq-20260916.sqlite3",
+      "checks": "all PASS, including normal Chrome, MV3/ID, bridge auth, search plan, migrations, scoring, exports, and resume registry"
+    },
+    "search_plan_fast": {
+      "command": ".venv/bin/python -m jobbot search-plan --mode fast",
+      "exit_code": 0,
+      "tasks": 315,
+      "by_platform": {"linkedin": 105, "indeed": 105, "glassdoor": 105}
+    },
+    "search_plan_deep": {
+      "command": ".venv/bin/python -m jobbot search-plan --mode deep",
+      "exit_code": 0,
+      "tasks": 417,
+      "by_platform": {"linkedin": 139, "indeed": 139, "glassdoor": 139}
+    },
+    "isolated_preflight": {
+      "command": "JOBBOT_DATABASE_PATH=data/verification-preflight-20260916.sqlite3 JOBBOT_OUTPUT_DIR=out/verification-preflight-20260916 JOBBOT_DASHBOARD_PORT=18766 preflight(require_runtime_binding=True)",
+      "exit_code": 0,
+      "database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/verification-preflight-20260916.sqlite3",
+      "production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/jobs.sqlite3",
+      "differs_from_production": true,
+      "task_count": 864,
+      "runtime_binding_required_and_passed": true
+    }
+  },
+  "production_validation": {
+    "production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/jobs.sqlite3",
+    "production_database_used_by_unattended_validation": false,
+    "micro": {
+      "command": "./VALIDATE_MICRO.command",
+      "exit_code": 0,
+      "report_path": "out/production-validation/micro-latest.json",
+      "report_sha256": "3606f44365a1ab2d8aeb3d42e3d6261eb1f4eb86ecc66c447980fa84cf811aca",
+      "database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/validation_20260917T031856Z.sqlite3",
+      "differs_from_production": true,
+      "PROD_READY": false,
+      "micro_pass": true,
+      "internal_failures": [],
+      "external_blockers": [],
+      "primary_live": {
+        "run_id": 1,
+        "initial_status": "stopped",
+        "resume_status": "stopped",
+        "terminal_classification": "STOPPED",
+        "validation_classification": "VALIDATION_WINDOW_COMPLETE",
+        "stop_resume_pass": true,
+        "bridge_restart_pass": true,
+        "initial_bridge_restarts": 1,
+        "extension_build_pass": true,
+        "extension_unresponsive": false,
+        "auth_challenge": {
+          "linkedin": "verified",
+          "indeed": "unchecked",
+          "glassdoor": "unchecked",
+          "challenged_tasks": 0,
+          "auth_required_tasks": 0
+        },
+        "metrics": {
+          "extracted": 28,
+          "persisted": 28,
+          "persistence_failed": 0,
+          "detail_complete": 20,
+          "detail_pending": 1,
+          "unexplained": 0,
+          "reconciliation_ok": true,
+          "integrity": "ok"
+        }
+      }
+    },
+    "full": {
+      "command": "./VALIDATE_PRODUCTION.command --semi-minutes 30",
+      "exit_code": 1,
+      "report_path": "out/production-validation/latest.json",
+      "report_sha256": "2ea7f1b92b342408c2812bc35f28214ea1bd59e5f288f91449343e53c0c7fd1e",
+      "started_at": "2026-09-17T03:23:00+00:00",
+      "finished_at": "2026-09-17T04:18:57+00:00",
+      "validation_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/validation_20260917T032300Z.sqlite3",
+      "soak_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/validation_soak_20260917T032300Z.sqlite3",
+      "semi_production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-a97507d6548c75156a66798c/data/validation_semiprod_20260917T032300Z.sqlite3",
+      "all_validation_databases_differ_from_production": true,
+      "exit_integrity": "ok for all three validation databases",
+      "internal_failures": ["semi-production validation failed"],
+      "external_blockers": [],
+      "extension_unresponsive": false,
+      "primary_live": {
+        "pass": true,
+        "run_id": 1,
+        "initial_status": "stopped",
+        "resume_status": "stopped",
+        "initial_bridge_restarts": 1,
+        "bridge_restart_pass": true,
+        "stop_resume_pass": true,
+        "extension_build_pass": true,
+        "terminal_classification": "STOPPED",
+        "validation_classification": "VALIDATION_WINDOW_COMPLETE"
+      },
+      "soak": {
+        "pass": true,
+        "run_id": 1,
+        "initial_status": "stopped",
+        "resume_status": "stopped",
+        "bridge_restart_pass": true,
+        "extension_build_pass": true,
+        "supplemental_isolation_pass": true
+      },
+      "semi_production": {
+        "pass": false,
+        "phase_pass": {
+          "A_FASTEST_DOOR_RECENT": true,
+          "B_REMAINING_CORE_RECENT": true,
+          "C_DEEP_BACKFILL": true
+        },
+        "phase_runs": {
+          "A_FASTEST_DOOR_RECENT": {"run_id": 1, "initial_status": "stopped", "resume_status": "stopped", "stop_resume_pass": true},
+          "B_REMAINING_CORE_RECENT": {"run_id": 2, "initial_status": "stopped", "resume_status": null, "stop_resume_pass": false},
+          "C_DEEP_BACKFILL": {"run_id": 3, "initial_status": "stopped", "resume_status": null, "stop_resume_pass": false}
+        },
+        "supplemental_isolation_pass": true,
+        "dashboard_identity_ok": true,
+        "dashboard_live_refresh_ok": true,
+        "auth_challenge": {
+          "linkedin": "verified",
+          "indeed": "unchecked",
+          "glassdoor": "unchecked",
+          "challenged_tasks": 0,
+          "auth_required_tasks": 0,
+          "note": "unchecked platforms are not claimed as successful and were not converted into an external blocker by the validator"
+        }
+      }
+    }
+  },
+  "bounded_fix_evidence": {
+    "classification": "internal_repository_defect",
+    "failure_surface": "semi-production final aggregation",
+    "source_location": "src/jobbot/validator.py:1098-1118",
+    "helper_contract": "src/jobbot/validator.py:726-739 expects {phase: {platform: metrics}}",
+    "observed_report_shape": "execution_evidence[phase] = phase_result[execution], yielding {phase: {phase: {platform: metrics}}}",
+    "direct_reproduction": {
+      "reported_semi_pass": false,
+      "phase_pass": {"A_FASTEST_DOOR_RECENT": true, "B_REMAINING_CORE_RECENT": true, "C_DEEP_BACKFILL": true},
+      "coverage_on_report_shape": false,
+      "coverage_on_flat_shape": true
+    },
+    "bounded_fix": "Normalize execution_evidence to the helper's declared flat phase/platform shape before calling _phase_coverage_pass, or change the helper call contract; add a regression test for the live report shape.",
+    "product_source_modified": false
+  },
+  "final": {
+    "classification": "NO_GO_FIX_REQUIRED",
+    "PROD_READY": false,
+    "delivery": "Not applicable",
+    "integration_handoff": "none; verification-only change",
+    "next_action": "bounded FIX to validator aggregation only, then rerun exact-main verification; do not change product source based on this verification"
+  }
+}
