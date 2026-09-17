@@ -1,0 +1,330 @@
+{
+  "accepted_at": "2026-09-17T01:17:20Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "src/jobbot/orchestrator.py",
+      "status": "M"
+    },
+    {
+      "additions": 60,
+      "deletions": 0,
+      "path": "tests/integration/test_runtime_binding.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && printf '%s\\\\n' '--- repo state ---' && git status --short --branch && printf '%s\\\\n' '--- head ---' && git rev-parse HEAD && printf '%s\\\\n' '--- guidance ---' && sed -n '1,240p' /Users/haewonkim/.codex/RTK.md && printf '%s\\\\n' '--- law ---' && sed -n '1,240p' /Users/haewonkim/.codex/law.md && printf '%s\\\\n' '--- files ---' && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' | sort | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n --hidden --glob '\"'!node_modules'\"' --glob '\"'!vendor'\"' \\\"refresh_extension|autorun|reloadStaleExtension|maintenance\\\" .\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,380p' src/jobbot/orchestrator.py && rtk sed -n '1,180p' extension/dashboard.js && rtk sed -n '1,240p' tests/integration/test_runtime_binding.py && rtk sed -n '1,180p' tests/integration/test_extension_bridge.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"_open_chrome|launch_browser_run|refresh_extension|run-now|resume|dashboard.html\\\\?\\\" tests src docs config README* Makefile pyproject.toml setup.cfg package.json 2>/dev/null\"",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' tests/integration/test_run_now.py && rtk sed -n '1,300p' tests/integration/test_extension_refresh.py && rtk rg --files -g '\"'!node_modules'\"' -g '\"'!vendor'\"' | sort | sed -n '1,240p' && rtk find . -maxdepth 2 -type f \\\\( -name 'pyproject.toml' -o -name 'Makefile' -o -name 'package.json' -o -name '*.command' -o -name 'README.md' \\\\) -print\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,220p' pyproject.toml && rtk sed -n '1,220p' tests/integration/test_launcher_environment.py && rtk sed -n '1,220p' src/jobbot/runtime_binding.py && rtk sed -n '1,180p' src/jobbot/bridge/server.py && rtk sed -n '1,380p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '70,125p' src/jobbot/cli.py && rtk sed -n '185,215p' src/jobbot/cli.py && rtk sed -n '1,220p' config/runtime.toml && rtk git log --oneline --decorate -12 && rtk git show --stat --oneline HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,90p' docs/OPERATIONS.md && rtk sed -n '1,70p' docs/TROUBLESHOOTING.md && rtk sed -n '1,80p' REFRESH_EXTENSION.command && rtk sed -n '1,120p' RESUME_SEARCH.command && rtk sed -n '1,120p' RUN_NOW.command\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- tests/integration/test_runtime_binding.py && rtk python -m unittest tests.integration.test_runtime_binding -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la && rtk rg -n \"PYTHONPATH|JOBBOT_PYTHON|unittest|test suite|compileall|node --check|bash -n|search-plan|doctor\" README.md scripts *.command .github 2>/dev/null | head -240'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_runtime_binding.RuntimeBindingIntegrationTests.test_maintenance_refresh_opens_autorun_dashboard -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_runtime_binding.RuntimeBindingIntegrationTests.test_run_and_resume_launcher_keep_autorun_dashboard_trigger -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_runtime_binding -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,235p' tests/integration/test_runtime_binding.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_runtime_binding -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,380p' src/jobbot/cli.py && rtk sed -n '120,155p' README.md && rtk sed -n '1,180p' .github/workflows/ci.yml && rtk rg -n \\\"config check|config|search-plan|doctor|validate.*config|compileall|shellcheck|bash -n\\\" docs README.md scripts tests src/jobbot | head -260\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git diff --stat && rtk git diff -- src/jobbot/orchestrator.py tests/integration/test_runtime_binding.py && rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_runtime_binding tests.integration.test_extension_refresh tests.integration.test_validator -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' src/jobbot/doctor.py && rtk sed -n '1,150p' src/jobbot/config.py && rtk sed -n '1,120p' scripts/mac_python.sh && rtk sed -n '1,120p' scripts/production_env.sh\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_runtime_binding -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --stat && rtk git diff -- src/jobbot/orchestrator.py tests/integration/test_runtime_binding.py && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -c 'from pathlib import Path; from jobbot.config import load_bundle; bundle = load_bundle(Path(\\\".\\\")); print(f\\\"config ok: strategy={bundle.strategy[\\\\\\\"strategy\\\\\\\"][\\\\\\\"version\\\\\\\"]} runtime={bundle.runtime[\\\\\\\"runtime\\\\\\\"][\\\\\\\"sqlite_synchronous\\\\\\\"]}\\\")'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -c 'for script in *.command scripts/*.sh; do bash -n \\\"\"'$script\" || exit 1; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg86-plan.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg86-plan-out python -m jobbot search-plan --mode deep'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -c 'for script in extension/*.js src/jobbot/web/*.js tests/*.js; do node --check \\\"\"'$script\" || exit 1; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg86-doctor.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg86-doctor-out python -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_run_now tests.integration.test_runtime_binding tests.integration.test_extension_refresh tests.integration.test_validator -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '180,380p' src/jobbot/runtime_binding.py && rtk sed -n '1,120p' src/jobbot/extension_identity.py && rtk git status --short --branch && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -c 'from pathlib import Path; from jobbot.config import load_bundle; bundle = load_bundle(Path(\\\".\\\")); print(\\\"config ok\\\", bundle.strategy[\\\"strategy\\\"][\\\"version\\\"], bundle.runtime[\\\"runtime\\\"][\\\"sqlite_synchronous\\\"])'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ps ax -o pid=,etime=,command= | rg 'jobbot refresh-extension|jobbot.bridge.server' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -c 'import sqlite3; from pathlib import Path; p=Path(\\\"data/jobs.sqlite3\\\"); print(\\\"database\\\", p.is_file()); c=sqlite3.connect(p); print(c.execute(\\\"SELECT refresh_id,status,expected_build,observed_build,observed_source_identity,observed_deployment_root,diagnostics_json FROM extension_refresh_requests ORDER BY requested_at DESC LIMIT 3\\\").fetchall()); c.close()' && rtk tail -40 out/logs/extension_refresh_bridge.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m jobbot refresh-extension --timeout 45'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -c 'import json; from pathlib import Path; from jobbot.config import load_bundle; from jobbot.extension_identity import extension_build; from jobbot.runtime_binding import runtime_binding_diagnostics, stable_extension_root; bundle = load_bundle(Path(\\\".\\\")); print(json.dumps({\\\"expected_build\\\": extension_build(bundle.root), \\\"stable_extension_root\\\": str(stable_extension_root()), \\\"runtime_binding\\\": runtime_binding_diagnostics(bundle.root)}, indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m jobbot refresh-extension --timeout 45'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -c 'from jobbot.bridge import rpc; import json; print(json.dumps(rpc.handle({\\\"action\\\":\\\"extension_refresh_failed\\\",\\\"refresh_id\\\":\\\"maintenance-0DwwsGPq4f9xAgAF4gTxIDo0\\\",\\\"error\\\":\\\"extension_unavailable_or_unreachable\\\"}), indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git diff --name-only && rtk git status --short --branch && rtk git diff --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add src/jobbot/orchestrator.py tests/integration/test_runtime_binding.py && rtk git diff --cached --check && rtk git diff --cached --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"fix CHG-86 maintenance refresh autorun\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git show --stat --oneline --decorate HEAD && rtk git diff main..HEAD --name-status'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/orchestrator.py | sed -n '308,322p' && rtk nl -ba tests/integration/test_runtime_binding.py | sed -n '120,190p' && rtk git rev-parse main && rtk git status --porcelain=v1 --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 113,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 95.74,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 3846912,
+      "fresh_input_tokens": 171137,
+      "input_tokens": 4018049,
+      "non_reasoning_output_tokens": 10634,
+      "output_tokens": 27242,
+      "reasoning_output_tokens": 16608,
+      "total_processed_tokens": 4045291
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "501975a8cadce725221b9b265d1642bfc0f3d9bd",
+      "subject": "fix CHG-86 maintenance refresh autorun"
+    }
+  ],
+  "diff": {
+    "additions": 61,
+    "changed_files": 2,
+    "commit_count": 1,
+    "deletions": 1
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-17T01:28:34Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "59ea04fa7fb37ef3f74c938e1acde6bf91bb2c62",
+    "branch": "codex/jobbot-CHG-86-r1",
+    "head_sha": "501975a8cadce725221b9b265d1642bfc0f3d9bd",
+    "remote_exact_head": true,
+    "remote_head_sha": "501975a8cadce725221b9b265d1642bfc0f3d9bd",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "59ea04fa7fb37ef3f74c938e1acde6bf91bb2c62",
+    "work_branch": "codex/jobbot-CHG-86-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-b34d7c2752ab1d8dde45cd4c",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-86-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-86-r1"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-86-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-17T01:17:20Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 674,
+    "queue_seconds": 0,
+    "total_seconds": 674
+  },
+  "transport": {
+    "bytes": 2912,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2635,
+    "prompt_sha256": "bf1b64700c40a8da2b22dcf358dedbdd6677983137747645f01e5de64d6bef17",
+    "sha256": "b34d7c2752ab1d8dde45cd4cf85e3564f99bd250cd6bc9930f0257e82e1f0f19"
+  }
+}
