@@ -1,0 +1,375 @@
+{
+  "accepted_at": "2026-09-17T03:14:05Z",
+  "changed_files": [
+    {
+      "additions": 269,
+      "deletions": 0,
+      "path": "verification/CHG-39-r3.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; from pathlib import Path; p=Path(\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"); c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select max(event_at) from browser_events\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; from pathlib import Path; p=Path(\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"); c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select max(event_at) from browser_events\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); rows=c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 12\\\").fetchall(); print(rows); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select max(event_at) from browser_events\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select max(event_at),event_type,message from browser_events order by event_id desc limit 1\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 1\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 1\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 1\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 1\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 1\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 1\\\").fetchone()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'from pathlib import Path; print(Path(\\\"out/production-validation/latest.json\\\").exists())'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy ps -axo pid,etime,command | rtk rg 'VALIDATE_PRODUCTION|validator|jobbot|legacy|python' | tail -40\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy ps -axo pid,ppid,etime,command | rtk rg '8602|8603|8615|8737|12601|49709|bridge.server|jobbot dashboard|jobbot validate'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import sqlite3; p=\\\"data/validation_semiprod_20260917T032300Z.sqlite3\\\"; c=sqlite3.connect(p); print(c.execute(\\\"select browser_run_id,status,mode,auth_status,last_error,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall()); print(c.execute(\\\"select phase,status,count(*) from browser_search_tasks group by phase,status order by phase,status\\\").fetchall()); print(c.execute(\\\"select event_at,event_type,message from browser_events order by event_id desc limit 5\\\").fetchall()); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy sample 8603 1 -mayDie'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy /usr/bin/sample 8603 1 -mayDie'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy lsof -p 8603 -nP | tail -30'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'def run_search|ats|ThreadPoolExecutor|timeout|urlopen|source_status|minimum_poll' src/jobbot/legacy_engine.py src/jobbot/legacy_core.py | head -260\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/legacy_engine.py | sed -n '1648,1715p' && rtk nl -ba src/jobbot/legacy_engine.py | sed -n '1735,1850p' && rtk nl -ba src/jobbot/legacy_engine.py | sed -n '500,545p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy ./VALIDATE_PRODUCTION.command --semi-minutes 30'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); print(json.dumps({\\\"PROD_READY\\\":d.get(\\\"PROD_READY\\\"),\\\"validation_stage\\\":d.get(\\\"validation_stage\\\"),\\\"branch\\\":d.get(\\\"branch\\\"),\\\"head\\\":d.get(\\\"head\\\"),\\\"databases\\\":{k:d.get(k) for k in (\\\"validation_database\\\",\\\"soak_database\\\",\\\"semi_production_database\\\")},\\\"internal_failures\\\":d.get(\\\"internal_failures\\\"),\\\"external_blockers\\\":d.get(\\\"external_blockers\\\"),\\\"preflight_ok\\\":(d.get(\\\"preflight\\\") or {}).get(\\\"ok\\\"),\\\"preflight_checks\\\":[{\\\"name\\\":x.get(\\\"name\\\"),\\\"ok\\\":x.get(\\\"ok\\\"),\\\"detail\\\":x.get(\\\"detail\\\")} for x in (d.get(\\\"preflight\\\") or {}).get(\\\"checks\\\",[]) ]}, indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); p=d.get(\\\"primary_live\\\") or {}; s=d.get(\\\"soak\\\") or {}; m=d.get(\\\"semi_production\\\") or {}; print(json.dumps({\\\"PROD_READY\\\":d.get(\\\"PROD_READY\\\"),\\\"internal_failures\\\":d.get(\\\"internal_failures\\\"),\\\"external_blockers\\\":d.get(\\\"external_blockers\\\"),\\\"primary_pass\\\":p.get(\\\"pass\\\"),\\\"primary_outcome\\\":p.get(\\\"outcome\\\"),\\\"primary_resume_outcome\\\":(p.get(\\\"resume\\\") or {}).get(\\\"outcome\\\"),\\\"primary_bridge_restart_pass\\\":p.get(\\\"bridge_restart_pass\\\"),\\\"primary_extension_build_pass\\\":p.get(\\\"extension_build_pass\\\"),\\\"primary_stop_resume_pass\\\":p.get(\\\"stop_resume_pass\\\"),\\\"soak_pass\\\":s.get(\\\"pass\\\"),\\\"soak_outcome\\\":s.get(\\\"outcome\\\"),\\\"soak_resume_outcome\\\":(s.get(\\\"resume\\\") or {}).get(\\\"outcome\\\"),\\\"soak_bridge_restart_pass\\\":s.get(\\\"bridge_restart_pass\\\"),\\\"soak_extension_build_pass\\\":s.get(\\\"extension_build_pass\\\"),\\\"soak_supplemental\\\":s.get(\\\"supplemental\\\"),\\\"semi_pass\\\":m.get(\\\"pass\\\"),\\\"semi_phase_pass\\\":m.get(\\\"phase_pass\\\"),\\\"semi_supplemental\\\":m.get(\\\"supplemental\\\")}, indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); m=d.get(\\\"semi_production\\\") or {}; print(json.dumps({\\\"dashboard\\\":m.get(\\\"dashboard\\\"),\\\"phase_pass\\\":m.get(\\\"phase_pass\\\"),\\\"execution_evidence\\\":m.get(\\\"execution_evidence\\\"),\\\"sampled_phase_counts\\\":m.get(\\\"sampled_phase_counts\\\"),\\\"duration_seconds_total\\\":m.get(\\\"duration_seconds_total\\\")}, indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' verification/CHG-22-r4.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git status --short --branch; rtk proxy git diff --stat; rtk proxy git diff --name-status; rtk proxy git rev-parse HEAD; rtk proxy git rev-parse --verify 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e; rtk proxy git diff --exit-code 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; from jobbot.validator import _phase_coverage_pass; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); m=d[\\\"semi_production\\\"]; nested=m[\\\"execution_evidence\\\"]; flat={}; [flat.update(value) for value in nested.values()]; print(json.dumps({\\\"reported_semi_pass\\\":m[\\\"pass\\\"],\\\"reported_phase_pass\\\":m[\\\"phase_pass\\\"],\\\"coverage_on_report_shape\\\":_phase_coverage_pass(nested),\\\"coverage_on_flat_shape\\\":_phase_coverage_pass(flat),\\\"report_shape\\\":{key:list(value) for key,value in nested.items()},\\\"flat_shape\\\":list(flat)},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/validator.py | sed -n '720,742p'; rtk nl -ba src/jobbot/validator.py | sed -n '1090,1122p'; rtk nl -ba src/jobbot/validator.py | sed -n '1130,1166p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git ls-files verification && rtk proxy git log --oneline --all -- verification | head -20 && rtk proxy git status --short --branch && rtk proxy git diff --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git show --stat --oneline 9c4ad01 && rtk proxy git show --format=fuller --no-ext-diff 9c4ad01 -- verification | sed -n '1,260p' && rtk proxy git log --oneline -12\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); md=json.loads(Path(\\\"out/production-validation/micro-latest.json\\\").read_text()); def stage(x):\n p=x.get(\\\"primary_live\\\") or {}; final=p.get(\\\"resume\\\") or p; return {\\\"pass\\\":p.get(\\\"pass\\\"),\\\"run_id\\\":p.get(\\\"run_id\\\"),\\\"initial_status\\\":(p.get(\\\"outcome\\\") or {}).get(\\\"status\\\"),\\\"initial_bridge_restarts\\\":(p.get(\\\"outcome\\\") or {}).get(\\\"bridge_restarts\\\"),\\\"resume_status\\\":(p.get(\\\"resume\\\") or {}).get(\\\"outcome\\\",{}).get(\\\"status\\\") if p.get(\\\"resume\\\") else None,\\\"resume_bridge_restarts\\\":(p.get(\\\"resume\\\") or {}).get(\\\"outcome\\\",{}).get(\\\"bridge_restarts\\\") if p.get(\\\"resume\\\") else None,\\\"terminal_classification\\\":final.get(\\\"terminal_classification\\\"),\\\"validation_classification\\\":final.get(\\\"validation_classification\\\"),\\\"extension_build_pass\\\":final.get(\\\"extension_build_pass\\\"),\\\"bridge_restart_pass\\\":p.get(\\\"bridge_restart_pass\\\"),\\\"validation_metrics\\\":final.get(\\\"validation_metrics\\\"),\\\"auth_platforms\\\":[{\\\"platform\\\":v.get(\\\"platform\\\"),\\\"auth_status\\\":v.get(\\\"auth_status\\\"),\\\"auth_reason\\\":v.get(\\\"auth_reason\\\"),\\\"cooldown_until\\\":v.get(\\\"cooldown_until\\\"),\\\"tasks_total\\\":v.get(\\\"tasks_total\\\"),\\\"tasks_completed\\\":v.get(\\\"tasks_completed\\\"),\\\"tasks_challenged\\\":v.get(\\\"tasks_challenged\\\"),\\\"tasks_incomplete\\\":v.get(\\\"tasks_incomplete\\\")} for v in ((final.get(\\\"audit\\\") or {}).get(\\\"platforms\\\") or {}).values()]}; print(json.dumps({\\\"micro\\\":stage(md),\\\"full_primary\\\":stage(d),\\\"full_soak\\\":{\\\"pass\\\":(d.get(\\\"soak\\\") or {}).get(\\\"pass\\\"),\\\"initial_status\\\":((d.get(\\\"soak\\\") or {}).get(\\\"outcome\\\") or {}).get(\\\"status\\\"),\\\"resume_status\\\":((d.get(\\\"soak\\\") or {}).get(\\\"resume\\\") or {}).get(\\\"outcome\\\",{}).get(\\\"status\\\") if (d.get(\\\"soak\\\") or {}).get(\\\"resume\\\") else None,\\\"bridge_restart_pass\\\":(d.get(\\\"soak\\\") or {}).get(\\\"bridge_restart_pass\\\"),\\\"extension_build_pass\\\":(d.get(\\\"soak\\\") or {}).get(\\\"extension_build_pass\\\"),\\\"supplemental_isolation_pass\\\":((d.get(\\\"soak\\\") or {}).get(\\\"supplemental\\\") or {}).get(\\\"isolation_pass\\\"),\\\"auth_platforms\\\":[{\\\"platform\\\":v.get(\\\"platform\\\"),\\\"auth_status\\\":v.get(\\\"auth_status\\\"),\\\"auth_reason\\\":v.get(\\\"auth_reason\\\")} for v in (((d.get(\\\"soak\\\") or {}).get(\\\"resume\\\") or {}).get(\\\"audit\\\") or {}).get(\\\"platforms\\\",{}).values()]}, \\\"full_semi\\\":{\\\"pass\\\":(d.get(\\\"semi_production\\\") or {}).get(\\\"pass\\\"),\\\"phase_pass\\\":(d.get(\\\"semi_production\\\") or {}).get(\\\"phase_pass\\\"),\\\"supplemental_isolation_pass\\\":((d.get(\\\"semi_production\\\") or {}).get(\\\"supplemental\\\") or {}).get(\\\"isolation_pass\\\"),\\\"dashboard_identity_ok\\\":((d.get(\\\"semi_production\\\") or {}).get(\\\"dashboard\\\") or {}).get(\\\"identity_ok\\\"),\\\"dashboard_live_refresh_ok\\\":((d.get(\\\"semi_production\\\") or {}).get(\\\"dashboard\\\") or {}).get(\\\"live_refresh_ok\\\")}}, indent=2))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'exec(\\\"\\\"\\\"import json\nfrom pathlib import Path\nd=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text())\nmd=json.loads(Path(\\\"out/production-validation/micro-latest.json\\\").read_text())\ndef stage(x):\n    p=x.get(\\\"primary_live\\\") or {}\n    final=p.get(\\\"resume\\\") or p\n    return {\n        \\\"pass\\\":p.get(\\\"pass\\\"),\n        \\\"run_id\\\":p.get(\\\"run_id\\\"),\n        \\\"initial_status\\\":(p.get(\\\"outcome\\\") or {}).get(\\\"status\\\"),\n        \\\"initial_bridge_restarts\\\":(p.get(\\\"outcome\\\") or {}).get(\\\"bridge_restarts\\\"),\n        \\\"resume_status\\\":(p.get(\\\"resume\\\") or {}).get(\\\"outcome\\\",{}).get(\\\"status\\\") if p.get(\\\"resume\\\") else None,\n        \\\"resume_bridge_restarts\\\":(p.get(\\\"resume\\\") or {}).get(\\\"outcome\\\",{}).get(\\\"bridge_restarts\\\") if p.get(\\\"resume\\\") else None,\n        \\\"terminal_classification\\\":final.get(\\\"terminal_classification\\\"),\n        \\\"validation_classification\\\":final.get(\\\"validation_classification\\\"),\n        \\\"extension_build_pass\\\":final.get(\\\"extension_build_pass\\\"),\n        \\\"bridge_restart_pass\\\":p.get(\\\"bridge_restart_pass\\\"),\n        \\\"validation_metrics\\\":final.get(\\\"validation_metrics\\\"),\n        \\\"auth_platforms\\\":[{\\\"platform\\\":v.get(\\\"platform\\\"),\\\"auth_status\\\":v.get(\\\"auth_status\\\"),\\\"auth_reason\\\":v.get(\\\"auth_reason\\\"),\\\"cooldown_until\\\":v.get(\\\"cooldown_until\\\"),\\\"tasks_total\\\":v.get(\\\"tasks_total\\\"),\\\"tasks_completed\\\":v.get(\\\"tasks_completed\\\"),\\\"tasks_challenged\\\":v.get(\\\"tasks_challenged\\\"),\\\"tasks_incomplete\\\":v.get(\\\"tasks_incomplete\\\")} for v in ((final.get(\\\"audit\\\") or {}).get(\\\"platforms\\\") or {}).values()]\n    }\nprint(json.dumps({\n    \\\"micro\\\":stage(md),\n    \\\"full_primary\\\":stage(d),\n    \\\"full_soak\\\":{\n        \\\"pass\\\":(d.get(\\\"soak\\\") or {}).get(\\\"pass\\\"),\n        \\\"initial_status\\\":((d.get(\\\"soak\\\") or {}).get(\\\"outcome\\\") or {}).get(\\\"status\\\"),\n        \\\"resume_status\\\":((d.get(\\\"soak\\\") or {}).get(\\\"resume\\\") or {}).get(\\\"outcome\\\",{}).get(\\\"status\\\") if (d.get(\\\"soak\\\") or {}).get(\\\"resume\\\") else None,\n        \\\"bridge_restart_pass\\\":(d.get(\\\"soak\\\") or {}).get(\\\"bridge_restart_pass\\\"),\n        \\\"extension_build_pass\\\":(d.get(\\\"soak\\\") or {}).get(\\\"extension_build_pass\\\"),\n        \\\"supplemental_isolation_pass\\\":((d.get(\\\"soak\\\") or {}).get(\\\"supplemental\\\") or {}).get(\\\"isolation_pass\\\"),\n        \\\"auth_platforms\\\":[{\\\"platform\\\":v.get(\\\"platform\\\"),\\\"auth_status\\\":v.get(\\\"auth_status\\\"),\\\"auth_reason\\\":v.get(\\\"auth_reason\\\")} for v in (((d.get(\\\"soak\\\") or {}).get(\\\"resume\\\") or {}).get(\\\"audit\\\") or {}).get(\\\"platforms\\\",{}).values()]\n    },\n    \\\"full_semi\\\":{\n        \\\"pass\\\":(d.get(\\\"semi_production\\\") or {}).get(\\\"pass\\\"),\n        \\\"phase_pass\\\":(d.get(\\\"semi_production\\\") or {}).get(\\\"phase_pass\\\"),\n        \\\"supplemental_isolation_pass\\\":((d.get(\\\"semi_production\\\") or {}).get(\\\"supplemental\\\") or {}).get(\\\"isolation_pass\\\"),\n        \\\"dashboard_identity_ok\\\":((d.get(\\\"semi_production\\\") or {}).get(\\\"dashboard\\\") or {}).get(\\\"identity_ok\\\"),\n        \\\"dashboard_live_refresh_ok\\\":((d.get(\\\"semi_production\\\") or {}).get(\\\"dashboard\\\") or {}).get(\\\"live_refresh_ok\\\")\n    }\n}, indent=2))\n\\\"\\\"\\\")'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); for_name=[]\nfor stage_name, stage in [(\\\"primary\\\",d[\\\"primary_live\\\"]),(\\\"soak\\\",d[\\\"soak\\\"]),(\\\"semi\\\",d[\\\"semi_production\\\"])]:\n    print(stage_name, \\\"keys\\\", sorted(stage.keys()))\n    final=stage.get(\\\"resume\\\") or stage.get(\\\"final\\\") or stage\n    run=((final.get(\\\"dashboard\\\") or {}).get(\\\"run\\\") or {}).get(\\\"platforms\\\")\n    if run is None: run=((stage.get(\\\"dashboard\\\") or {}).get(\\\"run\\\") or {}).get(\\\"platforms\\\")\n    print(\\\"platforms\\\", run)\n'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); print(json.dumps({\\\"started_at\\\":d.get(\\\"started_at\\\"),\\\"finished_at\\\":d.get(\\\"finished_at\\\"),\\\"exit_integrity\\\":d.get(\\\"exit_integrity\\\"),\\\"database_paths\\\":[d.get(\\\"validation_database\\\"),d.get(\\\"soak_database\\\"),d.get(\\\"semi_production_database\\\")],\\\"production_database\\\":str((Path(\\\"data/jobs.sqlite3\\\")).resolve()),\\\"full_command_exit_code\\\":1,\\\"internal_failures\\\":d.get(\\\"internal_failures\\\"),\\\"external_blockers\\\":d.get(\\\"external_blockers\\\")},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -a 256 out/production-validation/micro-latest.json out/production-validation/micro-latest.md out/production-validation/latest.json out/production-validation/latest.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git rev-parse HEAD''^{tree}; rtk proxy git rev-parse 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e''^{tree}; rtk proxy git status --porcelain=v1 --untracked-files=all'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); out={};\nfor name, val in (d.get(\\\"semi_production\\\") or {}).get(\\\"phase_runs\\\",{}).items():\n    out[name]={\\\"run_id\\\":val[\\\"initial\\\"][\\\"run_id\\\"],\\\"initial_outcome\\\":val[\\\"initial\\\"][\\\"outcome\\\"],\\\"resume_outcome\\\":(val.get(\\\"resume\\\") or {}).get(\\\"outcome\\\"),\\\"stop_resume_pass\\\":val.get(\\\"stop_resume_pass\\\"),\\\"phase_pass\\\":val.get(\\\"pass\\\"),\\\"initial_extension_build_pass\\\":val[\\\"initial\\\"].get(\\\"extension_build_pass\\\"),\\\"final_extension_build_pass\\\":val[\\\"final\\\"].get(\\\"extension_build_pass\\\"),\\\"initial_bridge_restart_pass\\\":val[\\\"initial\\\"].get(\\\"bridge_restart_pass\\\"),\\\"final_terminal_classification\\\":val[\\\"final\\\"].get(\\\"terminal_classification\\\"),\\\"final_validation_classification\\\":val[\\\"final\\\"].get(\\\"validation_classification\\\")}\nprint(json.dumps(out,indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git rev-parse main; rtk proxy git show -s --format='%H%n%P%n%s' 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git branch -avv'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git rev-parse origin/main; rtk proxy git rev-parse main; rtk proxy git diff --name-status origin/main HEAD; rtk proxy git diff --name-status 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e HEAD; rtk proxy git status --porcelain=v1 --untracked-files=all'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy .venv/bin/python -m json.tool verification/CHG-39-r3.json >/dev/null'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -a 256 verification/CHG-39-r3.json; rtk proxy git rev-parse HEAD; rtk proxy git rev-parse origin/main; rtk proxy git diff --name-status 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git status --short --branch; rtk proxy git diff --stat; rtk proxy git diff --name-status; rtk proxy git diff -- verification/CHG-39-r3.json | sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git add verification/CHG-39-r3.json; rtk proxy git commit -m 'chore(verification): record CHG-39-r3 validation'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json; from pathlib import Path; d=json.loads(Path(\\\"verification/CHG-39-r3.json\\\").read_text()); print(json.dumps({\\\"evidence_artifact_valid\\\":True,\\\"candidate_head_recorded\\\":d[\\\"candidate_head\\\"],\\\"target_sha\\\":d[\\\"target_sha\\\"],\\\"final\\\":d[\\\"final\\\"],\\\"full_report\\\":d[\\\"production_validation\\\"][\\\"full\\\"][\\\"report_path\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -a 256 verification/CHG-39-r3.json out/production-validation/micro-latest.json out/production-validation/latest.json; rtk proxy git rev-parse HEAD; rtk proxy git rev-parse 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e; rtk proxy git rev-parse origin/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git status --short --branch; rtk proxy git show --stat --oneline HEAD; rtk proxy git diff --name-status 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e HEAD; rtk proxy git diff --name-status 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e HEAD -- src extension config scripts tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json,sqlite3; from pathlib import Path; from jobbot.config import PROJECT_ROOT; from jobbot.extension_identity import extension_build; from jobbot.runtime_binding import deployment_diagnostics,chrome_target_diagnostics,runtime_binding_diagnostics; p=PROJECT_ROOT/\\\"data/jobs.sqlite3\\\"; out={\\\"build\\\":extension_build(PROJECT_ROOT),\\\"runtime_binding\\\":runtime_binding_diagnostics(PROJECT_ROOT),\\\"production_database\\\":str(p.resolve()),\\\"production_exists\\\":p.exists()};\nif p.exists():\n    c=sqlite3.connect(p)\n    out[\\\"active_production_runs\\\"]=c.execute(\\\"select browser_run_id,status from browser_runs where status=\\\"running\\\" order by browser_run_id\\\").fetchall()\n    out[\\\"latest_refresh\\\"]=c.execute(\\\"select refresh_id,status,expected_build,observed_build,observed_source_identity,observed_deployment_root,last_error from extension_refresh_requests order by requested_at desc limit 1\\\").fetchone()\n    c.close()\nprint(json.dumps(out,indent=2,default=str))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy .venv/bin/python -c 'import json,sqlite3; from pathlib import Path; from jobbot.config import PROJECT_ROOT; from jobbot.extension_identity import extension_build; from jobbot.runtime_binding import runtime_binding_diagnostics; p=PROJECT_ROOT/\\\"data/jobs.sqlite3\\\"; out={\\\"build\\\":extension_build(PROJECT_ROOT),\\\"runtime_binding\\\":runtime_binding_diagnostics(PROJECT_ROOT),\\\"production_database\\\":str(p.resolve()),\\\"production_exists\\\":p.exists()};\nif p.exists():\n    c=sqlite3.connect(p)\n    out[\\\"active_production_runs\\\"]=c.execute(\\\"select browser_run_id,status from browser_runs where status=? order by browser_run_id\\\",(\\\"running\\\",)).fetchall()\n    out[\\\"latest_refresh\\\"]=c.execute(\\\"select refresh_id,status,expected_build,observed_build,observed_source_identity,observed_deployment_root,last_error from extension_refresh_requests order by requested_at desc limit 1\\\").fetchone()\n    c.close()\nprint(json.dumps(out,indent=2,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy ps -axo pid,etime,command | rtk rg 'jobbot validate-production|validation_semiprod_20260917T032300Z|validation_soak_20260917T032300Z|jobbot dashboard --no-open --port (60775|62012|56692)' || true; rtk proxy git status --short --branch; rtk proxy git diff --name-status 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e HEAD -- src extension config scripts tests; rtk proxy git show --format='%H%n%s' --no-patch HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 251,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.72,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 25601280,
+      "fresh_input_tokens": 331490,
+      "input_tokens": 25932770,
+      "non_reasoning_output_tokens": 32384,
+      "output_tokens": 51571,
+      "reasoning_output_tokens": 19187,
+      "total_processed_tokens": 25984341
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "553c97fc62755c7e88f346ca544890699d1f6be4",
+      "subject": "chore(verification): record CHG-39-r3 validation"
+    }
+  ],
+  "diff": {
+    "additions": 269,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 12483,
+        "path": "verification/CHG-39-r3.json",
+        "sha256": "1de3d57c2537c97b6b2af37c3a51cd188a49a4f09b7ac5cd0a36e558c7d352c2"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-17T04:26:50Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e",
+    "branch": "codex/jobbot-CHG-39-r3",
+    "head_sha": "553c97fc62755c7e88f346ca544890699d1f6be4",
+    "remote_exact_head": true,
+    "remote_head_sha": "553c97fc62755c7e88f346ca544890699d1f6be4",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e",
+    "work_branch": "codex/jobbot-CHG-39-r3",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-a97507d6548c75156a66798c",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r3",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r3"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r3",
+  "schema_version": 1,
+  "started_at": "2026-09-17T03:14:05Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 4365,
+    "queue_seconds": 0,
+    "total_seconds": 4365
+  },
+  "transport": {
+    "bytes": 3359,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3079,
+    "prompt_sha256": "e8b0f0d5549e2d722a1937b2e79553aec0a55661bb5ce85f016f606f76d0f8f9",
+    "sha256": "a97507d6548c75156a66798c560c91e1d2dd13663020e846881b0a7af1ef8a64"
+  }
+}
