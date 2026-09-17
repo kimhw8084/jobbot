@@ -313,7 +313,7 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
         if not request.get("ok"):
             return {"ok": False, "refresh_id": refresh_id, "runtime_binding": runtime_binding, **request}
         url = (
-            f"chrome-extension://{extension_id}/dashboard.html?maintenance=1"
+            f"chrome-extension://{extension_id}/dashboard.html?maintenance=1&autorun=1"
             f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
             f"&expected_build={urllib.parse.quote(expected_build, safe='')}"
             f"&refresh_id={urllib.parse.quote(refresh_id, safe='')}"
