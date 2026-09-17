@@ -292,7 +292,10 @@ def chrome_open_command(url: str, executable: str | None = None) -> list[str]:
         raise RuntimeError(json.dumps(target, ensure_ascii=False, sort_keys=True))
     profile_arg = f"--profile-directory={target['profile_directory']}"
     if sys.platform == "darwin":
-        return ["open", "-g", "-a", "Google Chrome", "--args", profile_arg, url]
+        # `open --args` is only delivered to a newly launched application.
+        # Force that normal-Chrome instance so an already-running Chrome cannot
+        # silently consume the URL while dropping the profile arguments.
+        return ["open", "-n", "-g", "-a", "Google Chrome", "--args", profile_arg, url]
     if not executable:
         raise RuntimeError("normal installed Google Chrome was not found")
     return [executable, profile_arg, url]

@@ -43,11 +43,76 @@ def chrome_path() -> str | None:
     return None
 
 
-def _open_chrome(url: str) -> None:
+def _open_chrome(url: str) -> dict[str, object]:
     # macOS keeps the supported background argv ["open", "-g", ...] inside
     # chrome_open_command while adding the bound --profile-directory.
     executable = chrome_path()
-    subprocess.Popen(chrome_open_command(url, executable), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        command = chrome_open_command(url, executable)
+    except Exception as exc:
+        return {
+            "ok": False,
+            "issued": False,
+            "delivery": "not_attempted",
+            "url": _chrome_url_diagnostics(url),
+            "error": str(exc),
+            "classification": "chrome_launch_command_failed",
+        }
+    receipt = {
+        "ok": False,
+        "issued": False,
+        "delivery": "unconfirmed",
+        "command": [_redact_chrome_arg(arg, url) for arg in command],
+        "url": _chrome_url_diagnostics(url),
+        "profile_directory": next(
+            (arg.split("=", 1)[1] for arg in command if arg.startswith("--profile-directory=")), ""
+        ),
+    }
+    if sys.platform != "darwin":
+        try:
+            process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (OSError, subprocess.SubprocessError) as exc:
+            receipt.update({"error": str(exc), "classification": "chrome_launch_command_failed"})
+            return receipt
+        receipt.update({"ok": True, "issued": True, "pid": int(process.pid)})
+        return receipt
+    try:
+        result = subprocess.run(
+            command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            check=False, timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        receipt.update({"error": str(exc), "classification": "chrome_launch_command_failed"})
+        return receipt
+    receipt.update({"issued": True, "returncode": int(result.returncode)})
+    if result.returncode == 0:
+        receipt["ok"] = True
+        return receipt
+    receipt.update({
+        "error": f"Chrome launch command exited {result.returncode}",
+        "classification": "chrome_launch_command_failed",
+    })
+    return receipt
+
+
+def _chrome_url_diagnostics(url: str) -> dict[str, object]:
+    parsed = urllib.parse.urlsplit(url)
+    return {
+        "scheme": parsed.scheme,
+        "extension_id": parsed.netloc if parsed.scheme == "chrome-extension" else "",
+        "path": parsed.path,
+        "query_keys": sorted(urllib.parse.parse_qs(parsed.query, keep_blank_values=True)),
+    }
+
+
+def _redact_chrome_arg(value: str, url: str) -> str:
+    if value != url:
+        return value
+    parsed = urllib.parse.urlsplit(value)
+    query = []
+    for key, item in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True):
+        query.append((key, "<redacted>" if key == "bridge_token" else item))
+    return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urllib.parse.urlencode(query), parsed.fragment))
 
 
 def _free_high_port() -> int:
@@ -178,7 +243,13 @@ def launch_browser_run(bundle: ConfigBundle, run_id: int, *, wait: bool = True, 
             f"&expected_build={urllib.parse.quote(expected_build, safe='')}&refresh_id={urllib.parse.quote(refresh_id, safe='')}"
         )
         if open_browser:
-            _open_chrome(url)
+            launch = _open_chrome(url)
+            if not launch.get("ok"):
+                raise RuntimeError(json.dumps({
+                    "classification": "chrome_launch_command_failed",
+                    "error": launch.get("error", "Chrome launch command failed"),
+                    "browser_launch": launch,
+                }, ensure_ascii=False, sort_keys=True))
         else:
             print(url)
         if not wait:
@@ -313,15 +384,35 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
         if not request.get("ok"):
             return {"ok": False, "refresh_id": refresh_id, "runtime_binding": runtime_binding, **request}
         url = (
-            f"chrome-extension://{extension_id}/dashboard.html?maintenance=1"
+            f"chrome-extension://{extension_id}/dashboard.html?maintenance=1&autorun=1"
             f"&bridge_port={port}&bridge_token={urllib.parse.quote(token)}"
             f"&expected_build={urllib.parse.quote(expected_build, safe='')}"
             f"&refresh_id={urllib.parse.quote(refresh_id, safe='')}"
         )
         if open_browser:
-            _open_chrome(url)
+            launch = _open_chrome(url)
+            if not launch.get("ok"):
+                return {
+                    "ok": False,
+                    "refresh_id": refresh_id,
+                    "status": "failed",
+                    "error": "chrome_launch_command_failed",
+                    "runtime_binding": runtime_binding,
+                    "browser_launch": launch,
+                    "diagnostics": {
+                        "classification": "chrome_launch_command_failed",
+                        "browser_launch": launch,
+                    },
+                }
         else:
             print(url)
+            launch = {
+                "ok": True,
+                "issued": False,
+                "delivery": "not_attempted",
+                "reason": "open_browser_false",
+                "url": _chrome_url_diagnostics(url),
+            }
         deadline = time.monotonic() + max(1, timeout_seconds)
         while time.monotonic() < deadline:
             try:
@@ -332,12 +423,25 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
                     "refresh_id": refresh_id,
                     "error": "bridge_auth_or_configuration_failure",
                     "runtime_binding": runtime_binding,
-                    "diagnostics": {"classification": "bridge_auth_or_configuration_failure", "error": str(exc)},
+                    "browser_launch": {**launch, "delivery": "not_confirmed"},
+                    "diagnostics": {
+                        "classification": "bridge_auth_or_configuration_failure",
+                        "error": str(exc),
+                        "browser_launch": {**launch, "delivery": "not_confirmed"},
+                    },
                 }
             if status.get("status") == "confirmed" and status.get("identity_confirmed") is True:
-                return {**status, "runtime_binding": runtime_binding}
+                return {
+                    **status,
+                    "runtime_binding": runtime_binding,
+                    "browser_launch": {**launch, "delivery": "confirmed_by_extension_identity"},
+                }
             if status.get("status") == "failed":
-                return {**status, "runtime_binding": runtime_binding}
+                return {
+                    **status,
+                    "runtime_binding": runtime_binding,
+                    "browser_launch": {**launch, "delivery": "not_confirmed"},
+                }
             time.sleep(0.5)
         try:
             failed = _bridge_rpc(
@@ -348,15 +452,18 @@ def refresh_extension(bundle: ConfigBundle, *, timeout_seconds: float = 45,
             )
         except Exception:
             failed = {}
+        launch = {**launch, "delivery": "not_confirmed"}
         return {**failed, "ok": False, "refresh_id": refresh_id,
                 "status": failed.get("status", "failed"),
                 "error": "extension_unavailable_or_unreachable", "expected_build": expected_build,
                 "runtime_binding": runtime_binding,
+                "browser_launch": launch,
                 "diagnostics": {
                     "classification": "extension_absent_disabled_or_unavailable",
                     "expected_build": expected_build,
                     "chrome_target": target,
                     "deployment": deployment.as_dict(),
+                    "browser_launch": launch,
                 }}
     finally:
         if process is not None and process.poll() is None:
