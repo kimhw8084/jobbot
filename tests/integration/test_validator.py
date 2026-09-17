@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import sqlite3
 import tempfile
@@ -18,6 +19,7 @@ from jobbot.validator import (
     _record_validation_cutoff,
     _validation_metrics,
     _scope_diagnostics,
+    _normalise_phase_execution_evidence,
     _phase_coverage_pass,
     _stage_pass,
     _write_report,
@@ -264,6 +266,47 @@ class ValidatorIntegrationTests(unittest.TestCase):
             phases[phase]["linkedin"]["started_tasks"] = 1
             phases[phase]["linkedin"]["progress_tasks"] = 1
         self.assertTrue(_phase_coverage_pass(phases))
+
+    def test_semi_report_execution_evidence_is_flattened_and_fails_closed(self) -> None:
+        phase_names = ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL")
+        platforms = ("linkedin", "indeed", "glassdoor")
+
+        def report_shape() -> dict:
+            return {
+                phase: {
+                    phase: {
+                        platform: {
+                            "sampled_queued": 2,
+                            "started_tasks": 2,
+                            "progress_tasks": 1,
+                            "all_external_blocked": False,
+                        }
+                        for platform in platforms
+                    }
+                }
+                for phase in phase_names
+            }
+
+        nested = report_shape()
+        flat = _normalise_phase_execution_evidence(nested)
+        self.assertEqual(set(flat), set(phase_names))
+        self.assertTrue(_phase_coverage_pass(flat))
+        self.assertFalse(_phase_coverage_pass(_normalise_phase_execution_evidence(
+            {phase: value for phase, value in nested.items() if phase != "C_DEEP_BACKFILL"}
+        )))
+
+        missing_platform = copy.deepcopy(nested)
+        del missing_platform["B_REMAINING_CORE_RECENT"]["B_REMAINING_CORE_RECENT"]["indeed"]
+        self.assertFalse(_phase_coverage_pass(_normalise_phase_execution_evidence(missing_platform)))
+
+        malformed = copy.deepcopy(nested)
+        malformed["C_DEEP_BACKFILL"]["C_DEEP_BACKFILL"]["linkedin"] = []
+        self.assertFalse(_phase_coverage_pass(_normalise_phase_execution_evidence(malformed)))
+
+        incomplete = copy.deepcopy(nested)
+        for values in incomplete["A_FASTEST_DOOR_RECENT"]["A_FASTEST_DOOR_RECENT"].values():
+            values["progress_tasks"] = 0
+        self.assertFalse(_phase_coverage_pass(_normalise_phase_execution_evidence(incomplete)))
 
     def test_bounded_phase_stop_has_grace_and_only_a_resumes(self) -> None:
         stopped = {"run_id": 7, "outcome": {"status": "stopped"}}
