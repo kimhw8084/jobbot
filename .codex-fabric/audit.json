@@ -1,0 +1,380 @@
+{
+  "accepted_at": "2026-09-17T12:45:19Z",
+  "changed_files": [
+    {
+      "additions": 329,
+      "deletions": 0,
+      "path": "verification/CHG-39-r4.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -m compileall -q src tests\nrtk zsh -c 'set -e; for file in extension/*.js src/jobbot/web/*.js; do rtk node --check \\\"\"'$file\"; done'\"'\nrtk zsh -c 'set -e; for file in *.command scripts/mac_python.sh scripts/production_env.sh scripts/jobbot.sh; do rtk zsh -n \\\"\"'$file\"; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env JOBBOT_DATABASE_PATH=data/verification_chg39r4_doctor_20260917T1258.sqlite3 JOBBOT_OUTPUT_DIR=out/verification-chg39r4-doctor-20260917T1258 JOBBOT_DASHBOARD_PORT=18765 .venv/bin/python -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env JOBBOT_DATABASE_PATH=data/verification_chg39r4_plan_20260917T1258.sqlite3 JOBBOT_OUTPUT_DIR=out/verification-chg39r4-plan-20260917T1258 JOBBOT_DASHBOARD_PORT=18768 .venv/bin/python -m jobbot search-plan --mode fast\nrtk env JOBBOT_DATABASE_PATH=data/verification_chg39r4_plan_20260917T1258.sqlite3 JOBBOT_OUTPUT_DIR=out/verification-chg39r4-plan-20260917T1258 JOBBOT_DASHBOARD_PORT=18768 .venv/bin/python -m jobbot search-plan --mode deep'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import json; from jobbot.config import PROJECT_ROOT, load_bundle; from jobbot.search_plan import compile_plan, compile_staged_plan; b=load_bundle(PROJECT_ROOT); fast=compile_plan(b,\\\"fast\\\"); deep=compile_plan(b,\\\"deep\\\"); staged=compile_staged_plan(b); core={str(x[\\\"id\\\"]):int(x[\\\"allocation_percent\\\"]) for x in b.strategy[\\\"lanes\\\"] if x.get(\\\"core\\\",True) and x.get(\\\"enabled\\\",True)}; checks={\\\"strategy_version\\\":b.strategy[\\\"strategy\\\"][\\\"version\\\"],\\\"core_allocations\\\":core,\\\"core_allocation_total\\\":sum(core.values()),\\\"production_max_results\\\":b.strategy[\\\"strategy\\\"].get(\\\"production_max_results\\\"),\\\"bridge_host\\\":b.runtime[\\\"runtime\\\"][\\\"bridge_host\\\"],\\\"primary_platforms\\\":b.runtime[\\\"coverage\\\"][\\\"primary_platforms\\\"],\\\"fast_tasks\\\":len(fast),\\\"deep_tasks\\\":len(deep),\\\"staged_tasks\\\":len(staged),\\\"fast_uncapped\\\":all(x.max_results is None and x.remote_required for x in fast),\\\"deep_uncapped\\\":all(x.max_results is None and x.remote_required for x in deep),\\\"staged_uncapped\\\":all(x.max_results is None and x.remote_required for x in staged)}; checks[\\\"ok\\\"]=checks[\\\"core_allocation_total\\\"]==100 and checks[\\\"production_max_results\\\"] is None and checks[\\\"bridge_host\\\"]==\\\"127.0.0.1\\\" and checks[\\\"fast_uncapped\\\"] and checks[\\\"deep_uncapped\\\"] and checks[\\\"staged_uncapped\\\"]; print(json.dumps(checks,indent=2)); raise SystemExit(0 if checks[\\\"ok\\\"] else 1)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=data/verification_chg39r4_preflight_20260917T1258.sqlite3 JOBBOT_OUTPUT_DIR=out/verification-chg39r4-preflight-20260917T1258 JOBBOT_DASHBOARD_PORT=18766 .venv/bin/python -c 'import json; from pathlib import Path; from jobbot.config import PROJECT_ROOT, load_bundle; from jobbot.run_now import preflight; b=load_bundle(PROJECT_ROOT); result=preflight(b, require_runtime_binding=True); production=(PROJECT_ROOT/\\\"data/jobs.sqlite3\\\").resolve(); payload={\\\"task_count\\\":result.task_count,\\\"database_path\\\":str(result.database_path.resolve()),\\\"dashboard_url\\\":result.dashboard_url,\\\"production_database\\\":str(production),\\\"differs_from_production\\\":result.database_path.resolve()\"'!=production}; print(json.dumps(payload,indent=2)); raise SystemExit(0 if payload[\"differs_from_production\"] else 1)'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy ps -Ao pid,etime,command | rg '/Users/haewonkim/.codex-fabric/worktrees/CF-879de2251cf5368e7b9a9fca|jobbot.bridge.server|jobbot dashboard' | sed -n '1,100p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -lt data/validation_*.sqlite3 data/validation_semiprod_*.sqlite3 data/validation_soak_*.sqlite3 2>/dev/null | sed -n '1,20p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find data -maxdepth 1 -type f \\\\( -name 'validation_*.sqlite3' -o -name 'validation_soak_*.sqlite3' -o -name 'validation_semiprod_*.sqlite3' \\\\) -print | sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -lt data/validation_20260917T*.sqlite3 data/validation_soak_20260917T*.sqlite3 data/validation_semiprod_20260917T*.sqlite3 2>/dev/null | sed -n '1,30p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files data -g 'validation*' | sort | tail -20\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files data -g 'validation*' | sort | tail -10\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files data -g 'validation*' | sort | tail -10\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; from pathlib import Path; p=Path(\\\"data/validation_soak_20260917T125355Z.sqlite3\\\"); c=sqlite3.connect(p); rows=c.execute(\\\"select browser_run_id,status,created_at,started_at,completed_at from browser_runs order by browser_run_id\\\").fetchall(); print(json.dumps({\\\"db\\\":str(p.resolve()),\\\"runs\\\":rows},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\nrtk proxy ps -Ao pid,etime,command | rg 'worktrees/CF-879de2251cf5368e7b9a9fca/.venv/bin/python|jobbot.bridge.server|jobbot dashboard' | sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; from pathlib import Path; p=Path(\\\"data/validation_soak_20260917T125355Z.sqlite3\\\"); c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"select browser_run_id,status,created_at,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '160,300p' src/jobbot/orchestrator.py\nrtk sed -n '500,690p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files data -g 'validation*' | sort | tail -10\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; from pathlib import Path; p=Path(\\\"data/validation_soak_20260917T125355Z.sqlite3\\\"); c=sqlite3.connect(p); q={\\\"runs\\\":c.execute(\\\"select browser_run_id,status,created_at,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"events\\\":c.execute(\\\"select event_type,message from browser_events order by event_id desc limit 8\\\").fetchall()}; print(json.dumps(q,indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files data -g 'validation*' | sort | tail -12\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; from pathlib import Path; p=Path(\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"); c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"select browser_run_id,status,phase,mode,created_at,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),indent=2,default=str)); c.close()'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; from pathlib import Path; p=Path(\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"); c=sqlite3.connect(p); print(json.dumps({\\\"runs\\\":c.execute(\\\"select browser_run_id,status,mode,created_at,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"tasks\\\":c.execute(\\\"select browser_run_id,phase,count(*) from browser_search_tasks group by browser_run_id,phase order by browser_run_id,phase\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; from pathlib import Path; p=Path(\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"); c=sqlite3.connect(p); print(json.dumps({\\\"runs\\\":c.execute(\\\"select browser_run_id,status,mode,created_at,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"tasks\\\":c.execute(\\\"select browser_run_id,phase,count(*),sum(case when started_at is not null then 1 else 0 end),sum(case when pages_visited>0 or cards_extracted>0 then 1 else 0 end) from browser_search_tasks group by browser_run_id,phase order by browser_run_id,phase\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; from pathlib import Path; p=Path(\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"); c=sqlite3.connect(p); print(json.dumps({\\\"runs\\\":c.execute(\\\"select browser_run_id,status,mode,created_at,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"tasks\\\":c.execute(\\\"select browser_run_id,phase,count(*),sum(case when started_at is not null then 1 else 0 end),sum(case when pages_visited>0 or cards_extracted>0 then 1 else 0 end) from browser_search_tasks group by browser_run_id,phase order by browser_run_id,phase\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\nrtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"select browser_run_id,status,phase,created_at,started_at,completed_at,stop_requested from browser_runs b left join browser_search_tasks t on t.browser_run_id=b.browser_run_id group by b.browser_run_id order by b.browser_run_id\\\").fetchall(),indent=2,default=str)); c.close()'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"select b.browser_run_id,b.status,b.created_at,b.started_at,b.completed_at,b.stop_requested from browser_runs b order by b.browser_run_id\\\").fetchall(),indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps({\\\"run\\\":c.execute(\\\"select browser_run_id,status,started_at,completed_at,stop_requested from browser_runs\\\").fetchall(),\\\"latest_events\\\":c.execute(\\\"select event_type,message from browser_events order by event_id desc limit 12\\\").fetchall(),\\\"task_status\\\":c.execute(\\\"select phase,platform,status,started_at,pages_visited,cards_extracted from browser_search_tasks\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps({\\\"runs\\\":c.execute(\\\"select browser_run_id,status,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"phase_metrics\\\":c.execute(\\\"select phase,platform,count(*),sum(case when started_at is not null then 1 else 0 end),sum(case when pages_visited>0 or cards_extracted>0 then 1 else 0 end) from browser_search_tasks group by phase,platform order by phase,platform\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"select browser_run_id,status,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\nrtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"select browser_run_id,status,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\nrtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps({\\\"runs\\\":c.execute(\\\"select browser_run_id,status,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"phase_metrics\\\":c.execute(\\\"select phase,platform,count(*),sum(case when started_at is not null then 1 else 0 end),sum(case when pages_visited>0 or cards_extracted>0 then 1 else 0 end) from browser_search_tasks group by phase,platform order by phase,platform\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\nrtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps({\\\"runs\\\":c.execute(\\\"select browser_run_id,status,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"events\\\":c.execute(\\\"select event_type,message from browser_events order by event_id desc limit 6\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps({\\\"runs\\\":c.execute(\\\"select browser_run_id,status,started_at,completed_at,stop_requested from browser_runs order by browser_run_id\\\").fetchall(),\\\"events\\\":c.execute(\\\"select event_type,message from browser_events order by event_id desc limit 8\\\").fetchall()},indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import sqlite3, json; p=\\\"data/validation_semiprod_20260917T125355Z.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"select event_type,message from browser_events order by event_id desc limit 5\\\").fetchall(),indent=2,default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ./VALIDATE_PRODUCTION.command --semi-minutes 30'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk command -v jq\nrtk .venv/bin/python -c 'import json; from pathlib import Path; p=Path(\\\"out/production-validation/latest.json\\\"); x=json.loads(p.read_text());\n\ndef stage(s):\n    if not s: return None\n    return {\\\"pass\\\":s.get(\\\"pass\\\"),\\\"initial_status\\\":(s.get(\\\"outcome\\\") or {}).get(\\\"status\\\"),\\\"resume_status\\\":((s.get(\\\"resume\\\") or {}).get(\\\"outcome\\\") or {}).get(\\\"status\\\"),\\\"bridge_restart_pass\\\":s.get(\\\"bridge_restart_pass\\\"),\\\"stop_resume_pass\\\":s.get(\\\"stop_resume_pass\\\"),\\\"extension_build_pass\\\":s.get(\\\"extension_build_pass\\\"),\\\"extension_unresponsive\\\":((s.get(\\\"outcome\\\") or {}).get(\\\"status\\\")==\\\"extension_unresponsive\\\"),\\\"terminal_classification\\\":s.get(\\\"terminal_classification\\\"),\\\"validation_classification\\\":s.get(\\\"validation_classification\\\"),\\\"integrity\\\":(s.get(\\\"metrics\\\") or {}).get(\\\"integrity\\\"),\\\"reconciliation\\\":(s.get(\\\"metrics\\\") or {}).get(\\\"reconciliation\\\"),\\\"auth\\\":{k:{\\\"auth_status\\\":v.get(\\\"auth_status\\\"),\\\"challenged\\\":v.get(\\\"challenged\\\",0),\\\"auth_required\\\":v.get(\\\"auth_required\\\",0)} for k,v in (s.get(\\\"audit\\\") or {}).get(\\\"platforms\\\",{}).items()}}\nsemi=x.get(\\\"semi_production\\\") or {}; phases=semi.get(\\\"phase_runs\\\",{}); print(json.dumps({\\\"branch\\\":x.get(\\\"branch\\\"),\\\"head\\\":x.get(\\\"head\\\"),\\\"started_at\\\":x.get(\\\"started_at\\\"),\\\"finished_at\\\":x.get(\\\"finished_at\\\"),\\\"validation_database\\\":x.get(\\\"validation_database\\\"),\\\"soak_database\\\":x.get(\\\"soak_database\\\"),\\\"semi_production_database\\\":x.get(\\\"semi_production_database\\\"),\\\"preflight_ok\\\":(x.get(\\\"preflight\\\") or {}).get(\\\"ok\\\"),\\\"primary_live\\\":stage(x.get(\\\"primary_live\\\")),\\\"soak\\\":stage(x.get(\\\"soak\\\")),\\\"semi_pass\\\":semi.get(\\\"pass\\\"),\\\"phase_pass\\\":semi.get(\\\"phase_pass\\\"),\\\"semi_dashboard\\\":semi.get(\\\"dashboard\\\"),\\\"semi_execution_shape\\\":{k:sorted(v.keys()) if isinstance(v,dict) else type(v).__name__ for k,v in (semi.get(\\\"execution_evidence\\\") or {}).items()},\\\"external_blockers\\\":x.get(\\\"external_blockers\\\"),\\\"internal_failures\\\":x.get(\\\"internal_failures\\\"),\\\"exit_integrity\\\":x.get(\\\"exit_integrity\\\"),\\\"PROD_READY\\\":x.get(\\\"PROD_READY\\\")},indent=2,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import copy, json; from pathlib import Path; from jobbot.validator import _normalise_phase_execution_evidence, _phase_coverage_pass; x=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); semi=x[\\\"semi_production\\\"]; phases=semi[\\\"phase_runs\\\"]; raw={phase: phases[phase][\\\"execution\\\"] for phase in (\\\"A_FASTEST_DOOR_RECENT\\\",\\\"B_REMAINING_CORE_RECENT\\\",\\\"C_DEEP_BACKFILL\\\")}; normalized=_normalise_phase_execution_evidence(raw); stored=semi[\\\"execution_evidence\\\"]; missing_phase=copy.deepcopy(raw); del missing_phase[\\\"C_DEEP_BACKFILL\\\"]; missing_platform=copy.deepcopy(raw); del missing_platform[\\\"B_REMAINING_CORE_RECENT\\\"][\\\"B_REMAINING_CORE_RECENT\\\"][\\\"indeed\\\"]; malformed=copy.deepcopy(raw); malformed[\\\"C_DEEP_BACKFILL\\\"][\\\"C_DEEP_BACKFILL\\\"][\\\"linkedin\\\"]=[]; incomplete=copy.deepcopy(raw); [v.update(progress_tasks=0) for v in incomplete[\\\"A_FASTEST_DOOR_RECENT\\\"][\\\"A_FASTEST_DOOR_RECENT\\\"].values()]; out={\\\"raw_nested_shape\\\":{p:sorted(v.keys()) for p,v in raw.items()},\\\"normalized_shape\\\":{p:sorted(v.keys()) for p,v in normalized.items()},\\\"stored_equals_normalized\\\":stored==normalized,\\\"coverage_pass\\\":_phase_coverage_pass(normalized),\\\"phase_progress\\\":{p:{platform:{\\\"progress_tasks\\\":vals.get(\\\"progress_tasks\\\"),\\\"all_external_blocked\\\":vals.get(\\\"all_external_blocked\\\")} for platform,vals in values.items()} for p,values in normalized.items()},\\\"fail_closed\\\":{\\\"missing_phase\\\":_phase_coverage_pass(_normalise_phase_execution_evidence(missing_phase)),\\\"missing_platform\\\":_phase_coverage_pass(_normalise_phase_execution_evidence(missing_platform)),\\\"malformed_platform\\\":_phase_coverage_pass(_normalise_phase_execution_evidence(malformed)),\\\"incomplete_progress\\\":_phase_coverage_pass(_normalise_phase_execution_evidence(incomplete))}}; print(json.dumps(out,indent=2,default=str)); ok=out[\\\"stored_equals_normalized\\\"] and out[\\\"coverage_pass\\\"] and not any(out[\\\"fail_closed\\\"].values()); raise SystemExit(0 if ok else 1)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{primary_dashboard:{identity_ok:.primary_live.dashboard.identity_ok,live_refresh_ok:.primary_live.dashboard.live_refresh_ok,platforms:.primary_live.dashboard.run.platforms|map({platform,auth_status,auth_reason,tasks_challenged,tasks_incomplete})},soak_dashboard:{identity_ok:.soak.dashboard.identity_ok,live_refresh_ok:.soak.dashboard.live_refresh_ok,platforms:.soak.dashboard.run.platforms|map({platform,auth_status,auth_reason,tasks_challenged,tasks_incomplete})},semi_dashboard:{identity_ok:.semi_production.dashboard.identity_ok,live_refresh_ok:.semi_production.dashboard.live_refresh_ok,platforms:.semi_production.dashboard.run.platforms|map({platform,auth_status,auth_reason,tasks_challenged,tasks_incomplete})},phase_runs:(.semi_production.phase_runs|with_entries(.value={initial_status:.value.initial.outcome.status,resume_status:(.value.resume.outcome.status // null),stop_resume_pass:.value.stop_resume_pass,pass:.value.pass,bridge_restart_pass:(.value.initial.bridge_restart_pass // null)})),phase_pass:.semi_production.phase_pass,internal_failures:.internal_failures,external_blockers:.external_blockers,PROD_READY:.PROD_READY}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{primary_live:{pass:.primary_live.pass,bridge_restart_pass:.primary_live.bridge_restart_pass,stop_resume_pass:.primary_live.stop_resume_pass,initial:.primary_live.outcome.status,resume:.primary_live.resume.outcome.status,extension_build_pass:.primary_live.extension_build_pass},soak:{pass:.soak.pass,bridge_restart_pass:.soak.bridge_restart_pass,initial:.soak.outcome.status,resume:.soak.resume.outcome.status,extension_build_pass:.soak.extension_build_pass},semi:{pass:.semi_production.pass,phase_pass:.semi_production.phase_pass,dashboard_identity_ok:.semi_production.dashboard.identity_ok,live_refresh_ok:.semi_production.dashboard.live_refresh_ok},auth:.semi_production.dashboard.run.platforms|map({platform,auth_status,auth_reason,tasks_challenged,tasks_incomplete}),internal_failures,external_blockers,PROD_READY}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{primary:(.primary_live.dashboard.run.platforms|map({platform,auth_status,tasks_challenged,tasks_incomplete})),soak:(.soak.dashboard.run.platforms|map({platform,auth_status,tasks_challenged,tasks_incomplete})),semi:(.semi_production.dashboard.run.platforms|map({platform,auth_status,tasks_challenged,tasks_incomplete}))}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '.semi_production.dashboard.run.platforms|map({platform,auth_status,tasks_challenged,tasks_incomplete})' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'import json; from pathlib import Path; from jobbot.config import PROJECT_ROOT; from jobbot.runtime_binding import deployment_diagnostics, chrome_target_diagnostics, runtime_binding_diagnostics, extension_source_identity, stable_extension_root; x=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); production=(PROJECT_ROOT/\\\"data/jobs.sqlite3\\\").resolve(); paths={k:x[k] for k in (\\\"validation_database\\\",\\\"soak_database\\\",\\\"semi_production_database\\\")}; print(json.dumps({\\\"production_database\\\":str(production),\\\"validation_databases\\\":{k:{\\\"path\\\":v,\\\"differs_from_production\\\":Path(v).resolve()\"'!=production,\"exists\":Path(v).is_file()} for k,v in paths.items()},\"exit_integrity\":x.get(\"exit_integrity\"),\"runtime_binding\":{\"source_identity\":extension_source_identity(PROJECT_ROOT),\"stable_root\":str(stable_extension_root()),\"deployment\":deployment_diagnostics(PROJECT_ROOT),\"chrome_target\":chrome_target_diagnostics(),\"overall\":runtime_binding_diagnostics(PROJECT_ROOT)},\"stage_reconciliation\":{\"primary\":(x.get(\"primary_live\") or {}).get(\"metrics\",{}).get(\"reconciliation\"),\"soak\":(x.get(\"soak\") or {}).get(\"metrics\",{}).get(\"reconciliation\"),\"semi_phases\":{p:(v.get(\"final\") or {}).get(\"metrics\",{}).get(\"reconciliation\") for p,v in (x.get(\"semi_production\") or {}).get(\"phase_runs\",{}).items()}},\"extension_build_pass\":{\"primary\":(x.get(\"primary_live\") or {}).get(\"extension_build_pass\"),\"soak\":(x.get(\"soak\") or {}).get(\"extension_build_pass\"),\"semi_phases\":{p:(v.get(\"final\") or {}).get(\"extension_build_pass\") for p,v in (x.get(\"semi_production\") or {}).get(\"phase_runs\",{}).items()} }},indent=2,default=str))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch\nrtk git rev-parse HEAD\nrtk git rev-parse origin/main\nrtk git rev-list --left-right --count origin/main...HEAD\nrtk git diff --quiet HEAD --; printf 'post_validation_diff_head_exit=%s\\\\n' \\\"\"'$?\"\nrtk git diff --quiet origin/main --; printf '\"'post_validation_diff_origin_main_exit=%s\\\\n' \\\"\"'$?\"\nrtk git diff --name-only HEAD --\nrtk git diff --name-only origin/main --\nrtk git diff --name-only origin/codex/jobbot-CHG-39-r3...HEAD\nrtk git diff --name-only origin/codex/jobbot-CHG-39-r3...HEAD -- extension src/jobbot/runtime_binding.py src/jobbot/search_plan.py config tests | sed -n '\"'1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD''^{tree}\nrtk git rev-parse origin/main''^{tree}\nrtk git diff --quiet origin/main...HEAD; printf '\"'target_range_diff_exit=%s\\\\n' \\\"\"'$?\"\nrtk shasum -a 256 out/production-validation/micro-latest.json out/production-validation/latest.json\nrtk jq '\"'{validation_stage,branch,head,started_at,finished_at,PROD_READY,internal_failures,external_blockers,primary_live:{pass,bridge_restart_pass,extension_build_pass,stop_resume_pass},soak:{pass,bridge_restart_pass,extension_build_pass},semi_production:{pass,phase_pass}}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la verification\nrtk git ls-files verification'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq empty verification/CHG-39-r4.json\nrtk git status --short --branch\nrtk git diff --stat\nrtk git diff -- verification/CHG-39-r4.json | sed -n '1,80p'\nrtk git diff --name-only -- ':\"'!verification/CHG-39-r4.json'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch\nrtk git rev-parse HEAD\nrtk git rev-parse origin/main\nrtk git rev-list --left-right --count origin/main...HEAD\nrtk git diff --quiet HEAD --; printf 'final_tracked_diff_head_exit=%s\\\\n' \\\"\"'$?\"\nrtk git diff --quiet origin/main --; printf '\"'final_tracked_diff_origin_main_exit=%s\\\\n' \\\"\"'$?\"\nrtk git diff --name-only -- extension src/jobbot config tests\nrtk git ls-files --others --exclude-standard | sed -n '\"'1,40p'\nrtk jq '{candidate_head,target_sha,extension:.extension|{expected_build,extension_id,stable_extension_root,profile_directory,source_identity,deployed_content_identity},maintenance_refresh:.maintenance_refresh|{exit_code,ok,identity_confirmed,status,observed_build,observed_source_identity,observed_deployment_root,diagnostics_classification,browser_delivery},full:.production_validation.full|{exit_code,PROD_READY,internal_failures,external_blockers},final}' verification/CHG-39-r4.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq empty verification/CHG-39-r4.json\nrtk jq '.production_validation.full|{exit_code,PROD_READY,phase_pass:.semi_production.phase_pass,phase_coverage_pass:.semi_production.phase_coverage_pass}' verification/CHG-39-r4.json\nrtk git status --short --branch\nrtk git diff --name-only -- extension src/jobbot config tests\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk jq empty verification/CHG-39-r4.json\nrtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 180,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.84,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 24467712,
+      "fresh_input_tokens": 287395,
+      "input_tokens": 24755107,
+      "non_reasoning_output_tokens": 27527,
+      "output_tokens": 45268,
+      "reasoning_output_tokens": 17741,
+      "total_processed_tokens": 24800375
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "438e0dd4b73065b5a6d874964b68c367de958bb2",
+      "subject": "fabric: capture completed model changes [CF-879de2251cf5368e7b9a9fca]"
+    }
+  ],
+  "diff": {
+    "additions": 329,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 14399,
+        "path": "verification/CHG-39-r4.json",
+        "sha256": "afbdd9fa27c51df611b58e3abf4af3f6458987b1fef5d08e2af3ee159e008cd4"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": true,
+    "commit_message": "fabric: capture completed model changes [CF-879de2251cf5368e7b9a9fca]",
+    "commit_sha": "438e0dd4b73065b5a6d874964b68c367de958bb2",
+    "paths_before": 1,
+    "status_before": [
+      "?? verification/CHG-39-r4.json"
+    ],
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-17T13:56:39Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "branch": "codex/jobbot-CHG-39-r4",
+    "head_sha": "438e0dd4b73065b5a6d874964b68c367de958bb2",
+    "remote_exact_head": true,
+    "remote_head_sha": "438e0dd4b73065b5a6d874964b68c367de958bb2",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "work_branch": "codex/jobbot-CHG-39-r4",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-879de2251cf5368e7b9a9fca",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r4",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r4"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r4",
+  "schema_version": 1,
+  "started_at": "2026-09-17T12:45:20Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 4279,
+    "queue_seconds": 1,
+    "total_seconds": 4280
+  },
+  "transport": {
+    "bytes": 3947,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3667,
+    "prompt_sha256": "aa207e3e45ed000f78985e442a815289664a20f864fe23fa53f289690de44fc3",
+    "sha256": "879de2251cf5368e7b9a9fca8995b9de819a4a36eef61130d089aef59faf4ab5"
+  }
+}
