@@ -1,0 +1,340 @@
+{
+  "accepted_at": "2026-09-17T10:51:30Z",
+  "changed_files": [
+    {
+      "additions": 31,
+      "deletions": 5,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 43,
+      "deletions": 0,
+      "path": "tests/integration/test_validator.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && printf '%s\\\\n' '--- AGENTS links ---' && sed -n '1,220p' /Users/haewonkim/.codex/RTK.md && printf '%s\\\\n' '--- law ---' && sed -n '1,260p' /Users/haewonkim/.codex/law.md && printf '%s\\\\n' '--- git status ---' && git status --short --branch && printf '%s\\\\n' '--- top-level ---' && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' | sort | head -100\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-parse HEAD && rtk git log -1 --oneline --decorate && rtk rg -n \\\"execution_evidence|_phase_coverage_pass|semi-production|A_FASTEST_DOOR_RECENT|B_REMAINING_CORE_RECENT|C_DEEP_BACKFILL\\\" src tests . -g '*.py' -g '*.json' -g '*.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '690,755p' src/jobbot/validator.py && rtk sed -n '1010,1150p' src/jobbot/validator.py && rtk sed -n '1,430p' tests/integration/test_validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '820,1015p' src/jobbot/validator.py && rtk rg -n \\\"def _phase_execution_metrics|execution.*phase|sampled_queued|all_external_blocked\\\" src/jobbot/validator.py tests -g '*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g 'pyproject.toml' -g 'setup.cfg' -g 'tox.ini' -g 'Makefile' -g '*.command' -g 'README.md' -g 'requirements*.txt' -g 'tests/**' | sort && rtk sed -n '1,220p' README.md && rtk rg -n \\\"unittest|compileall|doctor|search_plan|config|syntax|production-validation|validator\\\" Makefile pyproject.toml setup.cfg tox.ini README.md scripts config .github 2>/dev/null\"",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' pyproject.toml && rtk find . -maxdepth 3 -type f \\\\( -name '*doctor*' -o -name '*search*plan*' -o -name '*config*test*' \\\\) -print && rtk rg -n \\\"def main|doctor|search-plan|config\\\" src/jobbot/cli.py src/jobbot -g '*.py' | head -180\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,140p' src/jobbot/validator.py && rtk rg -n \\\"PRIMARY|platforms=.*linkedin|indeed|glassdoor\\\" src/jobbot/validator.py tests/integration/test_validator.py | head -120 && rtk sed -n '1,120p' src/jobbot/config.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git log --all --oneline --decorate -- src/jobbot/validator.py tests/integration/test_validator.py | head -40 && rtk git log --all -S'_phase_coverage_pass' --format='%H %s' -- src/jobbot/validator.py && rtk git blame -L 720,745 -- src/jobbot/validator.py && rtk git show --stat --oneline HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show --stat --oneline 1918667 && rtk git show --format=fuller --no-ext-diff 1918667 -- src/jobbot/validator.py tests/integration/test_validator.py && rtk git show --format=fuller --no-ext-diff 57331f6 -- src/jobbot/validator.py tests/integration/test_validator.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git branch -a --contains HEAD && rtk git log --all --oneline --decorate --graph --max-count=35 && rtk git branch -a --format='%(refname:short) %(objectname:short)' | sort | head -120\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --stat --oneline 553c97f && rtk git show --format=fuller --no-ext-diff 553c97f -- tests src/jobbot/validator.py | head -500 && rtk git ls-tree -r --name-only origin/codex/jobbot-CHG-39-r3 | rg 'validation|report|evidence|validator|CHG-39' | head -100\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show origin/codex/jobbot-CHG-39-r3:verification/CHG-39-r3.json | rtk rg -n -C 5 'execution_evidence|semi_production|coverage_on' | head -260\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show origin/codex/jobbot-CHG-39-r3:verification/CHG-39-r3.json | rtk sed -n '215,265p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files out verification 2>/dev/null | head -100 && rtk git show origin/codex-fabric/evidence/jobbot/CHG-39-r3:verification/CHG-39-r3.json | rtk sed -n '215,265p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -ld .venv .venv/bin/python 2>/dev/null || true && rtk .venv/bin/python - <<'PY'\nfrom jobbot.validator import _phase_coverage_pass\nphases = {phase: {phase: {'linkedin': {'progress_tasks': 1}}} for phase in ('A_FASTEST_DOOR_RECENT', 'B_REMAINING_CORE_RECENT', 'C_DEEP_BACKFILL')}\nprint('nested:', _phase_coverage_pass(phases))\nflat = {phase: values[phase] for phase, values in phases.items()}\nprint('flat:', _phase_coverage_pass(flat))\nPY\"",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -ld .venv .venv/bin/python 2>/dev/null || true && rtk proxy .venv/bin/python - <<'PY'\nfrom jobbot.validator import _phase_coverage_pass\nphases = {phase: {phase: {'linkedin': {'progress_tasks': 1}}} for phase in ('A_FASTEST_DOOR_RECENT', 'B_REMAINING_CORE_RECENT', 'C_DEEP_BACKFILL')}\nprint('nested:', _phase_coverage_pass(phases))\nflat = {phase: values[phase] for phase, values in phases.items()}\nprint('flat:', _phase_coverage_pass(flat))\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python3 - <<'PY'\nfrom jobbot.validator import _phase_coverage_pass\nphases = {phase: {phase: {'linkedin': {'progress_tasks': 1}}} for phase in ('A_FASTEST_DOOR_RECENT', 'B_REMAINING_CORE_RECENT', 'C_DEEP_BACKFILL')}\nprint('nested:', _phase_coverage_pass(phases))\nflat = {phase: values[phase] for phase, values in phases.items()}\nprint('flat:', _phase_coverage_pass(flat))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git diff -- src/jobbot/validator.py tests/integration/test_validator.py && rtk proxy env PYTHONPATH=src python3 -m unittest tests.integration.test_validator.ValidatorIntegrationTests.test_phase_coverage_rejects_queued_only_b_and_c_and_accepts_progress tests.integration.test_validator.ValidatorIntegrationTests.test_semi_report_execution_evidence_is_flattened_and_fails_closed -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python3 -m unittest tests.integration.test_validator -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' src/jobbot/cli.py && rtk rg -n \\\"def main|doctor|search-plan|validate-production\\\" src/jobbot/cli.py src/jobbot/__main__.py 2>/dev/null\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python3 -m unittest tests.integration.test_runtime_binding tests.integration.test_database_ledger tests.integration.test_extension_bridge tests.integration.test_run_now tests.integration.test_browser_tasks -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"normalis|normaliz\\\" src tests -g '*.py' | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk proxy env PYTHONPATH=src python3 -m unittest tests.integration.test_validator.ValidatorIntegrationTests.test_phase_coverage_rejects_queued_only_b_and_c_and_accepts_progress tests.integration.test_validator.ValidatorIntegrationTests.test_semi_report_execution_evidence_is_flattened_and_fails_closed -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python3 -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy mktemp -d'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/tmp.yzqVAStcNy/check.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/tmp.yzqVAStcNy/out python3 -m jobbot doctor && rtk proxy env PYTHONPATH=src JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/tmp.yzqVAStcNy/check.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/tmp.yzqVAStcNy/out python3 -m jobbot search-plan --mode fast && rtk proxy env PYTHONPATH=src JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/tmp.yzqVAStcNy/check.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/tmp.yzqVAStcNy/out python3 -m jobbot search-plan --mode deep'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python3 -m compileall -q src tests && rtk proxy sh -c 'for file in extension/*.js; do node --check \\\"\"'$file\"; done'\"' && rtk git diff --check && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --stat && rtk git diff --unified=80 -- src/jobbot/validator.py tests/integration/test_validator.py && rtk git status --short --branch && rtk git diff --name-only'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/validator.py | sed -n '30,50p;720,765p;1115,1140p' && rtk nl -ba tests/integration/test_validator.py | sed -n '245,325p' && rtk git status --porcelain=v1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git remote -v && rtk git log --oneline --decorate --max-count=5 origin/codex/jobbot-CHG-39-r3 && rtk git log --oneline --decorate --max-count=5 origin/codex-fabric/evidence/jobbot/CHG-39-r3 && rtk git show --stat --oneline origin/codex-fabric/evidence/jobbot/CHG-39-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la .codex-fabric 2>/dev/null || true && rtk rg --files -g '*fabric*' -g '*audit*' -g '*.json' | sort | head -100 && rtk git ls-tree -r --name-only origin/codex-fabric/evidence/jobbot/CHG-39-r3 | head -40\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show origin/codex-fabric/evidence/jobbot/CHG-39-r3:.codex-fabric/audit.json | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git add src/jobbot/validator.py tests/integration/test_validator.py && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"Fix CHG-101 semi-production evidence aggregation\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git show --stat --oneline --decorate HEAD && rtk git diff --name-status 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e HEAD && rtk git diff --exit-code 59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e -- extension config src/jobbot/browser_tasks.py src/jobbot/db.py src/jobbot/search_plan.py src/jobbot/runtime_binding.py src/jobbot/orchestrator.py src/jobbot/validator.py tests/integration/test_validator.py'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git ls-remote --heads origin 'codex/jobbot-CHG-101-r1' 'codex-fabric/evidence/jobbot/CHG-101-r1' 'codex-fabric/evidence/jobbot/CHG-101' && rtk git branch -r --list '*CHG-101*'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push -u origin HEAD:codex/jobbot-CHG-101-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git ls-remote --heads origin 'codex/jobbot-CHG-101-r1' 'codex-fabric/evidence/jobbot/CHG-101-r1' 'codex-fabric/evidence/jobbot/CHG-101'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk command -v fabric || true && rtk command -v codex-fabric || true && rtk ls -la /Users/haewonkim/.codex-fabric | head -80 && rtk rg -n \"publish.*evidence|audit.json|codex-fabric/evidence\" /Users/haewonkim/.codex /Users/haewonkim/.codex-fabric 2>/dev/null | head -100'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -l \\\"CHG-101|CHG-101-r1\\\" /Users/haewonkim/.codex-fabric/jobs /Users/haewonkim/.codex-fabric/state 2>/dev/null | head -40 && rtk ls -la /Users/haewonkim/.codex-fabric/jobs | tail -30 && rtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/libexec/projectos_integrate.py | sed -n '1,100p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' /Users/haewonkim/.codex-fabric/jobs/CF-3effe1a4ae75051c9b45c5ad.running/job.json && rtk sed -n '1,80p' /Users/haewonkim/.codex-fabric/jobs/CF-3effe1a4ae75051c9b45c5ad.running/prompt.md && rtk rg -n \\\"def publish_evidence_for_job|def publish_audit_evidence|def evidence_ref_for|job.json|result\\\" /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la /Users/haewonkim/.codex-fabric/results/CF-3effe1a4ae75051c9b45c5ad 2>/dev/null || true && rtk sed -n '2228,2338p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py && rtk sed -n '2440,2570p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy rm -rf /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/tmp.yzqVAStcNy && rtk git status --short --branch && rtk git ls-remote --heads origin 'codex/jobbot-CHG-101-r1' 'codex-fabric/evidence/jobbot/CHG-101-r1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 108,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.1,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 3940352,
+      "fresh_input_tokens": 160068,
+      "input_tokens": 4100420,
+      "non_reasoning_output_tokens": 12414,
+      "output_tokens": 25956,
+      "reasoning_output_tokens": 13542,
+      "total_processed_tokens": 4126376
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "aa0260c13a201ec50fa7ec246e2899692c3e3e5d",
+      "subject": "Fix CHG-101 semi-production evidence aggregation"
+    }
+  ],
+  "diff": {
+    "additions": 74,
+    "changed_files": 2,
+    "commit_count": 1,
+    "deletions": 5
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-17T11:00:52Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e",
+    "branch": "codex/jobbot-CHG-101-r1",
+    "head_sha": "aa0260c13a201ec50fa7ec246e2899692c3e3e5d",
+    "remote_exact_head": true,
+    "remote_head_sha": "aa0260c13a201ec50fa7ec246e2899692c3e3e5d",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "59f22c17a0d2ad4f1d15fc1a42b5160c45d35a9e",
+    "work_branch": "codex/jobbot-CHG-101-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-3effe1a4ae75051c9b45c5ad",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-101-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-101-r1"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-101-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-17T10:51:30Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 562,
+    "queue_seconds": 0,
+    "total_seconds": 562
+  },
+  "transport": {
+    "bytes": 3053,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2774,
+    "prompt_sha256": "3ebe785e4107c00d039698a9d1264535d623af88fb4bbc5af4242ee3cf9ee2b8",
+    "sha256": "3effe1a4ae75051c9b45c5ade4198ba4579456886b135c930bc792d56ea5f421"
+  }
+}
