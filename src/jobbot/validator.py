@@ -36,6 +36,7 @@ from .search_plan import compile_plan, compile_staged_plan
 
 
 PRIMARY = ("linkedin", "indeed", "glassdoor")
+_SEMI_PHASES = ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL")
 VALIDATION_TARGET_BRANCH = "main"
 CANONICAL_CANDIDATE_BRANCH = re.compile(
     r"codex/(?:[a-z][a-z0-9]*(?:-[a-z0-9]+)*-)?[A-Z][A-Z0-9]*-[1-9][0-9]*-r[1-9][0-9]*"
@@ -723,18 +724,42 @@ def _stage_pass(stage: dict[str, Any], *, bounded: bool = False, require_termina
     return True
 
 
+def _normalise_phase_execution_evidence(report_evidence: Any) -> dict[str, dict[str, dict[str, Any]]]:
+    """Flatten the live report's per-phase nested execution evidence."""
+    if not isinstance(report_evidence, dict):
+        return {}
+    normalized: dict[str, dict[str, dict[str, Any]]] = {}
+    for phase, nested in report_evidence.items():
+        if phase not in _SEMI_PHASES or not isinstance(nested, dict) or set(nested) != {phase}:
+            return {}
+        phase_metrics = nested[phase]
+        if not isinstance(phase_metrics, dict) or not all(platform in phase_metrics for platform in PRIMARY):
+            return {}
+        normalized[phase] = phase_metrics
+    return normalized
+
+
 def _phase_coverage_pass(phase_metrics: dict[str, dict[str, dict[str, int | bool]]]) -> bool:
-    """Require real progress in every phase, allowing only fully blocked platforms to be exempt."""
+    """Require real progress for every phase and well-formed platform evidence."""
+    if not isinstance(phase_metrics, dict):
+        return False
     any_progress = False
-    for phase in ("A_FASTEST_DOOR_RECENT", "B_REMAINING_CORE_RECENT", "C_DEEP_BACKFILL"):
+    for phase in _SEMI_PHASES:
         platforms = phase_metrics.get(phase, {})
-        if not platforms:
+        if not isinstance(platforms, dict) or not platforms:
             return False
-        phase_progress = sum(int(values.get("progress_tasks", 0) or 0) for values in platforms.values())
+        if any(
+            not isinstance(values, dict)
+            or not isinstance(values.get("progress_tasks"), int)
+            or not isinstance(values.get("all_external_blocked"), bool)
+            for values in platforms.values()
+        ):
+            return False
+        phase_progress = sum(int(values["progress_tasks"]) for values in platforms.values())
         any_progress = any_progress or phase_progress > 0
         if phase_progress > 0:
             continue
-        if not all(bool(values.get("all_external_blocked")) for values in platforms.values()):
+        if not all(values["all_external_blocked"] for values in platforms.values()):
             return False
     return any_progress
 
@@ -1100,6 +1125,7 @@ def run(*, semi_minutes: int = 30, stage: str = "full") -> int:
             sampled_phase_counts.update(_sampled_phase_counts(semi_bundle, run_id))
             execution_evidence[phase] = phase_result["execution"]
             phase_pass[phase] = bool(phase_result["pass"])
+        execution_evidence = _normalise_phase_execution_evidence(execution_evidence)
         semi = {
             "run_id": last_run_id,
             "phase_runs": phase_runs,
