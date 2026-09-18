@@ -1,0 +1,128 @@
+{
+  "request": "CHG-112-r1",
+  "verification_kind": "repair_and_bounded_acceptance",
+  "candidate_branch": "codex/jobbot-CHG-112-r1",
+  "candidate_head": "4c88b2bdac7d38bbc053627bf6b443019893fcf3",
+  "target_branch": "main",
+  "target_ref_checked": "origin/main",
+  "target_sha": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+  "target_drift": {
+    "head_equals_target_before_repair": true,
+    "origin_main_equals_target_before_repair": true,
+    "main_untouched": true,
+    "worktree_clean_before_repair": true
+  },
+  "changed_files": [
+    "README.md",
+    "REENRICH_SEARCH.command",
+    "docs/ACCEPTANCE_TEST.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DATABASE.md",
+    "docs/OPERATIONS.md",
+    "docs/TROUBLESHOOTING.md",
+    "extension/common.js",
+    "extension/glassdoor.js",
+    "extension/indeed.js",
+    "extension/linkedin.js",
+    "extension/manifest.json",
+    "extension/selectors.js",
+    "extension/service_worker.js",
+    "src/jobbot/audit.py",
+    "src/jobbot/bridge/rpc.py",
+    "src/jobbot/browser_tasks.py",
+    "src/jobbot/cli.py",
+    "src/jobbot/dashboard.py",
+    "src/jobbot/discoveries.py",
+    "src/jobbot/legacy_core.py",
+    "src/jobbot/migrations/__init__.py",
+    "src/jobbot/migrations/m0015_production_integrity_states.py",
+    "src/jobbot/validator.py",
+    "src/jobbot/web/dashboard.js",
+    "tests/extension_linkedin_scope_test.js",
+    "tests/extension_primary_scope_test.js",
+    "tests/fixtures/linkedin_scope.html",
+    "tests/integration/test_browser_tasks.py",
+    "tests/integration/test_chg112_production_integrity.py",
+    "tests/integration/test_database_ledger.py",
+    "tests/integration/test_extension_refresh.py"
+  ],
+  "repair": {
+    "migration": "m0015_production_integrity_states",
+    "state_contract": [
+      "identity persisted",
+      "card metadata captured or missing",
+      "enrichment pending/running/partial/complete/retryable/failed/external-blocked",
+      "recall-first priority with durable negative QA samples",
+      "requested versus observed search URL context",
+      "per-platform readiness and recovery state",
+      "observed location/remote/application-destination evidence"
+    ],
+    "user_invoked_re_enrichment": "REENRICH_SEARCH.command / python -m jobbot re-enrich",
+    "history_preserved": true
+  },
+  "extension": {
+    "manifest_version": 3,
+    "predecessor_build": "3.2.2-prod-ready.672cf88.2",
+    "new_build": "3.2.2-prod-ready.672cf88.3",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "source_identity": "sha256:35e84bb43af2585a458372f4d3dbe4e296b5e368b94721d0e3605ffd9a5cb483",
+    "source_head_observed": "4c88b2bdac7d38bbc053627bf6b443019893fcf3",
+    "profile_binding": "Google Chrome Default",
+    "sync_classification": "deployment_source_current",
+    "maintenance_refresh": {
+      "attempted": true,
+      "identity_confirmed": false,
+      "classification": "extension_absent_disabled_or_unavailable",
+      "error": "extension_unavailable_or_unreachable",
+      "runtime_binding": "runtime_binding_ready",
+      "exact_blocker": "The bound Chrome Default target was valid, but the installed extension did not reach the temporary authenticated bridge during the bounded 15-second refresh window."
+    }
+  },
+  "deterministic_validation": {
+    "full_unittest_discovery": {
+      "tests": 100,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "focused_chg112_integrity_tests": 7,
+    "focused_bridge_browser_extension_tests": 27,
+    "javascript_dom_fixture_suites": [
+      "tests/extension_primary_scope_test.js",
+      "tests/extension_linkedin_scope_test.js"
+    ],
+    "doctor": "pass in isolated database",
+    "search_plan": {
+      "fast_tasks": 315,
+      "deep_tasks": 417,
+      "production_result_caps": "none"
+    },
+    "python_compile": "pass",
+    "javascript_syntax": "pass",
+    "shell_syntax": "pass",
+    "git_diff_check": "pass",
+    "release_archive": {
+      "files": 161,
+      "sha256": "e55ea7dabf50ec071b958d7bcc1938d2b1f35f5425402954ab6487edb7861d90"
+    }
+  },
+  "controlled_live_acceptance": {
+    "exhaustive_crawl_started": false,
+    "database": "isolated-only for repository validation; production jobs.sqlite3 not used for unattended testing",
+    "linkedin": {
+      "result": "not_run",
+      "blocker": "No browser surface was exposed by the allowed CUA harness; Google Chrome window lookup returned cgWindowNotFound."
+    },
+    "indeed": {
+      "result": "not_run",
+      "blocker": "Site-level readiness could not be inspected because the bound extension was unavailable during maintenance refresh; deterministic fixtures prove positive evidence, CAPTCHA challenge isolation, and cleared-state recovery."
+    },
+    "glassdoor": {
+      "result": "not_run",
+      "blocker": "Site-level readiness could not be inspected because the bound extension was unavailable during maintenance refresh; deterministic fixtures prove sign-in-required isolation, positive evidence, and cleared-state recovery."
+    },
+    "go_status": "bounded live proof blocked by unavailable ordinary-Chrome extension/window; no live success claimed"
+  },
+  "remaining_bounded_defect": "The repair is deterministic-test complete, but controlled live LinkedIn substantive-description proof and current Indeed/Glassdoor site-state proof require a reachable ordinary Chrome window with the stable extension loaded."
+}
