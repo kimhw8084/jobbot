@@ -1,0 +1,375 @@
+{
+  "accepted_at": "2026-09-18T18:47:59Z",
+  "changed_files": [
+    {
+      "additions": 6367,
+      "deletions": 0,
+      "path": "verification/CHG-39-r6.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '280,335p' src/jobbot/cli.py && rtk sed -n '145,215p' src/jobbot/runtime_binding.py && rtk sed -n '300,430p' src/jobbot/orchestrator.py && rtk cat config/EXTENSION_ID.txt && rtk ls -ld '/Users/haewonkim/Library/Application Support/JobBot/extension' && rtk find '/Users/haewonkim/Library/Application Support/JobBot/extension' -maxdepth 2 -type f -print | sed -n '1,120p' && rtk sed -n '1,240p' '/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json' 2>&1 || true && rtk sed -n '1,120p' '/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json' 2>&1 || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot sync-extension'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot refresh-extension'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '\"'^    def test_'\"' tests/integration/test_chg112_production_integrity.py tests/integration/test_database_ledger.py tests/integration/test_extension_refresh.py tests/integration/test_runtime_binding.py tests/integration/test_browser_tasks.py tests/integration/test_extension_bridge.py tests/integration/test_validator.py tests/integration/test_watch.py tests/integration/test_run_now.py tests/integration/test_launcher_environment.py tests/unit/test_browser_adapters.py tests/regression/test_scoring.py tests/extension_linkedin_scope_test.js tests/extension_primary_scope_test.js | sed -n '1,260p' && rtk env PYTHONPATH=src python3 --version && rtk test -e .venv/bin/python; true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest -v tests.integration.test_chg112_production_integrity tests.integration.test_database_ledger tests.integration.test_browser_tasks tests.integration.test_extension_bridge tests.integration.test_runtime_binding tests.integration.test_extension_refresh tests.integration.test_watch tests.integration.test_validator tests.integration.test_run_now tests.integration.test_launcher_environment tests.unit.test_browser_adapters tests.regression.test_scoring'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -m unittest discover -s tests/integration -p 'test_*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'for f in extension/*.js tests/*.js; do node --check \\\"\"'$f\" || exit $?; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'for f in *.command scripts/*.sh; do bash -n \\\"\"'$f\" || exit $?; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot search-plan --mode fast'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot search-plan --mode deep'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot validate-production --stage full --semi-minutes 30'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'from pathlib import Path; import json; report_path=Path(\\\"out/production-validation/latest.json\\\"); report=json.loads(report_path.read_text(encoding=\\\"utf-8\\\")); artifact={\\\"production_validation\\\":{\\\"validator_command\\\":[\\\"PYTHONPATH=src\\\",\\\"python3\\\",\\\"-m\\\",\\\"jobbot\\\",\\\"validate-production\\\",\\\"--stage\\\",\\\"full\\\",\\\"--semi-minutes\\\",\\\"30\\\"],\\\"validator_exit_code\\\":1,\\\"report_path\\\":str(report_path.resolve()),\\\"raw_report\\\":report}}; Path(\\\"verification/CHG-39-r6.json\\\").write_text(json.dumps(artifact,indent=2,ensure_ascii=False)+\\\"\\\\n\\\",encoding=\\\"utf-8\\\")'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import json; from pathlib import Path; r=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); print(json.dumps({k:r.get(k) for k in [\\\"PROD_READY\\\",\\\"validation_stage\\\",\\\"validation_database\\\",\\\"soak_database\\\",\\\"semi_production_database\\\",\\\"preflight\\\",\\\"internal_failures\\\",\\\"external_blockers\\\",\\\"primary_live\\\",\\\"soak\\\",\\\"semi_production\\\",\\\"run_now_coverage\\\",\\\"exit_integrity\\\"]},indent=2,ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import json; from pathlib import Path; r=json.loads(Path(\\\"out/production-validation/latest.json\\\").read_text()); s=r.get(\\\"soak\\\") or {}; p=r.get(\\\"primary_live\\\") or {}; print(\\\"TOP_FAIL\\\",r.get(\\\"internal_failures\\\")); print(\\\"PRIMARY\\\",json.dumps({k:p.get(k) for k in [\\\"run_id\\\",\\\"outcome\\\",\\\"resume\\\",\\\"stop_resume_pass\\\",\\\"bridge_restart_pass\\\",\\\"extension_build_pass\\\",\\\"terminal_classification\\\",\\\"pass\\\",\\\"metrics\\\",\\\"validation_metrics\\\",\\\"validation_classification\\\",\\\"dashboard\\\"]},indent=2,ensure_ascii=False)); print(\\\"SOAK\\\",json.dumps({k:s.get(k) for k in [\\\"run_id\\\",\\\"outcome\\\",\\\"resume\\\",\\\"bridge_restart_pass\\\",\\\"extension_build_pass\\\",\\\"terminal_classification\\\",\\\"pass\\\",\\\"metrics\\\",\\\"validation_metrics\\\",\\\"validation_classification\\\",\\\"dashboard\\\",\\\"supplemental\\\",\\\"sampled_phase_counts\\\",\\\"duration_seconds_total\\\"]},indent=2,ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"CREATE TABLE search_task_results|search_task_results \\\\(|content_state|enrichment_state|detail_status|requested_search_url|observed_search_url|extraction_source|source_job_id|location_evidence|application_destination|currentJobId|pane\\\" src/jobbot tests | sed -n '1,320p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-5bd8e41d3581343035252291/data/acceptance_r6_linkedin.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-5bd8e41d3581343035252291/out/acceptance-r6-linkedin JOBBOT_DASHBOARD_PORT=8766 PYTHONPATH=src python3 -m jobbot acceptance --platform linkedin --days 7 --max-results 20'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; p=\\\"data/acceptance_r6_linkedin.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; names=[x[0] for x in c.execute(\\\"select name from sqlite_master where type=\\\\\\\"table\\\\\\\" order by name\\\")]; print(names); for_name=[\\\"browser_runs\\\",\\\"browser_search_tasks\\\",\\\"search_task_results\\\",\\\"jobs\\\",\\\"browser_events\\\",\\\"platform_readiness\\\"]; for t in for_name:\\\\n try: print(t,[x[1] for x in c.execute(f\\\"pragma table_info({t})\\\")])\\\\n except Exception as e: print(t,str(e)); c.close()'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3; p=\\\"data/acceptance_r6_linkedin.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; names=[x[0] for x in c.execute(\\\"select name from sqlite_master where type=\\\\\\\"table\\\\\\\" order by name\\\")]; print(names); wanted=[\\\"browser_runs\\\",\\\"browser_search_tasks\\\",\\\"search_task_results\\\",\\\"jobs\\\",\\\"browser_events\\\",\\\"platform_readiness\\\"]; [print(t,[x[1] for x in c.execute(\\\"pragma table_info(\\\"+t+\\\")\\\")]) for t in wanted if t in names]'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; p=\\\"data/acceptance_r6_linkedin.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; run=dict(c.execute(\\\"select * from browser_runs order by browser_run_id desc limit 1\\\").fetchone()); tasks=[dict(x) for x in c.execute(\\\"select task_id,platform,query_text,status,results_seen,jobs_recorded,pages_visited,detail_count_read,unique_jobs_recorded,duplicate_sightings,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,duplicate_cards,requested_search_url,observed_page_url,current_search_url,page_context_status,last_source_job_id,exhaustion_reason,safety_stop_reason,last_error,phase from browser_search_tasks where browser_run_id=? order by task_id\\\",(run[\\\"browser_run_id\\\"],))]; rows=[dict(x) for x in c.execute(\\\"select r.result_id,r.source_job_id,r.source_url,r.canonical_job_id,r.detail_read,r.detail_status,r.detail_attempts,r.detail_error,r.identity_status,r.card_metadata_status,r.content_state,r.card_json,j.title,j.company,length(coalesce(j.description,\\\"\\\")) description_length,j.enrichment_status,j.location_evidence_state,j.remote_evidence_state,j.apply_destination_state,t.requested_search_url,t.observed_page_url,t.current_search_url,t.page_context_status from search_task_results r join browser_search_tasks t on t.task_id=r.task_id left join jobs j on j.job_id=r.canonical_job_id where r.browser_run_id=? order by r.result_id\\\",(run[\\\"browser_run_id\\\"],))]; ev=[dict(x) for x in c.execute(\\\"select event_type,count(*) n from browser_events where browser_run_id=? group by event_type order by event_type\\\",(run[\\\"browser_run_id\\\"],))]; print(json.dumps({\\\"run\\\":run,\\\"tasks\\\":tasks,\\\"result_count\\\":len(rows),\\\"results\\\":rows,\\\"event_types\\\":ev},ensure_ascii=False,indent=2))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; p=\\\"data/acceptance_r6_linkedin.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; run=dict(c.execute(\\\"select * from browser_runs order by browser_run_id desc limit 1\\\").fetchone()); rid=run[\\\"browser_run_id\\\"]; tasks=[dict(x) for x in c.execute(\\\"select task_id,platform,query_text,status,results_seen,jobs_recorded,pages_visited,detail_count_read,unique_jobs_recorded,duplicate_sightings,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,duplicate_cards,requested_search_url,observed_page_url,current_search_url,page_context_status,last_source_job_id,exhaustion_reason,safety_stop_reason,last_error,phase from browser_search_tasks where browser_run_id=? order by task_id\\\",(rid,))]; rows=[dict(x) for x in c.execute(\\\"select r.result_id,r.source_job_id,r.source_url,r.canonical_job_id,r.detail_read,r.detail_status,r.detail_attempts,r.detail_error,r.identity_status,r.card_metadata_status,r.content_state,r.card_json,j.title,j.company,length(j.description) description_length,j.enrichment_status,j.location_evidence_state,j.remote_evidence_state,j.apply_destination_state,t.requested_search_url,t.observed_page_url,t.current_search_url,t.page_context_status from search_task_results r join browser_search_tasks t on t.task_id=r.task_id left join jobs j on j.job_id=r.canonical_job_id where r.browser_run_id=? order by r.result_id\\\",(rid,))]; ev=[dict(x) for x in c.execute(\\\"select event_type,count(*) n from browser_events where browser_run_id=? group by event_type order by event_type\\\",(rid,))]; print(json.dumps({\\\"run\\\":run,\\\"tasks\\\":tasks,\\\"result_count\\\":len(rows),\\\"results\\\":rows,\\\"event_types\\\":ev},ensure_ascii=False,indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; c=sqlite3.connect(\\\"data/acceptance_r6_linkedin.sqlite3\\\"); c.row_factory=sqlite3.Row; ids=[\\\"4469224119\\\",\\\"4466931208\\\",\\\"4469194188\\\"]; out=[]; [out.extend([{\\\"event_type\\\":x[\\\"event_type\\\"],\\\"message\\\":x[\\\"message\\\"],\\\"payload\\\":json.loads(x[\\\"payload_json\\\"] or \\\"{}\\\"),\\\"source_job_id\\\":sid} for x in c.execute(\\\"select event_type,message,payload_json from browser_events where browser_run_id=1 and event_type in (\\\\\\\"detail_diagnostics\\\\\\\",\\\\\\\"detail_read\\\\\\\") and payload_json like ? order by event_id\\\",(\\\"%\\\"+sid+\\\"%\\\",))]) for sid in ids]; print(json.dumps(out,ensure_ascii=False,indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; c=sqlite3.connect(\\\"data/acceptance_r6_linkedin.sqlite3\\\"); c.row_factory=sqlite3.Row; q=\\\"select r.source_job_id,r.source_url,r.canonical_job_id,r.detail_read,r.detail_status,r.detail_attempts,r.detail_error,r.identity_status,r.card_metadata_status,r.content_state,r.card_json,j.title,j.company,length(j.description),j.enrichment_status,t.task_id,t.query_text,t.status,t.requested_search_url,t.observed_page_url from search_task_results r join browser_search_tasks t on t.task_id=r.task_id left join jobs j on j.job_id=r.canonical_job_id where r.browser_run_id=1 order by r.result_id\\\"; rows=[dict(x) for x in c.execute(q)]; from collections import Counter; print(json.dumps({\\\"status_counts\\\":Counter((x[\\\"detail_status\\\"],x[\\\"content_state\\\"],x[\\\"detail_read\\\"]) for x in rows),\\\"identity_missing_examples\\\":[x for x in rows if x[\\\"content_state\\\"]\"'!=\"COMPLETE\"][:5],\"complete_examples\":[x for x in rows if x[\"content_state\"]==\"COMPLETE\"][:3]},ensure_ascii=False,indent=2))'\"'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; c=sqlite3.connect(\\\"data/acceptance_r6_linkedin.sqlite3\\\"); c.row_factory=sqlite3.Row; q=\\\"select r.source_job_id,r.source_url,r.canonical_job_id,r.detail_read,r.detail_status,r.detail_attempts,r.detail_error,r.identity_status,r.card_metadata_status,r.content_state,r.card_json,j.title,j.company,length(j.description) description_length,j.enrichment_status,t.task_id,t.query_text,t.status,t.requested_search_url,t.observed_page_url from search_task_results r join browser_search_tasks t on t.task_id=r.task_id left join jobs j on j.job_id=r.canonical_job_id where r.browser_run_id=1 order by r.result_id\\\"; rows=[dict(x) for x in c.execute(q)]; from collections import Counter; counts={\\\"|\\\".join(map(str,k)):v for k,v in Counter((x[\\\"detail_status\\\"],x[\\\"content_state\\\"],x[\\\"detail_read\\\"]) for x in rows).items()}; print(json.dumps({\\\"status_counts\\\":counts,\\\"identity_missing_examples\\\":[x for x in rows if x[\\\"content_state\\\"]\"'!=\"COMPLETE\"][:5],\"complete_examples\":[x for x in rows if x[\"content_state\"]==\"COMPLETE\"][:3]},ensure_ascii=False,indent=2))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-5bd8e41d3581343035252291/data/acceptance_r6_glassdoor.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-5bd8e41d3581343035252291/out/acceptance-r6-glassdoor JOBBOT_DASHBOARD_PORT=8767 PYTHONPATH=src python3 -m jobbot acceptance --platform glassdoor --days 7 --max-results 20'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; p=\\\"data/acceptance_r6_glassdoor.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; rid=c.execute(\\\"select max(browser_run_id) from browser_runs\\\").fetchone()[0]; run=dict(c.execute(\\\"select * from browser_runs where browser_run_id=?\\\",(rid,)).fetchone()); tasks=[dict(x) for x in c.execute(\\\"select task_id,platform,query_text,status,results_seen,jobs_recorded,pages_visited,detail_count_read,cards_extracted,cards_persistence_succeeded,cards_persistence_failed,requested_search_url,observed_page_url,current_search_url,page_context_status,challenge_reason,last_error,phase from browser_search_tasks where browser_run_id=?\\\",(rid,))]; readiness=[dict(x) for x in c.execute(\\\"select event_type,message,payload_json from browser_events where browser_run_id=? and event_type in (\\\\\\\"platform_readiness\\\\\\\",\\\\\\\"run_finished\\\\\\\",\\\\\\\"task_incomplete\\\\\\\",\\\\\\\"task_challenged\\\\\\\") order by event_id\\\",(rid,))]; print(json.dumps({\\\"database\\\":p,\\\"run\\\":run,\\\"tasks\\\":tasks,\\\"events\\\":readiness,\\\"integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0]},ensure_ascii=False,indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env JOBBOT_DATABASE_PATH=/Users/haewonkim/.codex-fabric/worktrees/CF-5bd8e41d3581343035252291/data/acceptance_r6_indeed.sqlite3 JOBBOT_OUTPUT_DIR=/Users/haewonkim/.codex-fabric/worktrees/CF-5bd8e41d3581343035252291/out/acceptance-r6-indeed JOBBOT_DASHBOARD_PORT=8768 PYTHONPATH=src python3 -m jobbot acceptance --platform indeed --days 7 --max-results 20'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; p=\\\"data/acceptance_r6_indeed.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; rid=c.execute(\\\"select max(browser_run_id) from browser_runs\\\").fetchone()[0]; run=dict(c.execute(\\\"select * from browser_runs where browser_run_id=?\\\",(rid,)).fetchone()); tasks=[dict(x) for x in c.execute(\\\"select task_id,platform,query_text,status,results_seen,jobs_recorded,pages_visited,detail_count_read,cards_extracted,cards_persistence_succeeded,cards_persistence_failed,requested_search_url,observed_page_url,current_search_url,page_context_status,challenge_reason,last_error,phase from browser_search_tasks where browser_run_id=?\\\",(rid,))]; readiness=[dict(x) for x in c.execute(\\\"select event_type,message,payload_json from browser_events where browser_run_id=? and event_type in (\\\\\\\"platform_readiness\\\\\\\",\\\\\\\"run_finished\\\\\\\",\\\\\\\"task_incomplete\\\\\\\",\\\\\\\"task_challenged\\\\\\\") order by event_id\\\",(rid,))]; print(json.dumps({\\\"database\\\":p,\\\"run\\\":run,\\\"tasks\\\":tasks,\\\"events\\\":readiness,\\\"integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0]},ensure_ascii=False,indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import sqlite3,json; p=\\\"data/validation_soak_20260918T185111Z.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; run=dict(c.execute(\\\"select * from browser_runs order by browser_run_id desc limit 1\\\").fetchone()); rid=run[\\\"browser_run_id\\\"]; tasks=[dict(x) for x in c.execute(\\\"select task_id,platform,query_text,status,started_at,completed_at,results_seen,jobs_recorded,pages_visited,detail_count_read,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,requested_search_url,observed_page_url,current_search_url,page_context_status,challenge_reason,last_error,exhaustion_reason,safety_stop_reason,phase from browser_search_tasks where browser_run_id=? order by task_id\\\",(rid,))]; inc=[dict(x) for x in c.execute(\\\"select event_type,message,payload_json,task_id from browser_events where browser_run_id=? and event_type in (\\\\\\\"task_incomplete\\\\\\\",\\\\\\\"platform_readiness\\\\\\\",\\\\\\\"task_exhausted\\\\\\\") order by event_id\\\",(rid,))]; print(json.dumps({\\\"run\\\":run,\\\"tasks\\\":tasks,\\\"events\\\":inc,\\\"integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0]},ensure_ascii=False,indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport hashlib\nimport json\nimport os\nimport sqlite3\nimport subprocess\nfrom collections import Counter\nfrom pathlib import Path\n\nroot = Path.cwd()\nartifact_path = root / \\\"verification/CHG-39-r6.json\\\"\nbase = json.loads(artifact_path.read_text(encoding=\\\"utf-8\\\"))\nreport = base[\\\"production_validation\\\"][\\\"raw_report\\\"]\n\ndef git(*args):\n    return subprocess.check_output([\\\"git\\\", *args], cwd=root, text=True).strip()\n\ndef db_summary(path, *, linkedin=False):\n    p = Path(path)\n    conn = sqlite3.connect(p)\n    conn.row_factory = sqlite3.Row\n    try:\n        run_row = conn.execute(\\\"SELECT * FROM browser_runs ORDER BY browser_run_id DESC LIMIT 1\\\").fetchone()\n        run = dict(run_row) if run_row else None\n        rid = run.get(\\\"browser_run_id\\\") if run else None\n        task_rows = [dict(row) for row in conn.execute(\n            \\\"SELECT task_id,platform,query_text,status,results_seen,jobs_recorded,pages_visited,detail_count_read,\\\"\n            \\\"cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,\\\"\n            \\\"requested_search_url,observed_page_url,current_search_url,page_context_status,last_source_job_id,\\\"\n            \\\"exhaustion_reason,safety_stop_reason,last_error,phase FROM browser_search_tasks \\\"\n            \\\"WHERE browser_run_id=? ORDER BY task_id\\\", (rid,)\n        )] if rid is not None else []\n        statuses = Counter(row[\\\"status\\\"] for row in task_rows)\n        event_types = [dict(row) for row in conn.execute(\n            \\\"SELECT event_type,COUNT(*) n FROM browser_events WHERE browser_run_id=? GROUP BY event_type ORDER BY event_type\\\", (rid,)\n        )] if rid is not None else []\n        readiness = []\n        for row in conn.execute(\n            \\\"SELECT event_type,message,payload_json,task_id FROM browser_events \\\"\n            \\\"WHERE browser_run_id=? AND event_type IN ('platform_readiness','task_incomplete','task_exhausted','run_finished') ORDER BY event_id\\\", (rid,)\n        ) if rid is not None else []:\n            item = dict(row)\n            try:\n                item[\\\"payload\\\"] = json.loads(item.pop(\\\"payload_json\\\") or \\\"{}\\\")\n            except json.JSONDecodeError:\n                item[\\\"payload\\\"] = {}\n                item.pop(\\\"payload_json\\\", None)\n            readiness.append(item)\n        result = {\n            \\\"database\\\": str(p.resolve()),\n            \\\"run\\\": run,\n            \\\"task_counts\\\": dict(statuses),\n            \\\"tasks\\\": task_rows,\n            \\\"event_types\\\": event_types,\n            \\\"readiness_and_terminal_events\\\": readiness,\n            \\\"integrity\\\": conn.execute(\\\"PRAGMA integrity_check\\\").fetchone()[0],\n        }\n        if linkedin and rid is not None:\n            result_rows = [dict(row) for row in conn.execute(\n                \\\"SELECT r.result_id,r.source_job_id,r.source_url,r.canonical_job_id,r.detail_read,r.detail_status,\\\"\n                \\\"r.detail_attempts,r.detail_error,r.identity_status,r.card_metadata_status,r.content_state,\\\"\n                \\\"j.title,j.company,LENGTH(j.description) description_length,j.enrichment_status,\\\"\n                \\\"j.location_evidence_state,j.remote_evidence_state,j.apply_destination_state,\\\"\n                \\\"t.task_id,t.query_text,t.status task_status,t.requested_search_url,t.observed_page_url,\\\"\n                \\\"t.current_search_url,t.page_context_status FROM search_task_results r \\\"\n                \\\"JOIN browser_search_tasks t ON t.task_id=r.task_id LEFT JOIN jobs j ON j.job_id=r.canonical_job_id \\\"\n                \\\"WHERE r.browser_run_id=? ORDER BY r.result_id\\\", (rid,)\n            )]\n            result[\\\"result_count\\\"] = len(result_rows)\n            result[\\\"result_state_counts\\\"] = {\n                \\\"|\\\".join(map(str, key)): value for key, value in Counter(\n                    (row[\\\"detail_status\\\"], row[\\\"content_state\\\"], row[\\\"detail_read\\\"]) for row in result_rows\n                ).items()\n            }\n            complete = next((row for row in result_rows if row[\\\"content_state\\\"] == \\\"COMPLETE\\\" and row[\\\"detail_status\\\"] == \\\"COMPLETE\\\" and row[\\\"canonical_job_id\\\"]), None)\n            identity_only = next((row for row in result_rows if row[\\\"identity_status\\\"] == \\\"PERSISTED\\\" and row[\\\"content_state\\\"] \"'!= \"COMPLETE\"), None)\n            result[\"complete_result_example\"] = complete\n            result[\"identity_only_or_no_description_example\"] = identity_only\n            if complete:\n                sid = complete[\"source_job_id\"]\n                detail_event = None\n                for row in conn.execute(\n                    \"SELECT event_type,payload_json FROM browser_events WHERE browser_run_id=? AND event_type='\"'detail_diagnostics' \\\"\n                    \\\"AND payload_json LIKE ? ORDER BY event_id\\\", (rid, \\\"%\\\" + sid + \\\"%\\\")\n                ):\n                    try:\n                        outer = json.loads(row[\\\"payload_json\\\"] or \\\"{}\\\")\n                        payload = outer.get(\\\"payload\\\", outer)\n                        if payload.get(\\\"source_job_id\\\") == sid:\n                            detail_event = payload\n                            break\n                    except json.JSONDecodeError:\n                        pass\n                if detail_event:\n                    standalone = detail_event.get(\\\"standalone_detail\\\") or {}\n                    pane = detail_event.get(\\\"search_pane\\\") or {}\n                    pane_diag = pane.get(\\\"search_pane_diagnostics\\\") or {}\n                    job = pane.get(\\\"job\\\") or {}\n                    result[\\\"substantive_live_proof\\\"] = {\n                        \\\"source_job_id\\\": sid,\n                        \\\"canonical_job_id\\\": complete[\\\"canonical_job_id\\\"],\n                        \\\"normalized_title\\\": complete[\\\"title\\\"],\n                        \\\"company\\\": complete[\\\"company\\\"],\n                        \\\"requested_search_url\\\": complete[\\\"requested_search_url\\\"],\n                        \\\"observed_search_url\\\": complete[\\\"observed_page_url\\\"],\n                        \\\"detail_acquisition_mode\\\": detail_event.get(\\\"acquisition_mode\\\"),\n                        \\\"detail_acquisition_url\\\": detail_event.get(\\\"acquisition_url\\\"),\n                        \\\"extraction_source\\\": pane_diag.get(\\\"description_source\\\"),\n                        \\\"standalone_route\\\": standalone.get(\\\"route\\\"),\n                        \\\"standalone_classification\\\": standalone.get(\\\"classification\\\"),\n                        \\\"search_pane_route\\\": pane_diag.get(\\\"route\\\"),\n                        \\\"search_pane_classification\\\": pane_diag.get(\\\"classification\\\"),\n                        \\\"current_job_id\\\": pane.get(\\\"current_job_id\\\"),\n                        \\\"description_length\\\": len(str(job.get(\\\"description\\\") or \\\"\\\")),\n                        \\\"content_state\\\": complete[\\\"content_state\\\"],\n                        \\\"enrichment_state\\\": complete[\\\"enrichment_status\\\"],\n                        \\\"detail_status\\\": complete[\\\"detail_status\\\"],\n                        \\\"location_evidence_state\\\": complete[\\\"location_evidence_state\\\"],\n                        \\\"remote_evidence_state\\\": complete[\\\"remote_evidence_state\\\"],\n                        \\\"application_destination_state\\\": complete[\\\"apply_destination_state\\\"],\n                        \\\"identity_confirmed_by_persisted_canonical_id\\\": bool(complete[\\\"canonical_job_id\\\"]),\n                    }\n        return result\n    finally:\n        conn.close()\n\n# Read-only runtime identity from the repository-supported module.\nfrom jobbot.extension_identity import extension_build, manifest\nfrom jobbot.runtime_binding import deployment_diagnostics, runtime_binding_diagnostics\nmanifest_value = manifest(root)\ndeployment = deployment_diagnostics(root)\nruntime = runtime_binding_diagnostics(root)\nmarker_path = Path(deployment[\\\"stable_extension_root\\\"]) / \\\"deployment_identity.json\\\"\nmarker = json.loads(marker_path.read_text(encoding=\\\"utf-8\\\"))\n\nvalidator_dbs = [report.get(\\\"validation_database\\\"), report.get(\\\"soak_database\\\"), report.get(\\\"semi_production_database\\\")]\nacceptance_dbs = [\n    str((root / \\\"data/acceptance_r6_linkedin.sqlite3\\\").resolve()),\n    str((root / \\\"data/acceptance_r6_glassdoor.sqlite3\\\").resolve()),\n    str((root / \\\"data/acceptance_r6_indeed.sqlite3\\\").resolve()),\n]\nproduction_db = str((root / \\\"data/jobs.sqlite3\\\").resolve())\nall_dbs = [p for p in validator_dbs + acceptance_dbs if p]\n\ndef distinct_from_production(paths):\n    return {p: (Path(p).resolve() \"'!= Path(production_db).resolve()) for p in paths}\n\nsoak_db = Path(report[\"soak_database\"])\nsoak_conn = sqlite3.connect(soak_db)\nsoak_conn.row_factory = sqlite3.Row\ntry:\n    soak_run_id = report.get(\"soak\", {}).get(\"run_id\")\n    failed_task_rows = [dict(row) for row in soak_conn.execute(\n        \"SELECT task_id,platform,query_text,status,results_seen,jobs_recorded,pages_visited,detail_count_read,\"\n        \"cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,\"\n        \"requested_search_url,observed_page_url,current_search_url,page_context_status,last_error,\"\n        \"exhaustion_reason,safety_stop_reason,phase FROM browser_search_tasks WHERE browser_run_id=? \"\n        \"AND status IN ('\"'incomplete','failed','running','paused','deferred_by_platform') ORDER BY task_id\\\", (soak_run_id,)\n    )]\n    failed_events = []\n    for row in soak_conn.execute(\n        \\\"SELECT event_type,message,payload_json,task_id FROM browser_events WHERE browser_run_id=? \\\"\n        \\\"AND event_type IN ('task_incomplete','platform_readiness','task_exhausted') ORDER BY event_id\\\", (soak_run_id,)\n    ):\n        item = dict(row)\n        item[\\\"payload\\\"] = json.loads(item.pop(\\\"payload_json\\\") or \\\"{}\\\")\n        failed_events.append(item)\nfinally:\n    soak_conn.close()\n\ninitial_status = git(\\\"status\\\", \\\"--short\\\", \\\"--branch\\\")\ncurrent_status_lines = [line for line in git(\\\"status\\\", \\\"--short\\\", \\\"--untracked-files=all\\\").splitlines() if line]\nproduct_diff = git(\\\"diff\\\", \\\"--name-only\\\", \\\"--\\\", \\\"src\\\", \\\"extension\\\", \\\"config\\\", \\\"tests\\\", \\\"scripts\\\", \\\"*.command\\\")\nproduct_cached_diff = git(\\\"diff\\\", \\\"--cached\\\", \\\"--name-only\\\", \\\"--\\\", \\\"src\\\", \\\"extension\\\", \\\"config\\\", \\\"tests\\\", \\\"scripts\\\", \\\"*.command\\\")\n\nbase[\\\"artifact_metadata\\\"] = {\n    \\\"request\\\": \\\"CHG-39-r6\\\",\n    \\\"operation\\\": \\\"VERIFY\\\",\n    \\\"secret_free\\\": True,\n    \\\"generated_at_utc\\\": report.get(\\\"finished_at\\\"),\n    \\\"repository_root\\\": str(root),\n}\nbase[\\\"git_binding\\\"] = {\n    \\\"branch\\\": git(\\\"branch\\\", \\\"--show-current\\\"),\n    \\\"expected_head\\\": \\\"f711ff0e736065726c70021c8b254fddbbaa237d\\\",\n    \\\"observed_head\\\": git(\\\"rev-parse\\\", \\\"HEAD\\\"),\n    \\\"expected_origin_main\\\": \\\"f711ff0e736065726c70021c8b254fddbbaa237d\\\",\n    \\\"observed_origin_main\\\": git(\\\"rev-parse\\\", \\\"origin/main\\\"),\n    \\\"expected_base\\\": \\\"f711ff0e736065726c70021c8b254fddbbaa237d\\\",\n    \\\"observed_base\\\": git(\\\"merge-base\\\", \\\"HEAD\\\", \\\"origin/main\\\"),\n    \\\"target_unchanged\\\": git(\\\"diff\\\", \\\"--name-only\\\", \\\"origin/main...HEAD\\\").splitlines() == [],\n    \\\"initial_worktree_clean\\\": True,\n    \\\"initial_status\\\": \\\"clean — nothing to commit\\\",\n    \\\"status_at_artifact_generation\\\": current_status_lines,\n    \\\"target_diff_files\\\": git(\\\"diff\\\", \\\"--name-only\\\", \\\"origin/main...HEAD\\\").splitlines(),\n}\nbase[\\\"extension_identity\\\"] = {\n    \\\"expected_extension_id\\\": \\\"jfdlmelgonjhgnabpbipjefgamedpgfb\\\",\n    \\\"observed_extension_id\\\": marker.get(\\\"extension_id\\\"),\n    \\\"expected_version_name\\\": \\\"3.2.2-prod-ready.672cf88.9\\\",\n    \\\"manifest_version_name\\\": manifest_value.get(\\\"version_name\\\"),\n    \\\"expected_source_identity\\\": deployment[\\\"expected\\\"][\\\"source_identity\\\"],\n    \\\"integrated_source_identity\\\": deployment[\\\"expected\\\"][\\\"source_identity\\\"],\n    \\\"observed_source_identity\\\": marker.get(\\\"source_identity\\\"),\n    \\\"identity_confirmed\\\": True,\n    \\\"deployment_root\\\": deployment[\\\"stable_extension_root\\\"],\n    \\\"profile_directory\\\": runtime[\\\"chrome_target\\\"].get(\\\"profile_directory\\\"),\n    \\\"browser\\\": runtime[\\\"chrome_target\\\"].get(\\\"browser\\\"),\n    \\\"runtime_classification\\\": runtime[\\\"classification\\\"],\n    \\\"observed_build\\\": \\\"3.2.2-prod-ready.672cf88.9\\\",\n    \\\"expected_build\\\": \\\"3.2.2-prod-ready.672cf88.9\\\",\n    \\\"sync_command\\\": \\\"PYTHONPATH=src python3 -m jobbot sync-extension\\\",\n    \\\"sync_exit_code\\\": 0,\n    \\\"refresh_command\\\": \\\"PYTHONPATH=src python3 -m jobbot refresh-extension\\\",\n    \\\"refresh_exit_code\\\": 0,\n    \\\"refresh_status\\\": \\\"confirmed\\\",\n    \\\"refresh_diagnostics_classification\\\": \\\"intended_extension_reachable_and_current\\\",\n    \\\"deployment_diagnostics\\\": deployment,\n    \\\"runtime_binding_diagnostics\\\": runtime,\n    \\\"observed_marker\\\": marker,\n    \\\"marker_source_head_observation\\\": {\n        \\\"observed\\\": marker.get(\\\"source_head\\\"),\n        \\\"integrated\\\": deployment[\\\"expected\\\"].get(\\\"source_head\\\"),\n        \\\"matches\\\": marker.get(\\\"source_head\\\") == deployment[\\\"expected\\\"].get(\\\"source_head\\\"),\n        \\\"impact\\\": \\\"cryptographic source identity and loaded build still matched; stale marker metadata preserved as observed\\\",\n    },\n    \\\"unauthorized_bridge_access\\\": {\n        \\\"rejected\\\": True,\n        \\\"evidence\\\": [\n            \\\"tests.integration.test_extension_bridge.ExtensionBridgeTests.test_loopback_rpc_token_auth\\\",\n            \\\"tests.integration.test_extension_refresh.ExtensionRefreshIntegrationTests.test_loopback_authorization_is_required_for_refresh_control\\\",\n            \\\"jobbot doctor: Loopback bridge RPC: token auth and unauthorized rejection\\\",\n            \\\"full validator startup self-test: GET /health returned 403 without authorization\\\",\n        ],\n    },\n}\nbase[\\\"deterministic_validation\\\"] = {\n    \\\"execution_path\\\": \\\"PYTHONPATH=src python3\\\",\n    \\\"commands\\\": [\n        {\\\"command\\\": \\\"PYTHONPATH=src python3 -m unittest -v tests.integration.test_chg112_production_integrity tests.integration.test_database_ledger tests.integration.test_browser_tasks tests.integration.test_extension_bridge tests.integration.test_runtime_binding tests.integration.test_extension_refresh tests.integration.test_watch tests.integration.test_validator tests.integration.test_run_now tests.integration.test_launcher_environment tests.unit.test_browser_adapters tests.regression.test_scoring\\\", \\\"exit_code\\\": 0, \\\"test_count\\\": 80},\n        {\\\"command\\\": \\\"PYTHONPATH=src python3 -m unittest discover -s tests/integration -p 'test_*.py'\\\", \\\"exit_code\\\": 0, \\\"test_count\\\": 78},\n        {\\\"command\\\": \\\"PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py'\\\", \\\"exit_code\\\": 0, \\\"test_count\\\": 101},\n        {\\\"command\\\": \\\"PYTHONPATH=src python3 -m compileall -q src tests\\\", \\\"exit_code\\\": 0, \\\"test_count\\\": None},\n        {\\\"command\\\": \\\"for f in extension/*.js tests/*.js; do node --check \\\\\\\"\"'$f'\"\\\\\\\" || exit \"'$?; done\", \"exit_code\": 0, \"file_count\": 8},\n        {\"command\": \"for f in *.command scripts/*.sh; do bash -n '\"\\\\\\\"\"'$f'\"\\\\\\\" || exit \"'$?; done\", \"exit_code\": 0, \"file_count\": len(__import__('\"'glob').glob('*.command') + __import__('glob').glob('scripts/*.sh'))},\n        {\\\"command\\\": \\\"git diff --check\\\", \\\"exit_code\\\": 0},\n        {\\\"command\\\": \\\"PYTHONPATH=src python3 -m jobbot doctor\\\", \\\"exit_code\\\": 0, \\\"summary\\\": {\\\"python\\\": \\\"3.11.7\\\", \\\"migrations\\\": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], \\\"fast_tasks\\\": 315, \\\"deep_tasks\\\": 417, \\\"bridge_unauthorized_rejected\\\": True}},\n        {\\\"command\\\": \\\"PYTHONPATH=src python3 -m jobbot search-plan --mode fast\\\", \\\"exit_code\\\": 0, \\\"total\\\": 315, \\\"by_platform\\\": {\\\"linkedin\\\": 105, \\\"indeed\\\": 105, \\\"glassdoor\\\": 105}},\n        {\\\"command\\\": \\\"PYTHONPATH=src python3 -m jobbot search-plan --mode deep\\\", \\\"exit_code\\\": 0, \\\"total\\\": 417, \\\"by_platform\\\": {\\\"linkedin\\\": 139, \\\"indeed\\\": 139, \\\"glassdoor\\\": 139}},\n        {\\\"command\\\": \\\"node fixture checks: node tests/extension_linkedin_scope_test.js; node tests/extension_primary_scope_test.js\\\", \\\"exit_code\\\": 0, \\\"fixture_checks\\\": [\\\"LinkedIn scope/detail fixtures\\\", \\\"primary-platform scope fixtures\\\"]},\n    ],\n    \\\"validator_internal_deterministic_suite\\\": report.get(\\\"preflight\\\", {}).get(\\\"checks\\\", []),\n}\nbase[\\\"production_validation\\\"][\\\"decisive_fields\\\"] = {\n    \\\"validator_exit_code\\\": 1,\n    \\\"PROD_READY\\\": report.get(\\\"PROD_READY\\\"),\n    \\\"validation_database\\\": report.get(\\\"validation_database\\\"),\n    \\\"soak_database\\\": report.get(\\\"soak_database\\\"),\n    \\\"semi_production_database\\\": report.get(\\\"semi_production_database\\\"),\n    \\\"preflight\\\": report.get(\\\"preflight\\\"),\n    \\\"internal_failures\\\": report.get(\\\"internal_failures\\\"),\n    \\\"external_blockers\\\": report.get(\\\"external_blockers\\\"),\n    \\\"primary_live\\\": report.get(\\\"primary_live\\\"),\n    \\\"soak\\\": report.get(\\\"soak\\\"),\n    \\\"semi_production\\\": {\\\"present\\\": report.get(\\\"semi_production\\\") is not None, \\\"pass\\\": (report.get(\\\"semi_production\\\") or {}).get(\\\"pass\\\") if report.get(\\\"semi_production\\\") else None, \\\"value\\\": report.get(\\\"semi_production\\\")},\n    \\\"run_now_coverage\\\": report.get(\\\"run_now_coverage\\\"),\n    \\\"exit_integrity\\\": report.get(\\\"exit_integrity\\\"),\n    \\\"extension_unresponsive_where_present\\\": [x for x in report.get(\\\"internal_failures\\\", []) if \\\"extension\\\" in str(x).lower()],\n}\nbase[\\\"production_validation\\\"][\\\"failure_inspection\\\"] = {\n    \\\"validator_classification\\\": \\\"15-minute isolated soak failed\\\",\n    \\\"bounded_repository_defect_established\\\": False,\n    \\\"internal_failures_verbatim\\\": report.get(\\\"internal_failures\\\"),\n    \\\"external_blockers_verbatim\\\": report.get(\\\"external_blockers\\\"),\n    \\\"soak_task_states\\\": (report.get(\\\"soak\\\") or {}).get(\\\"validation_metrics\\\", {}).get(\\\"task_states\\\"),\n    \\\"soak_attempted_progress_counts\\\": {k: (report.get(\\\"soak\\\") or {}).get(\\\"validation_metrics\\\", {}).get(k) for k in [\\\"attempted_tasks\\\",\\\"progress_tasks\\\",\\\"attempted_failed\\\",\\\"attempted_incomplete\\\",\\\"attempted_running\\\",\\\"attempted_stopped\\\",\\\"untouched_queued\\\",\\\"extracted\\\",\\\"persistence_attempted\\\",\\\"persisted\\\",\\\"persistence_failed\\\"]},\n    \\\"soak_scope_diagnostics\\\": (report.get(\\\"soak\\\") or {}).get(\\\"resume\\\", {}).get(\\\"scope\\\"),\n    \\\"soak_relevant_tasks\\\": failed_task_rows,\n    \\\"soak_relevant_events\\\": failed_events,\n    \\\"validator_database_integrity\\\": report.get(\\\"exit_integrity\\\"),\n    \\\"classification_reason\\\": \\\"The failed soak gate is explained by safe live-site scope loss and platform content-script readiness failures: LinkedIn task 1 and task 3 stopped with no_safe_result_cluster at observed /jobs/search/ pages; Indeed and Glassdoor were deferred after content script did not respond. Tasks had no failed state, persistence failures were zero, reconciliation/integrity passed, and no bounded repository/config contract defect was established.\\\",\n}\nbase[\\\"linkedin_live\\\"] = {\n    \\\"command\\\": \\\"JOBBOT_DATABASE_PATH=data/acceptance_r6_linkedin.sqlite3 JOBBOT_OUTPUT_DIR=out/acceptance-r6-linkedin JOBBOT_DASHBOARD_PORT=8766 PYTHONPATH=src python3 -m jobbot acceptance --platform linkedin --days 7 --max-results 20\\\",\n    \\\"exit_code\\\": 2,\n    \\\"database\\\": str((root / \\\"data/acceptance_r6_linkedin.sqlite3\\\").resolve()),\n    \\\"database_state\\\": db_summary(root / \\\"data/acceptance_r6_linkedin.sqlite3\\\", linkedin=True),\n    \\\"authenticated_ready_actual_search_surface\\\": True,\n    \\\"substantive_complete_enriched_proof\\\": db_summary(root / \\\"data/acceptance_r6_linkedin.sqlite3\\\", linkedin=True).get(\\\"substantive_live_proof\\\"),\n    \\\"identity_only_retryable_case\\\": db_summary(root / \\\"data/acceptance_r6_linkedin.sqlite3\\\", linkedin=True).get(\\\"identity_only_or_no_description_example\\\"),\n    \\\"false_complete_proven_false\\\": True,\n}\nbase[\\\"glassdoor_live\\\"] = {\n    \\\"command\\\": \\\"JOBBOT_DATABASE_PATH=data/acceptance_r6_glassdoor.sqlite3 JOBBOT_OUTPUT_DIR=out/acceptance-r6-glassdoor JOBBOT_DASHBOARD_PORT=8767 PYTHONPATH=src python3 -m jobbot acceptance --platform glassdoor --days 7 --max-results 20\\\",\n    \\\"exit_code\\\": 2,\n    \\\"database_state\\\": db_summary(root / \\\"data/acceptance_r6_glassdoor.sqlite3\\\"),\n    \\\"auth_status\\\": \\\"unknown\\\",\n    \\\"readiness_state\\\": \\\"retryable\\\",\n    \\\"external_blocker\\\": \\\"auth/readiness probe failed: content script did not respond\\\",\n    \\\"actual_complete_enriched_detail\\\": None,\n}\nbase[\\\"indeed_live\\\"] = {\n    \\\"command\\\": \\\"JOBBOT_DATABASE_PATH=data/acceptance_r6_indeed.sqlite3 JOBBOT_OUTPUT_DIR=out/acceptance-r6-indeed JOBBOT_DASHBOARD_PORT=8768 PYTHONPATH=src python3 -m jobbot acceptance --platform indeed --days 7 --max-results 20\\\",\n    \\\"exit_code\\\": 2,\n    \\\"database_state\\\": db_summary(root / \\\"data/acceptance_r6_indeed.sqlite3\\\"),\n    \\\"auth_status\\\": \\\"unknown\\\",\n    \\\"readiness_state\\\": \\\"retryable\\\",\n    \\\"challenge_state\\\": \\\"not_observed\\\",\n    \\\"captcha_persisted\\\": False,\n    \\\"task_deferral_state\\\": \\\"deferred_by_platform\\\",\n    \\\"resumable\\\": True,\n    \\\"false_sign_out\\\": False,\n    \\\"bypass_attempted\\\": False,\n    \\\"external_blocker\\\": \\\"auth/readiness probe failed: content script did not respond\\\",\n}\nbase[\\\"database_isolation\\\"] = {\n    \\\"production_database\\\": production_db,\n    \\\"validator_databases\\\": validator_dbs,\n    \\\"acceptance_databases\\\": acceptance_dbs,\n    \\\"proof_each_path_differs_from_production\\\": distinct_from_production(all_dbs),\n    \\\"all_isolated_paths_pairwise_distinct\\\": len(set(all_dbs)) == len(all_dbs),\n    \\\"validator_exit_integrity\\\": report.get(\\\"exit_integrity\\\"),\n    \\\"acceptance_integrity\\\": {\n        str((root / \\\"data/acceptance_r6_linkedin.sqlite3\\\").resolve()): base[\\\"linkedin_live\\\"][\\\"database_state\\\"][\\\"integrity\\\"],\n        str((root / \\\"data/acceptance_r6_glassdoor.sqlite3\\\").resolve()): base[\\\"glassdoor_live\\\"][\\\"database_state\\\"][\\\"integrity\\\"],\n        str((root / \\\"data/acceptance_r6_indeed.sqlite3\\\").resolve()): base[\\\"indeed_live\\\"][\\\"database_state\\\"][\\\"integrity\\\"],\n    },\n    \\\"production_database_used_by_unattended_validation\\\": False,\n}\nbase[\\\"source_change_check\\\"] = {\n    \\\"product_source_unchanged\\\": not product_diff and not product_cached_diff,\n    \\\"product_source_diff_files\\\": product_diff.splitlines() if product_diff else [],\n    \\\"product_source_cached_diff_files\\\": product_cached_diff.splitlines() if product_cached_diff else [],\n    \\\"allowed_repository_change\\\": \\\"verification/CHG-39-r6.json\\\",\n    \\\"current_status_lines\\\": current_status_lines,\n    \\\"codex_fabric_audit_json_touched\\\": False,\n}\nbase[\\\"final_classification\\\"] = {\n    \\\"verdict\\\": \\\"VERIFY\\\",\n    \\\"delivery\\\": \\\"Not applicable (verification-only)\\\",\n    \\\"exact_reason\\\": \\\"VERIFY: exact integrated main remains source-clean and the required .9 extension identity/live runtime proof is current; deterministic checks, bridge rejection, persistence, reconciliation, and database integrity pass; LinkedIn has real authenticated search-surface cards and a substantive canonical COMPLETE/ENRICHED currentJobId/search-pane proof. However the full repository validator exited 1 with PROD_READY=false because its isolated soak gate recorded incomplete LinkedIn extraction after live no_safe_result_cluster scope loss and deferred Indeed/Glassdoor after content script nonresponse; semi-production was not reached. Separate Glassdoor/Indeed acceptance runs reproduce the external readiness blocker. No bounded repository source/config contract defect is established, so this is VERIFY/external rather than FIX.\\\",\n    \\\"go_gate_results\\\": {\n        \\\"exact_main_unchanged\\\": True,\n        \\\"zero_product_source_changes\\\": True,\n        \\\"exact_extension_identity_confirmed\\\": True,\n        \\\"full_validator_exit_zero\\\": False,\n        \\\"PROD_READY_true\\\": False,\n        \\\"no_internal_failures\\\": False,\n        \\\"linkedin_substantive_live_proof\\\": True,\n    },\n    \\\"fix_gate\\\": {\n        \\\"bounded_source_or_config_contract_defect\\\": False,\n        \\\"repair_attempted\\\": False,\n        \\\"root_cause\\\": \\\"not established; observed external/live DOM scope and content-script readiness conditions are preserved verbatim\\\",\n    },\n}\nartifact_path.write_text(json.dumps(base, indent=2, ensure_ascii=False) + \\\"\\\\n\\\", encoding=\\\"utf-8\\\")\nprint(json.dumps({\\\"artifact\\\": str(artifact_path), \\\"bytes\\\": artifact_path.stat().st_size, \\\"sections\\\": sorted(base)}, ensure_ascii=False, indent=2))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 -c 'import json; from pathlib import Path; p=Path(\\\"verification/CHG-39-r6.json\\\"); x=json.loads(p.read_text()); required=[\\\"git_binding\\\",\\\"extension_identity\\\",\\\"deterministic_validation\\\",\\\"production_validation\\\",\\\"linkedin_live\\\",\\\"glassdoor_live\\\",\\\"indeed_live\\\",\\\"database_isolation\\\",\\\"source_change_check\\\",\\\"final_classification\\\"]; print({\\\"json_valid\\\":True,\\\"required_sections_present\\\":all(k in x for k in required),\\\"sections\\\":required,\\\"bytes\\\":p.stat().st_size,\\\"sha256\\\":__import__(\\\"hashlib\\\").sha256(p.read_bytes()).hexdigest(),\\\"verdict\\\":x[\\\"final_classification\\\"][\\\"verdict\\\"],\\\"validator_exit\\\":x[\\\"production_validation\\\"][\\\"decisive_fields\\\"][\\\"validator_exit_code\\\"],\\\"prod_ready\\\":x[\\\"production_validation\\\"][\\\"decisive_fields\\\"][\\\"PROD_READY\\\"]})' && rtk rg -n -i 'bridge_token|cookie|password|secret|credential|authorization:|set-cookie|session' verification/CHG-39-r6.json || true && rtk git status --short --untracked-files=all && rtk git diff --name-status && rtk git diff --cached --name-status && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('verification/CHG-39-r6.json')\nx=json.loads(p.read_text())\ncmds=x['deterministic_validation']['commands']\ncmds=[c for c in cmds if not c['command'].startswith('node fixture checks:')]\ncmds.extend([\n  {'command':'node tests/extension_linkedin_scope_test.js','exit_code':0,'fixture_checks':'LinkedIn scope/card/detail/currentJobId fixtures'},\n  {'command':'node tests/extension_primary_scope_test.js','exit_code':0,'fixture_checks':'Indeed/Glassdoor scope and Big-3 auth/readiness fixtures'},\n])\nx['deterministic_validation']['commands']=cmds\np.write_text(json.dumps(x,indent=2,ensure_ascii=False)+'\\\\n')\nprint('updated fixture commands')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --untracked-files=all && rtk git diff --name-only && rtk git diff --cached --name-only && rtk git remote -v && rtk git show-ref | rg 'codex-fabric/evidence|codex/jobbot-CHG-39-r6|origin/main' | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git log --oneline --decorate -5 refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r5 && rtk git show --stat --oneline refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r5 && rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r5 -- | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'command -v codex-fabric || true; command -v fabric || true; command -v codex || true; command -v git; git config --get-regexp \\\"\"'^fabric'\"\\\\\\\\.\\\" || true; git config --get-regexp \\\"\"'^remote'\"\\\\\\\\..*pushurl\\\" || true' && rtk rg -n \\\"codex-fabric/evidence|canonical project_id|evidence commit|audit.json\\\" /Users/haewonkim/.codex /Users/haewonkim/.codex-fabric 2>/dev/null | sed -n '1,240p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"argparse|def main|publish|evidence|operation|request|project_id|canonical\\\" /Users/haewonkim/.codex-fabric/releases/1.2.2/fabric.py | sed -n '1,260p' && rtk sed -n '2050,2205p' /Users/haewonkim/.codex-fabric/releases/1.2.2/fabric.py && rtk sed -n '2890,3010p' /Users/haewonkim/.codex-fabric/releases/1.2.2/fabric.py && rtk tail -120 /Users/haewonkim/.codex-fabric/releases/1.2.2/fabric.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -l 'CHG-39-r6|5bd8e41d3581343035252291' /Users/haewonkim/.codex-fabric/jobs /Users/haewonkim/.codex-fabric/results /Users/haewonkim/.codex-fabric/state 2>/dev/null | sed -n '1,120p' && rtk find /Users/haewonkim/.codex-fabric/results -maxdepth 2 -type d -name '*5bd8*' 2>/dev/null | sed -n '1,80p' && rtk find /Users/haewonkim/.codex-fabric/jobs -maxdepth 2 -type d -name '*5bd8*' 2>/dev/null | sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/jobs/CF-5bd8e41d3581343035252291.running/job.json && rtk find /Users/haewonkim/.codex-fabric/results/CF-5bd8e41d3581343035252291 -maxdepth 1 -type f -print 2>/dev/null | sed -n '1,80p' && rtk sed -n '1,240p' /Users/haewonkim/.codex-fabric/results/CF-5bd8e41d3581343035252291/job-summary.json 2>/dev/null || true && rtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/results/CF-5bd8e41d3581343035252291/result.json 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-39-r6.json && rtk git diff --cached --check && rtk git diff --cached --name-status && rtk git diff --cached --stat && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git commit -m 'chore(verification): record CHG-39-r6 evidence' && rtk git rev-parse HEAD && rtk git show --stat --oneline HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push origin HEAD:refs/heads/codex/jobbot-CHG-39-r6'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse origin/codex/jobbot-CHG-39-r6 && rtk git rev-parse origin/main && rtk git diff --name-status origin/main...HEAD && rtk git cat-file -p HEAD | sed -n '1,12p' && rtk git ls-tree -r --name-only HEAD | rtk rg '\"'^(verification/CHG-39-r6'\"\\\\.json|src/|extension/|\\\\.codex-fabric/audit\\\\.json)' | sed -n '1,40p' && rtk git diff --check HEAD\"'^ HEAD && rtk git show HEAD:verification/CHG-39-r6.json | rtk env PYTHONPATH=src python3 -c '\"'import json,sys; x=json.load(sys.stdin); print(json.dumps({\\\"verdict\\\":x[\\\"final_classification\\\"][\\\"verdict\\\"],\\\"validator_exit\\\":x[\\\"production_validation\\\"][\\\"decisive_fields\\\"][\\\"validator_exit_code\\\"],\\\"prod_ready\\\":x[\\\"production_validation\\\"][\\\"decisive_fields\\\"][\\\"PROD_READY\\\"],\\\"product_source_unchanged\\\":x[\\\"source_change_check\\\"][\\\"product_source_unchanged\\\"],\\\"sections\\\":sorted(x.keys())},ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python3 /Users/haewonkim/.codex-fabric/releases/1.2.2/fabric.py status CF-5bd8e41d3581343035252291'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('verification/CHG-39-r6.json')\nx=json.loads(p.read_text())\nx['production_validation']['decisive_fields']['semi_production']={\n  'present': False,\n  'pass': None,\n  'phase_pass': None,\n  'execution_evidence': None,\n  'phase_coverage': None,\n  'supplemental_isolation': None,\n  'dashboard': None,\n  'value': None,\n  'not_run_reason': 'validator returned after the isolated soak failed; A_FASTEST_DOOR_RECENT, B_REMAINING_CORE_RECENT, and C_DEEP_BACKFILL were not started'\n}\np.write_text(json.dumps(x,indent=2,ensure_ascii=False)+'\\\\n')\nprint('updated explicit semi-production not-reached fields')\nPY\nrtk git add verification/CHG-39-r6.json && rtk git diff --cached --check && rtk git diff --cached --name-status && rtk git commit --amend --no-edit && rtk git push --force-with-lease origin HEAD:refs/heads/codex/jobbot-CHG-39-r6 && rtk git rev-parse HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse origin/codex/jobbot-CHG-39-r6 && rtk git rev-parse origin/main && rtk git show -s --format='%H%n%P%n%s' HEAD && rtk git show --stat --oneline HEAD && rtk git diff --check HEAD\"'^ HEAD && rtk git ls-tree -r --name-only HEAD | rtk rg '\"'\"'^'\"\\\\.codex-fabric/audit\\\\.json\"'$|''^verification/CHG-39-r6'\"\\\\.json\"'$'\"' && rtk git show HEAD:verification/CHG-39-r6.json | rtk env PYTHONPATH=src python3 -c 'import json,sys; x=json.load(sys.stdin); print(json.dumps({\\\"final\\\":x[\\\"final_classification\\\"],\\\"semi\\\":x[\\\"production_validation\\\"][\\\"decisive_fields\\\"][\\\"semi_production\\\"],\\\"source_clean\\\":x[\\\"source_change_check\\\"][\\\"product_source_unchanged\\\"]},ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 138,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.68,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 11064832,
+      "fresh_input_tokens": 262667,
+      "input_tokens": 11327499,
+      "non_reasoning_output_tokens": 22828,
+      "output_tokens": 41132,
+      "reasoning_output_tokens": 18304,
+      "total_processed_tokens": 11368631
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "98e02c24e2a0b55c8f3ec8cc4b5868a37a027288",
+      "subject": "chore(verification): record CHG-39-r6 evidence"
+    }
+  ],
+  "diff": {
+    "additions": 6367,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 260957,
+        "path": "verification/CHG-39-r6.json",
+        "sha256": "556f5defdf68d4033e9f9ba87c22d5a16a11e1c2ba7a8a603fa80ce928de0f12"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-18T19:35:16Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "branch": "codex/jobbot-CHG-39-r6",
+    "head_sha": "98e02c24e2a0b55c8f3ec8cc4b5868a37a027288",
+    "remote_exact_head": true,
+    "remote_head_sha": "98e02c24e2a0b55c8f3ec8cc4b5868a37a027288",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "work_branch": "codex/jobbot-CHG-39-r6",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-5bd8e41d3581343035252291",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r6",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r6"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r6",
+  "schema_version": 1,
+  "started_at": "2026-09-18T18:47:59Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 2837,
+    "queue_seconds": 0,
+    "total_seconds": 2837
+  },
+  "transport": {
+    "bytes": 8510,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 8230,
+    "prompt_sha256": "b717c3a31115201a73e2af99e4a0d00c258fe3f79d4668caf17e9af01249a983",
+    "sha256": "5bd8e41d358134303525229167b1ca332d1c6f3bf1f4b3625d4cf7c6804f2dd4"
+  }
+}
