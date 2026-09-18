@@ -1,0 +1,411 @@
+{
+  "accepted_at": "2026-09-18T20:26:54Z",
+  "changed_files": [
+    {
+      "additions": 2,
+      "deletions": 1,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 39,
+      "deletions": 1,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 0,
+      "path": "tests/extension_linkedin_scope_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 124,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_scope_recovery_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\npath='/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3'\nconn=sqlite3.connect(path)\ntry:\n    print(json.dumps({\n      'runs':conn.execute('select browser_run_id,status,platform from browser_runs').fetchall(),\n      'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,checkpoint_json from browser_search_tasks order by task_id').fetchall(),\n      'events':conn.execute(\\\"select event_type,message from browser_events where event_type in ('extension_build','search_scope_recovery','extraction_scope_missing','query_context_lost','result_batch') order by event_id desc limit 12\\\").fetchall(),\n    }, default=str, indent=2))\nfinally:\n    conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'runs':conn.execute('select browser_run_id,status from browser_runs').fetchall(),\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall(),\n  'recent':conn.execute(\\\"select event_type,message from browser_events order by event_id desc limit 15\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall(),\n  'scope_recovery':conn.execute(\\\"select event_type,message,payload_json from browser_events where event_type in ('search_scope_recovery','extraction_scope_missing','query_context_lost') order by event_id\\\").fetchall(),\n  'batches':conn.execute(\\\"select message from browser_events where event_type='result_batch' order by event_id desc limit 5\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall(),\n  'latest_checkpoint':conn.execute('select checkpoint_json from browser_search_tasks where task_id=1').fetchone()[0],\n  'scope_recovery':conn.execute(\\\"select message,payload_json from browser_events where event_type='search_scope_recovery' order by event_id\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall(),\n  'checkpoint':conn.execute('select checkpoint_json from browser_search_tasks where task_id=1').fetchone()[0],\n  'counts':conn.execute(\\\"select event_type,count(*) from browser_events where browser_run_id=1 group by event_type having event_type in ('search_scope_recovery','extraction_scope_missing','result_discovered','detail_read','job_recorded','result_batch')\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n task=conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed,checkpoint_json from browser_search_tasks where task_id=1').fetchone()\n events=conn.execute(\\\"select event_type,message,payload_json from browser_events where browser_run_id=1 and event_type in ('search_scope_recovery','extraction_scope_missing','query_context_lost','result_batch') order by event_id desc limit 8\\\").fetchall()\n print(json.dumps({'task':task,'events':events},default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall(),\n  'last_batches':conn.execute(\\\"select message from browser_events where event_type='result_batch' order by event_id desc limit 3\\\").fetchall(),\n  'terminal_scope':conn.execute(\\\"select event_type,message from browser_events where event_type in ('extraction_scope_missing','query_context_lost') order by event_id\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall(),\n  'recent_batches':conn.execute(\\\"select message from browser_events where event_type='result_batch' order by event_id desc limit 3\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall(),\n  'recent':conn.execute(\\\"select event_type,message from browser_events order by event_id desc limit 8\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m jobbot stop --run-id 1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(json.dumps({\n  'runs':conn.execute('select browser_run_id,status,stop_requested from browser_runs').fetchall(),\n  'tasks':conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed,checkpoint_json from browser_search_tasks order by task_id').fetchall(),\n  'recovery':conn.execute(\\\"select event_type,message,payload_json from browser_events where event_type in ('search_scope_recovery','extraction_scope_missing','query_context_lost') order by event_id\\\").fetchall(),\n  'builds':conn.execute(\\\"select event_type,message,payload_json from browser_events where event_type='extension_build'\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3,json\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print(conn.execute('pragma table_info(browser_search_tasks)').fetchall())\n print(conn.execute('pragma table_info(browser_runs)').fetchall())\n print(conn.execute('select task_id,status,stop_after_current,last_error from browser_search_tasks').fetchall())\nexcept Exception as e: print(e)\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n print('run',conn.execute('select browser_run_id,status,stop_requested,stop_after_current,current_task_id from browser_runs').fetchall())\n print('tasks',conn.execute('select task_id,status,last_progress_at,detail_count_read from browser_search_tasks').fetchall())\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n -C 5 \"def request_stop|stop_after_current|emergency_stop\" src/jobbot/browser_tasks.py src/jobbot/bridge/rpc.py src/jobbot/cli.py | head -300'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,110p' src/jobbot/browser_tasks.py && rtk rg -n -C 3 \\\"def _bundle|def paths|JOBBOT_DATABASE_PATH\\\" src/jobbot/cli.py src/jobbot/browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3, json\npath='data/jobs.sqlite3'\nconn=sqlite3.connect(path)\ntry:\n rows=conn.execute('select browser_run_id,status,stop_requested,stop_after_current,current_task_id,last_error from browser_runs order by browser_run_id desc limit 5').fetchall()\n print(json.dumps(rows,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg127-validation/linkedin-acceptance-out python -m jobbot stop --run-id 1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg127-validation/linkedin-acceptance-out JOBBOT_DASHBOARD_PORT=8777 python -m jobbot acceptance --platform linkedin --days 30 --max-results 200'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3,json\nfor label,path in [('isolated','/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3'),('production','data/jobs.sqlite3')]:\n conn=sqlite3.connect(path)\n try:\n  print(label,json.dumps({\n   'runs':conn.execute('select browser_run_id,status,stop_requested,stop_after_current,current_task_id from browser_runs order by browser_run_id desc limit 3').fetchall(),\n   'tasks':conn.execute('select task_id,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id').fetchall() if label=='isolated' else [],\n  },default=str))\n finally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json, sqlite3\npath='/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3'\nconn=sqlite3.connect(path)\nconn.row_factory=sqlite3.Row\ntry:\n tables=[row[0] for row in conn.execute(\\\"select name from sqlite_master where type='table' order by name\\\")]\n task=dict(conn.execute('select task_id,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed,cards_extracted,cards_persistence_succeeded,duplicate_cards,pending_details,requested_search_url,observed_page_url,page_context_status,current_search_url from browser_search_tasks where task_id=1').fetchone())\n recovery=[]\n for row in conn.execute(\\\"select event_type,message,payload_json from browser_events where event_type='search_scope_recovery' order by event_id\\\"):\n  payload=json.loads(row['payload_json'])\n  recovery.append({'message':row['message'],'attempt':payload.get('attempt'),'mode':payload.get('mode'),'outcome':payload.get('outcome'),'requested':payload.get('requested_search_url'),'observed':payload.get('observed_page_url'),'context_status':payload.get('context_status')})\n counts=dict(conn.execute(\\\"select event_type,count(*) from browser_events where browser_run_id=1 group by event_type\\\").fetchall())\n result_tables={name:conn.execute(f\\\"select count(*) from {name}\\\").fetchone()[0] for name in tables if any(token in name for token in ('result','job','discover'))}\n duplicate_result_ids=conn.execute(\\\"select count(*) from browser_results where browser_run_id=1 and source_site='linkedin' group by source_job_id having count(*)>1\\\").fetchall() if 'browser_results' in tables else []\n print(json.dumps({'tables':tables,'task':task,'recovery':recovery,'event_counts':counts,'result_tables':result_tables,'duplicate_result_groups':len(duplicate_result_ids)},default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json,sqlite3\nconn=sqlite3.connect('/tmp/jobbot-chg127-validation/linkedin-acceptance.sqlite3')\ntry:\n for row in conn.execute(\\\"select message,payload_json from browser_events where event_type='search_scope_recovery' order by event_id\\\"):\n  outer=json.loads(row[1]); payload=outer.get('payload',{})\n  print(json.dumps({k:payload.get(k) for k in ('attempt','mode','outcome','requested_search_url','observed_page_url','context_status','extraction_scope_missing')},ensure_ascii=False))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -C 6 \\\"stage.*micro|VALIDATION_WINDOW|def validate_production|run_validator|micro\\\" src/jobbot/validator.py src/jobbot/cli.py VALIDATE_PRODUCTION.command VALIDATE_MICRO.command | head -500 && rtk sed -n '880,1110p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1180,1210p' src/jobbot/validator.py && rtk sed -n '300,380p' src/jobbot/validator.py && rtk sed -n '1,120p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -lt data/validation_*.sqlite3 2>/dev/null | head -5 && rtk ls -lt out/production-validation/* 2>/dev/null | head -10'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3,json\npath='data/validation_20260918T204702Z.sqlite3'\nconn=sqlite3.connect(path)\ntry:\n print(json.dumps({\n  'runs':conn.execute('select browser_run_id,status,platform,stop_requested,stop_after_current,current_task_id from browser_runs').fetchall(),\n  'tasks':conn.execute('select task_id,platform,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id limit 12').fetchall(),\n  'scope':conn.execute(\\\"select event_type,count(*) from browser_events where event_type in ('search_scope_recovery','extraction_scope_missing','scope_diagnostics') group by event_type\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3,json\npath='data/validation_20260918T204702Z.sqlite3'\nconn=sqlite3.connect(path)\ntry:\n print(json.dumps({\n  'runs':conn.execute('select browser_run_id,status,stop_requested,stop_after_current,current_task_id from browser_runs').fetchall(),\n  'tasks':conn.execute('select task_id,platform,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id limit 8').fetchall(),\n  'scope':conn.execute(\\\"select event_type,count(*) from browser_events where event_type in ('search_scope_recovery','extraction_scope_missing','scope_diagnostics','query_context_lost') group by event_type\\\").fetchall(),\n  'build':conn.execute(\\\"select message from browser_events where event_type='extension_build' order by event_id desc limit 3\\\").fetchall(),\n },default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3,json\npath='data/validation_20260918T204702Z.sqlite3'; conn=sqlite3.connect(path)\ntry:\n print(json.dumps({'runs':conn.execute('select browser_run_id,status,stop_requested,stop_after_current,current_task_id from browser_runs').fetchall(),'tasks':conn.execute('select task_id,platform,query_text,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed from browser_search_tasks order by task_id limit 8').fetchall(),'scope':conn.execute(\\\"select event_type,count(*) from browser_events where event_type in ('search_scope_recovery','extraction_scope_missing','scope_diagnostics','query_context_lost') group by event_type\\\").fetchall()},default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport sqlite3,json\npath='data/validation_20260918T204702Z.sqlite3'; conn=sqlite3.connect(path)\ntry:\n print(json.dumps({'runs':conn.execute('select browser_run_id,status,stop_requested,stop_after_current,current_task_id,last_error from browser_runs').fetchall(),'tasks':conn.execute('select task_id,platform,status,pages_visited,results_seen,jobs_recorded,detail_count_read,details_failed,last_error from browser_search_tasks order by task_id limit 8').fetchall(),'events':conn.execute(\\\"select event_type,message from browser_events order by event_id desc limit 10\\\").fetchall()},default=str,indent=2))\nfinally: conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m jobbot validate-production --stage micro'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport json\npath='out/production-validation/micro-latest.json'\nwith open(path) as f: report=json.load(f)\nprint(json.dumps({k:report.get(k) for k in ('branch','head','validation_stage','micro_pass','internal_failures','external_blockers','preflight')},indent=2,default=str))\nprimary=report.get('primary_live',{})\nprint(json.dumps({k:primary.get(k) for k in ('pass','stop_resume_pass','bridge_restart_pass','extension_build_pass','outcome','resume','scope','audit','validation_metrics','dashboard')},indent=2,default=str))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"PROD_READY\\\" src/jobbot/validator.py | head -30 && rtk env PYTHONPATH=src python - <<'PY'\nimport json\nr=json.load(open('out/production-validation/micro-latest.json'))\nprint('prod_ready',r.get('PROD_READY'),'micro_pass',r.get('micro_pass'),'primary_pass',r.get('primary_live',{}).get('pass'),'internal',r.get('internal_failures'))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1038,1075p' src/jobbot/validator.py && rtk sed -n '1150,1208p' src/jobbot/validator.py && rtk git status --short --ignored | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find data out -maxdepth 2 -type f \\\\( -name 'validation_20260918T204702Z.sqlite3' -o -path 'out/production-validation/*' -o -path 'out/validation-20260918T204702Z/*' \\\\) -print 2>/dev/null | sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la data && rtk ls -la out | head -60 && rtk ls -la out/production-validation 2>/dev/null'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rm -rf data/validation_20260918T204702Z.sqlite3 out/production-validation out/validation-20260918T204702Z && rtk git status --short --ignored | head -80'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-parse origin/main && rtk git status --short && rtk git diff --check && rtk node tests/extension_service_worker_scope_recovery_test.js && rtk node tests/extension_linkedin_scope_test.js >/tmp/chg127-linkedin-fixture.log && rtk node tests/extension_primary_scope_test.js >/tmp/chg127-primary-fixture.log && rtk env PYTHONPATH=src python -m unittest tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_chg112_production_integrity >/tmp/chg127-focused-unittest.log && tail -5 /tmp/chg127-focused-unittest.log && printf '%s\\\\n' '--- changed paths ---' && rtk git diff --name-only && printf '%s\\\\n' '--- forbidden platform/source changes ---' && rtk git diff --name-only -- extension/indeed.js extension/glassdoor.js .codex-fabric/audit.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add extension/linkedin.js extension/manifest.json extension/service_worker.js tests/extension_linkedin_scope_test.js tests/extension_service_worker_scope_recovery_test.js tests/integration/test_extension_bridge.py tests/integration/test_extension_refresh.py && rtk git diff --cached --check && rtk git diff --cached --stat && rtk git diff --cached --name-only && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"fix: bound LinkedIn search scope recovery\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg127-validation/final-refresh.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg127-validation/final-refresh-out python -m jobbot refresh-extension --timeout 60'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-parse HEAD && rtk git rev-parse origin/main && rtk git status --short --branch && rtk git diff --check && rtk env PYTHONPATH=src python -c \\\"from jobbot.config import PROJECT_ROOT; from jobbot.extension_identity import extension_build; from jobbot.runtime_binding import deployment_diagnostics,chrome_target_diagnostics; import json; print(json.dumps({'build':extension_build(PROJECT_ROOT),'deployment':deployment_diagnostics(PROJECT_ROOT),'chrome_target':chrome_target_diagnostics()},indent=2))\\\" && test \"'! -e .codex-fabric/audit.json && echo '\"'audit_json_untouched=true'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric -maxdepth 4 -type f \\\\( -iname '*evidence*' -o -iname '*audit*' -o -iname '*fabric*' \\\\) -print 2>/dev/null | head -200 && rtk find /Users/haewonkim/.codex-fabric -maxdepth 3 -type f -perm -111 -print 2>/dev/null | head -120\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la /Users/haewonkim/.codex-fabric | head -100 && rtk ls -la /Users/haewonkim/.codex-fabric/worktrees/CF-1506c2d246a1472ee3b84719 | head -80'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk find /Users/haewonkim/.codex-fabric/bin /Users/haewonkim/.codex-fabric/libexec /Users/haewonkim/.codex-fabric/evidence -maxdepth 3 -type f -print | sort | head -200 && rtk rg -n \"evidence/jobbot|publish.*evidence|canonical.*identity|project_id|operation\" /Users/haewonkim/.codex-fabric/bin /Users/haewonkim/.codex-fabric/libexec /Users/haewonkim/.codex-fabric/config /Users/haewonkim/.codex-fabric/evidence 2>/dev/null | head -300'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /Users/haewonkim/.codex-fabric/bin/fabricctl --help && rtk sed -n '1,320p' /Users/haewonkim/.codex-fabric/libexec/projectos_integrate.py | head -280\"",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' /Users/haewonkim/.codex-fabric/audit.json && printf '%s\\\\n' '--- job records ---' && rtk ls -la /Users/haewonkim/.codex-fabric/jobs && rtk find /Users/haewonkim/.codex-fabric/jobs -maxdepth 2 -type f | head -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/jobs/CF-1506c2d246a1472ee3b84719.running/job.json && printf '%s\\\\n' '--- lease ---' && rtk sed -n '1,160p' /Users/haewonkim/.codex-fabric/jobs/CF-1506c2d246a1472ee3b84719.running/lease.json && printf '%s\\\\n' '--- evidence current ---' && rtk ls -la /Users/haewonkim/.codex-fabric/evidence/jobbot/CHG-127-r1 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n -C 8 \"publish-evidence|publish_pending|refresh-evidence|evidence_ref|refs/heads/codex-fabric\" /Users/haewonkim/.codex-fabric/libexec /Users/haewonkim/.codex-fabric/bin /Users/haewonkim/.codex-fabric/config 2>/dev/null | head -500'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk file /Users/haewonkim/.codex-fabric/bin/fabricctl && rtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/bin/fabricctl && rtk ls -la /Users/haewonkim/.codex-fabric/libexec | head -100\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n -C 8 \"publish-evidence|publish_pending|refresh-evidence|evidence_ref|codex-fabric/evidence|evidence\" /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py | head -500'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-1506c2d246a1472ee3b84719 && rtk /Users/haewonkim/.codex-fabric/bin/fabricctl publish-evidence CF-1506c2d246a1472ee3b84719'",
+      "exit_code": 2,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 241,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.28,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 18206976,
+      "fresh_input_tokens": 317844,
+      "input_tokens": 18524820,
+      "non_reasoning_output_tokens": 31660,
+      "output_tokens": 55060,
+      "reasoning_output_tokens": 23400,
+      "total_processed_tokens": 18579880
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "2d31df2457bbe4fb2dded1f4eca38884d5a2cf6a",
+      "subject": "fix: bound LinkedIn search scope recovery"
+    }
+  ],
+  "diff": {
+    "additions": 177,
+    "changed_files": 7,
+    "commit_count": 1,
+    "deletions": 5
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "e1b573c863c934207191382cd517c02b05abdd80ec30652c30310953de942c0f"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-18T20:54:29Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "branch": "codex/jobbot-CHG-127-r1",
+    "head_sha": "2d31df2457bbe4fb2dded1f4eca38884d5a2cf6a",
+    "remote_exact_head": true,
+    "remote_head_sha": "2d31df2457bbe4fb2dded1f4eca38884d5a2cf6a",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "work_branch": "codex/jobbot-CHG-127-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-1506c2d246a1472ee3b84719",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-127-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-127-r1"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-127-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-18T20:26:54Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1655,
+    "queue_seconds": 0,
+    "total_seconds": 1655
+  },
+  "transport": {
+    "bytes": 9714,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 9435,
+    "prompt_sha256": "a8acdbb1d8d17f8c9ef55a6ad5e32ab7f9d0ec159384b9abacdd71cd6085651f",
+    "sha256": "1506c2d246a1472ee3b8471980190d0bd69a782b071e8d8d289618a7485eb57d"
+  }
+}
