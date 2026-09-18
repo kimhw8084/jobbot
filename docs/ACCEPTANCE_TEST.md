@@ -37,3 +37,11 @@ Pass criteria:
 - challenges or authentication requirements are recorded precisely and never bypassed
 
 A challenge or authentication requirement is an externally blocked result, not a pass. The acceptance status remains persisted for a later normal-browser retry.
+
+CHG-112 integrity checks also require that card identity persistence is not
+reported as detail completeness: missing descriptions stay pending/partial,
+missing locations stay unknown, and board URLs do not become verified apply
+destinations. The dashboard must show platform readiness independently, and
+the stop latch must not lease a subsequent task. If Indeed remains on CAPTCHA
+or Glassdoor remains signed out, record that exact external blocker and verify
+the manual recovery/recheck path; do not claim a positive live result.
