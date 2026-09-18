@@ -1,0 +1,432 @@
+{
+  "accepted_at": "2026-09-18T15:44:15Z",
+  "changed_files": [
+    {
+      "additions": 17,
+      "deletions": 0,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 0,
+      "path": "REENRICH_SEARCH.command",
+      "status": "A"
+    },
+    {
+      "additions": 18,
+      "deletions": 0,
+      "path": "docs/ACCEPTANCE_TEST.md",
+      "status": "M"
+    },
+    {
+      "additions": 36,
+      "deletions": 1,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 15,
+      "deletions": 0,
+      "path": "docs/DATABASE.md",
+      "status": "M"
+    },
+    {
+      "additions": 15,
+      "deletions": 1,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 1,
+      "path": "docs/TROUBLESHOOTING.md",
+      "status": "M"
+    },
+    {
+      "additions": 29,
+      "deletions": 1,
+      "path": "extension/common.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 13,
+      "deletions": 8,
+      "path": "extension/glassdoor.js",
+      "status": "M"
+    },
+    {
+      "additions": 19,
+      "deletions": 11,
+      "path": "extension/indeed.js",
+      "status": "M"
+    },
+    {
+      "additions": 95,
+      "deletions": 15,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 2,
+      "path": "extension/selectors.js",
+      "status": "M"
+    },
+    {
+      "additions": 85,
+      "deletions": 23,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 10,
+      "deletions": 3,
+      "path": "src/jobbot/audit.py",
+      "status": "M"
+    },
+    {
+      "additions": 177,
+      "deletions": 20,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 53,
+      "deletions": 3,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 0,
+      "path": "src/jobbot/cli.py",
+      "status": "M"
+    },
+    {
+      "additions": 27,
+      "deletions": 14,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 54,
+      "deletions": 15,
+      "path": "src/jobbot/discoveries.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "src/jobbot/legacy_core.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 132,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0015_production_integrity_states.py",
+      "status": "A"
+    },
+    {
+      "additions": 10,
+      "deletions": 4,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 7,
+      "path": "src/jobbot/web/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 73,
+      "deletions": 0,
+      "path": "tests/extension_linkedin_scope_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 79,
+      "deletions": 0,
+      "path": "tests/extension_primary_scope_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 19,
+      "deletions": 0,
+      "path": "tests/fixtures/linkedin_current_card.html",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/fixtures/linkedin_scope.html",
+      "status": "M"
+    },
+    {
+      "additions": 18,
+      "deletions": 0,
+      "path": "tests/fixtures/linkedin_search_pane.html",
+      "status": "A"
+    },
+    {
+      "additions": 4,
+      "deletions": 3,
+      "path": "tests/integration/test_browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 337,
+      "deletions": 0,
+      "path": "tests/integration/test_chg112_production_integrity.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && sed -n '1,240p' /Users/haewonkim/.codex/RTK.md && sed -n '1,240p' /Users/haewonkim/.codex/law.md && printf '\\\\n--- repo status ---\\\\n' && git status --short --branch && printf '\\\\n--- remotes ---\\\\n' && git remote -v && printf '\\\\n--- branches ---\\\\n' && git branch -a --no-color --contains HEAD | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git fetch --prune origin main && rtk git status --short --branch && printf '\\\\n--- exact refs ---\\\\n' && printf 'origin/main=' && rtk git rev-parse refs/remotes/origin/main && printf 'main=' && rtk git rev-parse refs/heads/main && printf 'HEAD=' && rtk git rev-parse HEAD && printf '\\\\n--- predecessor/candidate objects ---\\\\n' && printf 'predecessor=' && rtk git rev-parse b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12 && printf 'predecessor tree=' && rtk git show -s --format=%T b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12 && printf 'target tree=' && rtk git rev-parse b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12\"'^{tree} && printf '\"'base=' && rtk git rev-parse f4f2df75fbc011f1d81738140f21b663359ffbce && printf '\\\\n--- relationship ---\\\\n' && rtk git merge-base --is-ancestor f4f2df75fbc011f1d81738140f21b663359ffbce b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12; printf 'base ancestor exit=%s\\\\n' \\\"\"'$?\" && rtk git log --oneline --decorate -8 --all --simplify-by-decoration'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git merge --ff-only b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12 && rtk git status --short --branch && printf '\\\\nHEAD=' && rtk git rev-parse HEAD && printf '\\\\nHEAD tree=' && rtk git rev-parse HEAD\"'^{tree} && printf '\"'\\\\nparents=' && rtk git show -s --format=%P HEAD && printf '\\\\n--- product evidence paths (must be empty) ---\\\\n' && rtk git ls-tree -r --name-only HEAD | rtk rg '(\"'^|/)'\"\\\\.codex-fabric(/|\"'$)'\"' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- accepted commit ---' && rtk git show -s --format='commit=%H%nparent=%P%nauthor=%an <%ae>%ndate=%cI%nsubject=%s' HEAD && printf '%s\\\\n' '--- expected tree check ---' && test \\\"\"'$(rtk git rev-parse HEAD''^{tree})\" = 46a6033ffd3560523cf258b76d89dbc9071b79de && printf '\"'%s\\\\n' 'tree=46a6033ffd3560523cf258b76d89dbc9071b79de (match)' && rtk git diff --quiet b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12 HEAD && printf '%s\\\\n' 'diff vs accepted predecessor: empty' && printf '%s\\\\n' '--- extension manifest ---' && rtk git show HEAD:extension/manifest.json && printf '%s\\\\n' '--- extension files ---' && rtk git ls-tree -r --name-only HEAD extension | rtk rg '(\"'^|/)(manifest'\"\\\\.json|package\\\\.json|.*version.*)\"'$'\"' || true && printf '%s\\\\n' '--- repo tooling files ---' && rtk git ls-tree -r --name-only HEAD | rtk rg '(\"'^|/)(package'\"\\\\.json|pyproject\\\\.toml|pytest\\\\.ini|setup\\\\.cfg|Makefile|README.*|.*\\\\.command)\"'$'\"' | sed -n '1,160p'\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 2930,
+        "output_sha256": "df40fd78829ab3363cffeea3ab26d9a437c311b2e39efa7dcdcb35bfc586dc2b",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"set -o pipefail\nprintf '%s\\\\n' '--- ancestry ---'\nrtk git merge-base --is-ancestor f4f2df75fbc011f1d81738140f21b663359ffbce HEAD\nprintf 'base_ancestor=pass\\\\n'\nrtk git log --oneline --decorate --graph --ancestry-path f4f2df75fbc011f1d81738140f21b663359ffbce..HEAD\nprintf '%s\\\\n' '--- deterministic diff checks ---'\nrtk git diff --check f4f2df75fbc011f1d81738140f21b663359ffbce HEAD\nprintf 'diff_check=pass\\\\n'\nrtk git diff --quiet HEAD\nrtk git diff --cached --quiet\nprintf 'tracked_and_index_diffs=empty\\\\n'\nprintf '%s\\\\n' '--- manifest identity ---'\nrtk rg -n '\\\"version_name\\\"' extension/manifest.json\nrtk rg -n '3\\\\.2\\\\.2-prod-ready\\\\.672cf88\\\\.9' extension/manifest.json\nprintf 'manifest_build_identity=pass\\\\n'\nprintf '%s\\\\n' '--- worktree status ---'\nrtk git status --porcelain=v1 --untracked-files=all\nprintf 'status_above_should_be_empty\\\\n'\nprintf '%s\\\\n' '--- hidden Fabric paths on disk ---'\nrtk rg --files --hidden -uuu .codex-fabric 2>/dev/null || true\nprintf '%s\\\\n' 'hidden_fabric_paths_check=complete'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"set -o pipefail\nprintf '%s\\\\n' '--- focused extension smoke ---'\nfor js_file in extension/*.js; do\n  rtk node --check \\\"\"'$js_file\"\ndone\nrtk node -e '\"'const fs=require(\\\"fs\\\"); const m=JSON.parse(fs.readFileSync(\\\"extension/manifest.json\\\",\\\"utf8\\\")); if (m.version_name \"'!== \"3.2.2-prod-ready.672cf88.9\") process.exit(1); console.log(\"manifest_json_parse=pass\");'\"'\nprintf 'extension_js_syntax=pass\\\\n'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- remote target before push ---' && rtk git ls-remote --heads origin codex/jobbot-CHG-112-r6 && printf '%s\\\\n' '--- push ---' && rtk git push --set-upstream origin codex/jobbot-CHG-112-r6\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"set -o pipefail\nprintf '%s\\\\n' '--- final refs ---'\nprintf 'origin/main=' && rtk git rev-parse refs/remotes/origin/main\nprintf 'local_head=' && rtk git rev-parse HEAD\nprintf 'local_tree=' && rtk git rev-parse HEAD\"'^{tree}\nprintf '\"'remote_head=' && rtk git ls-remote --heads origin codex/jobbot-CHG-112-r6 | awk '{print \"'$1}'\"'\nprintf '%s\\\\n' '--- final cleanliness ---'\nrtk git diff --check HEAD\nrtk git diff --quiet HEAD\nrtk git diff --cached --quiet\nrtk git status --short --branch\nprintf '%s\\\\n' '--- final Fabric-path guard ---'\nrtk git ls-tree -r --name-only HEAD | rtk rg '(\"'^|/)'\"\\\\.codex-fabric(/|\"'$)'\"' || true\nrtk rg --files --hidden -uuu .codex-fabric 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 24,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 85.87,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 165632,
+      "fresh_input_tokens": 27263,
+      "input_tokens": 192895,
+      "non_reasoning_output_tokens": 2796,
+      "output_tokens": 6236,
+      "reasoning_output_tokens": 3440,
+      "total_processed_tokens": 199131
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12",
+      "subject": "fix(jobbot): repair LinkedIn detail acquisition"
+    },
+    {
+      "sha": "329ebb2d318af99cd5c44c72c0af655908af79b3",
+      "subject": "fix(jobbot): repair CHG-112 auth readiness semantics"
+    }
+  ],
+  "diff": {
+    "additions": 1378,
+    "changed_files": 36,
+    "commit_count": 2,
+    "deletions": 139
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 10,
+    "items": [
+      {
+        "bytes": 8587,
+        "path": "README.md",
+        "sha256": "52756e3d90c3218b100675912279d77392cac5602dad30f9b7d5b01c18fa65d0"
+      },
+      {
+        "bytes": 2731,
+        "path": "docs/ACCEPTANCE_TEST.md",
+        "sha256": "b992c97b75948de88aefa6ec235615f86e9b4b2a0696338433ba03ee5059eac5"
+      },
+      {
+        "bytes": 5635,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "1873a6335f608a9883e0aba585393bba5bc78f0e28795ff8ed778a68b5760380"
+      },
+      {
+        "bytes": 2285,
+        "path": "docs/DATABASE.md",
+        "sha256": "3d3ea264218e9bc7b8e27de879ba17fb1fb3896058854d7c99aacb7a9d4571dc"
+      },
+      {
+        "bytes": 3275,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "aed91b8d328f99f1e59c7e97aea9d07046e6b0e088c104410a272f8d4b3a485b"
+      },
+      {
+        "bytes": 3977,
+        "path": "docs/TROUBLESHOOTING.md",
+        "sha256": "dda63bf4500a92a187e24ebdd576f2b60222997f7c80f02c3f2dadf556563363"
+      },
+      {
+        "bytes": 1941,
+        "path": "extension/manifest.json",
+        "sha256": "b39cdb8497211e6c90f6851b25c3dba080a4930f23603bca58bdb2c0f0dad098"
+      },
+      {
+        "bytes": 1020,
+        "path": "tests/fixtures/linkedin_current_card.html",
+        "sha256": "945ff658e356e53187a9d8bd452f7fe239c5e5c2ffd6de79675b33e8fb4e9928"
+      },
+      {
+        "bytes": 1374,
+        "path": "tests/fixtures/linkedin_scope.html",
+        "sha256": "d986e830e52ecfbea1a6d57eb30c5520aebef12fb303c5ebfef4cbd949f373d2"
+      },
+      {
+        "bytes": 1155,
+        "path": "tests/fixtures/linkedin_search_pane.html",
+        "sha256": "8206ceb46b6089e97fd303bcf89c319dcb4b03c021d2e06f6ff076cc7705fa4f"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-18T15:46:49Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "branch": "codex/jobbot-CHG-112-r6",
+    "head_sha": "b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12",
+    "remote_exact_head": true,
+    "remote_head_sha": "b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "work_branch": "codex/jobbot-CHG-112-r6",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-6ea15e7807e03138868e608a",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-112-r6",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-112-r6"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-112-r6",
+  "schema_version": 1,
+  "started_at": "2026-09-18T15:44:15Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 154,
+    "queue_seconds": 0,
+    "total_seconds": 154
+  },
+  "transport": {
+    "bytes": 4494,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 4215,
+    "prompt_sha256": "17399d91fe571444b92835aa6a4a43b75c1f79316c18263fd47dc6bb19346a69",
+    "sha256": "6ea15e7807e03138868e608a70ebe630b836dfb1195ff4a1b60d66c3ba08e16d"
+  }
+}
