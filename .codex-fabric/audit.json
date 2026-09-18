@@ -1,0 +1,317 @@
+{
+  "accepted_at": "2026-09-18T23:17:24Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 149,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_auth_return_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_service_worker_scope_recovery_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && printf '%s\\\\n' '--- RTK.md ---' && sed -n '1,240p' /Users/haewonkim/.codex/RTK.md && printf '%s\\\\n' '--- law.md ---' && sed -n '1,260p' /Users/haewonkim/.codex/law.md && printf '%s\\\\n' '--- repo status ---' && git status --short --branch && printf '%s\\\\n' '--- remotes ---' && git remote -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git fetch origin main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse origin/main\nrtk git rev-parse HEAD\nrtk git rev-parse --verify b84223c7b2296aa416d94e2e194deb25962fe6f2\nrtk git merge-base --is-ancestor a526b5b827e5f5711975000bf9151e1f5cd2c4f9 b84223c7b2296aa416d94e2e194deb25962fe6f2\nrtk git rev-parse b84223c7b2296aa416d94e2e194deb25962fe6f2''^{tree}\nrtk git diff --quiet b84223c7b2296aa416d94e2e194deb25962fe6f2''^{tree} HEAD''^{tree}\nrtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-list --parents -n 1 b84223c7b2296aa416d94e2e194deb25962fe6f2\nrtk git ls-tree -r --name-only b84223c7b2296aa416d94e2e194deb25962fe6f2 | rg '(\"'^|/)('\"\\\\.codex-fabric|audit\\\\.json)(/|\"'$)'\"' || true\nrtk git show --stat --oneline --decorate --no-renames b84223c7b2296aa416d94e2e194deb25962fe6f2\nrtk git show --format= --no-ext-diff --unified=3 b84223c7b2296aa416d94e2e194deb25962fe6f2 -- extension/service_worker.js extension/manifest.json tests/extension_service_worker_auth_return_test.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git merge --ff-only b84223c7b2296aa416d94e2e194deb25962fe6f2\nrtk git rev-parse HEAD\nrtk git rev-parse HEAD''^{tree}\nrtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g 'AGENTS.md' -g 'package.json' -g 'pyproject.toml' -g 'pytest.ini' -g 'tox.ini' -g 'Makefile' -g 'requirements*.txt' -g 'tests/**' -g 'scripts/**' | sed -n '1,240p'\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 1770,
+        "output_sha256": "f866b62be172cac54355b5ac08a8701e9ef158521aed2c26b91a95d40e3ba7f8",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' pyproject.toml\nrtk sed -n '1,220p' tests/integration/test_extension_bridge.py\nrtk sed -n '1,260p' tests/integration/test_extension_refresh.py\nrtk sed -n '1,260p' tests/integration/test_chg112_production_integrity.py\nrtk sed -n '1,220p' tests/extension_service_worker_scope_recovery_test.js\nrtk sed -n '1,220p' tests/extension_linkedin_scope_test.js\nrtk sed -n '1,220p' tests/extension_primary_scope_test.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js\nrtk node tests/extension_service_worker_scope_recovery_test.js\nrtk node tests/extension_linkedin_scope_test.js\nrtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"def test_|CHG-112|auth_state|readiness|extension_refresh|bridge\\\" tests/integration tests/unit | sed -n '1,280p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_chg112_production_integrity'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' scripts/mac_python.sh\nrtk sed -n '1,280p' scripts/production_env.sh\nrtk sed -n '1,240p' README.md\nrtk rg -n \\\"mac_python|PYTHONPATH|unittest|pytest|acceptance|extension_refresh|Chrome|profile_directory|JOBBOT_EXTENSION_DEPLOY_DIR\\\" README.md scripts tests src | sed -n '1,320p'\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 33496,
+        "output_sha256": "20acb7171fcef8dabc8417df1801815f0dbd7a03c9d06cd81d20aa81e50e4db8",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk test -x .venv/bin/python\n.venv/bin/python --version\n.venv/bin/python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_chg112_production_integrity'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_chg112_production_integrity'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'for file in extension/*.js src/jobbot/web/dashboard.js; do rtk node --check \"$file\"; done\nrtk env PYTHONPATH=src python -m compileall -q src tests\nfor file in *.command scripts/*.sh; do rtk bash -n \"$file\"; done\nrtk git diff --check origin/main...HEAD\nrtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g '*.command' -g 'config/**' -g 'scripts/**' | sort | sed -n '1,240p'\nrtk sed -n '1,260p' SYNC_EXTENSION.command\nrtk sed -n '1,320p' REFRESH_EXTENSION.command\nrtk sed -n '1,380p' src/jobbot/runtime_binding.py\nrtk sed -n '1,520p' src/jobbot/orchestrator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,430p' src/jobbot/cli.py\nrtk sed -n '1,240p' src/jobbot/config.py\nrtk sed -n '1,180p' config/runtime.toml\nrtk sed -n '1,180p' config/EXTENSION_ID.txt\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import json; from pathlib import Path; from jobbot.config import PROJECT_ROOT; from jobbot.runtime_binding import runtime_binding_diagnostics, deployment_diagnostics, chrome_target_diagnostics; print(json.dumps({\\\"git_head\\\": __import__(\\\"subprocess\\\").check_output([\\\"git\\\",\\\"rev-parse\\\",\\\"HEAD\\\"], text=True).strip(), \\\"deployment\\\": deployment_diagnostics(PROJECT_ROOT), \\\"chrome_target\\\": chrome_target_diagnostics()}, indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'acceptance_tmp=$(rtk mktemp -d -t jobbot-chg132-r2.XXXXXX)\nrtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=\"$acceptance_tmp/acceptance.sqlite3\" JOBBOT_OUTPUT_DIR=\"$acceptance_tmp/out\" python -m jobbot refresh-extension --timeout 60'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '180,275p' src/jobbot/browser_tasks.py\nrtk sed -n '300,500p' src/jobbot/browser_tasks.py\nrtk rg -n \\\"platform_auth_result|platform_readiness|auth_required|sign_in_required|task_failure|browser_event|browser_events\\\" src/jobbot | sed -n '1,360p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'acceptance_tmp=$(rtk mktemp -d -t jobbot-chg132-r2-live.XXXXXX)\nrtk printf '\"'isolated_root=%s\\\\n' \\\"\"'$acceptance_tmp\"\nrtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=\"$acceptance_tmp/acceptance.sqlite3\" JOBBOT_OUTPUT_DIR=\"$acceptance_tmp/out\" python -m jobbot acceptance --platform linkedin --days 7 --max-results 20'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import json,sqlite3,sys; p=sys.argv[1]; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; out={}; out[\\\"browser_runs\\\"]=[dict(x) for x in c.execute(\\\"select browser_run_id,mode,platform,status,last_error,jobs_recorded,tasks_incomplete from browser_runs order by browser_run_id\\\")]; out[\\\"platform_runs\\\"]=[dict(x) for x in c.execute(\\\"select browser_run_id,platform,auth_status,auth_reason,readiness_state,readiness_reason,tasks_total,tasks_completed,tasks_incomplete,tasks_challenged,tasks_failed,jobs_recorded from browser_platform_runs order by browser_run_id,platform\\\")]; out[\\\"tasks\\\"]=[dict(x) for x in c.execute(\\\"select task_id,browser_run_id,platform,query_text,status,auth_state,readiness_state,challenge_reason,last_error,pages_visited,results_seen,detail_count_read,jobs_recorded from browser_search_tasks order by task_id\\\") if \\\"auth_state\\\" in x.keys() or True]; ev=[dict(x) for x in c.execute(\\\"select event_id,browser_run_id,task_id,event_type,message,payload_json from browser_events order by event_id\\\")]; out[\\\"events\\\"]=[{\\\"event_id\\\":x[\\\"event_id\\\"],\\\"browser_run_id\\\":x[\\\"browser_run_id\\\"],\\\"task_id\\\":x[\\\"task_id\\\"],\\\"event_type\\\":x[\\\"event_type\\\"],\\\"message\\\":x[\\\"message\\\"],\\\"payload\\\":json.loads(x[\\\"payload_json\\\"]) if x[\\\"payload_json\\\"] else {}} for x in ev]; blob=json.dumps(out,ensure_ascii=False); out[\\\"mandatory_failure_occurrences\\\"]=blob.lower().count(\\\"auth_state is not defined\\\"); print(json.dumps(out,indent=2,ensure_ascii=False)); c.close()' /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg132-r2-live.XXXXXX.grjqubItgU/acceptance.sqlite3\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); print(\\\"browser_runs\\\", [r[1] for r in c.execute(\\\"pragma table_info(browser_runs)\\\")]); print(\\\"browser_platform_runs\\\", [r[1] for r in c.execute(\\\"pragma table_info(browser_platform_runs)\\\")]); print(\\\"browser_search_tasks\\\", [r[1] for r in c.execute(\\\"pragma table_info(browser_search_tasks)\\\")]); print(\\\"browser_events\\\", [r[1] for r in c.execute(\\\"pragma table_info(browser_events)\\\")]); c.close()' /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg132-r2-live.XXXXXX.grjqubItgU/acceptance.sqlite3\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import json,sqlite3,sys; p=sys.argv[1]; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; out={}; out[\\\"browser_runs\\\"]=[dict(x) for x in c.execute(\\\"select browser_run_id,mode,platform,status,auth_status,last_error,jobs_recorded,tasks_completed,tasks_incomplete from browser_runs order by browser_run_id\\\")]; out[\\\"platform_runs\\\"]=[dict(x) for x in c.execute(\\\"select browser_run_id,platform,auth_status,auth_reason,readiness_state,readiness_reason,tasks_total,tasks_completed,tasks_incomplete,tasks_challenged,tasks_failed,jobs_recorded from browser_platform_runs order by browser_run_id,platform\\\")]; out[\\\"tasks\\\"]=[dict(x) for x in c.execute(\\\"select task_id,browser_run_id,platform,query_text,status,challenge_reason,last_error,observed_page_url,page_context_status,pages_visited,results_seen,detail_count_read,jobs_recorded from browser_search_tasks order by task_id\\\")]; ev=[dict(x) for x in c.execute(\\\"select event_id,browser_run_id,task_id,event_type,message,payload_json from browser_events order by event_id\\\")]; out[\\\"events\\\"]=[{\\\"event_id\\\":x[\\\"event_id\\\"],\\\"browser_run_id\\\":x[\\\"browser_run_id\\\"],\\\"task_id\\\":x[\\\"task_id\\\"],\\\"event_type\\\":x[\\\"event_type\\\"],\\\"message\\\":x[\\\"message\\\"],\\\"payload\\\":json.loads(x[\\\"payload_json\\\"]) if x[\\\"payload_json\\\"] else {}} for x in ev]; blob=json.dumps(out,ensure_ascii=False); out[\\\"mandatory_failure_occurrences\\\"]=blob.lower().count(\\\"auth_state is not defined\\\"); print(json.dumps(out,indent=2,ensure_ascii=False)); c.close()' /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg132-r2-live.XXXXXX.grjqubItgU/acceptance.sqlite3\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i --hidden --glob '\"'!*.sqlite3'\"' 'auth_state is not defined' /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg132-r2-live.XXXXXX.grjqubItgU || true\nrtk find /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg132-r2-live.XXXXXX.grjqubItgU -maxdepth 3 -type f -print | sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg132-r2-live.XXXXXX.grjqubItgU/out/logs/run_1.log\nrtk sed -n '1,260p' /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg132-r2-live.XXXXXX.grjqubItgU/out/logs/run_1_bridge.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git fetch origin main\nrtk git rev-parse origin/main\nrtk git rev-parse HEAD\nrtk git rev-parse HEAD''^{tree}\nrtk git rev-list --parents -n 1 HEAD\nrtk git merge-base --is-ancestor origin/main HEAD\nrtk git ls-tree -r --name-only HEAD | rg '\"'(\"'^|/)('\"\\\\.codex-fabric|audit\\\\.json)(/|\"'$)'\"' || true\nrtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote --heads origin codex/jobbot-CHG-132-r2\nrtk git push --set-upstream origin codex/jobbot-CHG-132-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git fetch origin main\nrtk git rev-parse origin/main\nrtk git rev-parse HEAD\nrtk git rev-parse HEAD''^{tree}\nrtk git rev-list --parents -n 1 HEAD\nrtk git ls-remote origin refs/heads/codex/jobbot-CHG-132-r2\nrtk git diff --check origin/main...HEAD\nrtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 75,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 94.29,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 1682432,
+      "fresh_input_tokens": 101810,
+      "input_tokens": 1784242,
+      "non_reasoning_output_tokens": 6693,
+      "output_tokens": 12348,
+      "reasoning_output_tokens": 5655,
+      "total_processed_tokens": 1796590
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "b84223c7b2296aa416d94e2e194deb25962fe6f2",
+      "subject": "Fix bounded CHG-132 auth return path"
+    }
+  ],
+  "diff": {
+    "additions": 156,
+    "changed_files": 6,
+    "commit_count": 1,
+    "deletions": 5
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "81b3b9b6488b66bcb6c88f0c640dde0c7530c091123783f3197eb479c8626841"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-18T23:22:17Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+    "branch": "codex/jobbot-CHG-132-r2",
+    "detached_verify": false,
+    "head_sha": "b84223c7b2296aa416d94e2e194deb25962fe6f2",
+    "remote_exact_head": true,
+    "remote_head_sha": "b84223c7b2296aa416d94e2e194deb25962fe6f2",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+    "work_branch": "codex/jobbot-CHG-132-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-6f16282ac1a8a2aafa616b85",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-132-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-132-r2"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-132-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-18T23:17:24Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 293,
+    "queue_seconds": 0,
+    "total_seconds": 293
+  },
+  "transport": {
+    "bytes": 8897,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 8618,
+    "prompt_sha256": "7b8a1f977044ec72058553573abf00ad889b03c2e84b51f99215d7e758e6b52c",
+    "sha256": "6f16282ac1a8a2aafa616b85860b283a96fa06e4cfafc18004c4c63a78c76f47"
+  }
+}
