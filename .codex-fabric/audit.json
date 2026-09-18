@@ -1,0 +1,242 @@
+{
+  "request": "CHG-112-r4",
+  "verification_kind": "repair_and_controlled_live_acceptance",
+  "candidate_branch": "codex/jobbot-CHG-112-r4",
+  "candidate_head": "69b38382f92f9b72a7b76bf3644f3790ab62499c",
+  "target_branch": "main",
+  "target_ref_checked": "origin/main",
+  "target_sha": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+  "target_drift": {
+    "head_equals_target_before_repair": true,
+    "origin_main_equals_target_before_repair": true,
+    "origin_main_equals_target_before_final_evidence": true,
+    "main_untouched": true,
+    "direct_ancestry": true,
+    "worktree_clean_before_final_evidence": true
+  },
+  "ancestry_and_hygiene": {
+    "candidate_parent": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "predecessor_candidate": "d33ea72e1253b5ca3d10735b73ddbbd20bec76b8",
+    "predecessor_parent": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "predecessor_product_diff_file_count": 32,
+    "predecessor_tree_reproduced_before_repair": true,
+    "final_product_diff_file_count": 33,
+    "product_history_after_target": [
+      "69b38382f92f9b72b7a76bf3644f3790ab62499c"
+    ],
+    "product_history_contains_evidence_only_commits": false,
+    "product_tree_has_codex_fabric_audit": false,
+    "product_worktree_clean": true,
+    "changed_files": [
+      "README.md",
+      "REENRICH_SEARCH.command",
+      "docs/ACCEPTANCE_TEST.md",
+      "docs/ARCHITECTURE.md",
+      "docs/DATABASE.md",
+      "docs/OPERATIONS.md",
+      "docs/TROUBLESHOOTING.md",
+      "extension/common.js",
+      "extension/dashboard.js",
+      "extension/glassdoor.js",
+      "extension/indeed.js",
+      "extension/linkedin.js",
+      "extension/manifest.json",
+      "extension/selectors.js",
+      "extension/service_worker.js",
+      "src/jobbot/audit.py",
+      "src/jobbot/bridge/rpc.py",
+      "src/jobbot/browser_tasks.py",
+      "src/jobbot/cli.py",
+      "src/jobbot/dashboard.py",
+      "src/jobbot/discoveries.py",
+      "src/jobbot/legacy_core.py",
+      "src/jobbot/migrations/__init__.py",
+      "src/jobbot/migrations/m0015_production_integrity_states.py",
+      "src/jobbot/validator.py",
+      "src/jobbot/web/dashboard.js",
+      "tests/extension_linkedin_scope_test.js",
+      "tests/extension_primary_scope_test.js",
+      "tests/fixtures/linkedin_scope.html",
+      "tests/integration/test_browser_tasks.py",
+      "tests/integration/test_chg112_production_integrity.py",
+      "tests/integration/test_database_ledger.py",
+      "tests/integration/test_extension_refresh.py"
+    ]
+  },
+  "implementation": {
+    "authwall_detection": "explicit login/authwall evidence only; absent narrow positive markers remain unknown",
+    "search_surface_readiness": "requested platform search route can establish ready from scoped cards or verified empty state",
+    "challenge_separation": "Indeed CAPTCHA is challenged_cooldown independent of verified account auth",
+    "platform_isolation": "blocked or unknown platform work is deferred and resumable without blocking ready platforms",
+    "persistence": "browser_platform_runs readiness fields reused; aggregate browser_runs auth state recomputed without collapsing auth and readiness",
+    "migration": "no additional migration; existing m0015 readiness fields reused"
+  },
+  "extension": {
+    "manifest_version": 3,
+    "manifest_version_field": "3.2.1",
+    "version_name": "3.2.2-prod-ready.672cf88.4",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "candidate_source_identity": "sha256:5064b19b28c9396f9dcbeb04cfd1c97fc606429f04d3bd29c33968d8f4d6c0bb",
+    "candidate_source_head": "69b38382f92f9b72b7a76bf3644f3790ab62499c",
+    "profile_binding": "Google Chrome Default",
+    "sync_classification": "deployment_source_current",
+    "maintenance_refresh": {
+      "identity_confirmed": true,
+      "refreshed": true,
+      "observed_build": "3.2.2-prod-ready.672cf88.4",
+      "observed_source_identity": "sha256:5064b19b28c9396f9dcbeb04cfd1c97fc606429f04d3bd29c33968d8f4d6c0bb",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "classification": "intended_extension_reachable_and_current",
+      "final_refresh_reload_count": 0,
+      "earlier_repaired_candidate_refresh_reload_count": 1,
+      "profile_directory": "Default",
+      "stable_marker_source_head": "9fbe4bbcf064e9ce1a5be7fc5751b207f548fcee",
+      "stable_marker_source_head_note": "marker predates the bridge-only amend; source identity, build, root, and runtime binding all match"
+    }
+  },
+  "deterministic_validation": {
+    "full_unittest_discovery": {
+      "tests": 101,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "result": "OK"
+    },
+    "integration_unittest_discovery": {
+      "tests": 78,
+      "failures": 0,
+      "errors": 0,
+      "result": "OK"
+    },
+    "focused_chg112_auth_browser_refresh": {
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "result": "OK"
+    },
+    "javascript_dom_fixture_suites": [
+      "tests/extension_primary_scope_test.js",
+      "tests/extension_linkedin_scope_test.js"
+    ],
+    "javascript_dom_fixtures": "pass",
+    "javascript_syntax": "pass",
+    "python_compile": "pass",
+    "shell_syntax": "pass",
+    "git_diff_check": "pass",
+    "doctor": "pass in isolated validation path; migrations current through 15",
+    "config_validation": "doctor configuration check pass",
+    "search_plan": {
+      "fast_tasks": 315,
+      "deep_tasks": 417,
+      "production_result_caps": "none"
+    },
+    "validator_tests": "pass in integration and full unittest discovery",
+    "contract_regressions": {
+      "identity_only_rows_not_content_complete": true,
+      "missing_location_not_remote": true,
+      "remote_required_not_observed_remote": true,
+      "board_detail_not_verified_application_destination": true,
+      "unsafe_surfaces_do_not_mutate_canonical_jobs": true,
+      "stop_after_current_blocks_next_acquisition_and_preserves_resume": true,
+      "requested_observed_url_context_loss_fails_closed": true,
+      "recall_first_durably_records_negative_and_qa_release": true,
+      "platform_auth_challenge_isolation_and_recovery": true,
+      "unknown_auth_is_not_sign_in_without_affirmative_evidence": true,
+      "usable_search_surface_establishes_ready": true,
+      "indeed_challenge_is_separate_from_account_auth": true
+    }
+  },
+  "controlled_live_acceptance": {
+    "production_database_used": false,
+    "profile_architecture_changed": false,
+    "linkedin": {
+      "database": "/tmp/jobbot-chg112-r4-linkedin-final.f25vAh/jobs.sqlite3",
+      "run_id": 1,
+      "run_status": "stopped",
+      "auth_status": "verified",
+      "readiness_state": "verified",
+      "readiness_evidence": "actual scoped LinkedIn jobs search surface remained on expected /jobs/search route and persisted cards",
+      "requested_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+      "observed_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD&start=25",
+      "cards_persisted": 15,
+      "detail_attempts": 15,
+      "canonical_jobs": 0,
+      "posting_detail_proof": {
+        "source_job_id": "4465850921",
+        "title": "Health System Specialist Health System Specialist with verification",
+        "company": "",
+        "card_company": "",
+        "card_location": "",
+        "card_posted": "",
+        "description_length": 0,
+        "content_state": "MISSING",
+        "detail_state": "FAILED_RETRYABLE_IDENTITY_ONLY",
+        "remote_evidence_state": "not established",
+        "application_destination_state": "not established",
+        "substantive_description_proof": false
+      },
+      "graceful_stop": true,
+      "mandatory_gate": "FAIL: verified search and card persistence reached, but no current LinkedIn detail yielded a substantive description"
+    },
+    "indeed": {
+      "database": "/tmp/jobbot-chg112-r4-indeed-final.xasOga/jobs.sqlite3",
+      "run_id": 1,
+      "run_status": "partial",
+      "auth_status": "verified",
+      "readiness_state": "challenged_cooldown",
+      "reason": "indeed search surface challenged: captcha",
+      "search_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+      "tasks": {
+        "challenged": 1,
+        "deferred_by_platform": 2,
+        "auth_required": 0
+      },
+      "bypass_attempted": false,
+      "false_sign_out": false,
+      "platform_isolated": true
+    },
+    "glassdoor": {
+      "database": "/tmp/jobbot-chg112-r4-glassdoor-final.34JwB6/jobs.sqlite3",
+      "run_id": 1,
+      "run_status": "partial",
+      "auth_status": "verified",
+      "readiness_state": "verified",
+      "requested_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "observed_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "jobs_recorded": 1,
+      "posting_detail_proof": {
+        "source_job_id": "1010241214640",
+        "title": "Patient Engagement Specialist",
+        "company": "Vynca",
+        "card_company": "Vynca 2.8",
+        "card_location": "United States",
+        "description_length": 5534,
+        "content_state": "COMPLETE",
+        "enrichment_state": "ENRICHED",
+        "location_raw": "",
+        "location_evidence_state": "UNKNOWN",
+        "remote_evidence_state": "UNKNOWN",
+        "application_destination_state": "UNKNOWN",
+        "malformed_location_normalized_to_missing": true
+      },
+      "false_sign_out": false,
+      "platform_isolated": true
+    },
+    "recovery": {
+      "blocked_platform_work_deferred_and_resumable": true,
+      "healthy_platform_work_not_discarded": true,
+      "query_context_loss_fails_closed": true,
+      "recall_first_durability": true
+    }
+  },
+  "go_status": {
+    "result": "NO_GO",
+    "classification": "mandatory_live_linkedin_substantive_description_gate_failed",
+    "blocker": "LinkedIn reached verified authenticated search readiness and persisted 15 current cards, but every attempted detail remained identity-only or missing with no substantive description; the mandatory live proof is therefore unproven",
+    "profile_targeting_defect_proven": false,
+    "runtime_binding_evidence": "Google Chrome Default binding, stable extension root, matching build and source identity, and intended_extension_reachable_and_current diagnostics",
+    "credentials_handled": false,
+    "captcha_or_challenge_bypassed": false
+  }
+}
