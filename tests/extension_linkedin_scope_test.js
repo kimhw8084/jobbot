@@ -151,6 +151,18 @@ assert.strictEqual(partialOne.posted_text, '');
 assert.strictEqual(legitimateRepeat.title, 'Will Will');
 console.log('LinkedIn card metadata fixture passed: extracted fields, missing stays missing, duplicate-half normalized');
 
+const currentCard = inspectRoot(parseHtml(fs.readFileSync('tests/fixtures/linkedin_current_card.html', 'utf8')));
+const observedCurrentCard = currentCard.result_links.find((item) => item.source_job_id === '7101');
+assert.strictEqual(observedCurrentCard.title, 'Patient Enrollment Specialist');
+assert.match(observedCurrentCard.title_raw, /with verification$/);
+assert.strictEqual(observedCurrentCard.company, '');
+assert.strictEqual(observedCurrentCard.location, '');
+assert.strictEqual(observedCurrentCard.posted_text, '');
+const hydratingCurrentCard = currentCard.result_links.find((item) => item.source_job_id === '7102');
+assert.strictEqual(hydratingCurrentCard.title, 'Patient Access Specialist');
+assert.match(hydratingCurrentCard.title_raw, /with verification$/);
+console.log('LinkedIn current card fixture passed: visible title excludes verified accessory; missing metadata stays unknown');
+
 function inspectDetail(nextRoot, href, title = 'LinkedIn job') {
   global.location = { href, pathname: new URL(href).pathname, host: 'www.linkedin.com' };
   global.document = { body: nextRoot, title, querySelector: nextRoot.querySelector.bind(nextRoot), querySelectorAll: nextRoot.querySelectorAll.bind(nextRoot) };
@@ -174,7 +186,21 @@ function inspectDetail(nextRoot, href, title = 'LinkedIn job') {
   const error = await inspectDetail(parseHtml('<main><h1>Tunnel Connection Failed</h1><p>Tunnel Connection Failed</p></main>'), 'https://www.linkedin.com/jobs/view/4467541678/', 'Tunnel Connection Failed');
   assert.strictEqual(error.page_type, 'error');
   assert.strictEqual(error.job, null);
-  console.log('LinkedIn detail fixtures passed: substantive enrichment only; error surface yields no job payload');
+  const paneRoot = parseHtml(fs.readFileSync('tests/fixtures/linkedin_search_pane.html', 'utf8'));
+  const paneAnchor = paneRoot.querySelector('a[href*="/jobs/view/"]');
+  paneAnchor.click = () => { global.location.href = 'https://www.linkedin.com/jobs/search/?currentJobId=7201&keywords=patient'; };
+  global.location = { href: 'https://www.linkedin.com/jobs/search/?keywords=patient', pathname: '/jobs/search/', host: 'www.linkedin.com' };
+  global.document = { body: paneRoot, title: 'LinkedIn jobs', querySelector: paneRoot.querySelector.bind(paneRoot), querySelectorAll: paneRoot.querySelectorAll.bind(paneRoot) };
+  const pane = await new Promise((resolve) => listener({ type: 'JOBBOT_INSPECT_SEARCH_PANE', source_job_id: '7201', select: true }, null, resolve));
+  assert.strictEqual(pane.selected, true);
+  assert.strictEqual(pane.current_job_id, '7201');
+  assert.strictEqual(pane.acquisition_mode, 'search_pane');
+  assert.strictEqual(pane.detail_acquisition.mode, 'search_pane');
+  assert.strictEqual(pane.job.title, 'Patient Access Specialist');
+  assert.strictEqual(pane.job.company, 'Access Co');
+  assert.ok(pane.job.description.length > 250);
+  assert.strictEqual(pane.detail_diagnostics.route, 'search_pane');
+  console.log('LinkedIn detail fixtures passed: substantive enrichment only; error surface yields no job payload; search-pane route hydrates description');
 })();
 
 const pagedEmpty = inspectRoot(parseHtml('<main><h1>(19) patient enrollment specialist Jobs in United States</h1></main>'), ' (19) patient enrollment specialist Jobs in United States | LinkedIn', 'https://www.linkedin.com/jobs/search/?keywords=patient&start=25');

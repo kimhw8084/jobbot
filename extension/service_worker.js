@@ -169,7 +169,7 @@ async function checkAuth(platform,runId,taskId,searchUrl=''){
     // even when landing-page auth evidence is unknown.
     const searchTarget=await createBackgroundTarget(searchUrl||url);
     try{
-      const surface=await inspectTab(searchTarget.tab.id,'JOBBOT_INSPECT_SEARCH',{},4);
+      const surface=await inspectTab(searchTarget.tab.id,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4);
       const observed=surface.page_url||searchUrl||url;
       if(surface.challenged){
         await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,auth_state:p.authenticated?'verified':'unknown',reason:`${platform} search surface challenged: ${surface.challenge_reason||'challenge'}`,requested_url:searchUrl||url,observed_url:observed});
@@ -233,7 +233,7 @@ async function processTask(runId,task){
       if(Date.now()-lastMeaningfulAt>watchdogMs){await finishIncomplete(`SAFETY_STOP: watchdog observed no meaningful progress for ${runtimeConfig.watchdog_stall_seconds||180} seconds`);return;}
       const stop=await requiredRequest('should_stop',{run_id:runId}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
       await keepBackgroundTab(searchTab.id,searchTarget.window_id);
-      let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH');
+      let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_EVENTUALLY');
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       let contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);
@@ -304,13 +304,23 @@ async function processTask(runId,task){
         await chrome.tabs.update(detailTab.id,{url:link.url,active:false});
         let detail;
         try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:String(e?.message||e),url:link.url});continue;}
+        const standaloneDetailDiagnostics=detail.detail_diagnostics||null,standaloneDetailUrl=detail.page_url||link.url;
+        let searchPaneEvidence=null;
+        if(platform==='linkedin'&&!String(detail.job?.description||'').trim()){
+          try{searchPaneEvidence=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_PANE',{source_job_id:link.source_job_id,select:true},4);}catch(error){searchPaneEvidence={selected:false,selection_attempted:false,error:String(error?.message||error).slice(0,300)};}
+          if(searchPaneEvidence?.challenged||['challenge','login','error','interstitial'].includes(searchPaneEvidence?.page_type)){const reason=searchPaneEvidence.challenge_reason||searchPaneEvidence.surface_reason||'unsafe LinkedIn search-pane surface';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason});return;}
+          if(String(searchPaneEvidence?.job?.description||'').trim()){
+            detail={...detail,page_url:searchPaneEvidence.acquisition_url||searchPaneEvidence.page_url||standaloneDetailUrl,extraction_source:searchPaneEvidence.extraction_source||'search_pane',detail_acquisition:{mode:'search_pane',url:searchPaneEvidence.acquisition_url||searchPaneEvidence.page_url||'',standalone_url:standaloneDetailUrl},standalone_detail_diagnostics:standaloneDetailDiagnostics,detail_diagnostics:searchPaneEvidence.search_pane_diagnostics||searchPaneEvidence.detail_diagnostics||detail.detail_diagnostics,job:{...detail.job,...searchPaneEvidence.job,source_job_id:link.source_job_id||detail.job?.source_job_id||searchPaneEvidence.job.source_job_id,canonical_url:detail.job?.canonical_url||searchPaneEvidence.job.canonical_url}};
+          }
+        }
+        if(platform==='linkedin'&&(detail.detail_diagnostics||searchPaneEvidence))await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'detail_diagnostics',message:`linkedin detail extraction diagnostics ${link.source_job_id||link.url}`,payload:{source_job_id:link.source_job_id||'',requested_detail_url:link.url||'',standalone_detail:standaloneDetailDiagnostics||detail.standalone_detail_diagnostics||null,search_pane:searchPaneEvidence||null,final_extraction_source:detail.extraction_source||'none',detail_acquisition:detail.detail_acquisition||{mode:'standalone_detail',url:detail.page_url||link.url}}}).catch(()=>{});
         if(detail.challenged||detail.page_type==='challenge'){const reason=detail.challenge_reason||detail.surface_reason||'challenge on job detail';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason});return;}
         if(detail.page_type==='login'){const reason=detail.surface_reason||'sign-in required on job detail';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason,page_url:detail.page_url||link.url,requested_url:link.url,observed_url:detail.page_url||link.url});return;}
         if(detail.page_type==='error'){const reason=detail.surface_reason||'transient detail error surface';detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason,url:detail.page_url||link.url});continue;}
         lastMeaningfulAt=Date.now();
         if(detail.job?.title&&detail.job?.canonical_url){
-          await requiredRequest('detail_read',{run_id:runId,task_id:taskId,result_id:work.result_id,source_site:platform,source_job_id:link.source_job_id||detail.job?.source_job_id||'',source_url:link.url||detail.job?.canonical_url||'',detail_evidence:{page_url:detail.page_url||link.url,job:detail.job}}); detailRead+=1;
-          if(!String(detail.job.description||'').trim()){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:'detail identity had no substantive description',url:detail.page_url||link.url});}
+          await requiredRequest('detail_read',{run_id:runId,task_id:taskId,result_id:work.result_id,source_site:platform,source_job_id:link.source_job_id||detail.job?.source_job_id||'',source_url:link.url||detail.job?.canonical_url||'',detail_evidence:{page_url:detail.page_url||link.url,job:detail.job,extraction_source:detail.extraction_source||'',detail_acquisition:detail.detail_acquisition||{mode:'standalone_detail',url:detail.page_url||link.url},standalone_detail_diagnostics:standaloneDetailDiagnostics||detail.standalone_detail_diagnostics||null,detail_diagnostics:detail.detail_diagnostics||null,search_pane_evidence:searchPaneEvidence||null}}); detailRead+=1;
+          if(!String(detail.job.description||'').trim()){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:'detail identity had no substantive description',url:detail.page_url||link.url,detail_diagnostics:detail.detail_diagnostics||null,search_pane_evidence:searchPaneEvidence||null});}
           else try{await requiredRequest('record_job',{run_id:runId,task_id:taskId,result_id:work.result_id,detail_evidence:detail,job:{...detail.job,search_card:link,page_url:detail.page_url||link.url}},90000);processed+=1;recordedThisPage+=1;}
           catch(error){detailsFailed+=1;const message=`record_job rejected (${detail.job.title}): ${error.message}`;if(!String(error.message||'').includes('unsafe_detail_surface'))await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}
         } else {const message=`detail payload incomplete type=${detail?.page_type||'none'} title=${detail?.job?.title||'none'} canonical=${detail?.job?.canonical_url||'none'} page=${detail?.page_url||'none'} source=${link.source_job_id||link.url}`;detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}

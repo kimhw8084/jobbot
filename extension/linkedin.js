@@ -2,7 +2,7 @@
   'use strict';
   const C=globalThis.JobBotCommon, S=globalThis.JobBotSelectors?.linkedin;
   if(!C||!S)return;
-  const BUILD_ID=String(chrome.runtime?.getManifest?.().version_name||'unknown'),JOB_LINK_SELECTOR='a[href*="/jobs/view/"]',MAX_DIAGNOSTIC_ANCHORS=20,MAX_STRUCTURAL_SUMMARIES=30;
+  const BUILD_ID=String(chrome.runtime?.getManifest?.().version_name||'unknown'),JOB_LINK_SELECTOR='a[href*="/jobs/view/"]',MAX_DIAGNOSTIC_ANCHORS=20,MAX_STRUCTURAL_SUMMARIES=30,MAX_DETAIL_DIAGNOSTICS=12;
   const sid=(url)=>{try{const u=new URL(url,location.href),m=u.pathname.match(/\/jobs\/view\/(\d+)/);return m?m[1]:C.clean(u.searchParams.get('currentJobId')||'');}catch(_){return '';}};
   const canon=(href)=>{try{const id=sid(href);return id?`https://www.linkedin.com/jobs/view/${id}/`:new URL(href,location.href).href;}catch(_){return '';}};
   const rawHref=(anchor)=>anchor?.getAttribute?.('href')||anchor?.href||'';
@@ -78,6 +78,49 @@
     return '';
   };
   const diagnosticNode=(node)=>({signature:nodeSignature(node),tag:String(node?.tagName||'').toLowerCase(),class:attr(node,'class').slice(0,160),role:attr(node,'role').slice(0,80),data_view_name:attr(node,'data-view-name').slice(0,120),data_testid:attr(node,'data-testid').slice(0,120)});
+  const diagnosticText=(node,limit=160)=>C.clip(C.textOf(node),limit);
+  const diagnosticSelectorStats=(selectors,root=document)=>[...(selectors||[])].map(selector=>{
+    let nodes=[];try{nodes=[...root.querySelectorAll(selector)];}catch(_){nodes=[];}
+    return{selector,matched:nodes.length,text_lengths:nodes.slice(0,MAX_DETAIL_DIAGNOSTICS).map(node=>C.textOf(node).length)};
+  });
+  const diagnosticLabels=()=>[...document.querySelectorAll('h1,h2,h3,[role="heading"],[aria-label]')].filter(node=>/about the job|job description/i.test(`${C.textOf(node)} ${attr(node,'aria-label')}`)).slice(0,MAX_DETAIL_DIAGNOSTICS).map(node=>({text:diagnosticText(node,120),text_length:C.textOf(node).length,signature:nodeSignature(node),ancestors:ancestorChain(node,5).map(diagnosticNode)}));
+  const diagnosticDescriptionCandidates=()=>{
+    const nodes=[],seen=new Set();
+    for(const selector of S.description||[])for(const node of document.querySelectorAll(selector))if(!seen.has(node)){seen.add(node);nodes.push(node);}
+    for(const heading of [...document.querySelectorAll('h1,h2,h3,[role="heading"]')].filter(node=>/about the job|job description/i.test(C.textOf(node))).slice(0,MAX_DETAIL_DIAGNOSTICS)){
+      let node=heading;
+      for(let i=0;i<6&&node;i++){node=node.parentElement;if(!node||seen.has(node))continue;const length=C.textOf(node).length;if(length>=180&&length<=60000){seen.add(node);nodes.push(node);break;}}
+    }
+    return nodes.slice(0,MAX_DETAIL_DIAGNOSTICS).map(node=>({signature:nodeSignature(node),text_length:C.textOf(node).length,ancestors:ancestorChain(node,6).map(diagnosticNode)}));
+  };
+  const diagnosticJsonLd=()=>{
+    const scripts=[...document.querySelectorAll('script[type="application/ld+json"]')],fields={title:0,company:0,location:0,description:0,datePosted:0};let present=false;
+    const visit=(value)=>{if(!value||typeof value!=='object')return;const type=Array.isArray(value['@type'])?value['@type'].join(' '):String(value['@type']||'');if(/jobposting/i.test(type)){present=true;const org=value.hiringOrganization,loc=value.jobLocation;fields.title=C.clean(value.title).length;fields.company=C.clean(typeof org==='string'?org:org?.name).length;fields.location=C.clean(loc?JSON.stringify(loc):value.jobLocationType).length;fields.description=C.clean(value.description).length;fields.datePosted=C.clean(value.datePosted).length;}if(Array.isArray(value['@graph']))value['@graph'].forEach(visit);};
+    for(const script of scripts){try{const parsed=JSON.parse(script.textContent||'{}');(Array.isArray(parsed)?parsed:[parsed]).forEach(visit);}catch(_){}}
+    return{script_count:scripts.length,script_lengths:scripts.slice(0,MAX_DETAIL_DIAGNOSTICS).map(script=>(script.textContent||'').length),jobposting_present:present,field_lengths:fields};
+  };
+  const safeCanonicalLink=()=>{const node=document.querySelector('link[rel="canonical"]');return C.clean(node?.getAttribute?.('href')||node?.href||'').slice(0,500);};
+  const cardMetadataDiagnostics=(card,anchor)=>{
+    if(!card)return{card_present:false};
+    const related=[];for(const node of card.querySelectorAll('*')){const attrs=`${attr(node,'class')} ${attr(node,'data-testid')} ${attr(node,'data-view-name')} ${attr(node,'aria-label')}`;if(!/(company|employer|location|posted|listed|metadata|date|time)/i.test(attrs))continue;related.push({signature:nodeSignature(node),text_length:C.textOf(node).length,text:diagnosticText(node,120)});if(related.length>=MAX_DETAIL_DIAGNOSTICS)break;}
+    const descendants=[anchor,...anchor.querySelectorAll('*')].slice(0,MAX_DETAIL_DIAGNOSTICS).map(node=>({signature:nodeSignature(node),text_length:C.textOf(node).length,text:diagnosticText(node,160),aria_label:attr(node,'aria-label').slice(0,160),title:attr(node,'title').slice(0,160),data_testid:attr(node,'data-testid').slice(0,120),data_view_name:attr(node,'data-view-name').slice(0,120)}));
+    return{card_present:true,card_signature:nodeSignature(card),card_text_length:C.textOf(card).length,anchor_signature:nodeSignature(anchor),anchor_text_length:C.textOf(anchor).length,anchor_text:diagnosticText(anchor,220),anchor_aria_label:attr(anchor,'aria-label').slice(0,220),anchor_title:attr(anchor,'title').slice(0,220),title_descendants:descendants,metadata_candidates:related};
+  };
+  const cardTitle=(anchor)=>{
+    const candidates=[...anchor.querySelectorAll('span,div')].filter(node=>{
+      const text=C.textOf(node),classes=attr(node,'class').toLowerCase(),hidden=attr(node,'aria-hidden').toLowerCase()==='true';
+      return !!text&&!hidden&&!/visually-hidden|screen-reader|sr-only/.test(classes)&&!/^svg$/i.test(String(node.tagName||''))&&!node.closest?.('svg');
+    });
+    const visible=candidates.map(node=>C.clean(C.textOf(node))).filter(Boolean);
+    const repeated=visible.find((text,index)=>visible.indexOf(text)!==index);
+    if(repeated||visible[0])return C.normalizeTitle(repeated||visible[0]);
+    const verified=anchor.querySelector('svg.text-view-model__verified-icon,svg[class*="verified"]');
+    const hiddenLabel=[...anchor.querySelectorAll('span.visually-hidden,[class*="visually-hidden"]')].map(node=>C.clean(C.textOf(node))).find(Boolean);
+    const ariaLabel=C.clean(anchor.getAttribute('aria-label')||'');
+    if(verified&&hiddenLabel&&ariaLabel===hiddenLabel&&/\s+with verification$/i.test(hiddenLabel))return C.normalizeTitle(hiddenLabel.replace(/\s+with verification$/i,''));
+    return C.normalizeTitle(ariaLabel||C.clean(anchor.innerText||''));
+  };
+  const detailDiagnostics=(route,sourceId,descriptionSource='none',surface=null)=>({diagnostic_version:2,extension_build:BUILD_ID,route,source_job_id:C.clean(sourceId),document_url:C.clean(location.href).slice(0,1000),document_path:C.clean(location.pathname).slice(0,300),document_title:C.clean(document.title).slice(0,240),ready_state:C.clean(document.readyState||'unknown'),body_text_length:C.clean(document.body?.innerText||'').length,page_surface:surface||C.pageSurface(),canonical_link_href:safeCanonicalLink(),selector_stats:{title:diagnosticSelectorStats(S.title),company:diagnosticSelectorStats(S.company),location:diagnosticSelectorStats(S.location),description:diagnosticSelectorStats(S.description),posted:diagnosticSelectorStats(S.posted)},jobposting_jsonld:diagnosticJsonLd(),headings_or_labels:diagnosticLabels(),candidate_ancestor_signatures:diagnosticDescriptionCandidates(),description_source:descriptionSource,classification:descriptionSource==='none'?(route==='standalone_detail'?'direct_route_identity_shell_or_unexpected_dom':'search_pane_description_not_found'):'substantive_description_observed'});
   function missingDiagnostics(attempts,records,structural,reason){
     const inIds=[],outIds=[...new Set(records.map((record)=>record.id))];
     return{diagnostic_version:1,extension_build:BUILD_ID,page_url:safePageUrl(),title:C.clean(document.title).slice(0,200),attempts,candidate_links_total:records.length,candidate_links_in_scope:0,candidate_links_outside_scope:outIds.length,in_scope_source_ids:inIds,in_scope_urls:[],outside_scope_source_ids:outIds.slice(0,MAX_DIAGNOSTIC_ANCHORS),outside_scope_urls:[...new Set(records.map((record)=>record.url))].slice(0,MAX_DIAGNOSTIC_ANCHORS),anchor_samples:records.slice(0,MAX_DIAGNOSTIC_ANCHORS).map((record)=>({source_job_id:record.id,url:record.url,class:attr(record.anchor,'class').slice(0,160),aria_label:attr(record.anchor,'aria-label').slice(0,120),data_view_name:attr(record.anchor,'data-view-name').slice(0,120),data_tracking_control_name:attr(record.anchor,'data-tracking-control-name').slice(0,120),ancestors:ancestorChain(record.anchor,5).map(diagnosticNode)})),structural_candidate_signatures:structural.summaries,structural_strong_evidence:structural.strong_evidence_count,structural_pool_size:structural.pool_count,reason};
@@ -113,11 +156,11 @@
       inScopeIds.add(id);inScopeUrls.add(url);
       const card=scope.cards.find((candidate)=>candidate.contains(anchor))||anchor.parentElement;
       const firstField=(selectors,attribute='')=>{for(const selector of selectors){const node=card?.querySelector?.(selector);const value=attribute?C.clean(node?.getAttribute?.(attribute)||''):C.textOf(node);if(value)return value;}return '';};
-      const rawTitle=C.clean(anchor.innerText||anchor.getAttribute('aria-label')||'');
+      const rawTitle=C.clean(anchor.innerText||anchor.getAttribute('aria-label')||''),observedTitle=cardTitle(anchor)||rawTitle;
       const company=firstField(['a[href*="/company/"]','[data-testid*="company"]','[data-view-name*="company"]','[class*="company"]','.job-card-container__primary-description','.artdeco-entity-lockup__subtitle','.base-search-card__subtitle']);
       const location=firstField(['[data-testid*="location"]','[data-view-name*="location"]','[class*="location"]','.job-card-container__metadata-item','.job-search-card__location','.base-search-card__metadata']);
       const posted=firstField(['time','[data-testid*="date"]','[data-view-name*="date"]','[class*="listed-time"]','[class*="posted"]'])||firstField(['time'],'datetime');
-      seen.set(id,{source_job_id:id,url,title:C.normalizeTitle(rawTitle),title_raw:rawTitle,company,location,posted_text:posted,posted_age_days:C.parseAgeDays(posted)});
+      seen.set(id,{source_job_id:id,url,title:observedTitle,title_raw:rawTitle,company,location,posted_text:posted,posted_age_days:C.parseAgeDays(posted)});
     }
     for(const anchor of allAnchors){
       if(scopedAnchors.has(anchor))continue;
@@ -148,12 +191,40 @@
     const auth_state=ch.challenged?'challenged_cooldown':wall.required?'sign_in_required':ready?'verified':'unknown';
     return{platform:'linkedin',extension_build:BUILD_ID,page_type:'search',authenticated:ready,auth_state,readiness_state:ch.challenged?'challenged_cooldown':wall.required?'sign_in_required':ready?'ready':'unknown',ready,challenged:ch.challenged,challenge_reason:ch.reason,login_required:wall.required,page_url:location.href,result_links:results.links,extraction_scope_missing:results.extraction_scope_missing,extraction_diagnostics:results.extraction_diagnostics,next_url:nextUrl(),exhausted:end.exhausted||!!verifiedEmptyReason,exhaustion_reason:end.reason||verifiedEmptyReason,title:document.title};
   }
-  function inspectJob(){
-    const ch=C.challengeInfo(),surface=C.pageSurface(); if(surface.surface!=='job')return{platform:'linkedin',page_type:surface.surface,challenged:surface.surface==='challenge',challenge_reason:surface.reason,page_url:location.href,surface_reason:surface.reason,job:null};
+  function inspectJob(route='standalone_detail'){
+    const ch=C.challengeInfo(),surface=C.pageSurface(); if(surface.surface!=='job')return{platform:'linkedin',page_type:surface.surface,challenged:surface.surface==='challenge',challenge_reason:surface.reason,page_url:location.href,surface_reason:surface.reason,job:null,detail_diagnostics:detailDiagnostics('standalone_detail',sid(location.href),'none',surface)};
     const x=C.parseJsonLdJob()||{},pageTitle=C.clean(document.title).replace(/\s*\|\s*LinkedIn\s*$/i,'').split('|')[0];
     const title=x.title||C.firstText(S.title)||pageTitle,company=x.company||C.firstText(S.company),locationText=x.location||C.firstText(S.location);
-    const description=x.description||C.firstText(S.description)||C.headingSectionText(['about the job','job description']),posted=x.posted_at||C.firstText(S.posted),id=sid(location.href),url=canon(location.href);
-    return{platform:'linkedin',page_type:'job',surface:'job',challenged:ch.challenged,challenge_reason:ch.reason,page_url:location.href,job:{source_job_id:id,canonical_url:url,apply_url:x.apply_url||'',title:C.normalizeTitle(title),company:C.clean(company),location:C.clean(locationText),remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:C.clean(x.employment_type),salary_text:C.clean(x.salary_text),posted_at:C.clean(posted),posted_age_days:C.parseAgeDays(posted),valid_through:C.clean(x.valid_through),description:C.clip(description)}};
+    const jsonDescription=C.clean(x.description),selectorDescription=C.firstText(S.description),headingDescription=C.headingSectionText(['about the job','job description']);
+    const description=jsonDescription||selectorDescription||headingDescription,descriptionSource=jsonDescription?'json_ld':selectorDescription?'selector':'heading_structural',posted=x.posted_at||C.firstText(S.posted),id=sid(location.href),url=canon(location.href);
+    return{platform:'linkedin',page_type:'job',surface:'job',challenged:ch.challenged,challenge_reason:ch.reason,page_url:location.href,extraction_source:descriptionSource,detail_acquisition:{mode:route,url:location.href},detail_diagnostics:detailDiagnostics(route,id,description?descriptionSource:'none',surface),job:{source_job_id:id,canonical_url:url,apply_url:x.apply_url||'',title:C.normalizeTitle(title),company:C.clean(company),location:C.clean(locationText),remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:C.clean(x.employment_type),salary_text:C.clean(x.salary_text),posted_at:C.clean(posted),posted_age_days:C.parseAgeDays(posted),valid_through:C.clean(x.valid_through),description:C.clip(description)}};
+  }
+  function searchPaneSelection(sourceId){
+    const scope=locateSearchResults(),target=String(sourceId||''),anchor=[...scope.cards].flatMap(card=>[...card.querySelectorAll(JOB_LINK_SELECTOR)].map(node=>({card,node}))).find(item=>sid(C.absoluteUrl(rawHref(item.node)))===target);
+    if(!anchor)return{selected:false,selection_attempted:false,search_pane_diagnostics:detailDiagnostics('search_pane',target,'none',C.pageSurface())};
+    let clickAttempted=false;try{if(typeof anchor.node.click==='function'){anchor.node.click();clickAttempted=true;}}catch(_){ }
+    return{selected:clickAttempted,current_job_id:sid(location.href),selection_attempted:true,card_metadata_diagnostics:cardMetadataDiagnostics(anchor.card,anchor.node),search_pane_diagnostics:detailDiagnostics('search_pane',target,'none',C.pageSurface())};
+  }
+  async function inspectSearchPane(sourceId,select=true){
+    let last=searchPaneSelection(sourceId);if(select&&!last.selected)return last;
+    for(let i=0;i<10;i++){
+      if(last.current_job_id===String(sourceId||'')){
+        const pane=inspectJob('search_pane');
+        if(pane.page_type!=='job'||String(pane.job?.description||'').trim())return{...last,...pane,acquisition_mode:'search_pane',acquisition_url:location.href,search_pane_diagnostics:detailDiagnostics('search_pane',sourceId,pane.extraction_source||'none',pane.detail_diagnostics?.page_surface||C.pageSurface())};
+      }
+      await new Promise(r=>setTimeout(r,300));last=searchPaneSelection(sourceId,false);
+    }
+    const pane=last.current_job_id===String(sourceId||'')?inspectJob('search_pane'):null;
+    return pane?{...last,...pane,acquisition_mode:'search_pane',acquisition_url:location.href,search_pane_diagnostics:detailDiagnostics('search_pane',sourceId,pane.extraction_source||'none',pane.detail_diagnostics?.page_surface||C.pageSurface())}:last;
+  }
+  async function inspectSearchEventually(){
+    let page=inspectSearch();
+    for(let i=0;i<8;i++){
+      const needsHydration=(page.result_links||[]).some(link=>link.title&&link.title===link.title_raw&&/\s+with verification$/i.test(link.title));
+      if(!needsHydration)return page;
+      await new Promise(r=>setTimeout(r,300));page=inspectSearch();
+    }
+    return page;
   }
   function inspect(){const p=location.pathname.toLowerCase();if(p.includes('/my-items/')||p.includes('/login')||p.includes('/checkpoint')||p.includes('/authwall'))return inspectAuth();if(p.includes('/jobs/view/'))return inspectJob();return inspectSearch();}
   function advance(){const button=S.nextButtons.map(s=>document.querySelector(s)).find(Boolean);if(button){button.click();return{advanced:true,method:'click'};}return{advanced:false};}
@@ -162,5 +233,5 @@
   // still persisted as failed/retryable rather than being promoted without a
   // description.
   async function inspectJobEventually(){let last=inspectJob();for(let i=0;i<6&&last.page_type==='job'&&(!last.job?.title||!last.job?.description);i++){await new Promise(r=>setTimeout(r,450));last=inspectJob();}return last;}
-  chrome.runtime.onMessage.addListener((m,_s,send)=>{if(m?.type==='JOBBOT_INSPECT_AUTH'){send(inspectAuth());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH'){send(inspectSearch());return true;}if(m?.type==='JOBBOT_INSPECT_DETAIL'){inspectJobEventually().then(send);return true;}if(m?.type==='JOBBOT_INSPECT'){send(inspect());return true;}if(m?.type==='JOBBOT_SCROLL_AND_INSPECT'){C.scrollResults();setTimeout(()=>send(inspectSearch()),Math.max(700,Math.min(3500,Number(m.wait_ms||1500))));return true;}if(m?.type==='JOBBOT_ADVANCE_SEARCH'){const r=advance();setTimeout(()=>send({...r,page_url:location.href}),r.advanced?1500:0);return true;}return false;});
+  chrome.runtime.onMessage.addListener((m,_s,send)=>{if(m?.type==='JOBBOT_INSPECT_AUTH'){send(inspectAuth());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH'){send(inspectSearch());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH_EVENTUALLY'){inspectSearchEventually().then(send);return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH_PANE'){inspectSearchPane(m.source_job_id,m.select!==false).then(send);return true;}if(m?.type==='JOBBOT_INSPECT_DETAIL'){inspectJobEventually().then(send);return true;}if(m?.type==='JOBBOT_INSPECT'){send(inspect());return true;}if(m?.type==='JOBBOT_SCROLL_AND_INSPECT'){C.scrollResults();setTimeout(()=>inspectSearchEventually().then(send),Math.max(700,Math.min(3500,Number(m.wait_ms||1500))));return true;}if(m?.type==='JOBBOT_ADVANCE_SEARCH'){const r=advance();setTimeout(()=>send({...r,page_url:location.href}),r.advanced?1500:0);return true;}return false;});
 })();

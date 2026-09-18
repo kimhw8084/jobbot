@@ -45,3 +45,13 @@ destinations. The dashboard must show platform readiness independently, and
 the stop latch must not lease a subsequent task. If Indeed remains on CAPTCHA
 or Glassdoor remains signed out, record that exact external blocker and verify
 the manual recovery/recheck path; do not claim a positive live result.
+
+For LinkedIn, a direct `/jobs/view/<id>/` response can be an authenticated
+identity shell without the posting body. The runner compares that bounded
+standalone diagnostic with the same card selected in the authenticated
+`/jobs/search/?currentJobId=<id>` pane and uses the pane only when it exposes
+the evidenced `About the job`/description section. A verification badge's
+visually-hidden accessory text is excluded from the card title; missing card
+company, location, or posted metadata remains unknown. Detail diagnostics are
+bounded and contain no page HTML, credentials, cookies, or browser-session
+material.
