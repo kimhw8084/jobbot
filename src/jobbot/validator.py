@@ -385,18 +385,21 @@ def _validation_metrics(bundle: ConfigBundle, run_id: int, audit: dict[str, Any]
             if int(task["pages_visited"] or 0) > 0 or int(task["cards_extracted"] or 0) > 0:
                 progress_tasks += 1
         result_rows = conn.execute(
-            "SELECT r.detail_status,r.canonical_job_id FROM search_task_results r "
+            "SELECT r.detail_status,r.content_state,r.canonical_job_id FROM search_task_results r "
             "JOIN browser_search_tasks t ON t.task_id=r.task_id "
             "WHERE r.browser_run_id=? AND (t.started_at IS NOT NULL OR t.status <> 'queued')",
             (run_id,),
         ).fetchall()
-        detail_states = {"PENDING": 0, "RUNNING": 0, "COMPLETE": 0, "RETRYABLE": 0,
-                         "FAILED": 0, "EXTERNAL_BLOCKED": 0}
+        detail_states = {"PENDING": 0, "RUNNING": 0, "COMPLETE": 0, "PARTIAL": 0,
+                         "DEFERRED_RECALL": 0, "RETRYABLE": 0, "FAILED": 0,
+                         "EXTERNAL_BLOCKED": 0}
         # Canonical identifiers are durable JobBot strings (for example
         # ``J943D57AD3EB03C``), not SQLite integer rowids.
         canonical_ids: set[str] = set()
         for row in result_rows:
             status = str(row["detail_status"] or "")
+            if status == "COMPLETE" and str(row["content_state"] or "") != "COMPLETE":
+                status = "PARTIAL"
             if status in detail_states:
                 detail_states[status] += 1
             if row["canonical_job_id"]:
@@ -435,6 +438,8 @@ def _validation_metrics(bundle: ConfigBundle, run_id: int, audit: dict[str, Any]
             "detail_pending": detail_states["PENDING"],
             "detail_running": detail_states["RUNNING"],
             "detail_complete": detail_states["COMPLETE"],
+            "detail_partial": detail_states["PARTIAL"],
+            "detail_deferred_recall": detail_states["DEFERRED_RECALL"],
             "detail_retryable": detail_states["RETRYABLE"],
             "detail_failed": detail_states["FAILED"],
             "detail_external_blocked": detail_states["EXTERNAL_BLOCKED"],
@@ -883,7 +888,8 @@ def _phase_execution_metrics(bundle: ConfigBundle, run_id: int) -> dict[str, dic
             for platform, values in platforms.items():
                 values["details_complete"] = int(conn.execute(
                     "SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id "
-                    "WHERE r.browser_run_id=? AND t.phase=? AND t.platform=? AND r.detail_status='COMPLETE'",
+                    "WHERE r.browser_run_id=? AND t.phase=? AND t.platform=? "
+                    "AND r.detail_status='COMPLETE' AND r.content_state='COMPLETE'",
                     (run_id, phase, platform),
                 ).fetchone()[0] or 0)
                 values["all_external_blocked"] = bool(
