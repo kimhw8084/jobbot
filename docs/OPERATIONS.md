@@ -28,6 +28,18 @@ watch state reports `RUNNING`, `WAITING`, or `STOPPED` in the dashboard and
 uses six-hour recent and daily deep cadences by default. Use `python -m jobbot
 watch --once` only with an isolated acceptance database.
 
-Use **Stop after current job** for orderly shutdown. Emergency stop marks an active task incomplete and resumable. Challenges and auth requirements are platform-local. Do not repeatedly revisit a challenge page; clear it normally, observe cooldown, then resume.
+Use **Stop after current job** for orderly shutdown. The stop latch finishes
+only the already-active atomic detail and prevents any next task acquisition;
+queued work remains durable. Emergency stop marks an active task incomplete and
+resumable. Challenges and auth requirements are platform-local. Do not
+repeatedly revisit a challenge page or attempt to bypass it; clear it normally,
+then use Resume checkpoint to trigger a positive readiness recheck.
+
+Indeed and Glassdoor readiness is fail-closed. A missing sign-in selector is
+not authentication evidence, and a CAPTCHA/challenge surface is recorded as
+user action required/cooldown with deferred tasks. Sign in or clear the
+challenge manually in the intended ordinary Chrome profile, then resume that
+checkpoint. Use `./REENRICH_SEARCH.command` when a prior run captured durable
+identities but needs user-invoked content enrichment.
 
 Run `python -m jobbot audit` to distinguish incomplete coverage, missing descriptions, challenge/auth state, qualification losses, and true market volume. Run `python -m jobbot export` for portable CSV, JSONL, and Markdown files. The export set includes separate `live_discoveries.csv` intake receipts and `application_history.csv` human-event history. The local dashboard defaults to `http://127.0.0.1:8765/`.

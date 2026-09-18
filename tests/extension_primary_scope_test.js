@@ -116,3 +116,30 @@ for (const spec of specs.slice(1)) {
   assert.deepStrictEqual(inspected.result_links, []);
 }
 console.log('Indeed and Glassdoor missing-scope fixtures passed: fail-closed');
+
+function authProbe(platform, html, href) {
+  const root = parseHtml(html);
+  global.location = { href, pathname: new URL(href).pathname, host: new URL(href).host };
+  global.document = { body: root, title: platform, querySelector: root.querySelector.bind(root), querySelectorAll: root.querySelectorAll.bind(root) };
+  let authListener;
+  global.chrome = { runtime: { onMessage: { addListener(fn) { authListener = fn; } } } };
+  vm.runInThisContext(fs.readFileSync(`extension/${platform}.js`, 'utf8'), { filename: `extension/${platform}.js` });
+  let value;
+  authListener({ type: 'JOBBOT_INSPECT_AUTH' }, null, (result) => { value = result; });
+  return value;
+}
+
+const indeedMissingPositive = authProbe('indeed', '<main></main>', 'https://www.indeed.com/');
+assert.strictEqual(indeedMissingPositive.authenticated, false);
+assert.match(indeedMissingPositive.reason, /sign-in required/i);
+const indeedChallenge = authProbe('indeed', '<main>CAPTCHA verification required</main>', 'https://www.indeed.com/');
+assert.strictEqual(indeedChallenge.authenticated, false);
+assert.strictEqual(indeedChallenge.challenged, true);
+const indeedCleared = authProbe('indeed', '<main><a href="/myjobs">My Jobs</a></main>', 'https://www.indeed.com/');
+assert.strictEqual(indeedCleared.authenticated, true);
+
+const glassdoorMissingPositive = authProbe('glassdoor', '<main></main>', 'https://www.glassdoor.com/');
+assert.strictEqual(glassdoorMissingPositive.authenticated, false);
+const glassdoorCleared = authProbe('glassdoor', '<main>Notifications · My Jobs</main>', 'https://www.glassdoor.com/');
+assert.strictEqual(glassdoorCleared.authenticated, true);
+console.log('Indeed/Glassdoor auth fixtures passed: positive evidence required, challenge explicit, cleared state rechecks');

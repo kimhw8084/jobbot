@@ -203,6 +203,12 @@ def command_resume(args: argparse.Namespace) -> int:
     return 0 if outcome.status == "completed" else 2
 
 
+def command_re_enrich(args: argparse.Namespace) -> int:
+    result = browser_tasks.requeue_missing_enrichment(_bundle().root, args.run_id, args.platform)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0
+
+
 def command_stop(args: argparse.Namespace) -> int:
     bundle = _bundle()
     code = browser_tasks.emergency_stop(bundle.root, args.run_id) if args.emergency else browser_tasks.request_stop(bundle.root, args.run_id)
@@ -328,6 +334,7 @@ def parser() -> argparse.ArgumentParser:
     run_now = sub.add_parser("run-now"); run_now.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); run_now.add_argument("--enqueue-only", action="store_true"); run_now.add_argument("--no-open", action="store_true"); run_now.set_defaults(func=command_run_now)
     watch = sub.add_parser("watch"); watch.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); watch.add_argument("--once", action="store_true"); watch.add_argument("--enqueue-only", action="store_true"); watch.add_argument("--poll-seconds", type=int, default=60); watch.add_argument("--no-open", action="store_true"); watch.set_defaults(func=command_watch)
     resume_p = sub.add_parser("resume"); resume_p.add_argument("--run-id", type=int); resume_p.add_argument("--enqueue-only", action="store_true"); resume_p.add_argument("--no-open", action="store_true"); resume_p.set_defaults(func=command_resume)
+    enrich = sub.add_parser("re-enrich", help="queue user-invoked detail re-enrichment for durable identity-only discoveries"); enrich.add_argument("--run-id", type=int); enrich.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); enrich.set_defaults(func=command_re_enrich)
     stop = sub.add_parser("stop"); stop.add_argument("--run-id", type=int); stop.add_argument("--emergency", action="store_true"); stop.set_defaults(func=command_stop)
     dashboard = sub.add_parser("dashboard"); dashboard.add_argument("--port", type=int); dashboard.add_argument("--no-open", action="store_true"); dashboard.set_defaults(func=command_dashboard)
     audit = sub.add_parser("audit"); audit.set_defaults(func=command_audit)

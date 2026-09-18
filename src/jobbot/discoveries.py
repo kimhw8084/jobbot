@@ -10,10 +10,12 @@ from typing import Any
 DETAIL_PENDING = "PENDING"
 DETAIL_RUNNING = "RUNNING"
 DETAIL_COMPLETE = "COMPLETE"
+DETAIL_PARTIAL = "PARTIAL"
 DETAIL_RETRYABLE = "RETRYABLE"
 DETAIL_FAILED = "FAILED"
 DETAIL_EXTERNAL_BLOCKED = "EXTERNAL_BLOCKED"
 DETAIL_SKIPPED_AGE = "SKIPPED_AGE"
+DETAIL_DEFERRED_RECALL = "DEFERRED_RECALL"
 
 
 def _now() -> str:
@@ -37,6 +39,13 @@ class Discovery:
     detail_status: str
     detail_attempts: int
     card: dict[str, Any]
+    identity_status: str
+    card_metadata_status: str
+    content_state: str
+    enrichment_priority: int
+    recall_selected: bool
+    recall_qa_sample: bool
+    recall_reason: str
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> "Discovery":
@@ -54,6 +63,13 @@ class Discovery:
             observed_at=str(row["observed_at"] or row["first_seen_at"]),
             detail_status=str(row["detail_status"]), detail_attempts=int(row["detail_attempts"] or 0),
             card=card if isinstance(card, dict) else {},
+            identity_status=str(row["identity_status"] or "PERSISTED"),
+            card_metadata_status=str(row["card_metadata_status"] or "MISSING"),
+            content_state=str(row["content_state"] or "MISSING"),
+            enrichment_priority=int(row["enrichment_priority"] or 0),
+            recall_selected=bool(row["recall_selected"]),
+            recall_qa_sample=bool(row["recall_qa_sample"]),
+            recall_reason=str(row["recall_reason"] or ""),
         )
 
 
@@ -62,6 +78,8 @@ def upsert_card(
     source_job_id: str, source_url: str, title_hint: str = "", company_hint: str = "",
     location_hint: str = "", posted_text: str = "", posted_age_days: float | None = None,
     card: dict[str, Any] | None = None, eligible_for_detail: bool = True,
+    recall_selected: bool = True, recall_qa_sample: bool = False,
+    recall_reason: str = "", enrichment_priority: int = 0,
 ) -> tuple[Discovery, bool]:
     now = _now()
     row = conn.execute(
@@ -69,17 +87,24 @@ def upsert_card(
            WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?""",
         (task_id, platform, source_job_id, source_url),
     ).fetchone()
-    initial_status = DETAIL_PENDING if eligible_for_detail else DETAIL_SKIPPED_AGE
+    initial_status = (
+        DETAIL_SKIPPED_AGE if not eligible_for_detail else
+        DETAIL_PENDING if recall_selected or recall_qa_sample else DETAIL_DEFERRED_RECALL
+    )
+    metadata_status = "CAPTURED" if any((company_hint, location_hint, posted_text)) else "PARTIAL"
     payload = json.dumps(card or {}, ensure_ascii=False, sort_keys=True)
     if row is None:
         cursor = conn.execute(
             """INSERT INTO search_task_results(
               task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,
               browser_run_id,title_hint,company_hint,location_hint,posted_text,posted_age_days,
-              observed_at,card_json,detail_status
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              observed_at,card_json,detail_status,identity_status,identity_persisted_at,
+              card_metadata_status,content_state,enrichment_priority,recall_selected,recall_qa_sample,recall_reason
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (task_id, platform, source_job_id, source_url, now, now, run_id, title_hint,
-             company_hint, location_hint, posted_text, posted_age_days, now, payload, initial_status),
+             company_hint, location_hint, posted_text, posted_age_days, now, payload, initial_status,
+             "PERSISTED", now, metadata_status, "MISSING", int(enrichment_priority),
+             int(bool(recall_selected)), int(bool(recall_qa_sample)), recall_reason),
         )
         result_id = int(cursor.lastrowid)
         duplicate = False
@@ -88,16 +113,24 @@ def upsert_card(
         conn.execute(
             """UPDATE search_task_results SET
               browser_run_id=?,last_seen_at=?,sighting_count=sighting_count+1,observed_at=?,
+              identity_status='PERSISTED',identity_persisted_at=COALESCE(identity_persisted_at,?),
               title_hint=CASE WHEN ?<>'' THEN ? ELSE title_hint END,
               company_hint=CASE WHEN ?<>'' THEN ? ELSE company_hint END,
               location_hint=CASE WHEN ?<>'' THEN ? ELSE location_hint END,
               posted_text=CASE WHEN ?<>'' THEN ? ELSE posted_text END,
               posted_age_days=COALESCE(?,posted_age_days),card_json=CASE WHEN ?<>'{}' THEN ? ELSE card_json END,
-              detail_status=CASE WHEN detail_status='SKIPPED_AGE' AND ? THEN 'PENDING' ELSE detail_status END
+              card_metadata_status=CASE WHEN ? THEN 'CAPTURED' ELSE card_metadata_status END,
+              enrichment_priority=MAX(enrichment_priority,?),
+              recall_selected=MAX(recall_selected,?),recall_qa_sample=MAX(recall_qa_sample,?),
+              recall_reason=CASE WHEN ?<>'' THEN ? ELSE recall_reason END,
+              detail_status=CASE WHEN detail_status='SKIPPED_AGE' AND ? THEN
+                CASE WHEN ? OR ? THEN 'PENDING' ELSE 'DEFERRED_RECALL' END ELSE detail_status END
               WHERE result_id=?""",
-            (run_id, now, now, title_hint, title_hint, company_hint, company_hint,
+            (run_id, now, now, now, title_hint, title_hint, company_hint, company_hint,
              location_hint, location_hint, posted_text, posted_text, posted_age_days,
-             payload, payload, 1 if eligible_for_detail else 0, result_id),
+             payload, payload, int(bool(metadata_status == "CAPTURED")), int(enrichment_priority),
+             int(bool(recall_selected)), int(bool(recall_qa_sample)), recall_reason, recall_reason,
+             1 if eligible_for_detail else 0, int(bool(recall_selected)), int(bool(recall_qa_sample)), result_id),
         )
         duplicate = True
     saved = conn.execute("SELECT * FROM search_task_results WHERE result_id=?", (result_id,)).fetchone()
@@ -106,7 +139,7 @@ def upsert_card(
 
 def claim_next_detail(
     conn: sqlite3.Connection, *, run_id: int, task_id: int, worker_id: str,
-    lease_seconds: int = 180,
+    lease_seconds: int = 180, include_recall_negatives: bool = False,
 ) -> Discovery | None:
     now = _now()
     lease_until = (datetime.now(timezone.utc) + timedelta(seconds=max(15, lease_seconds))).isoformat(timespec="seconds")
@@ -117,12 +150,14 @@ def claim_next_detail(
              AND COALESCE(detail_lease_until,'')<?""",
         (run_id, task_id, now),
     )
+    statuses = "('PENDING','RETRYABLE','DEFERRED_RECALL')" if include_recall_negatives else "('PENDING','RETRYABLE')"
     row = conn.execute(
-        """SELECT * FROM search_task_results
+        f"""SELECT * FROM search_task_results
            WHERE browser_run_id=? AND task_id=?
-             AND (detail_status IN ('PENDING','RETRYABLE')
+             AND (detail_status IN {statuses}
                OR (detail_status='RUNNING' AND detail_lease_owner=?))
-           ORDER BY CASE detail_status WHEN 'RUNNING' THEN 0 WHEN 'RETRYABLE' THEN 1 ELSE 2 END,result_id
+           ORDER BY CASE WHEN recall_selected=1 THEN 0 WHEN recall_qa_sample=1 THEN 1 ELSE 2 END,
+                    CASE detail_status WHEN 'RUNNING' THEN 0 WHEN 'RETRYABLE' THEN 1 ELSE 2 END,result_id
            LIMIT 1""",
         (run_id, task_id, worker_id),
     ).fetchone()
@@ -140,12 +175,16 @@ def claim_next_detail(
     return Discovery.from_row(claimed)
 
 
-def finish_detail(conn: sqlite3.Connection, result_id: int, canonical_job_id: str | None = None) -> None:
+def finish_detail(
+    conn: sqlite3.Connection, result_id: int, canonical_job_id: str | None = None,
+    *, content_state: str = "COMPLETE",
+) -> None:
+    status = DETAIL_COMPLETE if content_state == "COMPLETE" else DETAIL_PARTIAL
     conn.execute(
         """UPDATE search_task_results SET canonical_job_id=COALESCE(?,canonical_job_id),detail_read=1,
-             detail_status='COMPLETE',detail_completed_at=?,detail_error='',detail_lease_owner='',detail_lease_until=NULL
+             detail_status=?,content_state=?,detail_completed_at=?,detail_error='',detail_lease_owner='',detail_lease_until=NULL
            WHERE result_id=?""",
-        (canonical_job_id, _now(), result_id),
+        (canonical_job_id, status, content_state, _now(), result_id),
     )
 
 
@@ -163,7 +202,7 @@ def fail_detail(conn: sqlite3.Connection, result_id: int, message: str, *, max_a
 
 def block_detail(conn: sqlite3.Connection, result_id: int, message: str) -> None:
     conn.execute(
-        """UPDATE search_task_results SET detail_status='EXTERNAL_BLOCKED',detail_error=?,
+        """UPDATE search_task_results SET detail_status='EXTERNAL_BLOCKED',content_state='MISSING',detail_error=?,
              detail_lease_owner='',detail_lease_until=NULL WHERE result_id=?""",
         (message[:1000], result_id),
     )
