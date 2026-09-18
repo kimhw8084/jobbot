@@ -1,0 +1,209 @@
+{
+  "request": "CHG-112-r3",
+  "verification_kind": "repair_and_controlled_live_acceptance",
+  "candidate_branch": "codex/jobbot-CHG-112-r3",
+  "candidate_head": "d33ea72e1253b5ca3d10735b73ddbbd20bec76b8",
+  "target_branch": "main",
+  "target_ref_checked": "origin/main",
+  "target_sha": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+  "target_drift": {
+    "head_equals_target_before_repair": true,
+    "origin_main_equals_target_before_repair": true,
+    "origin_main_equals_target_before_final_evidence": true,
+    "main_untouched": true,
+    "direct_ancestry": true,
+    "worktree_clean_before_repair": true,
+    "worktree_clean_before_final_evidence": true
+  },
+  "ancestry_and_hygiene": {
+    "candidate_parent": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "predecessor_candidate": "beff1e6c8a6225aee11d38ec77f2c853f3efd96f",
+    "predecessor_parent": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "product_tree_exact_match_predecessor": true,
+    "product_diff_reproduced": true,
+    "changed_file_count": 32,
+    "product_history_after_target": [
+      "d33ea72e1253b5ca3d10735b73ddbbd20bec76b8"
+    ],
+    "product_history_contains_evidence_only_commits": false,
+    "product_tree_has_codex_fabric_audit": false,
+    "changed_files": [
+      "README.md",
+      "REENRICH_SEARCH.command",
+      "docs/ACCEPTANCE_TEST.md",
+      "docs/ARCHITECTURE.md",
+      "docs/DATABASE.md",
+      "docs/OPERATIONS.md",
+      "docs/TROUBLESHOOTING.md",
+      "extension/common.js",
+      "extension/glassdoor.js",
+      "extension/indeed.js",
+      "extension/linkedin.js",
+      "extension/manifest.json",
+      "extension/selectors.js",
+      "extension/service_worker.js",
+      "src/jobbot/audit.py",
+      "src/jobbot/bridge/rpc.py",
+      "src/jobbot/browser_tasks.py",
+      "src/jobbot/cli.py",
+      "src/jobbot/dashboard.py",
+      "src/jobbot/discoveries.py",
+      "src/jobbot/legacy_core.py",
+      "src/jobbot/migrations/__init__.py",
+      "src/jobbot/migrations/m0015_production_integrity_states.py",
+      "src/jobbot/validator.py",
+      "src/jobbot/web/dashboard.js",
+      "tests/extension_linkedin_scope_test.js",
+      "tests/extension_primary_scope_test.js",
+      "tests/fixtures/linkedin_scope.html",
+      "tests/integration/test_browser_tasks.py",
+      "tests/integration/test_chg112_production_integrity.py",
+      "tests/integration/test_database_ledger.py",
+      "tests/integration/test_extension_refresh.py"
+    ]
+  },
+  "extension": {
+    "manifest_version": 3,
+    "version_name": "3.2.2-prod-ready.672cf88.3",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "candidate_source_identity": "sha256:35e84bb43af2585a458372f4d3dbe4e296b5e368b94721d0e3605ffd9a5cb483",
+    "candidate_source_head": "d33ea72e1253b5ca3d10735b73ddbbd20bec76b8",
+    "profile_binding": "Google Chrome Default",
+    "sync_classification": "deployment_source_current",
+    "maintenance_refresh": {
+      "identity_confirmed": true,
+      "observed_build": "3.2.2-prod-ready.672cf88.3",
+      "observed_source_identity": "sha256:35e84bb43af2585a458372f4d3dbe4e296b5e368b94721d0e3605ffd9a5cb483",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "classification": "intended_extension_reachable_and_current",
+      "reload_count": 0
+    }
+  },
+  "deterministic_validation": {
+    "full_unittest_discovery": {
+      "tests": 100,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "result": "OK"
+    },
+    "focused_chg112_integrity_tests": 7,
+    "focused_bridge_browser_extension_tests": 27,
+    "targeted_regression_suite": 67,
+    "javascript_dom_fixture_suites": [
+      "tests/extension_primary_scope_test.js",
+      "tests/extension_linkedin_scope_test.js"
+    ],
+    "doctor": "pass in isolated copied workspace",
+    "search_plan": {
+      "fast_tasks": 315,
+      "deep_tasks": 417,
+      "production_result_caps": "none"
+    },
+    "python_compile": "pass",
+    "javascript_syntax": "pass",
+    "shell_syntax": "pass",
+    "git_diff_check": "pass",
+    "micro_validator": {
+      "prod_ready": false,
+      "deterministic_preflight": "pass",
+      "database_integrity": "ok",
+      "reconciliation": "ok",
+      "extension_build_pass": true,
+      "bridge_restart_pass": true,
+      "dashboard_identity_and_refresh": true,
+      "report": "/Users/haewonkim/.codex-fabric/worktrees/CF-dc39a3e383f53d44e682f92a/out/production-validation/micro-latest.json"
+    },
+    "contract_regressions": {
+      "identity_only_rows_not_content_complete": true,
+      "missing_location_not_remote": true,
+      "remote_required_not_observed_remote": true,
+      "board_detail_not_verified_application_destination": true,
+      "unsafe_surfaces_do_not_mutate_canonical_jobs": true,
+      "stop_after_current_blocks_next_acquisition_and_preserves_resume": true,
+      "requested_observed_url_context_loss_fails_closed": true,
+      "recall_first_durably_records_negative_and_qa_release": true,
+      "platform_auth_challenge_isolation_and_recovery": true
+    }
+  },
+  "controlled_live_acceptance": {
+    "production_database_used": false,
+    "linkedin": {
+      "database": "/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg112-r3-XXXXXX.IVAAW8cJPg/linkedin.sqlite3",
+      "run_id": 1,
+      "auth_status": "not_authenticated",
+      "readiness_state": "sign_in_required",
+      "reason": "LinkedIn sign-in required",
+      "classification": "external_user_action_required",
+      "tasks": {
+        "auth_required": 1,
+        "deferred_by_platform": 2,
+        "challenged": 0
+      },
+      "cards_persisted": 0,
+      "canonical_jobs": 0,
+      "posting_detail_proof": {
+        "source_job_id": null,
+        "title": null,
+        "company": null,
+        "description_length": null,
+        "description_state": "NOT_REACHED_AUTH_REQUIRED",
+        "card_metadata_observed": false,
+        "requested_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+        "observed_url": "https://www.linkedin.com/jobs/",
+        "detail_url": null,
+        "substantive_description_proof": false
+      },
+      "no_false_ready_or_mutation": true,
+      "mandatory_gate": "FAIL: substantive current LinkedIn posting/detail proof unavailable while profile is signed out"
+    },
+    "indeed": {
+      "database": "/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg112-r3-XXXXXX.IVAAW8cJPg/indeed.sqlite3",
+      "run_id": 1,
+      "auth_status": "challenged",
+      "readiness_state": "challenged_cooldown",
+      "reason": "indeed search surface challenged: captcha",
+      "classification": "external_user_action_required",
+      "tasks": {
+        "challenged": 1,
+        "deferred_by_platform": 2,
+        "auth_required": 0
+      },
+      "bypass_attempted": false,
+      "false_ready": false
+    },
+    "glassdoor": {
+      "database": "/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg112-r3-XXXXXX.IVAAW8cJPg/glassdoor.sqlite3",
+      "run_id": 1,
+      "auth_status": "not_authenticated",
+      "readiness_state": "sign_in_required",
+      "reason": "Glassdoor sign-in required",
+      "classification": "external_user_action_required",
+      "tasks": {
+        "auth_required": 1,
+        "deferred_by_platform": 2,
+        "challenged": 0
+      },
+      "bypass_attempted": false,
+      "false_ready": false
+    },
+    "recovery": {
+      "blocked_platform_work_deferred_and_resumable": true,
+      "healthy_platform_work_not_discarded": true
+    }
+  },
+  "micro_validation_paths": {
+    "validation_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-dc39a3e383f53d44e682f92a/data/validation_20260918T025619Z.sqlite3",
+    "soak_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-dc39a3e383f53d44e682f92a/data/validation_soak_20260918T025619Z.sqlite3",
+    "semi_production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-dc39a3e383f53d44e682f92a/data/validation_semiprod_20260918T025619Z.sqlite3",
+    "report": "/Users/haewonkim/.codex-fabric/worktrees/CF-dc39a3e383f53d44e682f92a/out/production-validation/micro-latest.json"
+  },
+  "go_status": {
+    "result": "NO_GO",
+    "classification": "external_user_action_required",
+    "blocker": "LinkedIn Default profile is signed out; mandatory live substantive-description proof was not waivable",
+    "credentials_handled": false,
+    "captcha_or_challenge_bypassed": false
+  }
+}
