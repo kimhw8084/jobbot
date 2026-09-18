@@ -296,7 +296,7 @@ def resume_run(base: Path, rid: int | None = None) -> int:
         """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
              challenge_reason='',last_error=''
            WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform') AND platform IN (
-             SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND auth_status='not_authenticated'
+             SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND auth_status IN ('not_authenticated','unknown','retryable','user_action_required')
            )""", (rid, rid)
     )
     store.conn.execute(
@@ -314,14 +314,64 @@ def resume_run(base: Path, rid: int | None = None) -> int:
            )""", (rid, rid)
     )
     store.conn.execute(
-        "UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='' WHERE browser_run_id=? AND platform IN (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')",
-        (rid, rid),
+        "UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',readiness_state='unchecked',readiness_reason='',readiness_checked_at=NULL,resumed_at=? WHERE browser_run_id=? AND platform IN (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')",
+        (now, rid, rid),
     )
     store.conn.execute(
         """UPDATE browser_runs SET status='queued', completed_at=NULL, stop_requested=0,
            stop_after_current=0, last_error='', last_progress_at=? WHERE browser_run_id=?""", (now, rid)
     )
     store.conn.commit(); store.close(); return int(rid)
+
+
+def requeue_missing_enrichment(base: Path, rid: int | None = None, platforms: list[str] | None = None) -> dict[str, int]:
+    """User-invoked maintenance path for existing identity-only discoveries.
+
+    This changes only queue state. Sightings, job versions, and current ledger
+    identity remain durable; the next normal-Chrome run may re-read detail
+    surfaces with enrichment_mode=all.
+    """
+    db, _, _, _, _ = paths(base)
+    store = j.PrecisionStore(db); init_browser_schema(store.conn)
+    args: list[Any] = []
+    platform_clause = ""
+    if platforms:
+        bad = [p for p in platforms if p not in PLATFORMS]
+        if bad: raise ValueError(f"unsupported platform(s): {', '.join(bad)}")
+        platform_clause = " AND t.platform IN (" + ",".join("?" for _ in platforms) + ")"
+        args.extend(platforms)
+    run_clause = ""
+    if rid is not None:
+        run_clause = " AND r.browser_run_id=?"; args.append(int(rid))
+    rows = store.conn.execute(
+        """SELECT r.result_id,r.task_id,r.browser_run_id FROM search_task_results r
+           JOIN browser_search_tasks t ON t.task_id=r.task_id
+           WHERE (r.content_state IN ('MISSING','PARTIAL') OR r.detail_status IN ('PARTIAL','FAILED'))"""
+        + platform_clause + run_clause, args,
+    ).fetchall()
+    if not rows:
+        store.close(); return {"discoveries": 0, "tasks": 0, "runs": 0}
+    result_ids = [int(row[0]) for row in rows]
+    task_ids = sorted({int(row[1]) for row in rows})
+    run_ids = sorted({int(row[2]) for row in rows})
+    placeholders = ",".join("?" for _ in result_ids)
+    store.conn.execute(
+        f"""UPDATE search_task_results SET detail_status='RETRYABLE',content_state=CASE WHEN content_state='PARTIAL' THEN 'PARTIAL' ELSE 'MISSING' END,
+             detail_error='user-requested re-enrichment',detail_lease_owner='',detail_lease_until=NULL
+             WHERE result_id IN ({placeholders})""", result_ids,
+    )
+    task_placeholders = ",".join("?" for _ in task_ids)
+    store.conn.execute(
+        f"""UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,last_error='re-enrichment queued'
+           WHERE task_id IN ({task_placeholders}) AND status NOT IN ('challenged','auth_required','deferred_by_platform')""", task_ids,
+    )
+    run_placeholders = ",".join("?" for _ in run_ids)
+    store.conn.execute(
+        f"""UPDATE browser_runs SET enrichment_mode='all',status='queued',completed_at=NULL,stop_requested=0,stop_after_current=0,last_error='user-requested re-enrichment queued'
+           WHERE browser_run_id IN ({run_placeholders})""", run_ids,
+    )
+    store.conn.commit(); store.close()
+    return {"discoveries": len(result_ids), "tasks": len(task_ids), "runs": len(run_ids)}
 
 
 def import_database(base: Path, source: Path) -> int:

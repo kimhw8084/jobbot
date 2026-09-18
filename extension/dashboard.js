@@ -30,7 +30,7 @@ function render(value) {
     `Current task: ${run.current_task_id || 'none'} | last progress: ${run.last_progress_at || 'never'}`,
     `Last error: ${run.last_error || 'none'}`, '',
   ];
-  for (const platform of value.platforms || []) lines.push(`${platform.platform.padEnd(10)} auth=${String(platform.auth_status || '').padEnd(17)} exhausted=${platform.tasks_completed}/${platform.tasks_total} incomplete=${platform.tasks_incomplete} challenged=${platform.tasks_challenged} failed=${platform.tasks_failed} jobs=${platform.jobs_recorded}`);
+  for (const platform of value.platforms || []) lines.push(`${platform.platform.padEnd(10)} auth=${String(platform.auth_status || '').padEnd(17)} readiness=${String(platform.readiness_state || '').padEnd(20)} exhausted=${platform.tasks_completed}/${platform.tasks_total} incomplete=${platform.tasks_incomplete} challenged=${platform.tasks_challenged} failed=${platform.tasks_failed} jobs=${platform.jobs_recorded}${platform.readiness_reason ? ` · ${platform.readiness_reason}` : ''}`);
   const counts = {};
   for (const task of value.tasks || []) { const key = `${task.platform}/${task.status}`; counts[key] = (counts[key] || 0) + 1; }
   lines.push(''); for (const [key, count] of Object.entries(counts).sort()) lines.push(`${key.padEnd(30)} ${count}`);

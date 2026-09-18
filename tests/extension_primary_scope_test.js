@@ -116,3 +116,82 @@ for (const spec of specs.slice(1)) {
   assert.deepStrictEqual(inspected.result_links, []);
 }
 console.log('Indeed and Glassdoor missing-scope fixtures passed: fail-closed');
+
+function authProbe(platform, html, href) {
+  const root = parseHtml(html);
+  global.location = { href, pathname: new URL(href).pathname, host: new URL(href).host };
+  global.document = { body: root, title: platform, querySelector: root.querySelector.bind(root), querySelectorAll: root.querySelectorAll.bind(root) };
+  let authListener;
+  global.chrome = { runtime: { onMessage: { addListener(fn) { authListener = fn; } } } };
+  vm.runInThisContext(fs.readFileSync(`extension/${platform}.js`, 'utf8'), { filename: `extension/${platform}.js` });
+  let value;
+  authListener({ type: 'JOBBOT_INSPECT_AUTH' }, null, (result) => { value = result; });
+  return value;
+}
+
+const indeedMissingPositive = authProbe('indeed', '<main></main>', 'https://www.indeed.com/');
+assert.strictEqual(indeedMissingPositive.authenticated, false);
+assert.strictEqual(indeedMissingPositive.auth_state, 'unknown');
+assert.strictEqual(indeedMissingPositive.login_required, false);
+assert.match(indeedMissingPositive.reason, /unverified/i);
+const indeedChallenge = authProbe('indeed', '<main>CAPTCHA verification required</main>', 'https://www.indeed.com/');
+assert.strictEqual(indeedChallenge.authenticated, false);
+assert.strictEqual(indeedChallenge.challenged, true);
+assert.strictEqual(indeedChallenge.auth_state, 'challenged_cooldown');
+const indeedCleared = authProbe('indeed', '<main><a href="/myjobs">My Jobs</a></main>', 'https://www.indeed.com/');
+assert.strictEqual(indeedCleared.authenticated, true);
+assert.strictEqual(indeedCleared.auth_state, 'verified');
+
+const glassdoorMissingPositive = authProbe('glassdoor', '<main></main>', 'https://www.glassdoor.com/');
+assert.strictEqual(glassdoorMissingPositive.authenticated, false);
+assert.strictEqual(glassdoorMissingPositive.auth_state, 'unknown');
+assert.strictEqual(glassdoorMissingPositive.login_required, false);
+const glassdoorCleared = authProbe('glassdoor', '<main>Notifications · My Jobs</main>', 'https://www.glassdoor.com/');
+assert.strictEqual(glassdoorCleared.authenticated, true);
+assert.strictEqual(glassdoorCleared.auth_state, 'verified');
+
+function searchProbe(platform, html, href, title = `${platform} jobs`) {
+  const root = parseHtml(html);
+  const parsed = new URL(href);
+  global.location = { href, pathname: parsed.pathname, host: parsed.host };
+  global.document = { body: root, title, querySelector: root.querySelector.bind(root), querySelectorAll: root.querySelectorAll.bind(root) };
+  let searchListener;
+  global.chrome = { runtime: { onMessage: { addListener(fn) { searchListener = fn; } } } };
+  vm.runInThisContext(fs.readFileSync(`extension/${platform}.js`, 'utf8'), { filename: `extension/${platform}.js` });
+  let value;
+  searchListener({ type: 'JOBBOT_INSPECT_SEARCH' }, null, (result) => { value = result; });
+  return value;
+}
+
+const linkedinReadyWithoutAccountMarker = searchProbe(
+  'linkedin', fs.readFileSync('tests/fixtures/linkedin_scope.html', 'utf8'),
+  'https://www.linkedin.com/jobs/search/?keywords=patient', 'LinkedIn jobs search',
+);
+assert.strictEqual(linkedinReadyWithoutAccountMarker.ready, true);
+assert.strictEqual(linkedinReadyWithoutAccountMarker.auth_state, 'verified');
+assert.strictEqual(linkedinReadyWithoutAccountMarker.login_required, false);
+
+const linkedinLogin = authProbe('linkedin', '<main><h1>Sign in to continue</h1><button data-tracking-control-name="signin">Sign in</button></main>', 'https://www.linkedin.com/login');
+assert.strictEqual(linkedinLogin.auth_state, 'sign_in_required');
+assert.strictEqual(linkedinLogin.login_required, true);
+
+const glassdoorReadyWithoutAccountMarker = searchProbe(
+  'glassdoor', fs.readFileSync('tests/fixtures/glassdoor_scope.html', 'utf8'),
+  'https://www.glassdoor.com/Job/remote-patient-jobs-SRCH_IL.0,6_IS11047_KO7,21.htm', 'Glassdoor jobs',
+);
+assert.strictEqual(glassdoorReadyWithoutAccountMarker.ready, true);
+assert.strictEqual(glassdoorReadyWithoutAccountMarker.auth_state, 'verified');
+const glassdoorLogin = authProbe('glassdoor', '<main><h1>Sign in to continue</h1><button data-test="sign-in-button">Sign in</button></main>', 'https://www.glassdoor.com/profile/login');
+assert.strictEqual(glassdoorLogin.auth_state, 'sign_in_required');
+
+const indeedChallengedSearch = searchProbe('indeed', '<main><h1>Verify you are human</h1><div>CAPTCHA</div></main>', 'https://www.indeed.com/jobs?q=patient&l=Remote');
+assert.strictEqual(indeedChallengedSearch.auth_state, 'challenged_cooldown');
+assert.strictEqual(indeedChallengedSearch.login_required, false);
+assert.strictEqual(indeedChallengedSearch.ready, false);
+const indeedVerifiedEmpty = searchProbe('indeed', '<main><h1>No jobs matching your search</h1></main>', 'https://www.indeed.com/jobs?q=patient&l=Remote');
+assert.strictEqual(indeedVerifiedEmpty.ready, true);
+assert.strictEqual(indeedVerifiedEmpty.auth_state, 'verified');
+const glassdoorVerifiedEmpty = searchProbe('glassdoor', '<main><h1>No jobs match your search</h1></main>', 'https://www.glassdoor.com/Job/remote-patient-jobs-SRCH_IL.0,6_IS11047_KO7,21.htm');
+assert.strictEqual(glassdoorVerifiedEmpty.ready, true);
+assert.strictEqual(glassdoorVerifiedEmpty.auth_state, 'verified');
+console.log('Big-3 auth/readiness fixtures passed: unknown is not sign-in, usable search is ready, login and challenge remain distinct');

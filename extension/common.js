@@ -2,6 +2,12 @@
   'use strict';
   const clean = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
   const clip = (v, n=160000) => clean(v).slice(0,n);
+  const normalizeTitle = (v) => {
+    const title=clean(v), tokens=title.split(/\s+/);
+    if(tokens.length<4||tokens.length%2)return title;
+    const half=tokens.length/2, left=tokens.slice(0,half).join(' '), right=tokens.slice(half).join(' ');
+    return left.toLocaleLowerCase()===right.toLocaleLowerCase()&&half>=2?left:title;
+  };
   const textOf = (el) => clean(el?.innerText || el?.textContent || '');
   const firstText = (selectors) => {
     for (const s of selectors) { const el=document.querySelector(s); const t=textOf(el); if(t) return t; }
@@ -34,6 +40,28 @@
     const signals=['additional verification required','verify you are human','security check','checking your browser','just a moment','captcha','unusual traffic','access denied','challenge-platform','cf-chl','security verification','challenge required'];
     const hit=signals.find((x)=>body.includes(x)||title.includes(x)||url.includes(x));
     return hit?{challenged:true,reason:hit}:{challenged:false,reason:''};
+  };
+  const authWallInfo = (selectors=[], urlPattern=/(?:^|\/)(?:login|signin|sign-in|authwall|checkpoint)(?:\/|$)/i) => {
+    const body=clean(document.body?.innerText||'').toLowerCase(), title=clean(document.title).toLowerCase(), url=location.href;
+    const urlHit=urlPattern.test(url);
+    const phraseHit=['sign in to continue','log in to continue','login required','sign-in required','please sign in','please log in','you must sign in','you must log in','join to view','member login'].find((x)=>body.includes(x)||title.includes(x));
+    const control=selectors.map((selector)=>document.querySelector(selector)).find((el)=>el&&/sign[ -]?in|log[ -]?in|login|authenticate|join/i.test(`${textOf(el)} ${el.getAttribute?.('aria-label')||''}`));
+    const reason=urlHit?'known authentication URL':phraseHit|| (control?'explicit sign-in control':'');
+    return{required:!!reason,reason};
+  };
+  const positiveAuthInfo = (selectors=[], phrases=[]) => {
+    const body=clean(document.body?.innerText||'').toLowerCase();
+    const phrase=phrases.map((x)=>clean(x).toLowerCase()).find((x)=>x&&body.includes(x));
+    const selector=selectors.find((s)=>!!document.querySelector(s));
+    return{positive:!!(phrase||selector),reason:phrase||selector||''};
+  };
+  const pageSurface = () => {
+    const body=clean(document.body?.innerText||'').toLowerCase(), title=clean(document.title).toLowerCase(), url=location.href.toLowerCase();
+    const challenge=challengeInfo(); if(challenge.challenged)return{surface:'challenge',reason:challenge.reason};
+    if(/\/login|\/signin|\/sign-in|\/authwall|\/checkpoint|secure\./.test(url)||/sign in|log in|login required/.test(title))return{surface:'login',reason:'sign-in required'};
+    const error=['tunnel connection failed','could not establish connection','receiving end does not exist','page load timed out','temporarily unavailable','something went wrong','error loading'].find(x=>body.includes(x)||title.includes(x)||url.includes(x));
+    if(error)return{surface:'error',reason:error};
+    return{surface:'job',reason:''};
   };
   const parseAgeDays = (raw) => {
     const s=clean(raw).toLowerCase(); if(!s) return null;
@@ -76,5 +104,5 @@
     const reason=[...phrases,...defaults].map(x=>clean(x).toLowerCase()).find(x=>x&&body.includes(x));
     return {exhausted:!!reason,reason:reason||''};
   };
-  globalThis.JobBotCommon={clean,clip,textOf,firstText,headingSectionText,firstAttr,absoluteUrl,challengeInfo,parseAgeDays,parseJsonLdJob,scrollResults,exhaustionInfo};
+  globalThis.JobBotCommon={clean,clip,normalizeTitle,textOf,firstText,headingSectionText,firstAttr,absoluteUrl,challengeInfo,authWallInfo,positiveAuthInfo,pageSurface,parseAgeDays,parseJsonLdJob,scrollResults,exhaustionInfo};
 })();

@@ -24,7 +24,8 @@ TABLE_COLUMNS = (
     "job_id", "recommendation", "title", "company", "career_lane", "sources", "posted_at",
     "first_seen", "last_seen", "salary_text", "employment_class", "remote_gate", "eligible_states_json", "location_raw",
     "relevance_score", "qualification_score", "landing_score", "career_score", "door_score",
-    "resume_variant", "application_status", "change_status", "description_state",
+    "resume_variant", "application_status", "change_status", "description_state", "content_state",
+    "location_evidence_state", "remote_evidence_state", "apply_destination_state", "source_verification",
 )
 
 
@@ -52,8 +53,13 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
     queries = {
         "total": "SELECT COUNT(*) FROM jobs", "active": "SELECT COUNT(*) FROM jobs WHERE is_active=1",
         "updated": "SELECT COUNT(*) FROM jobs WHERE change_status='UPDATED'",
-        "descriptions_complete": "SELECT COUNT(*) FROM jobs WHERE length(trim(COALESCE(description,''))) >= 250",
-        "remote_confirmed": "SELECT COUNT(*) FROM jobs WHERE remote_gate='pass'",
+        "identity_captured": "SELECT COUNT(*) FROM search_task_results WHERE identity_status='PERSISTED'",
+        "card_metadata_captured": "SELECT COUNT(*) FROM search_task_results WHERE card_metadata_status='CAPTURED'",
+        "descriptions_complete": "SELECT COUNT(*) FROM jobs WHERE content_state='COMPLETE'",
+        "enrichment_pending": "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','DEFERRED_RECALL','EXTERNAL_BLOCKED','PARTIAL')",
+        "enrichment_partial": "SELECT COUNT(*) FROM search_task_results WHERE detail_status='PARTIAL' OR content_state='PARTIAL'",
+        "enrichment_complete": "SELECT COUNT(*) FROM search_task_results WHERE detail_status='COMPLETE' AND content_state='COMPLETE'",
+        "remote_confirmed": "SELECT COUNT(*) FROM jobs WHERE remote_gate='pass' AND remote_evidence_state='OBSERVED'",
         "remote_review": "SELECT COUNT(*) FROM jobs WHERE remote_gate='review'",
         "remote_rejected": "SELECT COUNT(*) FROM jobs WHERE remote_gate='reject'",
         "qualified": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')",
@@ -70,8 +76,10 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
         "offers": "SELECT COUNT(*) FROM jobs WHERE upper(application_status)='OFFER'",
         "applications": "SELECT COUNT(*) FROM application_events",
         "discoveries": "SELECT COUNT(*) FROM search_task_results",
-        "detail_pending": "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",
-        "details_complete": "SELECT COUNT(*) FROM search_task_results WHERE detail_status='COMPLETE'",
+        "detail_pending": "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','DEFERRED_RECALL','EXTERNAL_BLOCKED','PARTIAL')",
+        "details_complete": "SELECT COUNT(*) FROM search_task_results WHERE detail_status='COMPLETE' AND content_state='COMPLETE'",
+        "location_unknown": "SELECT COUNT(*) FROM jobs WHERE location_evidence_state='UNKNOWN'",
+        "observed_application_destinations": "SELECT COUNT(*) FROM jobs WHERE apply_destination_state='OBSERVED'",
     }
     return {key: int(conn.execute(sql).fetchone()[0] or 0) for key, sql in queries.items()}
 
@@ -139,7 +147,7 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
           COALESCE((SELECT COUNT(*) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND t.status='running'),0) running,
           COALESCE((SELECT COUNT(*) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND t.status='deferred_by_platform'),0) deferred,
           COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) discoveries,
-          COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND r.detail_status='COMPLETE'),0) details_complete,
+          COALESCE((SELECT COUNT(*) FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform AND r.detail_status='COMPLETE' AND r.content_state='COMPLETE'),0) details_complete,
           COALESCE((SELECT SUM(t.cards_extracted) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) cards_extracted,
           COALESCE((SELECT SUM(t.cards_persistence_succeeded) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) cards_persisted,
           COALESCE((SELECT SUM(t.cards_persistence_failed) FROM browser_search_tasks t WHERE t.browser_run_id=p.browser_run_id AND t.platform=p.platform),0) cards_failed,
@@ -243,7 +251,7 @@ def control_run(conn: sqlite3.Connection, action: str, requested_run_id: Any = N
                    challenge_reason='',last_error=''
                WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform')
                  AND platform IN (SELECT platform FROM browser_platform_runs
-                                  WHERE browser_run_id=? AND auth_status='not_authenticated')""",
+                                  WHERE browser_run_id=? AND auth_status IN ('not_authenticated','unknown','retryable','user_action_required'))""",
             (run_id, run_id),
         )
         conn.execute(
@@ -262,10 +270,10 @@ def control_run(conn: sqlite3.Connection, action: str, requested_run_id: Any = N
             (run_id, run_id),
         )
         conn.execute(
-            """UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason=''
+            """UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',readiness_state='unchecked',readiness_reason='',readiness_checked_at=NULL,resumed_at=?
                WHERE browser_run_id=? AND platform IN
                  (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')""",
-            (run_id, run_id),
+            (now, run_id, run_id),
         )
         conn.execute(
             """UPDATE browser_runs SET status='queued',completed_at=NULL,stop_requested=0,
@@ -290,16 +298,20 @@ def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "
     status_clause = ""
     args: list[Any] = [max(1, min(500, int(limit)))]
     if status:
-        status_clause = " WHERE r.detail_status=?"
-        args.insert(0, status.upper())
+        if status.upper() == "PENDING":
+            status_clause = " WHERE r.detail_status IN ('PENDING','RUNNING','RETRYABLE','DEFERRED_RECALL','EXTERNAL_BLOCKED','PARTIAL')"
+        else:
+            status_clause = " WHERE r.detail_status=?"
+            args.insert(0, status.upper())
     rows = conn.execute(
         """SELECT r.result_id,r.browser_run_id,r.task_id,r.source_site platform,r.source_job_id,
           r.title_hint,r.company_hint,r.location_hint,r.posted_text,r.posted_age_days,r.observed_at,
-          r.detail_status,r.detail_attempts,r.detail_error,r.source_url,r.canonical_job_id,t.query_text
+          r.detail_status,r.detail_attempts,r.detail_error,r.source_url,r.canonical_job_id,t.query_text,
+          r.identity_status,r.card_metadata_status,r.content_state,r.enrichment_priority,r.recall_selected,r.recall_qa_sample,r.recall_reason
           FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id""" + status_clause + " ORDER BY r.result_id DESC LIMIT ?", args,
     ).fetchall()
     pending = int(conn.execute(
-        "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')"
+        "SELECT COUNT(*) FROM search_task_results WHERE detail_status IN ('PENDING','RUNNING','RETRYABLE','DEFERRED_RECALL','EXTERNAL_BLOCKED','PARTIAL')"
     ).fetchone()[0])
     return {"pending": pending, "discoveries": [_dict(row) for row in rows]}
 
@@ -353,7 +365,8 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
       COALESCE((SELECT group_concat(DISTINCT source_site) FROM source_occurrences o WHERE o.job_id=j.job_id),'') sources,
       j.posted_at,j.first_seen,j.last_seen,j.salary_text,j.employment_class,j.remote_gate,j.eligible_states_json,j.location_raw,
       j.relevance_score,j.qualification_score,j.landing_score,j.career_score,j.door_score,
-      j.resume_variant,j.application_status,j.change_status,j.description_state
+      j.resume_variant,j.application_status,j.change_status,j.description_state,j.content_state,
+      j.location_evidence_state,j.remote_evidence_state,j.apply_destination_state,j.source_verification
       FROM jobs j WHERE {where} ORDER BY COALESCE(j.application_priority_score,j.door_score,0) DESC,j.last_seen DESC
       LIMIT ? OFFSET ?""", [*args, page_size, (page - 1) * page_size]).fetchall()
     return {"page": page, "page_size": page_size, "total": total, "columns": TABLE_COLUMNS, "jobs": [_dict(row) for row in rows]}

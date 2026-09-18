@@ -43,6 +43,22 @@ soak, and semi-production databases; it never opens `data/jobs.sqlite3`.
 
 A site challenge or authentication page is an external incomplete state, not a pass. Clear it manually through normal browsing, wait for the configured cooldown when challenged, then resume.
 
+Discovery and enrichment are separate durable stages. Every scoped card identity
+is retained in `search_task_results` first; `identity_status=PERSISTED` does not
+mean its detail is complete. `content_state` is `MISSING`, `PARTIAL`, or
+`COMPLETE`, and only the last state is content-complete. Use the user-invoked
+maintenance path to re-read existing incomplete identities without deleting
+sightings or immutable history:
+
+```bash
+./REENRICH_SEARCH.command [--run-id ID] [--platform linkedin]
+```
+
+`remote_required` is search intent, not observed evidence. Missing locations
+remain unknown, and a board detail URL is a source occurrence rather than a
+verified application destination. Dashboard scores are triage signals until
+substantive detail evidence is complete.
+
 ## Today’s fast path
 
 After the extension is loaded and the desired sites are signed in, use the
@@ -90,6 +106,7 @@ After installation, run commands from the repository root:
 .venv/bin/python -m jobbot watch --once
 .venv/bin/python -m jobbot validate-production
 .venv/bin/python -m jobbot resume
+.venv/bin/python -m jobbot re-enrich --platform linkedin
 .venv/bin/python -m jobbot stop
 .venv/bin/python -m jobbot stop --emergency
 .venv/bin/python -m jobbot dashboard

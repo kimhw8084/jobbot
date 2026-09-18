@@ -40,7 +40,12 @@ inactive tabs). They should not steal focus from the application you are using.
 
 ## Authentication or challenge
 
-Use `OPEN_BIG3_LOGINS.command` and sign in normally in the same Chrome profile. JobBot intentionally records `AUTH_REQUIRED` or `CHALLENGED`, checkpoints the task, cools down that platform, and continues other platforms. It will not solve or bypass verification.
+Use `OPEN_BIG3_LOGINS.command` and sign in normally in the same Chrome profile. JobBot probes the requested search URL when landing-page account markers are inconclusive: usable scoped results establish readiness, an explicit login/authwall records `AUTH_REQUIRED`, and a CAPTCHA/challenge records `CHALLENGED` without declaring the account signed out. It will not solve or bypass verification. Resume only after the ordinary-Chrome surface is manually clear; the next run rechecks readiness before acquiring that platform’s deferred work.
+
+If a run has durable identities but missing detail content, use
+`./REENRICH_SEARCH.command --platform linkedin` (or the appropriate platform)
+after confirming the intended profile is ready. This is a user-invoked queue
+operation; it preserves sightings, versions, and prior evidence.
 
 ## Search marked incomplete
 
