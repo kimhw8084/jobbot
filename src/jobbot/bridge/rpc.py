@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import re
 import secrets
 import sys
 from datetime import datetime, timedelta, timezone
@@ -18,6 +20,9 @@ from ..strategy_runtime import fallback_activation_enabled, with_fallback_activa
 
 BASE = PROJECT_ROOT
 j.VERSION=v3.V3_VERSION; j.c.VERSION=v3.V3_VERSION
+
+AUTH_STATES = {'unchecked', 'verified', 'not_authenticated', 'unknown'}
+READINESS_STATES = {'unchecked', 'verified', 'resumed', 'sign_in_required', 'challenged_cooldown', 'retryable', 'unknown', 'unverified', 'user_action_required'}
 
 
 def log(msg:str)->None: print(f"[jobbot-rpc] {msg}",file=sys.stderr,flush=True)
@@ -228,6 +233,64 @@ def platform_order_sql()->str:return "CASE platform WHEN 'linkedin' THEN 0 WHEN 
 
 def phase_order_sql()->str:return "CASE phase WHEN 'A_FASTEST_DOOR_RECENT' THEN 0 WHEN 'B_REMAINING_CORE_RECENT' THEN 1 WHEN 'C_DEEP_BACKFILL' THEN 2 ELSE 9 END"
 
+
+def _auth_state(msg: dict[str, Any], authenticated: bool, reason: str) -> str:
+    explicit = j.clean_text(msg.get('auth_state') or '').lower()
+    if authenticated or explicit == 'verified':
+        return 'verified'
+    if explicit in AUTH_STATES - {'unchecked', 'verified'}:
+        return explicit
+    lowered = reason.lower()
+    if any(value in lowered for value in ('sign in', 'sign-in', 'log in', 'log-in', 'login', 'not authenticated', 'authentication required')):
+        return 'not_authenticated'
+    return 'unknown'
+
+
+def _overall_auth_state(states: list[str]) -> str:
+    if not states:
+        return 'unchecked'
+    if all(value == 'verified' for value in states):
+        return 'verified'
+    if any(value == 'verified' for value in states):
+        return 'partial'
+    if any(value == 'not_authenticated' for value in states):
+        return 'not_authenticated'
+    if any(value == 'unknown' for value in states):
+        return 'unknown'
+    return 'unchecked'
+
+
+def _recall_decision(strategy: dict[str, Any], platform: str, title: str, source_job_id: str, source_url: str) -> tuple[bool, bool, str, int]:
+    """Use the existing high-recall prefilter only for enrichment ordering."""
+    probe = j.Job(source_site=platform, source_job_id=source_job_id,
+                  canonical_url=source_url, title=title, remote_status="unknown")
+    selected, reason = j.recall_prefilter(probe, strategy)
+    sample_key = f"{platform}|{source_job_id}|{source_url}".encode("utf-8", errors="ignore")
+    qa_sample = int(hashlib.sha256(sample_key).hexdigest()[:8], 16) % 20 == 0
+    return bool(selected), bool(qa_sample), j.clean_text(reason), 0 if selected else (1 if qa_sample else 2)
+
+
+def _pending_detail_count(conn, task_id: int) -> int:
+    return int(conn.execute(
+        "SELECT COUNT(*) FROM search_task_results WHERE task_id=? "
+        "AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED','DEFERRED_RECALL','PARTIAL')",
+        (task_id,),
+    ).fetchone()[0] or 0)
+
+
+def _unsafe_detail_reason(detail: dict[str, Any], title: str, page_url: str) -> str:
+    surface = j.clean_text(detail.get("page_type") or detail.get("surface") or "").lower()
+    haystack = " ".join((surface, title, page_url, j.clean_text(detail.get("challenge_reason") or ""))).lower()
+    markers = (
+        "tunnel connection failed", "could not establish connection", "receiving end does not exist",
+        "page load timed out", "sign in", "log in", "login", "checkpoint", "authwall",
+        "captcha", "challenge", "access denied", "security check", "temporarily unavailable",
+    )
+    if surface in {"error", "login", "challenge", "interstitial"}:
+        return surface
+    hit = next((marker for marker in markers if marker in haystack), "")
+    return hit
+
 def refresh_task_counters(conn, rid:int)->None:
     """Derive status counters from durable task rows after resume/state changes."""
     counts=conn.execute("""SELECT
@@ -275,7 +338,8 @@ def refresh_result_reconciliation(conn, rid:int, tid:int)->None:
         (rid, tid),
     ).fetchone()[0] or 0)
     pending_details = int(conn.execute(
-        "SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",
+        "SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND task_id=? "
+        "AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED','DEFERRED_RECALL','PARTIAL')",
         (rid, tid),
     ).fetchone()[0] or 0)
     detail_failures = int(conn.execute(
@@ -368,22 +432,51 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                WHERE browser_run_id=? AND status='running' AND (lease_until IS NULL OR lease_until<?)""",(rid,expired))
             conn.execute("UPDATE browser_runs SET status='running',started_at=COALESCE(started_at,?),completed_at=NULL,last_progress_at=?,last_error='' WHERE browser_run_id=?",(now,now,rid));event(conn,rid,None,'run_started','normal Chrome platform-first run started',msg,out);conn.commit();return {'ok':True}
         if action=='platform_auth_result':
-            rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform'));ok=bool(msg.get('authenticated'));reason=j.clean_text(msg.get('reason') or '')
-            conn.execute("UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=? WHERE browser_run_id=? AND platform=?",('verified' if ok else 'not_authenticated',reason,j.now_iso(),rid,platform))
-            if not ok:
+            rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform'));ok=bool(msg.get('authenticated'));reason=j.clean_text(msg.get('reason') or '');auth_state=_auth_state(msg,ok,reason)
+            checked=j.now_iso()
+            readiness = 'verified' if auth_state=='verified' else ('sign_in_required' if auth_state=='not_authenticated' else 'retryable')
+            conn.execute("""UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=?,
+              readiness_state=?,readiness_reason=?,readiness_checked_at=?,resumed_at=CASE WHEN ? THEN ? ELSE resumed_at END
+              WHERE browser_run_id=? AND platform=?""",
+              (auth_state,reason,checked,readiness,reason,checked,int(auth_state=='verified'),checked,rid,platform))
+            if auth_state != 'verified':
                 tid=int(msg.get('task_id') or 0)
-                conn.execute("""UPDATE browser_search_tasks SET status='auth_required',completed_at=?,last_error=?,lease_owner='',lease_until=NULL
-                  WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",(j.now_iso(),reason,rid,platform,tid,tid))
+                task_status='auth_required' if auth_state=='not_authenticated' else 'deferred_by_platform'
+                conn.execute("""UPDATE browser_search_tasks SET status=?,completed_at=?,last_error=?,lease_owner='',lease_until=NULL
+                  WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",
+                  (task_status,j.now_iso(),reason,rid,platform,tid,tid))
                 conn.execute("""UPDATE browser_search_tasks SET status='deferred_by_platform',completed_at=NULL,last_error=?,lease_owner='',lease_until=NULL
                   WHERE browser_run_id=? AND platform=? AND status='queued'""",(reason,rid,platform))
             states=[x['auth_status'] for x in conn.execute("SELECT auth_status FROM browser_platform_runs WHERE browser_run_id=?",(rid,))]
-            overall='verified' if states and all(x=='verified' for x in states) else ('partial' if any(x=='verified' for x in states) else 'not_authenticated')
+            overall=_overall_auth_state(states)
             conn.execute("UPDATE browser_runs SET auth_status=?,last_progress_at=? WHERE browser_run_id=?",(overall,j.now_iso(),rid));event(conn,rid,None,'auth_verified' if ok else 'auth_failed',f'{platform}: {reason}',msg,out);conn.commit();return {'ok':True}
+        if action=='platform_readiness':
+            rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform'));status=j.clean_text(msg.get('status') or 'retryable').lower();reason=j.clean_text(msg.get('reason') or 'platform search surface not verified');now=j.now_iso()
+            if status not in READINESS_STATES - {'unchecked','challenged_cooldown'}: status='retryable'
+            explicit_auth=j.clean_text(msg.get('auth_state') or '').lower()
+            auth_status='verified' if status in {'verified','resumed'} else (explicit_auth if explicit_auth in AUTH_STATES - {'unchecked'} else 'unknown')
+            if status=='sign_in_required': auth_status='not_authenticated'
+            conn.execute("""UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=?,readiness_state=?,readiness_reason=?,readiness_checked_at=?,resumed_at=CASE WHEN ? THEN ? ELSE resumed_at END
+              WHERE browser_run_id=? AND platform=?""",(auth_status,reason,now,status,reason,now,int(status in {'verified','resumed'}),now,rid,platform))
+            if status not in {'verified','resumed'}:
+                tid=int(msg.get('task_id') or 0)
+                conn.execute("""UPDATE browser_search_tasks SET status='deferred_by_platform',completed_at=NULL,last_error=?,lease_owner='',lease_until=NULL
+                  WHERE browser_run_id=? AND platform=? AND status IN ('queued','running') AND (?=0 OR task_id=?)""",(reason,rid,platform,tid,tid))
+                conn.execute("""UPDATE browser_search_tasks SET status='deferred_by_platform',completed_at=NULL,last_error=?,lease_owner='',lease_until=NULL
+                  WHERE browser_run_id=? AND platform=? AND status='queued'""",(reason,rid,platform))
+            states=[x['auth_status'] for x in conn.execute("SELECT auth_status FROM browser_platform_runs WHERE browser_run_id=?",(rid,))]
+            conn.execute("UPDATE browser_runs SET auth_status=?,last_progress_at=? WHERE browser_run_id=?",(_overall_auth_state(states),now,rid))
+            event(conn,rid,None,'platform_readiness',f'{platform}: {status} — {reason}',msg,out);conn.commit();return {'ok':True,'platform':platform,'readiness_state':status}
         if action=='pause_platform':
             rid=int(msg.get('run_id') or 0); platform=j.clean_text(msg.get('platform')); reason=j.clean_text(msg.get('reason') or 'platform challenge'); tid=int(msg.get('task_id') or 0)
             hours=float(cfg.get('runtime',{}).get('challenge_cooldown_hours',12) or 12)
             cooldown=(datetime.now(timezone.utc)+timedelta(hours=hours)).isoformat(timespec='seconds')
-            conn.execute("UPDATE browser_platform_runs SET auth_status='challenged',auth_reason=?,cooldown_until=? WHERE browser_run_id=? AND platform=?",(reason,cooldown,rid,platform))
+            current=conn.execute("SELECT auth_status FROM browser_platform_runs WHERE browser_run_id=? AND platform=?",(rid,platform)).fetchone()
+            requested_auth=j.clean_text(msg.get('auth_state') or '').lower()
+            auth_status=requested_auth if requested_auth in AUTH_STATES - {'unchecked'} else ('verified' if current and current['auth_status']=='verified' else 'unknown')
+            conn.execute("""UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,cooldown_until=?,
+              readiness_state='challenged_cooldown',readiness_reason=?,readiness_checked_at=?
+              WHERE browser_run_id=? AND platform=?""",(auth_status,reason,cooldown,reason,j.now_iso(),rid,platform))
             active=conn.execute("""SELECT task_id FROM browser_search_tasks
               WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",(rid,platform,tid,tid)).fetchall()
             deferred_count=int(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND platform=? AND status='queued'",(rid,platform)).fetchone()[0])
@@ -394,11 +487,17 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if active:
                 conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=?",(len(active),rid))
                 conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+? WHERE browser_run_id=? AND platform=?",(len(active),rid,platform))
+            states=[x['auth_status'] for x in conn.execute("SELECT auth_status FROM browser_platform_runs WHERE browser_run_id=?",(rid,))]
+            conn.execute("UPDATE browser_runs SET auth_status=?,last_progress_at=? WHERE browser_run_id=?",(_overall_auth_state(states),j.now_iso(),rid))
             event(conn,rid,None,'platform_paused',f'{platform}: {reason}',msg,out);conn.commit();return {'ok':True,'tasks_paused':len(active)+deferred_count,'tasks_challenged':len(active),'tasks_deferred':deferred_count}
         if action=='next_task':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
             if int(r['stop_requested'] or 0):return {'ok':True,'stop':True}
+            # The active atomic task checks stop_after_current after its last
+            # detail. No new task may be leased after that latch is set.
+            if int(r['stop_after_current'] or 0):
+                return {'ok':True,'stop':True,'stop_after_current':True}
             now=j.now_iso(); owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
             conn.execute("UPDATE browser_search_tasks SET status='queued',lease_owner='',lease_until=NULL WHERE browser_run_id=? AND status='running' AND lease_until IS NOT NULL AND lease_until<?",(rid,now))
             t=conn.execute(f"""SELECT * FROM browser_search_tasks
@@ -417,7 +516,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 eligible=[]
                 for candidate in queued:
                     state=platform_states.get(candidate['platform'])
-                    if not state or state['auth_status'] in {'challenged','not_authenticated'}:
+                    if not state or state['auth_status'] in {'not_authenticated','retryable','user_action_required','unknown'} or state['readiness_state'] in {'challenged_cooldown','sign_in_required','retryable','unknown','unverified','user_action_required'}:
                         continue
                     cooldown=str(state['cooldown_until'] or '')
                     if cooldown and cooldown>now:
@@ -449,18 +548,26 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             try: posted_age=float(msg['posted_age_days']) if msg.get('posted_age_days') is not None else None
             except (TypeError,ValueError): posted_age=None
             card=msg.get('card') if isinstance(msg.get('card'),dict) else {}
+            selected,qa_sample,recall_reason,enrichment_priority=_recall_decision(
+                strategy, source, j.clean_text(msg.get('title_hint') or card.get('title')),
+                sid, url,
+            )
             discovery,duplicate=upsert_card(conn,run_id=rid,task_id=tid,platform=source,source_job_id=sid,source_url=url,
                 title_hint=j.clean_text(msg.get('title_hint') or card.get('title')),company_hint=j.clean_text(msg.get('company_hint') or card.get('company')),
                 location_hint=j.clean_text(msg.get('location_hint') or card.get('location')),posted_text=j.clean_text(msg.get('posted_text') or card.get('posted_text')),
-                posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)))
+                posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)),
+                recall_selected=selected,recall_qa_sample=qa_sample,recall_reason=recall_reason,
+                enrichment_priority=enrichment_priority)
             if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
-            pending_count=conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",(tid,)).fetchone()[0]
+            pending_count=_pending_detail_count(conn,tid)
             event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status,'pending_count':int(pending_count)}
         if action=='next_pending_detail':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
             lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
-            discovery=claim_next_detail(conn,run_id=rid,task_id=tid,worker_id=owner,lease_seconds=lease_seconds)
-            pending_count=conn.execute("SELECT COUNT(*) FROM search_task_results WHERE task_id=? AND detail_status IN ('PENDING','RUNNING','RETRYABLE','EXTERNAL_BLOCKED')",(tid,)).fetchone()[0]
+            run=get_run(conn,rid)
+            discovery=claim_next_detail(conn,run_id=rid,task_id=tid,worker_id=owner,lease_seconds=lease_seconds,
+                                        include_recall_negatives=bool(run and str(run['enrichment_mode'])=='all'))
+            pending_count=_pending_detail_count(conn,tid)
             refresh_result_reconciliation(conn,rid,tid);conn.commit()
             return {'ok':True,'done':discovery is None,'pending_count':int(pending_count),'detail':None if discovery is None else discovery.__dict__}
         if action=='detail_read':
@@ -477,9 +584,36 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             title=j.clean_text(raw.get('title'));company=j.clean_text(raw.get('company'));desc=j.strip_html(raw.get('description') or '')[:180000]
             url=j.canonical_url(j.clean_text(raw.get('canonical_url') or raw.get('url') or ''));sid=j.clean_text(raw.get('source_job_id') or '')
             if not title or not url:return {'ok':False,'error':'insufficient_job_identity'}
+            evidence=msg.get('detail_evidence') if isinstance(msg.get('detail_evidence'),dict) else {}
+            if not evidence and isinstance(raw.get('detail_evidence'),dict): evidence=raw['detail_evidence']
+            unsafe=_unsafe_detail_reason(evidence,title,j.clean_text(raw.get('page_url') or url))
+            if unsafe:
+                if result_id: block_detail(conn,result_id,f"detail surface rejected as {unsafe}")
+                event(conn,rid,tid,'unsafe_detail_rejected',f"{unsafe}: {title}",msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit()
+                return {'ok':False,'error':'unsafe_detail_surface','surface':unsafe}
+            if not desc:
+                detail_status=fail_detail(conn,result_id,'detail identity had no substantive description',max_attempts=int(cfg.get('runtime',{}).get('watchdog_retries',3) or 3)) if result_id else 'RETRYABLE'
+                event(conn,rid,tid,'detail_content_missing',f"{title}: substantive description missing",msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit()
+                return {'ok':False,'error':'content_incomplete','detail_status':detail_status}
             source_site=j.clean_text(task['platform'])
-            remote_status=j.clean_text(raw.get('remote_status') or ('remote' if int(task['remote_required'] or 0) else 'unknown'))
-            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=j.canonical_url(j.clean_text(raw.get('apply_url') or url)),title=title,company=company,location_raw=j.clean_text(raw.get('location') or 'Remote'),remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_evidence':bool(task['remote_required']),'source_payload':raw})
+            location=j.clean_text(raw.get('location') or '')
+            if location.casefold() in {'[object object]', 'undefined', 'null'}:
+                location=''
+            remote_status=j.clean_text(raw.get('remote_status') or 'unknown').lower()
+            if remote_status in {'remote','fully remote','100 remote','us remote'} and not (location or re.search(r'\bremote\b|work[ -]?from[ -]?home|\bwfh\b',desc,re.I)):
+                remote_status='unknown'
+            apply_candidate=j.canonical_url(j.clean_text(raw.get('apply_url') or ''))
+            apply_url=apply_candidate if apply_candidate and apply_candidate != url else ''
+            provenance={
+                'identity': 'observed_detail_identity',
+                'card_metadata': 'search_card' if raw.get('search_card') else 'detail_surface',
+                'description': 'observed_substantive_detail',
+                'location': 'observed' if location else 'unknown',
+                'remote': 'observed_detail_text' if remote_status in {'remote','fully remote','100 remote','us remote'} else 'unknown',
+                'application_destination': 'observed_distinct_destination' if apply_url else 'unknown_board_destination',
+                'remote_filter_intent': bool(task['remote_required']),
+            }
+            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=apply_url,title=title,company=company,location_raw=location,remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_intent':bool(task['remote_required']),'source_payload':raw,'_discovery_company':j.clean_text(raw.get('search_card',{}).get('company') if isinstance(raw.get('search_card'),dict) else '')})
             setattr(job,'_mode','deep');j.score_job(job,strategy,cfg.get('candidate',{}));ledger_status=store.upsert(job,commit=False)
             fields={'new':'jobs_new','updated':'jobs_updated','unchanged':'jobs_unchanged'}
             if ledger_status in fields:
@@ -488,10 +622,18 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             else: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
             jid=store.resolve_job_id(job)
             description_state='COMPLETE' if len(desc)>=250 else ('PARTIAL_TOO_SHORT' if desc else 'MISSING')
-            conn.execute("UPDATE jobs SET description_state=? WHERE job_id=?",(description_state,jid))
-            if result_id: finish_detail(conn,result_id,jid)
-            else: conn.execute("UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status='COMPLETE',detail_completed_at=? WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?",(jid,j.now_iso(),tid,source_site,sid,url))
-            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation},out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company}
+            content_state='COMPLETE' if description_state=='COMPLETE' else 'PARTIAL'
+            enrichment_status='ENRICHED' if content_state=='COMPLETE' else 'PARTIAL'
+            location_state='OBSERVED' if location else 'UNKNOWN'
+            remote_state='OBSERVED' if provenance['remote'] != 'unknown' else 'UNKNOWN'
+            apply_state='OBSERVED' if apply_url else 'UNKNOWN'
+            conn.execute("""UPDATE jobs SET description_state=?,content_state=?,enrichment_status=?,enrichment_last_error='',
+              location_evidence_state=?,remote_evidence_state=?,apply_destination_state=?,evidence_provenance_json=?
+              WHERE job_id=?""",(description_state,content_state,enrichment_status,location_state,remote_state,apply_state,json.dumps(provenance,ensure_ascii=False),jid))
+            if result_id: finish_detail(conn,result_id,jid,content_state=content_state)
+            else: conn.execute("""UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status=?,content_state=?,detail_completed_at=?
+              WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?""",(jid,'COMPLETE' if content_state=='COMPLETE' else 'PARTIAL',content_state,j.now_iso(),tid,source_site,sid,url))
+            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation,'content_state':content_state,'apply_destination_state':apply_state},out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company,'content_state':content_state,'enrichment_status':enrichment_status}
         if action=='job_error':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);message=j.clean_text(msg.get('message') or '')
             detail_status='FAILED'
@@ -505,7 +647,20 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);seen=max(0,int(msg.get('results_seen') or 0));pages=max(0,int(msg.get('pages_visited') or 0));cp=msg.get('checkpoint') or {}
             stats=cp.get('card_stats') if isinstance(cp.get('card_stats'),dict) else {}
             lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
-            now=j.now_iso(); conn.execute("""UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=?,cards_extracted=MAX(cards_extracted,?),cards_persistence_attempted=MAX(cards_persistence_attempted,?),cards_persistence_succeeded=MAX(cards_persistence_succeeded,?),cards_persistence_failed=MAX(cards_persistence_failed,?),duplicate_cards=MAX(duplicate_cards,?),pending_details=MAX(pending_details,?),details_failed=MAX(details_failed,?) WHERE task_id=? AND browser_run_id=?""",(seen,pages,json.dumps(cp,ensure_ascii=False),j.clean_text(cp.get('search_url') or ''),int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(lease_seconds),int(stats.get('extracted_cards') or 0),int(stats.get('persistence_attempted') or 0),int(stats.get('persistence_succeeded') or 0),int(stats.get('persistence_failed') or 0),int(stats.get('duplicate_cards') or 0),int(stats.get('pending_details') or 0),int(stats.get('details_failed') or 0),tid,rid));refresh_result_reconciliation(conn,rid,tid);conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True,'card_stats':stats}
+            now=j.now_iso(); requested=j.clean_text(cp.get('requested_search_url') or '')
+            observed=j.clean_text(cp.get('observed_page_url') or cp.get('search_url') or '')
+            context_status=j.clean_text(cp.get('context_status') or '')
+            conn.execute("""UPDATE browser_search_tasks SET results_seen=MAX(results_seen,?),pages_visited=MAX(pages_visited,?),checkpoint_json=?,
+              requested_search_url=CASE WHEN ?<>'' THEN ? ELSE requested_search_url END,
+              observed_page_url=CASE WHEN ?<>'' THEN ? ELSE observed_page_url END,
+              page_context_status=CASE WHEN ?<>'' THEN ? ELSE page_context_status END,
+              current_search_url=?,page_number=MAX(page_number,?),scroll_generation=MAX(scroll_generation,?),last_page_fingerprint=?,last_source_job_id=?,last_progress_at=?,lease_until=?,
+              cards_extracted=MAX(cards_extracted,?),cards_persistence_attempted=MAX(cards_persistence_attempted,?),cards_persistence_succeeded=MAX(cards_persistence_succeeded,?),cards_persistence_failed=MAX(cards_persistence_failed,?),duplicate_cards=MAX(duplicate_cards,?),pending_details=MAX(pending_details,?),details_failed=MAX(details_failed,?)
+              WHERE task_id=? AND browser_run_id=?""",
+              (seen,pages,json.dumps(cp,ensure_ascii=False),requested,requested,observed,observed,context_status,context_status,
+               observed,int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(lease_seconds),
+               int(stats.get('extracted_cards') or 0),int(stats.get('persistence_attempted') or 0),int(stats.get('persistence_succeeded') or 0),int(stats.get('persistence_failed') or 0),int(stats.get('duplicate_cards') or 0),int(stats.get('pending_details') or 0),int(stats.get('details_failed') or 0),tid,rid))
+            refresh_result_reconciliation(conn,rid,tid);conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True,'card_stats':stats,'context_status':context_status or 'UNVERIFIED'}
         if action=='heartbeat':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180);now=j.now_iso();conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(lease_seconds),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
         if action=='browser_event':
@@ -528,6 +683,8 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             elif status=='challenged':
                 conn.execute("UPDATE browser_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET tasks_challenged=tasks_challenged+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
             elif status=='failed':conn.execute("UPDATE browser_platform_runs SET tasks_failed=tasks_failed+1 WHERE browser_run_id=? AND platform=?",(rid,platform))
+            if status=='stopped' and int(conn.execute("SELECT stop_after_current FROM browser_runs WHERE browser_run_id=?",(rid,)).fetchone()[0] or 0):
+                conn.execute("UPDATE browser_runs SET stop_requested=1,current_task_id=NULL,last_error='stop after current job completed' WHERE browser_run_id=?",(rid,))
             event(conn,rid,tid,'task_'+status,reason,msg,out);conn.commit();return {'ok':True}
         if action=='should_stop':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid);return {'ok':True,'stop':bool(r and int(r['stop_requested'] or 0)),'stop_after_current':bool(r and int(r['stop_after_current'] or 0))}
