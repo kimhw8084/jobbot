@@ -4,6 +4,21 @@
 
 Core tables include `jobs`, `source_occurrences`, `job_versions`, `job_diffs`, `browser_runs`, `browser_search_tasks`, `search_task_results`, `application_events`, `funnel_events`, and `source_verifications`. `schema_migrations` records sequential migration versions.
 
+Migration 15 adds the production-integrity state contract. Search sightings
+retain identity/card/enrichment state and recall priority; jobs retain content,
+location, remote, application-destination, and provenance state. Browser tasks
+retain requested versus observed URLs and context recovery attempts. Platform
+runs retain readiness and user-action state. Existing identity-only rows that
+were historically marked `COMPLETE` become `RETRYABLE`/missing-content rows,
+while job versions and sightings remain unchanged. Use `jobbot re-enrich` only
+after a user decision; it requeues incomplete content and never deletes history.
+
+Important interpretations:
+
+- `remote_required` is query intent. `remote_evidence_state=OBSERVED` requires observed detail evidence; missing location is `UNKNOWN`.
+- `apply_url` is populated only for a distinct observed application destination. A LinkedIn/Indeed/Glassdoor board URL is not application verification.
+- `detail_status=COMPLETE` is content-complete only when `content_state=COMPLETE`.
+
 Before pending migrations on an existing database, JobBot runs `PRAGMA integrity_check`, creates a consistent backup with SQLite’s online backup API under `data/backups/`, applies idempotent migrations, and runs another integrity check. It never uses a naïve copy of an active SQLite file.
 
 Lifecycle is `NEW`, `UNCHANGED`, `UPDATED`, `CLOSED`, and `REOPENED`. Unchanged sightings update last-seen/counts without a version. Meaningful source changes create immutable snapshots plus field-level old/new diffs, including requirement, credential, remote/location, state-eligibility, and schedule evidence extracted from changed descriptions. Canonical ATS disappearance needs two successful complete scans unless an explicit employer close state or canonical URL confirms closure.

@@ -84,6 +84,12 @@ let inspected;
 listener({ type: 'JOBBOT_INSPECT_SEARCH' }, null, (value) => { inspected = value; });
 const ids = inspected.result_links.map((item) => item.source_job_id).sort();
 assert.deepStrictEqual(ids, ['4101', '4102', '4103']);
+const firstCard = inspected.result_links.find((item) => item.source_job_id === '4101');
+assert.strictEqual(firstCard.title, 'Patient Enrollment Specialist');
+assert.strictEqual(firstCard.title_raw, 'Patient Enrollment Specialist Patient Enrollment Specialist');
+assert.strictEqual(firstCard.company, 'Health Co');
+assert.strictEqual(firstCard.location, 'Remote — Texas');
+assert.strictEqual(firstCard.posted_text, '1 day ago');
 assert.strictEqual(inspected.extraction_scope_missing, false);
 assert.strictEqual(inspected.extraction_diagnostics.candidate_links_outside_scope, 3);
 assert.ok(!ids.includes('4901') && !ids.includes('4902') && !ids.includes('4903'));
@@ -129,6 +135,73 @@ assert.deepStrictEqual(empty.result_links, []);
 assert.strictEqual(empty.extraction_diagnostics.empty_state, true);
 assert.strictEqual(empty.extraction_diagnostics.empty_state_reason, 'no matching jobs found');
 console.log('LinkedIn verified empty state fixture passed: no false scope failure');
+
+const metadataPartial = inspectRoot(parseHtml(`
+  <ul class="jobs-search-results__list">
+    <li class="jobs-search-results__list-item"><a class="job-card-list__title" href="/jobs/view/6201/">Customer Service Representative Customer Service Representative</a></li>
+    <li class="jobs-search-results__list-item"><a class="job-card-list__title" href="/jobs/view/6202/">Will Will</a><div class="job-card-container__primary-description">Example Co</div></li>
+  </ul>
+`));
+const partialOne = metadataPartial.result_links.find((item) => item.source_job_id === '6201');
+const legitimateRepeat = metadataPartial.result_links.find((item) => item.source_job_id === '6202');
+assert.strictEqual(partialOne.title, 'Customer Service Representative');
+assert.strictEqual(partialOne.company, '');
+assert.strictEqual(partialOne.location, '');
+assert.strictEqual(partialOne.posted_text, '');
+assert.strictEqual(legitimateRepeat.title, 'Will Will');
+console.log('LinkedIn card metadata fixture passed: extracted fields, missing stays missing, duplicate-half normalized');
+
+const currentCard = inspectRoot(parseHtml(fs.readFileSync('tests/fixtures/linkedin_current_card.html', 'utf8')));
+const observedCurrentCard = currentCard.result_links.find((item) => item.source_job_id === '7101');
+assert.strictEqual(observedCurrentCard.title, 'Patient Enrollment Specialist');
+assert.match(observedCurrentCard.title_raw, /with verification$/);
+assert.strictEqual(observedCurrentCard.company, '');
+assert.strictEqual(observedCurrentCard.location, '');
+assert.strictEqual(observedCurrentCard.posted_text, '');
+const hydratingCurrentCard = currentCard.result_links.find((item) => item.source_job_id === '7102');
+assert.strictEqual(hydratingCurrentCard.title, 'Patient Access Specialist');
+assert.match(hydratingCurrentCard.title_raw, /with verification$/);
+console.log('LinkedIn current card fixture passed: visible title excludes verified accessory; missing metadata stays unknown');
+
+function inspectDetail(nextRoot, href, title = 'LinkedIn job') {
+  global.location = { href, pathname: new URL(href).pathname, host: 'www.linkedin.com' };
+  global.document = { body: nextRoot, title, querySelector: nextRoot.querySelector.bind(nextRoot), querySelectorAll: nextRoot.querySelectorAll.bind(nextRoot) };
+  return new Promise((resolve) => listener({ type: 'JOBBOT_INSPECT_DETAIL' }, null, resolve));
+}
+
+(async () => {
+  const detail = await inspectDetail(parseHtml(`
+    <main><h1 class="job-details-jobs-unified-top-card__job-title">CRM Senior Specialist - Remote Work</h1>
+      <a href="/company/bairesdev/" class="job-details-jobs-unified-top-card__company-name">BairesDev</a>
+      <div class="job-details-jobs-unified-top-card__primary-description-container">Remote — United States</div>
+      <div class="jobs-description-content__text">${'Substantive description for a CRM senior specialist supporting customer workflows and operational quality. '.repeat(8)}</div>
+    </main>
+  `), 'https://www.linkedin.com/jobs/view/4467541678/', 'CRM Senior Specialist - Remote Work | LinkedIn');
+  assert.strictEqual(detail.page_type, 'job');
+  assert.strictEqual(detail.job.title, 'CRM Senior Specialist - Remote Work');
+  assert.strictEqual(detail.job.company, 'BairesDev');
+  assert.strictEqual(detail.job.location, 'Remote — United States');
+  assert.ok(detail.job.description.length > 250);
+
+  const error = await inspectDetail(parseHtml('<main><h1>Tunnel Connection Failed</h1><p>Tunnel Connection Failed</p></main>'), 'https://www.linkedin.com/jobs/view/4467541678/', 'Tunnel Connection Failed');
+  assert.strictEqual(error.page_type, 'error');
+  assert.strictEqual(error.job, null);
+  const paneRoot = parseHtml(fs.readFileSync('tests/fixtures/linkedin_search_pane.html', 'utf8'));
+  const paneAnchor = paneRoot.querySelector('a[href*="/jobs/view/"]');
+  paneAnchor.click = () => { global.location.href = 'https://www.linkedin.com/jobs/search/?currentJobId=7201&keywords=patient'; };
+  global.location = { href: 'https://www.linkedin.com/jobs/search/?keywords=patient', pathname: '/jobs/search/', host: 'www.linkedin.com' };
+  global.document = { body: paneRoot, title: 'LinkedIn jobs', querySelector: paneRoot.querySelector.bind(paneRoot), querySelectorAll: paneRoot.querySelectorAll.bind(paneRoot) };
+  const pane = await new Promise((resolve) => listener({ type: 'JOBBOT_INSPECT_SEARCH_PANE', source_job_id: '7201', select: true }, null, resolve));
+  assert.strictEqual(pane.selected, true);
+  assert.strictEqual(pane.current_job_id, '7201');
+  assert.strictEqual(pane.acquisition_mode, 'search_pane');
+  assert.strictEqual(pane.detail_acquisition.mode, 'search_pane');
+  assert.strictEqual(pane.job.title, 'Patient Access Specialist');
+  assert.strictEqual(pane.job.company, 'Access Co');
+  assert.ok(pane.job.description.length > 250);
+  assert.strictEqual(pane.detail_diagnostics.route, 'search_pane');
+  console.log('LinkedIn detail fixtures passed: substantive enrichment only; error surface yields no job payload; search-pane route hydrates description');
+})();
 
 const pagedEmpty = inspectRoot(parseHtml('<main><h1>(19) patient enrollment specialist Jobs in United States</h1></main>'), ' (19) patient enrollment specialist Jobs in United States | LinkedIn', 'https://www.linkedin.com/jobs/search/?keywords=patient&start=25');
 assert.strictEqual(pagedEmpty.extraction_scope_missing, false);

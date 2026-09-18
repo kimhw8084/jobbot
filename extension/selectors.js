@@ -3,7 +3,7 @@
   globalThis.JobBotSelectors = Object.freeze({
     linkedin: Object.freeze({
       searchContainers: ['ul.jobs-search-results__list','div.jobs-search-results-list','[aria-label="Search results"]','[data-view-name="search-results-container"]'],
-      resultCards: ['li.jobs-search-results__list-item','li[data-occludable-job-id]','.job-card-container','.base-card'],
+      resultCards: ['li.jobs-search-results__list-item','li[data-occludable-job-id]','li[data-view-name*="search-result"]','div[data-view-name="search-result-card"]','.job-card-container','.base-card'],
       searchLinks: ['a[href*="/jobs/view/"]','a.job-card-list__title','a.job-card-container__link'],
       nextLinks: ['a[aria-label="View next page"][href]','a[aria-label*="Next"][href]','button[aria-label="View next page"] + a[href]'],
       nextButtons: ['button[aria-label="View next page"]:not([disabled])','button[aria-label*="Next"]:not([disabled])'],
@@ -35,7 +35,9 @@
       resultCards: ['[data-test="jobListing"]','[data-test="job-card"]','[class*="JobCard_jobCard"]','[class*="jobCard"]'],
       searchLinks: ['a[href*="/job-listing/"]','a[data-test="job-link"][href]','a[class*="JobCard_jobTitle"][href]','a[class*="jobTitle"][href]'],
       nextLinks: ['a[data-test="pagination-next"][href]','a[aria-label="Next"][href]','a[aria-label="Next Page"][href]','nav a[href][aria-label*="Next"]'],
-      authPositive: [],
+      // These are account/navigation markers when Glassdoor exposes them. A
+      // usable search surface remains authoritative when they are absent.
+      authPositive: ['a[href*="/member/"]','a[href*="/profile/"]','[data-test="header-member-menu"]','[data-test="user-menu"]'],
       authSignIn: ['button[data-test="sign-in-button"]','a[href*="login"]','a[href*="sign-in"]'],
       title: ['h1[data-test="job-title"]','h1[class*="heading"]','h1'],
       company: ['[data-test="employer-name"]','[class*="EmployerProfile_employerName"]','[class*="employerName"]'],

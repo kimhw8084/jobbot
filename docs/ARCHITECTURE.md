@@ -21,7 +21,30 @@ for absent/unreachable, wrong-profile, wrong-source, or wrong-build extensions
 and are rejected while any browser run is active, so refresh cannot interrupt a
 checkpointed crawl.
 
-The extension uses one persistent search tab and one reused detail tab per task. A result card is committed to `search_task_results` before age or semantic qualification. The detail is then read and committed before normalization, canonicalization, requirement extraction, remote/employment/credential gates, and scoring.
+The extension uses one persistent search tab and one reused detail tab per task. A result card is committed to `search_task_results` before age or semantic qualification. The detail is then read and committed before normalization, canonicalization, requirement extraction, remote/employment/credential gates, and scoring. The bridge rejects empty-substance detail payloads and error/login/challenge/interstitial surfaces before they can create or mutate canonical content.
+
+### Evidence and enrichment state
+
+`search_task_results` is the durable receipt layer. `identity_status=PERSISTED`
+means source identity was captured; `card_metadata_status` describes whether
+company/location/posted card fields were observed; `detail_status` and
+`content_state` describe enrichment (`PENDING`, `RUNNING`, `PARTIAL`,
+`RETRYABLE`, `DEFERRED_RECALL`, `EXTERNAL_BLOCKED`, `FAILED`, or complete).
+Historical `COMPLETE` rows with missing descriptions are migrated to
+re-enrichment-needed states without deleting sightings or `job_versions`.
+
+On `jobs`, `location_evidence_state`, `remote_evidence_state`, and
+`apply_destination_state` distinguish observed evidence from search intent or
+unknown values. A source-board URL is never copied into `apply_url` merely
+because it is canonical. The existing `legacy_engine.recall_prefilter()` only
+orders expensive detail work; recall negatives remain durable and sampled for
+later QA. The explicit `re-enrich` command switches a user-requested run to
+`enrichment_mode=all`.
+
+Requested and observed search URLs are stored separately. Redirects and lost
+query context are `INCOMPLETE` recovery states, never exhaustion. Bridge
+retries use the same request identity and bounded attempts for transient local
+receiver/page-load failures.
 
 Big-3 browsing never uses Playwright, Selenium, Puppeteer, Chrome-for-Testing, cookie export, stealth, CAPTCHA solving, proxy evasion, or fingerprint alteration.
 
@@ -38,3 +61,15 @@ Big-3 browsing never uses Playwright, Selenium, Puppeteer, Chrome-for-Testing, c
 ## Failure semantics
 
 `EXHAUSTED` requires explicit platform end evidence or an age boundary in a newest-sorted search. Repeated fingerprints, zero-new scrolls, watchdog stalls, or ambiguous missing pagination produce `INCOMPLETE` with `SAFETY_STOP`, never false exhaustion. A challenge or auth failure checkpoints and isolates only its platform; other platforms continue.
+
+Platform readiness is durable and independent from account evidence:
+`verified`, `sign_in_required`, `challenged_cooldown`, `user_action_required`,
+`retryable`, `unknown`, and `resumed` are shown in the dashboard, while auth evidence can
+remain `unknown` until it is conclusive. For all three Big-3 platforms, a
+requested search surface with scoped cards or a verified empty state can prove
+readiness even when a landing page has no account-navigation marker. Only an
+affirmative login/authwall surface becomes `sign_in_required`; a CAPTCHA or
+other challenge becomes `challenged_cooldown` without declaring the account
+signed out. The recovery flow is ordinary Chrome only: clear a challenge or
+sign in manually, then use Resume checkpoint so the platform is rechecked while
+other platform work remains checkpointed.

@@ -57,7 +57,7 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 evidence_event = conn.execute("SELECT payload_json FROM browser_events WHERE browser_run_id=? AND event_type='detail_read' ORDER BY event_id DESC LIMIT 1", (run_id,)).fetchone()
                 self.assertEqual(json.loads(evidence_event[0])["detail_evidence"], detail_evidence)
                 conn.close()
-                saved = rpc.handle({"action": "record_job", "run_id": run_id, "task_id": task_id, "job": {"source_job_id": "write-1", "canonical_url": "https://www.indeed.com/viewjob?jk=write-1", "title": "Patient Enrollment Specialist", "company": "Example Health", "location": "United States", "employment_type": "Full-time permanent", "description": "Healthcare enrollment. Required Qualifications: 2 years relevant experience. Full-time permanent."}})
+                saved = rpc.handle({"action": "record_job", "run_id": run_id, "task_id": task_id, "job": {"source_job_id": "write-1", "canonical_url": "https://www.indeed.com/viewjob?jk=write-1", "title": "Patient Enrollment Specialist", "company": "Example Health", "location": "United States", "employment_type": "Full-time permanent", "description": "Fully remote healthcare enrollment. Required Qualifications: 2 years relevant experience. Full-time permanent. " + "The coordinator documents patient access workflows, resolves enrollment issues, protects privacy, and collaborates with clinical and operations teams. " * 4}})
                 self.assertTrue(saved["ok"])
                 conn = sqlite3.connect(db)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0], 1)
@@ -151,12 +151,13 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
                 browser_tasks.resume_run(root, run_id)
                 db = root / "data" / "jobs.sqlite3"; conn = sqlite3.connect(db); conn.row_factory = sqlite3.Row
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=?", (run_id,)).fetchone()[0], 10)
-                self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND detail_status='COMPLETE'", (run_id,)).fetchone()[0], 5)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND detail_status='PARTIAL'", (run_id,)).fetchone()[0], 5)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND content_state='PARTIAL'", (run_id,)).fetchone()[0], 5)
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE browser_run_id=? AND detail_status='PENDING'", (run_id,)).fetchone()[0], 5)
                 rich = conn.execute("SELECT title_hint,company_hint,card_json FROM search_task_results WHERE browser_run_id=? LIMIT 1", (run_id,)).fetchone()
                 self.assertTrue(rich["title_hint"]); self.assertEqual(rich["company_hint"], "Example Health"); self.assertIn("posted_text", rich["card_json"])
                 counters = conn.execute("SELECT cards_extracted,cards_persistence_succeeded,pending_details FROM browser_search_tasks WHERE task_id=?", (task_id,)).fetchone()
-                self.assertEqual(tuple(counters), (10, 10, 5))
+                self.assertEqual(tuple(counters), (10, 10, 10))
                 conn.close()
 
                 # A challenge on the current LinkedIn task defers untouched LinkedIn

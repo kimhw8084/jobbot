@@ -359,7 +359,7 @@ class Job:
     title: str = ""
     company: str = ""
     location_raw: str = ""
-    remote_status: str = "remote"
+    remote_status: str = "unknown"
     employment_type: str = ""
     salary_text: str = ""
     salary_min: Optional[float] = None
