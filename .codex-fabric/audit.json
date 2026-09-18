@@ -1,0 +1,375 @@
+{
+  "accepted_at": "2026-09-18T19:51:14Z",
+  "changed_files": [
+    {
+      "additions": 516,
+      "deletions": 0,
+      "path": "verification/CHG-39-r7.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json, socket\nfrom pathlib import Path\nfrom jobbot.validator import _isolated_bundle, _isolated_environment\nfrom jobbot.browser_tasks import enqueue_validation\nfrom jobbot.orchestrator import launch_browser_run\nfrom jobbot.db import Database\n\nbase = Path.cwd(); platform = 'linkedin'\ndb = base / 'data' / 'CHG-39-r7-warmup-linkedin.sqlite3'\nout = base / 'out' / 'CHG-39-r7-warmup-linkedin'\nif db.exists(): raise SystemExit(f'fresh warmup database already exists: {db}')\nwith socket.socket() as s:\n    s.bind(('127.0.0.1', 0)); port = s.getsockname()[1]\nbundle = _isolated_bundle(db, out, port)\nwith _isolated_environment(bundle):\n    run_id = enqueue_validation(base, [platform], max_results=3, bundle=bundle)\n    outcome = launch_browser_run(bundle, run_id, wait=True, open_browser=True, timeout_seconds=240, startup_timeout_seconds=45)\n    conn = Database(bundle).connect()\n    try:\n        platform_row = conn.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?', (run_id, platform)).fetchone()\n        task = conn.execute('SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id LIMIT 1', (run_id,)).fetchone()\n        events = conn.execute('SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=? ORDER BY rowid', (run_id,)).fetchall()\n        result_rows = conn.execute(\\\"SELECT source_job_id, title, content_state, detail_status, LENGTH(description) AS description_length FROM search_task_results WHERE browser_run_id=? ORDER BY result_id\\\", (run_id,)).fetchall()\n        print(json.dumps({\n            'platform': platform, 'database': str(db), 'output_dir': str(out), 'run_id': run_id,\n            'outcome': outcome.__dict__,\n            'platform_state': dict(platform_row) if platform_row else None,\n            'task': dict(task) if task else None,\n            'events': [dict(e) for e in events],\n            'results': [dict(r) for r in result_rows],\n        }, ensure_ascii=False, default=str))\n    finally:\n        conn.close()\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json, sqlite3\nfrom pathlib import Path\np=Path('data/CHG-39-r7-warmup-linkedin.sqlite3')\nc=sqlite3.connect(p); c.row_factory=sqlite3.Row\nfor table in ('browser_platform_runs','browser_search_tasks','browser_events','search_task_results'):\n    print(table, [row['name'] for row in c.execute(f'PRAGMA table_info({table})')])\nprint('runs', [dict(x) for x in c.execute('SELECT * FROM browser_runs')])\nprint('platforms', [dict(x) for x in c.execute('SELECT * FROM browser_platform_runs')])\nprint('tasks', [dict(x) for x in c.execute('SELECT * FROM browser_search_tasks')])\nprint('events', [dict(x) for x in c.execute('SELECT event_type,message,payload_json FROM browser_events ORDER BY rowid')])\nprint('results', [dict(x) for x in c.execute('SELECT * FROM search_task_results')])\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - indeed <<'PY'\nimport json, socket, sys, sqlite3\nfrom pathlib import Path\nfrom jobbot.validator import _isolated_bundle, _isolated_environment\nfrom jobbot.browser_tasks import enqueue_validation\nfrom jobbot.orchestrator import launch_browser_run\nfrom jobbot.db import Database\nplatform=sys.argv[1]; base=Path.cwd(); db=base/f'data/CHG-39-r7-warmup-{platform}.sqlite3'; out=base/f'out/CHG-39-r7-warmup-{platform}'\nif db.exists(): raise SystemExit(f'fresh warmup database already exists: {db}')\nwith socket.socket() as s: s.bind(('127.0.0.1',0)); port=s.getsockname()[1]\nbundle=_isolated_bundle(db,out,port)\nwith _isolated_environment(bundle):\n    rid=enqueue_validation(base,[platform],max_results=3,bundle=bundle)\n    outcome=launch_browser_run(bundle,rid,wait=True,open_browser=True,timeout_seconds=240,startup_timeout_seconds=45)\n    c=Database(bundle).connect()\n    try:\n        p=c.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?',(rid,platform)).fetchone()\n        t=c.execute('SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id LIMIT 1',(rid,)).fetchone()\n        ev=c.execute('SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=? ORDER BY rowid',(rid,)).fetchall()\n        results=c.execute('SELECT source_job_id,title_hint,company_hint,content_state,detail_status,detail_error,identity_status FROM search_task_results WHERE browser_run_id=? ORDER BY result_id',(rid,)).fetchall()\n        print(json.dumps({'platform':platform,'database':str(db),'output_dir':str(out),'run_id':rid,'outcome':outcome.__dict__,'platform_state':dict(p) if p else None,'task':dict(t) if t else None,'events':[dict(x) for x in ev],'results':[dict(x) for x in results]},ensure_ascii=False,default=str))\n    finally: c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python3 -m jobbot refresh-extension --timeout 60'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - indeed-retry <<'PY'\nimport json, socket, sys\nfrom pathlib import Path\nfrom jobbot.validator import _isolated_bundle, _isolated_environment\nfrom jobbot.browser_tasks import enqueue_validation\nfrom jobbot.orchestrator import launch_browser_run\nfrom jobbot.db import Database\nlabel=sys.argv[1]; platform='indeed'; base=Path.cwd(); db=base/f'data/CHG-39-r7-warmup-{label}.sqlite3'; out=base/f'out/CHG-39-r7-warmup-{label}'\nif db.exists(): raise SystemExit(f'fresh warmup database already exists: {db}')\nwith socket.socket() as s: s.bind(('127.0.0.1',0)); port=s.getsockname()[1]\nbundle=_isolated_bundle(db,out,port)\nwith _isolated_environment(bundle):\n    rid=enqueue_validation(base,[platform],max_results=3,bundle=bundle)\n    outcome=launch_browser_run(bundle,rid,wait=True,open_browser=True,timeout_seconds=240,startup_timeout_seconds=45)\n    c=Database(bundle).connect()\n    try:\n        p=c.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?',(rid,platform)).fetchone(); t=c.execute('SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id LIMIT 1',(rid,)).fetchone(); ev=c.execute('SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=? ORDER BY rowid',(rid,)).fetchall(); results=c.execute('SELECT source_job_id,title_hint,company_hint,content_state,detail_status,detail_error,identity_status FROM search_task_results WHERE browser_run_id=? ORDER BY result_id',(rid,)).fetchall(); print(json.dumps({'platform':platform,'database':str(db),'output_dir':str(out),'run_id':rid,'outcome':outcome.__dict__,'platform_state':dict(p) if p else None,'task':dict(t) if t else None,'events':[dict(x) for x in ev],'results':[dict(x) for x in results]},ensure_ascii=False,default=str))\n    finally: c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - glassdoor <<'PY'\nimport json, socket, sys\nfrom pathlib import Path\nfrom jobbot.validator import _isolated_bundle, _isolated_environment\nfrom jobbot.browser_tasks import enqueue_validation\nfrom jobbot.orchestrator import launch_browser_run\nfrom jobbot.db import Database\nplatform=sys.argv[1]; base=Path.cwd(); db=base/f'data/CHG-39-r7-warmup-{platform}.sqlite3'; out=base/f'out/CHG-39-r7-warmup-{platform}'\nif db.exists(): raise SystemExit(f'fresh warmup database already exists: {db}')\nwith socket.socket() as s: s.bind(('127.0.0.1',0)); port=s.getsockname()[1]\nbundle=_isolated_bundle(db,out,port)\nwith _isolated_environment(bundle):\n    rid=enqueue_validation(base,[platform],max_results=3,bundle=bundle)\n    outcome=launch_browser_run(bundle,rid,wait=True,open_browser=True,timeout_seconds=240,startup_timeout_seconds=45)\n    c=Database(bundle).connect()\n    try:\n        p=c.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?',(rid,platform)).fetchone(); t=c.execute('SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id LIMIT 1',(rid,)).fetchone(); ev=c.execute('SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=? ORDER BY rowid',(rid,)).fetchall(); results=c.execute('SELECT source_job_id,title_hint,company_hint,content_state,detail_status,detail_error,identity_status FROM search_task_results WHERE browser_run_id=? ORDER BY result_id',(rid,)).fetchall(); print(json.dumps({'platform':platform,'database':str(db),'output_dir':str(out),'run_id':rid,'outcome':outcome.__dict__,'platform_state':dict(p) if p else None,'task':dict(t) if t else None,'events':[dict(x) for x in ev],'results':[dict(x) for x in results]},ensure_ascii=False,default=str))\n    finally: c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python3 -m jobbot refresh-extension --timeout 60'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - glassdoor-retry <<'PY'\nimport json, socket, sys\nfrom pathlib import Path\nfrom jobbot.validator import _isolated_bundle, _isolated_environment\nfrom jobbot.browser_tasks import enqueue_validation\nfrom jobbot.orchestrator import launch_browser_run\nfrom jobbot.db import Database\nlabel=sys.argv[1]; platform='glassdoor'; base=Path.cwd(); db=base/f'data/CHG-39-r7-warmup-{label}.sqlite3'; out=base/f'out/CHG-39-r7-warmup-{label}'\nif db.exists(): raise SystemExit(f'fresh warmup database already exists: {db}')\nwith socket.socket() as s: s.bind(('127.0.0.1',0)); port=s.getsockname()[1]\nbundle=_isolated_bundle(db,out,port)\nwith _isolated_environment(bundle):\n    rid=enqueue_validation(base,[platform],max_results=3,bundle=bundle)\n    outcome=launch_browser_run(bundle,rid,wait=True,open_browser=True,timeout_seconds=240,startup_timeout_seconds=45)\n    c=Database(bundle).connect()\n    try:\n        p=c.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?',(rid,platform)).fetchone(); t=c.execute('SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id LIMIT 1',(rid,)).fetchone(); ev=c.execute('SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=? ORDER BY rowid',(rid,)).fetchall(); results=c.execute('SELECT source_job_id,title_hint,company_hint,content_state,detail_status,detail_error,identity_status FROM search_task_results WHERE browser_run_id=? ORDER BY result_id',(rid,)).fetchall(); print(json.dumps({'platform':platform,'database':str(db),'output_dir':str(out),'run_id':rid,'outcome':outcome.__dict__,'platform_state':dict(p) if p else None,'task':dict(t) if t else None,'events':[dict(x) for x in ev],'results':[dict(x) for x in results]},ensure_ascii=False,default=str))\n    finally: c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot validate-production --stage full --semi-minutes 30'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('out/production-validation/latest.json'); x=json.loads(p.read_text())\nprint('TOP_KEYS', list(x))\nfor k in ('PROD_READY','validation_stage','validation_database','soak_database','semi_production_database','dashboard_url','branch','head','started_at','finished_at','external_blockers','internal_failures','exit_integrity','preflight','run_now_coverage','primary_live','soak','semi_production'):\n    v=x.get(k)\n    if k in ('primary_live','soak','semi_production') and isinstance(v,dict):\n        print('\\\\n',k,'keys=',list(v));\n        for kk in ('run_id','pass','stop_resume_pass','bridge_restart_pass','outcome','resume','sampled_phase_counts','execution_evidence','phase_pass','supplemental','dashboard','audit','scope','extension_build_pass','duration_seconds_total'):\n            if kk in v: print(kk, json.dumps(v[kk],ensure_ascii=False,default=str)[:12000])\n    else:\n        print('\\\\n',k, json.dumps(v,ensure_ascii=False,default=str)[:20000])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json\nfrom pathlib import Path\nfor name in ('CHG-39-r6','CHG-39-r5'):\n p=Path('verification')/(name+'.json')\n if p.exists():\n  x=json.loads(p.read_text()); print(name, list(x)); print(json.dumps(x,ensure_ascii=False,indent=2)[:18000])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json, sqlite3\nfrom pathlib import Path\nfor name in ('CHG-39-r7-warmup-linkedin.sqlite3','validation_20260918T195824Z.sqlite3'):\n p=Path('data')/name; c=sqlite3.connect(p); c.row_factory=sqlite3.Row\n print('\\\\nDB',name)\n for tbl in ('jobs','job_versions','source_occurrences'):\n  try:\n   cols=[r[1] for r in c.execute(f'PRAGMA table_info({tbl})')]\n   print(tbl,cols)\n   if tbl=='jobs':\n    rows=c.execute('SELECT * FROM jobs WHERE source_site=\\\"linkedin\\\" ORDER BY rowid LIMIT 5').fetchall()\n    for x in rows:\n     d=dict(x); print(json.dumps({k:(len(v) if k in ('description','requirements') and isinstance(v,str) else v) for k,v in d.items()},ensure_ascii=False,default=str)[:10000])\n  except Exception as e: print(tbl,e)\n c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json, sqlite3\nfrom pathlib import Path\np=Path('data/validation_20260918T195824Z.sqlite3'); c=sqlite3.connect(p); c.row_factory=sqlite3.Row\nfor table in ('browser_search_tasks','browser_events','browser_platform_runs','search_task_results'):\n print('\\\\nTABLE',table)\n rows=c.execute(f'SELECT * FROM {table} WHERE browser_run_id=1 ORDER BY rowid' if table\"'!='\"'browser_platform_runs' else 'SELECT * FROM browser_platform_runs WHERE browser_run_id=1 ORDER BY rowid').fetchall()\n if table=='browser_events':\n  for x in rows:\n   typ=x['event_type']\n   if typ in ('extraction_scope_missing','scope_diagnostics','task_incomplete','platform_readiness','task_progress','result_batch','query_context_lost','navigation') or 'scope' in typ:\n    print(json.dumps(dict(x),ensure_ascii=False,default=str)[:16000])\n else:\n  print(json.dumps([dict(x) for x in rows],ensure_ascii=False,default=str)[:22000])\nprint('\\\\nTABLES', [x[0] for x in c.execute(\\\"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\\\")])\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json,sqlite3\nfrom pathlib import Path\nfor name in ('CHG-39-r7-warmup-linkedin.sqlite3','validation_20260918T195824Z.sqlite3'):\n c=sqlite3.connect(Path('data')/name); c.row_factory=sqlite3.Row\n rows=c.execute(\\\"\\\"\\\"SELECT r.source_job_id,r.title_hint,r.detail_status,r.content_state,r.canonical_job_id,\n  o.source_site,o.source_job_id AS occ_source_job_id,o.source_url,\n  j.title,j.company,LENGTH(j.description) AS description_length,j.content_state AS job_content_state,j.enrichment_status,j.apply_destination_state,\n  json_extract(o.raw_json,'\"'$.acquisition_mode'\"') AS acquisition_mode,json_extract(o.raw_json,'\"'$.acquisition_url'\"') AS acquisition_url\n  FROM search_task_results r LEFT JOIN source_occurrences o ON o.job_id=r.canonical_job_id AND o.source_site=r.source_site AND o.source_job_id=r.source_job_id\n  LEFT JOIN jobs j ON j.job_id=r.canonical_job_id\n  WHERE r.detail_status='COMPLETE' AND r.content_state='COMPLETE' ORDER BY r.result_id LIMIT 20\\\"\\\"\\\").fetchall()\n print(name)\n for x in rows:\n  print(json.dumps(dict(x),ensure_ascii=False,default=str))\n c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json,sqlite3\nfrom pathlib import Path\nfor name in ('CHG-39-r7-warmup-linkedin.sqlite3','validation_20260918T195824Z.sqlite3'):\n c=sqlite3.connect(Path('data')/name); c.row_factory=sqlite3.Row\n print('\\\\nDB',name)\n for x in c.execute(\\\"SELECT event_type,message,payload_json FROM browser_events WHERE payload_json LIKE '%acquisition_mode%' OR payload_json LIKE '%source_job_id%4469225576%' ORDER BY rowid\\\"):\n  d=dict(x); print(json.dumps(d,ensure_ascii=False,default=str)[:18000])\n c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json,sqlite3\np='data/validation_20260918T195824Z.sqlite3'; c=sqlite3.connect(p); c.row_factory=sqlite3.Row\nfor x in c.execute(\\\"SELECT event_id,event_at,event_type,task_id,message,payload_json FROM browser_events WHERE browser_run_id=1 AND (event_type IN ('extraction_scope_missing','scope_diagnostics','task_incomplete','platform_readiness','extension_build') OR message LIKE '%scope%') ORDER BY event_id\\\"):\n d=dict(x); payload=json.loads(d.pop('payload_json') or '{}'); d['payload']=payload\n if d['event_type']=='scope_diagnostics':\n  q=payload.get('payload',payload); d['payload']={k:q.get(k) for k in ('diagnostic_version','extension_build','attempts','matched_containers','scope_method','chosen_root_signature','chosen_card_signature','structural_candidate_signatures','candidate_links_total','candidate_links_in_scope','candidate_links_outside_scope','in_scope_source_ids','in_scope_urls','outside_scope_source_ids','outside_scope_urls')}\n print(json.dumps(d,ensure_ascii=False,default=str))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git remote -v; rtk git config --get-regexp 'remote\\\\..*\\\\.pushurl|branch\\\\..*\\\\.merge|branch\\\\..*\\\\.remote' || true; rtk git status --porcelain=v1 --untracked-files=all\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-tree -r --name-only refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r6 | head -100; rtk git show --stat --oneline refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r6; rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r6:verification/CHG-39-r6.json | head -240'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git log --oneline --decorate --all --max-count=80 -- verification/CHG-39-r6.json verification/CHG-39-r5.json .codex-fabric/audit.json; rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-112-r6:.codex-fabric/audit.json 2>/dev/null | head -120 || true; rtk git ls-tree -r --name-only refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-112-r6 | rg 'audit|evidence|verification' | head -100\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk find /Users/haewonkim/.codex-fabric -maxdepth 3 -type f | sort | head -300'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show --format=fuller --stat f40d23d; rtk git show --format=fuller --stat 98e02c2; rtk git cat-file -p f40d23d | head -40; rtk git cat-file -p 98e02c2 | head -30'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n --hidden -S \"canonical.*project_id|project_id.*jobbot|evidence.*sole-parent|codex-fabric/evidence|evidence_commit|operation.*VERIFY|Fabric runtime\" /Users/haewonkim/.codex-fabric /Users/haewonkim/.codex 2>/dev/null | head -500'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -S \\\"publish.*audit|canonical.*evidence|evidence.*head|project_id|operation.*VERIFY|sole-parent|sole_parent\\\" /Users/haewonkim/.codex-fabric --glob '*.py' --glob '*.sh' --glob '*.toml' --glob '*.md' --glob '*.json' 2>/dev/null | head -500\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env FABRIC_ROOT=/Users/haewonkim/.codex-fabric python3 - <<'PY'\nimport json\nfrom pathlib import Path\nfor p in sorted(Path('/Users/haewonkim/.codex-fabric/backups').glob('**/result*.json'))[-20:]:\n try:\n  x=json.loads(p.read_text()); print(p, list(x)[:20]); print(json.dumps(x,ensure_ascii=False)[:3000])\n except: pass\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl --help 2>&1 | head -200; rtk /Users/haewonkim/.codex-fabric/bin/fabricctl evidence --help 2>&1 | head -200; rtk /Users/haewonkim/.codex-fabric/bin/receive-stdin --help 2>&1 | head -120'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,160p' /Users/haewonkim/.codex-fabric/jobs/CF-1c1f3573e25c84059ee85fbe.executed/job.json; rtk find /Users/haewonkim/.codex-fabric/jobs/CF-1c1f3573e25c84059ee85fbe.executed -maxdepth 2 -type f -print | sort; rtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/jobs/CF-1c1f3573e25c84059ee85fbe.executed/result.json 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '2280,2525p' /Users/haewonkim/.codex-fabric/fabric.py 2>/dev/null || true; rtk sed -n '2280,2525p' /Users/haewonkim/.codex-fabric/backups/pre-auto-failed-retry-20260918-0900/fabric.py 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric/jobs -maxdepth 2 -name job.json -print | sort | tail -30 | while read p; do rtk rg -l '\\\"project_id\\\": \\\"jobbot\\\"' \\\"\"'$p\"; done'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env | rg 'FABRIC|CODEX.*JOB|JOB_ID' | sort; rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r6:.codex-fabric/audit.json | head -80; rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-39-r6:.codex-fabric/audit.json | tail -80\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport json\nfrom pathlib import Path\nfor p in sorted(Path('/Users/haewonkim/.codex-fabric/jobs').glob('*/job.json')):\n try: x=json.loads(p.read_text())\n except: continue\n if x.get('project_id')=='jobbot': print(p.parent.name, json.dumps({k:x.get(k) for k in ('job_id','operation','project_id','request','accepted_at','routes')},ensure_ascii=False))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show refs/heads/codex/jobbot-CHG-39-r6:verification/CHG-39-r6.json | head -120; rtk git show refs/heads/codex/jobbot-CHG-39-r6:verification/CHG-39-r6.json | tail -80'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 -m json.tool verification/CHG-39-r7.json >/dev/null && rtk git status --porcelain=v1 --untracked-files=all && rtk git diff --name-status && rtk git rev-parse HEAD && rtk git rev-parse refs/remotes/origin/main && rtk git merge-base HEAD refs/remotes/origin/main && rtk git show extension/manifest.json | rtk rg 'version_name' && rtk git diff --check\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' verification/CHG-39-r7.json && rtk python3 -c \\\"import json; p=json.load(open('verification/CHG-39-r7.json')); print('top_keys=', list(p)); print('fabric_job=', p.get('fabric',{}))\\\" && rtk python3 -c \\\"import json; p=json.load(open('/Users/haewonkim/.codex-fabric/jobs/CF-5d59c4ecc741038be9fb2ac4.running/job.json')); print(json.dumps({k:p.get(k) for k in ['job_id','accepted_at','operation','project_id','request','route','work_branch','remote','transport_bytes','transport_sha256','prompt_bytes','prompt_sha256']}, indent=2, sort_keys=True))\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '261,620p' verification/CHG-39-r7.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 -c \\\"import json; p=json.load(open('/Users/haewonkim/.codex-fabric/jobs/CF-5d59c4ecc741038be9fb2ac4.running/job.json')); print('\\\\n'.join(sorted(p)))\\\" && rtk python3 -c \\\"import json; p=json.load(open('/Users/haewonkim/.codex-fabric/jobs/CF-5d59c4ecc741038be9fb2ac4.running/job.json')); print(json.dumps(p, indent=2, sort_keys=True)[:16000])\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote --heads origin refs/heads/codex/jobbot-CHG-39-r7 refs/heads/codex-fabric/evidence/jobbot/CHG-39-r7 && rtk git add verification/CHG-39-r7.json && rtk git diff --cached --name-status && rtk git diff --cached --check && rtk git commit -m \"chore(verification): record CHG-39-r7 evidence\"'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show --no-ext-diff --stat --oneline HEAD && rtk git diff-tree --no-commit-id --name-status -r HEAD && rtk git rev-parse HEAD''^ && rtk git rev-parse HEAD && rtk git status --porcelain=v1 --untracked-files=all && rtk git diff HEAD''^ -- extension src config || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git log -3 --oneline --decorate && rtk git diff --cached --name-status && rtk git diff --name-status'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"\\\\s+\"'$|event_id|scope_missing_event\" verification/CHG-39-r7.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python3 -m json.tool verification/CHG-39-r7.json >/dev/null && rtk git add verification/CHG-39-r7.json && rtk git diff --cached --check && rtk git diff --cached --name-status && rtk git commit -m \"chore(verification): record CHG-39-r7 evidence\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --no-ext-diff --stat --oneline HEAD && rtk git diff-tree --no-commit-id --name-status -r HEAD && printf '%s\\\\n' \\\"parent=\"'$(rtk git rev-parse HEAD''^)\" \"head=$(rtk git rev-parse HEAD)\" && rtk git status --porcelain=v1 --untracked-files=all && rtk git diff HEAD''^ -- extension src config && rtk git diff HEAD''^ -- .codex-fabric/audit.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote --heads origin refs/heads/codex/jobbot-CHG-39-r7 && rtk git push origin HEAD:refs/heads/codex/jobbot-CHG-39-r7'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-5d59c4ecc741038be9fb2ac4'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"publish-evidence|publish_pending|evidence_ref|job_state|EXECUTED_CHANGE|RUNNING\" /Users/haewonkim/.codex-fabric/bin/fabric.py /Users/haewonkim/.codex-fabric/lib /Users/haewonkim/.codex-fabric 2>/dev/null | rtk head -n 160'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk readlink /Users/haewonkim/.codex-fabric/bin/fabricctl && rtk readlink /Users/haewonkim/.codex-fabric/bin/fabric.py && rtk sed -n '2400,2505p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py && rtk sed -n '2725,2785p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py && rtk sed -n '3430,3495p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -l /Users/haewonkim/.codex-fabric/bin/fabricctl /Users/haewonkim/.codex-fabric/bin/fabric.py /Users/haewonkim/.codex-fabric/current && rtk rg -n \\\"def publish_evidence_for_job|def publish_pending_evidence|publish_pending_evidence\\\\(\\\" /Users/haewonkim/.codex-fabric/current/fabric.py\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"def publish_evidence_for_job|def publish_pending_evidence|publish_pending_evidence\\\\(\\\" /Users/haewonkim/.codex-fabric/current/fabric.py && rtk sed -n '2400,2515p' /Users/haewonkim/.codex-fabric/current/fabric.py && rtk sed -n '2725,2795p' /Users/haewonkim/.codex-fabric/current/fabric.py && rtk sed -n '3435,3490p' /Users/haewonkim/.codex-fabric/current/fabric.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric/jobs -maxdepth 1 -name 'CF-5d59c4ecc741038be9fb2ac4.*' -print && rtk find /Users/haewonkim/.codex-fabric/results/CF-5d59c4ecc741038be9fb2ac4 -maxdepth 1 -type f -print 2>/dev/null | rtk sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la /Users/haewonkim/.codex-fabric/jobs | rtk rg 'CF-5d59c4ecc741038be9fb2ac4' && rtk ls -la /Users/haewonkim/.codex-fabric/results/CF-5d59c4ecc741038be9fb2ac4\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git ls-remote --heads origin refs/heads/codex/jobbot-CHG-39-r7 refs/heads/codex-fabric/evidence/jobbot/CHG-39-r7 && rtk git status --short --branch && rtk python3 -c \\\"import json,hashlib; p='verification/CHG-39-r7.json'; d=json.load(open(p)); print('artifact_sha256='+hashlib.sha256(open(p,'rb').read()).hexdigest()); print('verdict='+d['classification']['verdict']); print('head='+d['exact_binding']['head']); print('prod_ready='+str(d['production_validation']['PROD_READY'])); print('validator_exit_code='+str(d['production_validation']['validator_exit_code']))\\\" && rtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-5d59c4ecc741038be9fb2ac4\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 199,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 95.2,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 6347264,
+      "fresh_input_tokens": 320371,
+      "input_tokens": 6667635,
+      "non_reasoning_output_tokens": 26747,
+      "output_tokens": 43322,
+      "reasoning_output_tokens": 16575,
+      "total_processed_tokens": 6710957
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "3e494ea2f749a898a7e5c48602bac75231062a21",
+      "subject": "chore(verification): record CHG-39-r7 evidence"
+    }
+  ],
+  "diff": {
+    "additions": 516,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 24249,
+        "path": "verification/CHG-39-r7.json",
+        "sha256": "3bcf0cc1e784a1f0b4905453a5491afe0c6aa63bd44b896b8167d92f4c242b06"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-18T20:12:41Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "branch": "codex/jobbot-CHG-39-r7",
+    "head_sha": "3e494ea2f749a898a7e5c48602bac75231062a21",
+    "remote_exact_head": true,
+    "remote_head_sha": "3e494ea2f749a898a7e5c48602bac75231062a21",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "work_branch": "codex/jobbot-CHG-39-r7",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-5d59c4ecc741038be9fb2ac4",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r7",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r7"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r7",
+  "schema_version": 1,
+  "started_at": "2026-09-18T19:51:14Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1287,
+    "queue_seconds": 0,
+    "total_seconds": 1287
+  },
+  "transport": {
+    "bytes": 7964,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 7684,
+    "prompt_sha256": "68c458ce3dc27ce85890d548691d6115d3284cea8809d1057a89f9f35a165606",
+    "sha256": "5d59c4ecc741038be9fb2ac403027fc3801b6c073ab3403fc0b43172ceba0073"
+  }
+}
