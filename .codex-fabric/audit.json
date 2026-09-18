@@ -1,0 +1,376 @@
+{
+  "accepted_at": "2026-09-18T22:00:45Z",
+  "changed_files": [
+    {
+      "additions": 4466,
+      "deletions": 0,
+      "path": "verification/CHG-39-r8.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json; print(json.load(open(\\\"extension/manifest.json\\\"))[\\\"version_name\\\"])'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --exit-code -- . ':(exclude)verification/CHG-39-r8.json'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src caffeinate -dimsu /opt/anaconda3/bin/python3 -m jobbot validate-production --stage full --semi-minutes 30'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env REPORT=out/production-validation/latest.json /opt/anaconda3/bin/python3 -c 'import os,json,re; p=os.environ[\\\"REPORT\\\"]; raw=open(p,encoding=\\\"utf-8\\\").read(); d=json.loads(raw); print(json.dumps({\\\"bytes\\\":len(raw.encode()),\\\"keys\\\":list(d),\\\"PROD_READY\\\":d.get(\\\"PROD_READY\\\"),\\\"branch\\\":d.get(\\\"branch\\\"),\\\"head\\\":d.get(\\\"head\\\"),\\\"validation_database\\\":d.get(\\\"validation_database\\\"),\\\"soak_database\\\":d.get(\\\"soak_database\\\"),\\\"semi_production_database\\\":d.get(\\\"semi_production_database\\\"),\\\"preflight_ok\\\":(d.get(\\\"preflight\\\") or {}).get(\\\"ok\\\"),\\\"internal_failures\\\":d.get(\\\"internal_failures\\\"),\\\"external_blockers\\\":d.get(\\\"external_blockers\\\"),\\\"primary_keys\\\":list((d.get(\\\"primary_live\\\") or {}).keys()),\\\"soak_keys\\\":list((d.get(\\\"soak\\\") or {}).keys()),\\\"semi_keys\\\":list((d.get(\\\"semi_production\\\") or {}).keys()),\\\"run_now_coverage\\\":d.get(\\\"run_now_coverage\\\"),\\\"exit_integrity\\\":d.get(\\\"exit_integrity\\\"),\\\"extension_unresponsive\\\":(\\\"extension_unresponsive\\\" in raw or \\\"extension did not start\\\" in raw),\\\"token_like\\\":bool(re.search(r\\\"bridge_token|X-JobBot-Token|token_urlsafe|[A-Za-z0-9_-]{40,}\\\",raw))},indent=2,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env REPORT=out/production-validation/latest.json /opt/anaconda3/bin/python3 -c 'import os,json; d=json.load(open(os.environ[\\\"REPORT\\\"])); print(\\\"--- PREFLIGHT ---\\\"); print(json.dumps(d.get(\\\"preflight\\\"),indent=2,default=str)); print(\\\"--- PRIMARY ---\\\"); print(json.dumps(d.get(\\\"primary_live\\\"),indent=2,default=str));'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git for-each-ref --format=%(refname)\\\\ %(objectname) refs/heads/codex-fabric/evidence refs/remotes/origin | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --untracked-files=all | sed -n '1,160p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -C 5 'codex-fabric/evidence|project_id|canonical.*evidence|evidence commit|transport identity|audit.json' . /Users/haewonkim/.codex-fabric 2>/dev/null | sed -n '1,360p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -C 4 \\\"def handle|PrecisionStore|Database\\\\(|JOBBOT_DATABASE_PATH|extension_refresh_requests\\\" src/jobbot/bridge/rpc.py src/jobbot/legacy_engine.py src/jobbot/config.py src/jobbot/db.py | sed -n '1,320p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mktemp -d -t jobbot-CHG-39-r8-refresh'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-CHG-39-r8-refresh.3jduCc038X/refresh.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-CHG-39-r8-refresh.3jduCc038X/out /opt/anaconda3/bin/python3 -m jobbot refresh-extension --timeout 60'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,520p' tests/integration/test_chg112_production_integrity.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env REPORT=out/production-validation/latest.json /opt/anaconda3/bin/python3 -c 'import os; print(open(os.environ[\\\"REPORT\\\"],encoding=\\\"utf-8\\\").read(),end=\\\"\\\")'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env LI=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-CHG-39-r8-linkedin.rB9BBEIC5f/linkedin.sqlite3 IN=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-CHG-39-r8-indeed.oC5lLAKtdJ/indeed.sqlite3 GD=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-CHG-39-r8-glassdoor.X0s2fRil7w/glassdoor.sqlite3 /opt/anaconda3/bin/python3 -c 'import os,sqlite3,json; paths={\\\"linkedin\\\":os.environ[\\\"LI\\\"],\\\"indeed\\\":os.environ[\\\"IN\\\"],\\\"glassdoor\\\":os.environ[\\\"GD\\\"]}; out={};\nfor platform,path in paths.items():\n c=sqlite3.connect(path); c.row_factory=sqlite3.Row; value={\\\"database\\\":path};\n for table in [\\\"browser_runs\\\",\\\"browser_platform_runs\\\",\\\"browser_search_tasks\\\",\\\"browser_events\\\",\\\"search_task_results\\\",\\\"jobs\\\",\\\"source_occurrences\\\"]:\n  try: rows=[dict(r) for r in c.execute(f\\\"select * from {table} order by rowid\\\")]\n  except Exception as e: rows=[]; value.setdefault(\\\"errors\\\",[]).append(f\\\"{table}: {e}\\\")\n  for row in rows:\n   if \\\"payload_json\\\" in row:\n    raw=row.get(\\\"payload_json\\\")\n    try: row[\\\"payload\\\"]=json.loads(raw) if raw else {}\n    except Exception: row[\\\"payload\\\"]={\\\"raw\\\":raw}\n  value[table]=rows\n value[\\\"counts\\\"]={k:len(value.get(k,[])) for k in [\\\"browser_runs\\\",\\\"browser_platform_runs\\\",\\\"browser_search_tasks\\\",\\\"browser_events\\\",\\\"search_task_results\\\",\\\"jobs\\\",\\\"source_occurrences\\\"]}; c.close(); out[platform]=value\nprint(json.dumps(out,indent=2,ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3 -c 'import json; from pathlib import Path; from jobbot.runtime_binding import runtime_binding_diagnostics, chrome_target_diagnostics, deployment_diagnostics; p=Path.cwd(); print(json.dumps({\\\"runtime\\\":runtime_binding_diagnostics(p),\\\"chrome_target\\\":chrome_target_diagnostics(),\\\"deployment\\\":deployment_diagnostics(p)},indent=2,ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json,subprocess; run=lambda *a: subprocess.run(a,capture_output=True,text=True,check=False).stdout.strip(); print(json.dumps({\\\"branch\\\":run(\\\"git\\\",\\\"branch\\\",\\\"--show-current\\\"),\\\"head\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"HEAD\\\"),\\\"origin_main\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"refs/remotes/origin/main\\\"),\\\"requested_base\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"a526b5b827e5f5711975000bf9151e1f5cd2c4f9\\\"),\\\"tree\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"HEAD\"'^{tree}\"),\"status\":run(\"git\",\"status\",\"--short\",\"--branch\"),\"changed\":run(\"git\",\"diff\",\"--name-only\")},indent=2))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk /opt/anaconda3/bin/python3 -c 'import json; p=\\\"verification/CHG-39-r8.json\\\"; d=json.load(open(p)); print(json.dumps({\\\"exists\\\":True,\\\"keys\\\":list(d),\\\"bytes\\\":len(open(p,\\\"rb\\\").read()),\\\"verdict\\\":d[\\\"final_classification\\\"][\\\"verdict\\\"],\\\"validator_exit\\\":d[\\\"production_validation\\\"][\\\"exit_code\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk test -e .codex-fabric/audit.json; rtk echo audit_exit=$?'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json; d=json.load(open(\\\"verification/CHG-39-r8.json\\\")); hits=[]\n\ndef walk(x,path=\\\"\"'$\"):\n if isinstance(x,dict):\n  for k,v in x.items():\n   if \"token\" in str(k).lower() and not (str(k)==\"token_auth\" and isinstance(v,str)): hits.append((path+\".\"+str(k),v))\n   walk(v,path+\".\"+str(k))\n elif isinstance(x,list):\n  for i,v in enumerate(x): walk(v,path+f\"[{i}]\")\nwalk(d); print(json.dumps({\"token_key_hits\":hits},indent=2,default=str))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json; d=json.load(open(\\\"verification/CHG-39-r8.json\\\")); print(json.dumps({\\\"bytes\\\":len(open(\\\"verification/CHG-39-r8.json\\\",\\\"rb\\\").read()),\\\"sections\\\":list(d),\\\"verdict\\\":d[\\\"final_classification\\\"][\\\"verdict\\\"],\\\"PROD_READY\\\":d[\\\"production_validation\\\"][\\\"PROD_READY\\\"],\\\"internal_failures\\\":d[\\\"production_validation\\\"][\\\"internal_failures\\\"],\\\"soak\\\":d[\\\"production_validation\\\"][\\\"soak\\\"],\\\"semi_production\\\":d[\\\"production_validation\\\"][\\\"semi_production\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --name-only && rtk git status --short --untracked-files=all | sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -l .codex-fabric/audit.json'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --name-only'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-39-r8.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"verify: CHG-39-r8 exact integrated main\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json,subprocess; run=lambda *a: subprocess.run(a,capture_output=True,text=True,check=False).stdout.strip(); print(json.dumps({\\\"branch\\\":run(\\\"git\\\",\\\"branch\\\",\\\"--show-current\\\"),\\\"head\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"HEAD\\\"),\\\"parent\\\":run(\\\"git\\\",\\\"show\\\",\\\"-s\\\",\\\"--format=%P\\\",\\\"HEAD\\\"),\\\"tree\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"HEAD\"'^{tree}\"),\"status\":run(\"git\",\"status\",\"--short\",\"--branch\"),\"parent_diff\":run(\"git\",\"diff\",\"--name-only\",\"a526b5b827e5f5711975000bf9151e1f5cd2c4f9\",\"HEAD\")},indent=2))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /opt/anaconda3/bin/python3 /Users/haewonkim/.codex-fabric/fabric.py --help'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files /Users/haewonkim/.codex-fabric -g 'fabric.py' -g '*fabric*' | sed -n '1,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl --help'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -l 'CHG-39-r8|CF-3c78bea7eea87b11c8ae3972' /Users/haewonkim/.codex-fabric/jobs -g 'job.json' | sed -n '1,100p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl publish-evidence CF-3c78bea7eea87b11c8ae3972'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/jobs/CF-3c78bea7eea87b11c8ae3972.running/job.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files /Users/haewonkim/.codex-fabric/jobs/CF-3c78bea7eea87b11c8ae3972.running | sort | sed -n '1,100p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-3c78bea7eea87b11c8ae3972'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -C 12 \\\"publish-evidence|publish_pending|JOB_NOT_TERMINAL|terminal job not found|def.*evidence\\\" /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py | sed -n '1,380p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,28p' verification/CHG-39-r8.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-39-r8.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --name-only'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit --amend --no-edit'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json; print(json.load(open(\\\"extension/manifest.json\\\"))[\\\"version_name\\\"])'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -l .codex-fabric/audit.json'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json; d=json.load(open(\\\"verification/CHG-39-r8.json\\\")); print(json.dumps({\\\"bytes\\\":len(open(\\\"verification/CHG-39-r8.json\\\",\\\"rb\\\").read()),\\\"sections\\\":list(d),\\\"fabric\\\":d[\\\"fabric\\\"],\\\"verdict\\\":d[\\\"final_classification\\\"][\\\"verdict\\\"],\\\"PROD_READY\\\":d[\\\"production_validation\\\"][\\\"PROD_READY\\\"],\\\"validator_exit\\\":d[\\\"production_validation\\\"][\\\"exit_code\\\"]},indent=2,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-3c78bea7eea87b11c8ae3972'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'bridge_token=|X-JobBot-Token|token_urlsafe|Authorization: Bearer|password|cookie' verification/CHG-39-r8.json || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3 -c 'import json,subprocess; run=lambda *a: subprocess.run(a,capture_output=True,text=True,check=False).stdout.strip(); print(json.dumps({\\\"branch\\\":run(\\\"git\\\",\\\"branch\\\",\\\"--show-current\\\"),\\\"verification_head\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"HEAD\\\"),\\\"sole_parent\\\":run(\\\"git\\\",\\\"show\\\",\\\"-s\\\",\\\"--format=%P\\\",\\\"HEAD\\\"),\\\"origin_main\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"refs/remotes/origin/main\\\"),\\\"requested_base\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"a526b5b827e5f5711975000bf9151e1f5cd2c4f9\\\"),\\\"main_tree\\\":run(\\\"git\\\",\\\"rev-parse\\\",\\\"a526b5b827e5f5711975000bf9151e1f5cd2c4f9\"'^{tree}\"),\"verification_tree\":run(\"git\",\"rev-parse\",\"HEAD''^{tree}\"),\"parent_diff\":run(\"git\",\"diff\",\"--name-only\",\"a526b5b827e5f5711975000bf9151e1f5cd2c4f9\",\"HEAD\"),\"status\":run(\"git\",\"status\",\"--short\",\"--branch\")},indent=2))'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 260,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.99,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 7529472,
+      "fresh_input_tokens": 233657,
+      "input_tokens": 7763129,
+      "non_reasoning_output_tokens": 18807,
+      "output_tokens": 36464,
+      "reasoning_output_tokens": 17657,
+      "total_processed_tokens": 7799593
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "7facf933098d2531b5b913f884f3a4a6c2363ed9",
+      "subject": "verify: CHG-39-r8 exact integrated main"
+    }
+  ],
+  "diff": {
+    "additions": 4466,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 211820,
+        "path": "verification/CHG-39-r8.json",
+        "sha256": "f0ca28ffd7bf2b020175e3931c9c8b280a082fd50a0a47165c8769b1b6a5cc84"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-18T22:15:09Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+    "branch": "codex/jobbot-CHG-39-r8",
+    "detached_verify": false,
+    "head_sha": "7facf933098d2531b5b913f884f3a4a6c2363ed9",
+    "remote_exact_head": true,
+    "remote_head_sha": "7facf933098d2531b5b913f884f3a4a6c2363ed9",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+    "work_branch": "codex/jobbot-CHG-39-r8",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-3c78bea7eea87b11c8ae3972",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r8",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r8"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r8",
+  "schema_version": 1,
+  "started_at": "2026-09-18T22:00:45Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 864,
+    "queue_seconds": 0,
+    "total_seconds": 864
+  },
+  "transport": {
+    "bytes": 11393,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 11112,
+    "prompt_sha256": "cd2f8a0a5b3afd218c349851c20c8753e0c789e85903bf5acb4460b9f64b1615",
+    "sha256": "3c78bea7eea87b11c8ae39724c40d4e52a3e89fbc7cfbc1b16dfa7b176983032"
+  }
+}
