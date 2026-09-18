@@ -1,0 +1,331 @@
+{
+  "accepted_at": "2026-09-18T23:32:50Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 149,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_auth_return_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_service_worker_scope_recovery_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && sed -n '1,240p' /Users/haewonkim/.codex/RTK.md && sed -n '1,240p' /Users/haewonkim/.codex/law.md && printf '\\\\n--- repo status ---\\\\n' && git status --short --branch && printf '\\\\n--- remotes ---\\\\n' && git remote -v && printf '\\\\n--- recent commits ---\\\\n' && git log --oneline --decorate -8\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git fetch origin main && printf '\\\\n--- target/base ---\\\\n' && rtk git rev-parse origin/main && rtk git rev-parse a526b5b827e5f5711975000bf9151e1f5cd2c4f9 && printf '\\\\n--- candidate object ---\\\\n' && rtk git cat-file -t b84223c7b2296aa416d94e2e194deb25962fe6f2 && rtk git show -s --format='commit=%H%nparent=%P%ntree=%T%nsubject=%s' b84223c7b2296aa416d94e2e194deb25962fe6f2 && printf '\\\\n--- candidate ancestry/tree ---\\\\n' && rtk git merge-base --is-ancestor a526b5b827e5f5711975000bf9151e1f5cd2c4f9 b84223c7b2296aa416d94e2e194deb25962fe6f2 && rtk git rev-parse b84223c7b2296aa416d94e2e194deb25962fe6f2\"'^{tree} && rtk git rev-parse f910d69c8f342359aa30e865a3524155014da39a''^{tree} && printf '\"'\\\\n--- refs containing candidate ---\\\\n' && rtk git branch -a --contains b84223c7b2296aa416d94e2e194deb25962fe6f2 || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git merge --ff-only b84223c7b2296aa416d94e2e194deb25962fe6f2 && printf '\\\\n--- branch/tree ---\\\\n' && rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD\"'^{tree} && printf '\"'\\\\n--- instruction files ---\\\\n' && rtk rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!dist'\"' -g '\"'!build'\"' && printf '\\\\n--- top-level files ---\\\\n' && rtk rg --files -g '\"'!node_modules'\"' -g '\"'!dist'\"' -g '\"'!build'\"' | sed -n '1,160p' && printf '\\\\n--- candidate diff ---\\\\n' && rtk git diff --stat a526b5b827e5f5711975000bf9151e1f5cd2c4f9 HEAD && rtk git diff --check a526b5b827e5f5711975000bf9151e1f5cd2c4f9 HEAD\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- top-level files ---' && rtk rg --files -g '\"'!node_modules'\"' -g '\"'!dist'\"' -g '\"'!build'\"' | sed -n '1,220p' && printf '%s\\\\n' '--- candidate diff ---' && rtk git diff --stat a526b5b827e5f5711975000bf9151e1f5cd2c4f9 HEAD && rtk git diff --check a526b5b827e5f5711975000bf9151e1f5cd2c4f9 HEAD && rtk git diff -- extension/manifest.json extension/service_worker.js tests/extension_service_worker_auth_return_test.js tests/extension_service_worker_scope_recovery_test.js tests/integration/test_extension_bridge.py tests/integration/test_extension_refresh.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- command references ---' && rtk rg -n \\\"REFRESH_EXTENSION|refresh|acceptance|browser_platform_runs|platform_runs|RUN_PLATFORM_LINKEDIN|data/jobs.sqlite3|JOBBOT_DB|JOBBOT_OUT|profile\\\" README.md docs src tests *.command config scripts -g '\"'!extension/*.js'\"' | sed -n '1,320p' && printf '%s\\\\n' '--- CLI help candidates ---' && rtk python -m jobbot --help 2>&1 | sed -n '1,220p' && printf '%s\\\\n' '--- scripts ---' && rtk sed -n '1,240p' REFRESH_EXTENSION.command && rtk sed -n '1,240p' RUN_PLATFORM_LINKEDIN.command && rtk sed -n '1,200p' scripts/jobbot.sh\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- environment launchers ---' && rtk sed -n '1,220p' scripts/mac_python.sh && rtk sed -n '1,240p' scripts/production_env.sh && printf '%s\\\\n' '--- refresh CLI ---' && rtk sed -n '250,335p' src/jobbot/cli.py && rtk sed -n '1,380p' src/jobbot/orchestrator.py && printf '%s\\\\n' '--- runtime binding ---' && rtk sed -n '1,360p' src/jobbot/runtime_binding.py && printf '%s\\\\n' '--- config ---' && rtk sed -n '1,180p' src/jobbot/config.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '300,520p' src/jobbot/orchestrator.py && printf '%s\\\\n' '--- versions/identity ---' && rtk sed -n '1,240p' src/jobbot/extension_identity.py && rtk cat extension/manifest.json && rtk cat config/EXTENSION_ID.txt && printf '%s\\\\n' '--- runtime config ---' && rtk sed -n '1,220p' config/runtime.toml && printf '%s\\\\n' '--- README acceptance section ---' && rtk sed -n '1,180p' README.md && printf '%s\\\\n' '--- acceptance docs ---' && rtk sed -n '1,260p' docs/ACCEPTANCE_TEST.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src .venv/bin/python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_chg112_production_integrity'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk bash -n REFRESH_EXTENSION.command RUN_PLATFORM_LINKEDIN.command scripts/jobbot.sh && for file in extension/*.js; do rtk node --check \"$file\" || exit 1; done && rtk env PYTHONPATH=src .venv/bin/python -m compileall -q src tests'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk bash -n REFRESH_EXTENSION.command RUN_PLATFORM_LINKEDIN.command scripts/jobbot.sh RUN_ACCEPTANCE_INDEED.command RUN_PLATFORM_INDEED.command RUN_PLATFORM_GLASSDOOR.command'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'for file in extension/*.js; do rtk node --check \"$file\" || exit 1; done'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_chg112_production_integrity'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- refresh response implementation ---' && rtk sed -n '1,250p' src/jobbot/bridge/rpc.py && printf '%s\\\\n' '--- refresh-related extension code ---' && rtk rg -n -C 5 \\\"extension_refresh|platform_auth_result|auth_state|sign_in_required|readiness\\\" extension/service_worker.js extension/dashboard.js extension/common.js extension/linkedin.js src/jobbot tests/extension_service_worker_auth_return_test.js | sed -n '1,340p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import json; from pathlib import Path; from jobbot.extension_identity import extension_build; from jobbot.runtime_binding import runtime_binding_diagnostics, extension_source_identity; root=Path.cwd(); print(json.dumps({\\\"build\\\":extension_build(root),\\\"extension_source_identity\\\":extension_source_identity(root),\\\"runtime_binding\\\":runtime_binding_diagnostics(root)}, indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'mktemp -d /tmp/jobbot-chg132-r3.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json\nimport os\nimport subprocess\nimport sys\nfrom pathlib import Path\n\nroot = Path.cwd()\nlive = Path('/tmp/jobbot-chg132-r3.acHiS6')\ndatabase = live / 'refresh.sqlite3'\nout = live / 'refresh-out'\nexpected_build = '3.2.2-prod-ready.672cf88.11'\nexpected_root = '/Users/haewonkim/Library/Application Support/JobBot/extension'\nexpected_id = 'jfdlmelgonjhgnabpbipjefgamedpgfb'\nenv = dict(os.environ)\nenv.update({'PYTHONPATH': 'src', 'JOBBOT_DATABASE_PATH': str(database), 'JOBBOT_OUTPUT_DIR': str(out)})\nproc = subprocess.run(\n    [sys.executable, '-m', 'jobbot', 'refresh-extension', '--timeout', '60'],\n    cwd=root, env=env, capture_output=True, text=True, check=False,\n)\ntry:\n    result = json.loads(proc.stdout)\nexcept Exception:\n    result = {}\nsource_identity = result.get('runtime_binding', {}).get('deployment', {}).get('source_identity', '')\nchecks = {\n    'cli_exit_zero': proc.returncode == 0,\n    'ok': result.get('ok') is True,\n    'identity_confirmed': result.get('identity_confirmed') is True,\n    'observed_build': result.get('observed_build') == expected_build,\n    'observed_source_identity': result.get('observed_source_identity') == source_identity and bool(source_identity),\n    'observed_deployment_root': result.get('observed_deployment_root') == expected_root,\n    'classification': result.get('diagnostics', {}).get('classification') == 'intended_extension_reachable_and_current',\n    'profile_directory': result.get('runtime_binding', {}).get('chrome_target', {}).get('profile_directory') == 'Default',\n    'extension_id': result.get('runtime_binding', {}).get('deployment', {}).get('extension_id') == expected_id,\n    'stable_root': result.get('runtime_binding', {}).get('deployment', {}).get('extension_root') == expected_root,\n}\nsummary = {\n    'checks': checks,\n    'returncode': proc.returncode,\n    'observed_build': result.get('observed_build', ''),\n    'observed_source_identity': result.get('observed_source_identity', ''),\n    'observed_deployment_root': result.get('observed_deployment_root', ''),\n    'classification': result.get('diagnostics', {}).get('classification', ''),\n    'profile_directory': result.get('runtime_binding', {}).get('chrome_target', {}).get('profile_directory', ''),\n    'database_path': str(database),\n}\nprint(json.dumps(summary, sort_keys=True))\nif not all(checks.values()):\n    sys.exit(1)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'mktemp -d /tmp/jobbot-chg132-r3-live.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg132-r3-live.x30bpv/acceptance.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg132-r3-live.x30bpv/out python -m jobbot acceptance --platform linkedin --days 7 --max-results 20'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -C 4 \\\"CREATE TABLE.*browser_platform_runs|browser_platform_runs|auth_required|platform_auth_result|readiness_state|auth_status|last_error\\\" src/jobbot/browser_tasks.py src/jobbot/migrations src/jobbot/bridge/rpc.py | sed -n '1,460p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '26,72p' src/jobbot/migrations/m0002_browser_tasks.py && rtk sed -n '1,120p' src/jobbot/migrations/m0015_production_integrity_states.py && rtk rg -n -C 5 \\\"action=='platform_auth_result'|platform_auth_result|action=='platform_readiness'\\\" src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '430,480p' src/jobbot/bridge/rpc.py && rtk sed -n '580,610p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '90,205p' extension/service_worker.js && rtk sed -n '395,425p' extension/service_worker.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json\nimport sqlite3\nimport sys\nfrom pathlib import Path\n\nroot = Path.cwd().resolve()\ndatabase = Path('/tmp/jobbot-chg132-r3-live.x30bpv/acceptance.sqlite3').resolve()\nout = Path('/tmp/jobbot-chg132-r3-live.x30bpv/out').resolve()\nfailures = []\n\nif database == (root / 'data' / 'jobs.sqlite3').resolve():\n    failures.append('database_is_production')\nif not database.is_file():\n    failures.append('database_missing')\n    print('R3 assertion failed: ' + ','.join(failures), file=sys.stderr)\n    sys.exit(1)\n\nconn = sqlite3.connect(database)\nconn.row_factory = sqlite3.Row\ntry:\n    table_names = [row[0] for row in conn.execute(\\\"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'\\\")]\n    schemas = {}\n    for table in table_names:\n        ident = '\\\"' + table.replace('\\\"', '\\\"\\\"') + '\\\"'\n        schemas[table] = [row[1] for row in conn.execute(f'PRAGMA table_info({ident})')]\n    required = {'browser_platform_runs', 'browser_search_tasks', 'browser_events'}\n    missing = sorted(required - set(schemas))\n    if missing:\n        failures.append('missing_tables:' + ','.join(missing))\n\n    def rows(table):\n        ident = '\\\"' + table.replace('\\\"', '\\\"\\\"') + '\\\"'\n        return [dict(row) for row in conn.execute(f'SELECT * FROM {ident}')]\n\n    all_rows = {table: rows(table) for table in table_names}\n    corpus_parts = []\n    for table_rows in all_rows.values():\n        for row in table_rows:\n            for value in row.values():\n                if isinstance(value, bytes):\n                    corpus_parts.append(value.decode('utf-8', 'replace'))\n                elif isinstance(value, str):\n                    corpus_parts.append(value)\n    if out.is_dir():\n        for path in sorted(out.rglob('*')):\n            if path.is_file():\n                try:\n                    corpus_parts.append(path.read_text(encoding='utf-8', errors='replace'))\n                except OSError:\n                    failures.append('unreadable_log:' + path.name)\n    corpus = '\\\\n'.join(corpus_parts)\n    lowered = corpus.casefold()\n    exception_occurrences = lowered.count('auth_state is not defined')\n    reference_error_occurrences = lowered.count('referenceerror')\n    probe_failure_occurrences = lowered.count('auth/readiness probe failed')\n    if exception_occurrences \"'!= 0:\n        failures.append('\"'old_exception_present')\n    if reference_error_occurrences \"'!= 0 or probe_failure_occurrences != 0:\n        failures.append('\"'equivalent_probe_exception_present')\n\n    platform_rows = [row for row in all_rows.get('browser_platform_runs', []) if str(row.get('platform', '')).casefold() == 'linkedin']\n    task_rows = [row for row in all_rows.get('browser_search_tasks', []) if str(row.get('platform', '')).casefold() == 'linkedin']\n    event_rows = [row for row in all_rows.get('browser_events', []) if str(row.get('event_type', '')).casefold() in {'auth_failed', 'auth_verified', 'platform_readiness', 'task_auth_required', 'task_deferred_by_platform'}]\n    if not platform_rows:\n        failures.append('missing_linkedin_platform_row')\n    if not task_rows:\n        failures.append('missing_linkedin_task_rows')\n\n    latest_platform = sorted(platform_rows, key=lambda row: int(row.get('browser_run_id') or 0), reverse=True)[0] if platform_rows else {}\n    run_id = int(latest_platform.get('browser_run_id') or 0)\n    run_tasks = [row for row in task_rows if int(row.get('browser_run_id') or 0) == run_id] or task_rows\n    active = [row for row in run_tasks if str(row.get('status', '')).casefold() == 'running']\n    first_task = sorted(active or run_tasks, key=lambda row: int(row.get('task_id') or 0))[0] if (active or run_tasks) else {}\n    first_status = str(first_task.get('status') or '')\n    first_reason = ' '.join(str(first_task.get(field) or '') for field in ('last_error', 'challenge_reason', 'safety_stop_reason'))\n    first_reason_lower = first_reason.casefold()\n    explicit_signin_reason = any(token in first_reason_lower for token in ('sign in', 'sign-in', 'login', 'log in', 'authentication required', 'not authenticated'))\n\n    auth_status = str(latest_platform.get('auth_status') or '')\n    readiness_state = str(latest_platform.get('readiness_state') or '')\n    readiness_reason = str(latest_platform.get('readiness_reason') or '')\n    results_seen = sum(int(row.get('results_seen') or 0) for row in run_tasks)\n    jobs_recorded = int(latest_platform.get('jobs_recorded') or 0)\n    persisted_results = 0\n    if 'search_task_results' in all_rows:\n        task_ids = {int(row.get('task_id') or 0) for row in run_tasks}\n        persisted_results = sum(1 for row in all_rows['search_task_results'] if int(row.get('task_id') or 0) in task_ids)\n\n    outcome_a = (\n        auth_status == 'not_authenticated'\n        and readiness_state == 'sign_in_required'\n        and first_status == 'auth_required'\n        and explicit_signin_reason\n        and readiness_state not in {'retryable', 'unknown'}\n        and 'auth/readiness probe failed' not in readiness_reason.casefold()\n    )\n    outcome_b = (\n        auth_status == 'verified'\n        and readiness_state in {'verified', 'resumed'}\n        and not any(str(row.get('status') or '') == 'auth_required' for row in run_tasks)\n        and any(\n            str(row.get('page_context_status') or '').casefold() == 'verified'\n            or int(row.get('results_seen') or 0) > 0\n            or persisted_results > 0\n            for row in run_tasks\n        )\n    )\n    if not (outcome_a or outcome_b):\n        failures.append('no_coherent_acceptable_outcome')\n\n    if any(str(row.get('status') or '') == 'auth_required' for row in run_tasks) and readiness_state in {'retryable', 'unknown'}:\n        failures.append('contradictory_auth_required_platform_state')\n\n    summary = {\n        'platform_auth_status': auth_status,\n        'readiness_state': readiness_state,\n        'first_task_status': first_status,\n        'first_task_reason_class': 'explicit_sign_in_reason' if explicit_signin_reason else 'not_explicit_sign_in_reason',\n        'outcome': 'A_clean_sign_in_required' if outcome_a else ('B_verified_ready' if outcome_b else 'none'),\n        'exception_occurrences': exception_occurrences,\n        'reference_error_occurrences': reference_error_occurrences,\n        'probe_failure_occurrences': probe_failure_occurrences,\n        'results_seen': results_seen,\n        'jobs_recorded': jobs_recorded,\n        'persisted_results': persisted_results,\n        'database_path': str(database),\n        'database_is_production': database == (root / 'data' / 'jobs.sqlite3').resolve(),\n        'schema_tables_checked': sorted(required & set(schemas)),\n    }\n    if failures:\n        print('R3 assertion failed: ' + ','.join(failures), file=sys.stderr)\n        print(json.dumps(summary, sort_keys=True), file=sys.stderr)\n        sys.exit(1)\n    print(json.dumps(summary, sort_keys=True))\nfinally:\n    conn.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- final local invariants ---' && rtk git rev-parse HEAD && rtk git rev-parse HEAD\"'^{tree} && rtk git rev-parse origin/main && rtk git show -s --format='\"'parent=%P tree=%T' HEAD && rtk git status --short --branch && printf '%s\\\\n' '--- candidate files under Fabric path ---' && if rtk git ls-tree -r --name-only HEAD | rtk rg '(\"'^|/)'\"\\\\.codex-fabric(/|\"'$)'\"'; then exit 1; else true; fi && printf '%s\\\\n' '--- existing remote work branch ---' && rtk git ls-remote origin refs/heads/codex/jobbot-CHG-132-r3\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push -u origin codex/jobbot-CHG-132-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'set -e\nhead=$(rtk git rev-parse HEAD)\ntree=$(rtk git rev-parse HEAD''^{tree})\nparent=$(rtk git rev-parse HEAD''^)\norigin_main=$(rtk git ls-remote origin refs/heads/main | awk '\"'{print \"'$1}'\"')\norigin_work=\"'$(rtk git ls-remote origin refs/heads/codex/jobbot-CHG-132-r3 | awk '\"'{print \"'$1}'\"')\n[ \\\"\"'$head\" = b84223c7b2296aa416d94e2e194deb25962fe6f2 ]\n[ \"$tree\" = f910d69c8f342359aa30e865a3524155014da39a ]\n[ \"$parent\" = a526b5b827e5f5711975000bf9151e1f5cd2c4f9 ]\n[ \"$origin_main\" = a526b5b827e5f5711975000bf9151e1f5cd2c4f9 ]\n[ \"$origin_work\" = \"$head\" ]\nif rtk git ls-tree -r --name-only HEAD | rtk rg '\"'(\"'^|/)'\"\\\\.codex-fabric(/|\"'$)'\"'; then exit 1; fi\n[ -z \\\"\"'$(rtk git status --porcelain)\" ]\nrtk git diff --check\nprintf '\"'%s\\\\n' \\\"HEAD=\"'$head\" \"TREE=$tree\" \"PARENT=$parent\" \"REMOTE_MAIN=$origin_main\" \"REMOTE_WORK=$origin_work\" \"WORKTREE=clean\" \"FABRIC_PATH_IN_TREE=false\"'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'set -e\nhead=$(rtk proxy git rev-parse HEAD)\ntree=$(rtk proxy git rev-parse HEAD''^{tree})\nparent=$(rtk proxy git rev-parse HEAD''^)\norigin_main=$(rtk proxy git ls-remote origin refs/heads/main | awk '\"'{print \"'$1}'\"')\norigin_work=\"'$(rtk proxy git ls-remote origin refs/heads/codex/jobbot-CHG-132-r3 | awk '\"'{print \"'$1}'\"')\n[ \\\"\"'$head\" = b84223c7b2296aa416d94e2e194deb25962fe6f2 ]\n[ \"$tree\" = f910d69c8f342359aa30e865a3524155014da39a ]\n[ \"$parent\" = a526b5b827e5f5711975000bf9151e1f5cd2c4f9 ]\n[ \"$origin_main\" = a526b5b827e5f5711975000bf9151e1f5cd2c4f9 ]\n[ \"$origin_work\" = \"$head\" ]\nif rtk proxy git ls-tree -r --name-only HEAD | rtk rg '\"'(\"'^|/)'\"\\\\.codex-fabric(/|\"'$)'\"'; then exit 1; fi\nstatus=\"'$(rtk proxy git status --porcelain=v1)\n[ -z \"$status\" ]\nrtk proxy git diff --check\nprintf '\"'%s\\\\n' \\\"HEAD=\"'$head\" \"TREE=$tree\" \"PARENT=$parent\" \"REMOTE_MAIN=$origin_main\" \"REMOTE_WORK=$origin_work\" \"WORKTREE=clean\" \"FABRIC_PATH_IN_TREE=false\"'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'set -e\nhead=$(rtk proxy git rev-parse HEAD)\ntree=$(rtk proxy git rev-parse HEAD''^{tree})\nparent=$(rtk proxy git rev-parse HEAD''^)\norigin_main=$(rtk proxy git ls-remote origin refs/heads/main | awk '\"'{print \"'$1}'\"')\norigin_work=\"'$(rtk proxy git ls-remote origin refs/heads/codex/jobbot-CHG-132-r3 | awk '\"'{print \"'$1}'\"')\n[ \\\"\"'$head\" = b84223c7b2296aa416d94e2e194deb25962fe6f2 ]\n[ \"$tree\" = f910d69c8f342359aa30e865a3524155014da39a ]\n[ \"$parent\" = a526b5b827e5f5711975000bf9151e1f5cd2c4f9 ]\n[ \"$origin_main\" = a526b5b827e5f5711975000bf9151e1f5cd2c4f9 ]\n[ \"$origin_work\" = \"$head\" ]\nif rtk proxy git ls-tree -r --name-only HEAD | rtk rg '\"'(\"'^|/)'\"\\\\.codex-fabric(/|\"'$)'\"'; then exit 1; fi\nworktree_status=\"'$(rtk proxy git status --porcelain=v1)\n[ -z \"$worktree_status\" ]\nrtk proxy git diff --check\nprintf '\"'%s\\\\n' \\\"HEAD=\"'$head\" \"TREE=$tree\" \"PARENT=$parent\" \"REMOTE_MAIN=$origin_main\" \"REMOTE_WORK=$origin_work\" \"WORKTREE=clean\" \"FABRIC_PATH_IN_TREE=false\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 92,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 95.26,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 2315776,
+      "fresh_input_tokens": 115153,
+      "input_tokens": 2430929,
+      "non_reasoning_output_tokens": 9487,
+      "output_tokens": 19042,
+      "reasoning_output_tokens": 9555,
+      "total_processed_tokens": 2449971
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "b84223c7b2296aa416d94e2e194deb25962fe6f2",
+      "subject": "Fix bounded CHG-132 auth return path"
+    }
+  ],
+  "diff": {
+    "additions": 156,
+    "changed_files": 6,
+    "commit_count": 1,
+    "deletions": 5
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "81b3b9b6488b66bcb6c88f0c640dde0c7530c091123783f3197eb479c8626841"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-18T23:39:43Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+    "branch": "codex/jobbot-CHG-132-r3",
+    "detached_verify": false,
+    "head_sha": "b84223c7b2296aa416d94e2e194deb25962fe6f2",
+    "remote_exact_head": true,
+    "remote_head_sha": "b84223c7b2296aa416d94e2e194deb25962fe6f2",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+    "work_branch": "codex/jobbot-CHG-132-r3",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-1f456ff8bd906eadecb231f4",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-132-r3",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-132-r3"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-132-r3",
+  "schema_version": 1,
+  "started_at": "2026-09-18T23:32:50Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 413,
+    "queue_seconds": 0,
+    "total_seconds": 413
+  },
+  "transport": {
+    "bytes": 10225,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 9946,
+    "prompt_sha256": "738fa349416bfec5f56948cefc74e9d17e54a6af8491246ef6a98cfa8c0e93aa",
+    "sha256": "1f456ff8bd906eadecb231f48c0be4cc55bf25a60d31782fa959dacbb2599b3a"
+  }
+}
