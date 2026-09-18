@@ -1,0 +1,516 @@
+{
+  "schema_version": 1,
+  "request": "CHG-39-r7",
+  "operation": "VERIFY",
+  "verification_date": "2026-09-18",
+  "exact_binding": {
+    "head": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "origin_main": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "base": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "base_method": "git merge-base HEAD refs/remotes/origin/main",
+    "initial_worktree_clean": true,
+    "branch": "codex/jobbot-CHG-39-r7",
+    "extension_manifest_version_name": "3.2.2-prod-ready.672cf88.9",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "stable_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "chrome": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "profile": {
+      "browser": "Google Chrome",
+      "profile_directory": "Default",
+      "binding_path": "/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json",
+      "targeted": true
+    },
+    "integrated_source_identity": "sha256:0ffaafe59b44b77dd49524c7f7b6d911ed2c94dd554213c062cc3b7b62cac3ff",
+    "deployment_tree_identity": "sha256:0ffaafe59b44b77dd49524c7f7b6d911ed2c94dd554213c062cc3b7b62cac3ff",
+    "target_tree_identity_unchanged": true,
+    "deployment_identity": {
+      "classification": "intended_extension_reachable_and_current",
+      "identity_confirmed": true,
+      "observed_build": "3.2.2-prod-ready.672cf88.9",
+      "observed_source_identity": "sha256:0ffaafe59b44b77dd49524c7f7b6d911ed2c94dd554213c062cc3b7b62cac3ff",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "expected_source_head": "f711ff0e736065726c70021c8b254fddbbaa237d",
+      "refreshes": [
+        {
+          "kind": "initial_sync_refresh",
+          "status": "confirmed",
+          "identity_confirmed": true,
+          "observed_build": "3.2.2-prod-ready.672cf88.9",
+          "diagnostics_classification": "intended_extension_reachable_and_current"
+        },
+        {
+          "kind": "indeed_bounded_recovery",
+          "status": "confirmed",
+          "identity_confirmed": true,
+          "observed_build": "3.2.2-prod-ready.672cf88.9",
+          "diagnostics_classification": "intended_extension_reachable_and_current"
+        },
+        {
+          "kind": "glassdoor_bounded_recovery",
+          "status": "confirmed",
+          "identity_confirmed": true,
+          "observed_build": "3.2.2-prod-ready.672cf88.9",
+          "diagnostics_classification": "intended_extension_reachable_and_current"
+        }
+      ],
+      "unauthorized_bridge_rejection": true,
+      "deployment_marker_observed_source_head": "b05c0b6bc3acd60dd0bf735a8d53a7ef9e772f12",
+      "deployment_marker_source_head_note": "The repository-native runtime contract confirms source identity/tree/build/root; the legacy marker source_head field is not part of the confirmation predicate and was not rewritten because the deployed tree was already current."
+    }
+  },
+  "warmup_recheck": {
+    "opener": {
+      "command": "OPEN_BIG3_LOGINS.command",
+      "surfaces": [
+        "https://www.linkedin.com/jobs/",
+        "https://www.indeed.com/",
+        "https://www.glassdoor.com/Job/index.htm"
+      ],
+      "normal_chrome_navigation": true
+    },
+    "probe_definition": {
+      "repository_native_path": "enqueue_validation + normal-Chrome launch_browser_run",
+      "query": "patient enrollment specialist",
+      "window_days": 7,
+      "max_results": 3,
+      "fresh_isolated_database_per_platform": true,
+      "challenge_bypass": false,
+      "recovery_limit": "one refresh plus one exact-search navigation retry per nonresponsive platform"
+    },
+    "linkedin": {
+      "attempts": [
+        {
+          "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/CHG-39-r7-warmup-linkedin.sqlite3",
+          "run_id": 1,
+          "requested_search_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+          "auth_status": "verified",
+          "readiness_state": "verified",
+          "readiness_reason": "linkedin requested search surface ready; requested=https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD observed=https://www.linkedin.com/jobs/search/?currentJobId=4469227431&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD",
+          "observed_url": "https://www.linkedin.com/jobs/search/?currentJobId=4469227431&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD",
+          "page_context_status": "verified",
+          "content_script_responded": true,
+          "task_status": "incomplete",
+          "task_safety_stop_reason": "Acceptance limit reached (3); production has no count limit",
+          "pages_visited": 2,
+          "results_seen": 14,
+          "cards_extracted": 14,
+          "cards_persisted": 14,
+          "detail_count_read": 3,
+          "detail_complete": 3,
+          "detail_content_complete": 3,
+          "detail_enriched": 3
+        }
+      ],
+      "positive_gate": true,
+      "representative_detail": {
+        "source_job_id": "4469227431",
+        "normalized_title": "Clinical Registry Analyst",
+        "company": "UW Health",
+        "description_length": 3236,
+        "content_state": "COMPLETE",
+        "enrichment_status": "ENRICHED",
+        "detail_status": "COMPLETE",
+        "requested_search_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+        "observed_search_pane_url": "https://www.linkedin.com/jobs/search/?currentJobId=4469227431&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD",
+        "acquisition_mode": "search_pane",
+        "acquisition_evidence": "detail_read event detail_acquisition.mode=search_pane and About the job description evidence"
+      }
+    },
+    "indeed": {
+      "attempts": [
+        {
+          "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/CHG-39-r7-warmup-indeed.sqlite3",
+          "run_id": 1,
+          "requested_search_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+          "observed_url": "",
+          "auth_status": "unknown",
+          "readiness_state": "retryable",
+          "readiness_reason": "auth/readiness probe failed: content script did not respond",
+          "page_context_status": "UNVERIFIED",
+          "content_script_responded": false,
+          "task_status": "deferred_by_platform",
+          "results_seen": 0,
+          "cards_persisted": 0,
+          "challenge_detected": false,
+          "sign_in_required": false
+        },
+        {
+          "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/CHG-39-r7-warmup-indeed-retry.sqlite3",
+          "run_id": 1,
+          "requested_search_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+          "observed_url": "",
+          "auth_status": "unknown",
+          "readiness_state": "retryable",
+          "readiness_reason": "auth/readiness probe failed: content script did not respond",
+          "page_context_status": "UNVERIFIED",
+          "content_script_responded": false,
+          "task_status": "deferred_by_platform",
+          "results_seen": 0,
+          "cards_persisted": 0,
+          "challenge_detected": false,
+          "sign_in_required": false,
+          "bounded_recovery": "refresh-extension confirmed .9, then fresh exact-search navigation retry"
+        }
+      ],
+      "final_state": "VERIFY/external",
+      "captcha_state": "not_observed",
+      "false_sign_out": false
+    },
+    "glassdoor": {
+      "attempts": [
+        {
+          "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/CHG-39-r7-warmup-glassdoor.sqlite3",
+          "run_id": 1,
+          "requested_search_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+          "observed_url": "",
+          "auth_status": "unknown",
+          "readiness_state": "retryable",
+          "readiness_reason": "auth/readiness probe failed: content script did not respond",
+          "page_context_status": "UNVERIFIED",
+          "content_script_responded": false,
+          "task_status": "deferred_by_platform",
+          "results_seen": 0,
+          "cards_persisted": 0,
+          "challenge_detected": false,
+          "sign_in_required": false
+        },
+        {
+          "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/CHG-39-r7-warmup-glassdoor-retry.sqlite3",
+          "run_id": 1,
+          "requested_search_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+          "observed_url": "",
+          "auth_status": "unknown",
+          "readiness_state": "retryable",
+          "readiness_reason": "auth/readiness probe failed: content script did not respond",
+          "page_context_status": "UNVERIFIED",
+          "content_script_responded": false,
+          "task_status": "deferred_by_platform",
+          "results_seen": 0,
+          "cards_persisted": 0,
+          "challenge_detected": false,
+          "sign_in_required": false,
+          "bounded_recovery": "refresh-extension confirmed .9, then fresh exact-search navigation retry"
+        }
+      ],
+      "final_state": "VERIFY/external",
+      "captcha_state": "not_observed",
+      "false_sign_out": false
+    }
+  },
+  "production_validation": {
+    "validator_command": [
+      "PYTHONPATH=src",
+      "python3",
+      "-m",
+      "jobbot",
+      "validate-production",
+      "--stage",
+      "full",
+      "--semi-minutes",
+      "30"
+    ],
+    "validator_exit_code": 1,
+    "report_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/out/production-validation/latest.json",
+    "PROD_READY": false,
+    "started_at": "2026-09-18T19:58:24+00:00",
+    "finished_at": "2026-09-18T20:01:32+00:00",
+    "preflight": {
+      "ok": true,
+      "normal_chrome": true,
+      "current_unpacked_extension": true,
+      "stable_extension_deployment": true,
+      "targeted_default_profile": true,
+      "doctor_ok": true,
+      "loopback_bridge_token_auth_and_unauthorized_rejection": true,
+      "compileall_ok": true,
+      "node_syntax_ok": true,
+      "uncapped_plan_ok": true,
+      "deterministic_suite": {
+        "returncode": 0,
+        "tests_run": 101,
+        "status": "OK"
+      }
+    },
+    "database_paths": {
+      "production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/jobs.sqlite3",
+      "validation_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_20260918T195824Z.sqlite3",
+      "soak_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_soak_20260918T195824Z.sqlite3",
+      "semi_production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_semiprod_20260918T195824Z.sqlite3",
+      "production_database_inequality": {
+        "validation": true,
+        "soak": true,
+        "semi_production": true
+      },
+      "production_database_used_by_validator": false
+    },
+    "internal_failures": [
+      "linkedin: live result scope failed",
+      "primary live micro-validation failed"
+    ],
+    "external_blockers": [
+      {
+        "stage": "primary_live",
+        "platform": "indeed",
+        "states": {
+          "deferred_by_platform": 1,
+          "challenged": 0,
+          "auth_required": 0
+        }
+      },
+      {
+        "stage": "primary_live",
+        "platform": "glassdoor",
+        "states": {
+          "deferred_by_platform": 1,
+          "challenged": 0,
+          "auth_required": 0
+        }
+      }
+    ],
+    "primary_live": {
+      "run_id": 1,
+      "pass": false,
+      "outcome": {
+        "status": "stopped",
+        "bridge_restarts": 1
+      },
+      "resume": {
+        "outcome": {
+          "status": "partial",
+          "bridge_restarts": 0
+        },
+        "terminal_classification": "COMPLETED_WITH_INTERNAL_INCOMPLETE",
+        "duration_seconds": 145.28
+      },
+      "stop_resume_pass": false,
+      "bridge_restart_pass": true,
+      "extension_build_pass": true,
+      "metrics": {
+        "extracted": 44,
+        "persistence_attempted": 44,
+        "persisted": 44,
+        "persistence_failed": 0,
+        "duplicates": 0,
+        "detail_pending": 34,
+        "detail_complete": 10,
+        "detail_retryable": 0,
+        "detail_failed": 0,
+        "canonical_jobs": 10,
+        "task_states": {
+          "queued": 0,
+          "running": 0,
+          "exhausted": 0,
+          "incomplete": 1,
+          "challenged": 0,
+          "auth_required": 0,
+          "deferred_by_platform": 2,
+          "failed": 0,
+          "stopped": 0
+        },
+        "reconciliation": {
+          "ok": true,
+          "failures": []
+        },
+        "integrity": "ok"
+      },
+      "scope": {
+        "linkedin": {
+          "candidate_links_total": 55,
+          "candidate_links_in_scope": 43,
+          "candidate_links_outside_scope": 0,
+          "persisted_in_scope": 44,
+          "persisted_outside_scope": 0,
+          "contamination_persisted": 0,
+          "scope_found_events": 6,
+          "scope_missing_events": 1,
+          "attempted_pages": 6,
+          "outside_only_ids": [],
+          "outside_only_urls": []
+        },
+        "indeed": {
+          "candidate_links_total": 0,
+          "candidate_links_in_scope": 0,
+          "candidate_links_outside_scope": 0,
+          "persisted_in_scope": 0,
+          "persisted_outside_scope": 0,
+          "contamination_persisted": 0,
+          "scope_found_events": 0,
+          "scope_missing_events": 0,
+          "attempted_pages": 0
+        },
+        "glassdoor": {
+          "candidate_links_total": 0,
+          "candidate_links_in_scope": 0,
+          "candidate_links_outside_scope": 0,
+          "persisted_in_scope": 0,
+          "persisted_outside_scope": 0,
+          "contamination_persisted": 0,
+          "scope_found_events": 0,
+          "scope_missing_events": 0,
+          "attempted_pages": 0
+        }
+      },
+      "dashboard": {
+        "identity_ok": true,
+        "live_refresh_ok": true,
+        "database_identity": "8bc668f8307d39fa",
+        "resolved_database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_20260918T195824Z.sqlite3",
+        "summary": {
+          "discoveries": 44,
+          "details_complete": 10,
+          "detail_pending": 34,
+          "enrichment_complete": 10,
+          "qualified": 1,
+          "apply_now": 1
+        }
+      },
+      "validation_classification": "COMPLETED_WITH_INTERNAL_INCOMPLETE"
+    },
+    "incomplete_tasks": [
+      {
+        "database": "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_20260918T195824Z.sqlite3",
+        "platform": "linkedin",
+        "query": "patient enrollment specialist",
+        "task_id": 1,
+        "status": "incomplete",
+        "requested_search_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+        "observed_page_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD&start=125",
+        "current_search_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD&start=125",
+        "scope_failure_observed_url": "https://www.linkedin.com/jobs/search/",
+        "page_context_status": "verified",
+        "pages_visited": 6,
+        "results_seen": 44,
+        "cards_extracted": 44,
+        "cards_persistence_attempted": 44,
+        "cards_persistence_succeeded": 44,
+        "cards_persistence_failed": 0,
+        "detail_count_read": 10,
+        "detail_pending": 34,
+        "details_failed": 0,
+        "safety_stop_reason": "SAFETY_STOP: linkedin search extraction scope missing at https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD&start=150; diagnostics={\"root\":null,\"cards\":[],\"attempts\":[{\"selector\":\"ul.jobs-search-results__list\",\"matched\":0},{\"selector\":\"div.jobs-search-results-list\",\"matched\":0},{\"selector\":\"[aria-label=\\\"Search results\\\"]\",\"matched\":0},{\"selector\":\"[data-view-name=\\\"search-results-container\\\"]\",\"matched\":0}],\"empty_state\":false,\"empty_state_reason\":\"\",\"scope_method\":\"none\",\"diagnostic_version\":1,\"extension_build\":\"3.2.2-prod-ready.672cf88.9\",\"page_url\":\"https://www.linkedin.com/jobs/search/\",\"title\":\"LinkedIn\",\"candidate_links_total\":0,\"candidate_links_in_scope\":0,\"candidate_links_outside_scope\":0,\"in_scope_source_ids\":[],\"in_scope_urls\":[],\"outside_scope_source_ids\":[],\"outside_scope_urls\":[],\"anchor_samples\":[],\"structural_candidate_signatures\":[],\"structural_strong_evidence\":0,\"structural_pool_size\":0,\"reason\":\"no_safe_result_cluster\"}",
+        "last_error": "",
+        "scope_missing_event_count": 1,
+        "scope_missing_event": {
+          "event_id": 123,
+          "event_at": "2026-09-18T20:01:14+00:00",
+          "event_type": "extraction_scope_missing",
+          "message": "linkedin search extraction scope missing at https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD&start=150; diagnostics={\"root\":null,\"cards\":[],\"attempts\":[{\"selector\":\"ul.jobs-search-results__list\",\"matched\":0},{\"selector\":\"div.jobs-search-results-list\",\"matched\":0},{\"selector\":\"[aria-label=\\\"Search results\\\"]\",\"matched\":0},{\"selector\":\"[data-view-name=\\\"search-results-container\\\"]\",\"matched\":0}],\"empty_state\":false,\"empty_state_reason\":\"\",\"scope_method\":\"none\",\"diagnostic_version\":1,\"extension_build\":\"3.2.2-prod-ready.672cf88.9\",\"page_url\":\"https://www.linkedin.com/jobs/search/\",\"title\":\"LinkedIn\",\"candidate_links_total\":0,\"candidate_links_in_scope\":0,\"candidate_links_outside_scope\":0,\"in_scope_source_ids\":[],\"in_scope_urls\":[],\"outside_scope_source_ids\":[],\"outside_scope_urls\":[],\"anchor_samples\":[],\"structural_candidate_signatures\":[],\"structural_strong_evidence\":0,\"structural_pool_size\":0,\"reason\":\"no_safe_result_cluster\"}"
+        },
+        "bounded_scope_diagnostics": {
+          "root": null,
+          "cards": [],
+          "attempts": [
+            {"selector": "ul.jobs-search-results__list", "matched": 0},
+            {"selector": "div.jobs-search-results-list", "matched": 0},
+            {"selector": "[aria-label=\"Search results\"]", "matched": 0},
+            {"selector": "[data-view-name=\"search-results-container\"]", "matched": 0}
+          ],
+          "empty_state": false,
+          "empty_state_reason": "",
+          "scope_method": "none",
+          "diagnostic_version": 1,
+          "extension_build": "3.2.2-prod-ready.672cf88.9",
+          "page_url": "https://www.linkedin.com/jobs/search/",
+          "title": "LinkedIn",
+          "candidate_links_total": 0,
+          "candidate_links_in_scope": 0,
+          "candidate_links_outside_scope": 0,
+          "in_scope_source_ids": [],
+          "in_scope_urls": [],
+          "outside_scope_source_ids": [],
+          "outside_scope_urls": [],
+          "anchor_samples": [],
+          "structural_candidate_signatures": [],
+          "structural_strong_evidence": 0,
+          "structural_pool_size": 0,
+          "reason": "no_safe_result_cluster"
+        }
+      }
+    ],
+    "soak": {
+      "reached": false,
+      "initial": null,
+      "resume": null,
+      "reason": "primary_live failed before isolated soak stage"
+    },
+    "semi_production": {
+      "reached": false,
+      "phase_pass": {
+        "A_FASTEST_DOOR_RECENT": null,
+        "B_REMAINING_CORE_RECENT": null,
+        "C_DEEP_BACKFILL": null
+      },
+      "execution_evidence": null,
+      "reason": "primary_live failed before semi-production stage"
+    },
+    "supplemental_isolation": {
+      "primary_live": null,
+      "soak": null,
+      "semi_production": null,
+      "reached": false,
+      "reason": "validator returned before supplemental stage"
+    },
+    "dashboard_identity_live_refresh": {
+      "primary_live": {
+        "identity_ok": true,
+        "live_refresh_ok": true
+      },
+      "soak": null,
+      "semi_production": null
+    },
+    "run_now_coverage": {
+      "configured_production_phase_counts": {
+        "A_FASTEST_DOOR_RECENT": {"linkedin": 105, "indeed": 105, "glassdoor": 105},
+        "B_REMAINING_CORE_RECENT": {"linkedin": 34, "indeed": 34, "glassdoor": 34},
+        "C_DEEP_BACKFILL": {"linkedin": 139, "indeed": 139, "glassdoor": 139}
+      },
+      "live_sampled_phase_counts": {}
+    },
+    "exit_integrity": {
+      "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_20260918T195824Z.sqlite3": "ok",
+      "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_soak_20260918T195824Z.sqlite3": "missing",
+      "/Users/haewonkim/.codex-fabric/worktrees/CF-5d59c4ecc741038be9fb2ac4/data/validation_semiprod_20260918T195824Z.sqlite3": "missing"
+    }
+  },
+  "source_change_check": {
+    "product_source_unchanged": true,
+    "product_source_diff_files": [],
+    "codex_fabric_audit_json_touched": false,
+    "allowed_repository_change": "verification/CHG-39-r7.json",
+    "no_fix_attempted": true
+  },
+  "classification": {
+    "verdict": "VERIFY/external",
+    "delivery": "Not applicable (verification-only)",
+    "shortcut": "Not applicable",
+    "exact_reason": "The exact integrated main head remains source-clean and the .9 extension identity/runtime binding is current. Preflight, unauthorized bridge rejection, deterministic tests, primary LinkedIn live persistence/detail enrichment, reconciliation, dashboard identity/live refresh, and database integrity pass. Full validation exits 1 with PROD_READY=false because primary live records one LinkedIn extraction scope safety stop after a queryless no_safe_result_cluster surface and defers Indeed and Glassdoor after the exact repeated content-script nonresponse, so soak and semi-production are not reached. The bounded LinkedIn warmup is positive and the same current extension responds there; Indeed and Glassdoor reproduce the external readiness condition after one allowed refresh/navigation retry each. No specific repository-owned delivery/config or valid-scoped-result classifier defect is established; do not classify FIX.",
+    "go_gate_results": {
+      "exact_main_unchanged": true,
+      "zero_product_source_changes": true,
+      "exact_extension_identity_confirmed": true,
+      "full_validator_exit_zero": false,
+      "PROD_READY_true": false,
+      "no_internal_failures": false,
+      "linkedin_substantive_live_proof": true
+    },
+    "fix_gate": {
+      "bounded_source_or_config_contract_defect": false,
+      "repair_attempted": false,
+      "root_cause": "not established; preserved external/live DOM scope-loss and Indeed/Glassdoor content-script readiness evidence"
+    }
+  },
+  "final_worktree": {
+    "clean_after_commit": true,
+    "verification_head_parent": "f711ff0e736065726c70021c8b254fddbbaa237d",
+    "main_untouched": true
+  },
+  "fabric_publication": {
+    "project_id": "jobbot",
+    "request": "CHG-39-r7",
+    "operation": "VERIFY",
+    "evidence_ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r7",
+    "canonical_audit_owner": "Fabric runtime",
+    "audit_json_manually_touched": false,
+    "evidence_commit_binding": "sole parent is verification head; runtime publication receipt to be canonical"
+  }
+}
