@@ -24,7 +24,8 @@
     return /flagship3_search_srp_jobs|search[_-](?:srp|result)|jobs?[-_](?:search|result)|job[-_]?card|occludable[-_]?job[-_]?id|result[-_]?card/i.test(values.join(' '));
   };
   const allJobRecords=()=>[...document.querySelectorAll(JOB_LINK_SELECTOR)].map(anchorRecord).filter(Boolean);
-  const safePageUrl=()=>{try{const u=new URL(location.href);return `${u.origin}${u.pathname}`;}catch(_){return C.clean(location.href);}};
+  const SAFE_SEARCH_PARAMS=new Set(['keywords','location','f_TPR','f_WT','start','geoId','distance','sortBy','f_JT','f_E','f_C','f_I','f_PP','f_AL','f_TS','f_VJ','f_T','origin','refresh']);
+  const safePageUrl=()=>{try{const u=new URL(location.href),params=new URLSearchParams();for(const [key,value] of u.searchParams.entries())if(SAFE_SEARCH_PARAMS.has(key))params.append(key,value);const query=params.toString();return `${u.origin}${u.pathname}${query?`?${query}`:''}`;}catch(_){return C.clean(location.href);}};
   const rejectedRoot=(root)=>{
     const tag=String(root?.tagName||'').toLowerCase(),text=`${attr(root,'class')} ${attr(root,'role')} ${attr(root,'aria-label')} ${attr(root,'data-view-name')}`.toLowerCase();
     if(!root||['html','body','#root','#document'].includes(tag))return 'generic_document_root';

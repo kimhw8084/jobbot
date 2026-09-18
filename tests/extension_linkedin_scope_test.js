@@ -129,6 +129,13 @@ assert.ok(unsafe.extraction_diagnostics.anchor_samples.length <= 20);
 assert.ok(JSON.stringify(unsafe.extraction_diagnostics).length < 30000);
 console.log('LinkedIn ambiguous scope fixture passed: fail-closed with bounded diagnostics');
 
+const safeContext = inspectRoot(parseHtml('<main><div>Transient result shell</div></main>'), 'LinkedIn search', 'https://www.linkedin.com/jobs/search/?keywords=patient+enrollment&location=United+States&f_TPR=r604800&f_WT=2&start=150&currentJobId=4469227431&token=should-not-appear');
+assert.strictEqual(safeContext.extraction_scope_missing, true);
+assert.strictEqual(safeContext.extraction_diagnostics.page_url, 'https://www.linkedin.com/jobs/search/?keywords=patient+enrollment&location=United+States&f_TPR=r604800&f_WT=2&start=150');
+assert.ok(!safeContext.extraction_diagnostics.page_url.includes('currentJobId'));
+assert.ok(!safeContext.extraction_diagnostics.page_url.includes('token'));
+console.log('LinkedIn missing-scope diagnostics preserved safe query/filter/start context');
+
 const empty = inspectRoot(parseHtml('<main><div>No matching jobs found</div></main>'), 'LinkedIn jobs — no results');
 assert.strictEqual(empty.extraction_scope_missing, false);
 assert.deepStrictEqual(empty.result_links, []);

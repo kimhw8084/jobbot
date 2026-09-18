@@ -20,8 +20,8 @@ from jobbot.extension_identity import extension_build
 from jobbot.runtime_binding import DEPLOYMENT_MARKER, sync_extension
 
 
-PREDECESSOR_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.4"
-REPAIRED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.9"
+PREDECESSOR_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.9"
+REPAIRED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.10"
 
 
 class ExtensionRefreshIntegrationTests(unittest.TestCase):
