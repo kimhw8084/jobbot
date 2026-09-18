@@ -2,7 +2,7 @@
   "request": "CHG-112-r1",
   "verification_kind": "repair_and_bounded_acceptance",
   "candidate_branch": "codex/jobbot-CHG-112-r1",
-  "candidate_head": "4c88b2bdac7d38bbc053627bf6b443019893fcf3",
+  "candidate_head": "00a183aaeb8cf459f245fa573f1e5b30847690bf",
   "target_branch": "main",
   "target_ref_checked": "origin/main",
   "target_sha": "f4f2df75fbc011f1d81738140f21b663359ffbce",
