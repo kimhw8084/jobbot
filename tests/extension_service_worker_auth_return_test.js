@@ -20,7 +20,7 @@ function makeWorker({ authUrl = AUTH_URL, searchUrl = SEARCH_URL, authPage, sear
   let nextWindowId = 20;
   const chrome = {
     runtime: {
-      getManifest: () => ({ version_name: '3.2.2-prod-ready.672cf88.12' }),
+      getManifest: () => ({ version_name: '3.2.2-prod-ready.672cf88.15' }),
       getURL: (path) => `chrome-extension://jobbot/${path}`,
       onMessage: { addListener: () => {} },
       onStartup: { addListener: () => {} },

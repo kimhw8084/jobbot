@@ -93,6 +93,11 @@ for (const spec of specs) {
   listener({ type: 'JOBBOT_INSPECT_SEARCH' }, null, (value) => { inspected = value; });
   const ids = inspected.result_links.map((item) => item.source_job_id).sort();
   assert.deepStrictEqual(ids, [...spec.expected].sort());
+  if (spec.platform !== 'linkedin') {
+    let eventually;
+    listener({ type: 'JOBBOT_INSPECT_SEARCH_EVENTUALLY' }, null, (value) => { eventually = value; });
+    assert.deepStrictEqual(eventually.result_links.map((item) => item.source_job_id).sort(), [...spec.expected].sort());
+  }
   assert.strictEqual(inspected.extraction_scope_missing, false);
   assert.strictEqual(inspected.extraction_diagnostics.candidate_links_total, 6);
   assert.strictEqual(inspected.extraction_diagnostics.candidate_links_in_scope, 3);

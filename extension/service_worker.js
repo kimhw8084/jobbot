@@ -1,6 +1,7 @@
 'use strict';
 
 let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTaskId=null, runPromise=null, heartbeatTimer=null;
+const targetDiagnosticKeys=new Set();
 const JOBBOT_EXTENSION_BUILD=String(chrome.runtime?.getManifest?.().version_name||'unknown');
 let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
 const MAX_IDENTICAL_FINGERPRINTS=3;
@@ -29,17 +30,23 @@ async function configureBridge(port,token){
   runtimeConfig=await requiredRequest('runtime_config',{},10000);
   return health;
 }
-async function createBackgroundTarget(url){
-  // Keep crawler pages in an owned minimized window. active:false alone can
-  // still attach a new tab to the user's foreground window/Space.
+async function createBackgroundTarget(url,mode='minimized_owned'){
+  const requestedMode=['minimized_owned','normal_owned','inactive_existing'].includes(mode)?mode:'minimized_owned';
+  if(requestedMode==='inactive_existing'){
+    const tab=await chrome.tabs.create({url,active:false});
+    return{tab,window_id:tab?.windowId??null,owned_window:false,mode:requestedMode,creation:'tabs.create'};
+  }
+  // Keep crawler pages in an owned non-foreground window. The diagnostic
+  // matrix also exercises the retained minimized mode and an ordinary
+  // inactive tab so lifecycle differences remain observable and bounded.
   if(typeof chrome.windows?.create==='function'){
-    const win=await chrome.windows.create({url,focused:false,state:'minimized',type:'normal'});
+    const win=await chrome.windows.create({url,focused:false,state:requestedMode==='minimized_owned'?'minimized':'normal',type:'normal'});
     const tab=win?.tabs?.[0];
-    if(win?.id!=null&&tab?.id!=null)return{tab,window_id:win.id,owned_window:true};
+    if(win?.id!=null&&tab?.id!=null)return{tab,window_id:win.id,owned_window:true,mode:requestedMode,creation:'windows.create'};
     if(win?.id!=null)try{await chrome.windows.remove(win.id);}catch(_){}
   }
   const tab=await chrome.tabs.create({url,active:false});
-  return{tab,window_id:tab?.windowId??null,owned_window:false};
+  return{tab,window_id:tab?.windowId??null,owned_window:false,mode:'inactive_existing',requested_mode:requestedMode,creation:'tabs.create'};
 }
 async function keepBackgroundTab(tabId,windowId){
   const tab=await chrome.tabs.get(tabId);
@@ -136,8 +143,87 @@ async function confirmStoredBuild(){
   if(!expected||!refreshId||expected!==JOBBOT_EXTENSION_BUILD)return;
   await reportExtensionBuild(Number(x.jobbot_active_run_id||0),expected,refreshId);
 }
+function diagnosticUrl(raw){
+  try{
+    const u=new URL(raw);
+    for(const key of ['bridge_token','token','auth_token','access_token','refresh_token'])if(u.searchParams.has(key))u.searchParams.set(key,'<redacted>');
+    return u.href;
+  }catch(_){return raw||'';}
+}
+function inspectResponseSummary(resp){
+  if(!resp||typeof resp!=='object')return{response_type:typeof resp};
+  return{platform:resp.platform||'',page_type:resp.page_type||'',page_url:diagnosticUrl(resp.page_url||''),ready:resp.ready===true,authenticated:resp.authenticated===true,auth_state:resp.auth_state||'',login_required:resp.login_required===true,challenged:resp.challenged===true,extraction_scope_missing:resp.extraction_scope_missing===true,result_count:Array.isArray(resp.result_links)?resp.result_links.length:null};
+}
+async function tabLifecycleSnapshot(tabId,windowId){
+  let tab=null,win=null;
+  try{tab=await chrome.tabs.get(tabId);}catch(error){return{tab_id:tabId,window_id:windowId??null,error:String(error?.message||error)}}
+  if(windowId!=null&&typeof chrome.windows?.get==='function')try{win=await chrome.windows.get(windowId);}catch(_){ }
+  return{tab_id:tab?.id??tabId,window_id:tab?.windowId??windowId??null,url:diagnosticUrl(tab?.url||''),status:tab?.status||'',active:tab?.active===true,window_state:win?.state||'',window_focused:win?.focused===true,window_type:win?.type||''};
+}
 async function waitTabComplete(tabId,timeoutMs=45000){const deadline=Date.now()+timeoutMs;while(Date.now()<deadline){const tab=await chrome.tabs.get(tabId);if(tab.status==='complete')return tab;await sleep(400);}throw new Error('page load timed out');}
-async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4){for(let i=0;i<retries;i++){try{await waitTabComplete(tabId,45000);const resp=await chrome.tabs.sendMessage(tabId,{type,...extra});if(resp)return resp;}catch(e){if(i===retries-1)throw e;}await sleep(700+i*220);}throw new Error('content script did not respond');}
+async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4,trace=null){
+  for(let i=0;i<retries;i++){
+    try{
+      const tab=await waitTabComplete(tabId,trace?.wait_timeout_ms||45000);
+      if(trace)trace.attempts.push({attempt:i+1,phase:'before_send',tab:await tabLifecycleSnapshot(tabId,tab?.windowId)});
+      const resp=await chrome.tabs.sendMessage(tabId,{type,...extra});
+      if(trace)trace.attempts.push({attempt:i+1,phase:'sendMessage',type,ok:true,response:inspectResponseSummary(resp)});
+      if(resp)return resp;
+      if(trace)trace.attempts.push({attempt:i+1,phase:'sendMessage',type,ok:false,error:'empty response'});
+    }catch(e){
+      if(trace)trace.attempts.push({attempt:i+1,phase:'sendMessage',type,ok:false,error:String(e?.message||e),tab:await tabLifecycleSnapshot(tabId,trace.window_id)});
+      if(i===retries-1)throw e;
+    }
+    await sleep(700+i*220);
+  }
+  throw new Error('content script did not respond');
+}
+function expectedContentScriptMatch(raw){
+  try{
+    const u=new URL(raw),host=u.hostname.toLowerCase();
+    const platform=host==='linkedin.com'||host.endsWith('.linkedin.com')?'linkedin':host==='indeed.com'||host.endsWith('.indeed.com')?'indeed':host==='glassdoor.com'||host.endsWith('.glassdoor.com')?'glassdoor':'';
+    return{expected: u.protocol==='https:'&&!!platform,platform,origin:u.origin,pathname:u.pathname};
+  }catch(_){return{expected:false,platform:'',origin:'',pathname:''};}
+}
+async function lastFocusedSnapshot(){
+  if(typeof chrome.windows?.getLastFocused!=='function')return null;
+  try{
+    const win=await chrome.windows.getLastFocused({populate:true});
+    const active=(win.tabs||[]).find(tab=>tab.active===true);
+    return{window_id:win?.id??null,focused:win?.focused===true,state:win?.state||'',active_tab_id:active?.id??null,active_tab_url:diagnosticUrl(active?.url||'')};
+  }catch(_){return null;}
+}
+async function runTargetDiagnostics(runId,taskId,platform,requestedUrl){
+  const key=`${runId}:${platform}:${requestedUrl}`;
+  if(targetDiagnosticKeys.has(key))return;
+  targetDiagnosticKeys.add(key);
+  const foregroundBefore=await lastFocusedSnapshot(),modes=['minimized_owned','normal_owned','inactive_existing'],results=[];
+  for(const mode of modes){
+    const trace={window_id:null,wait_timeout_ms:12000,attempts:[]}; let target=null; let closed=false;
+    const result={mode,requested_url:requestedUrl,expected_content_script_match:expectedContentScriptMatch(requestedUrl)};
+    try{
+      target=await createBackgroundTarget(requestedUrl,mode); trace.window_id=target.window_id;
+      result.creation={requested_mode:mode,effective_mode:target.mode,creation:target.creation,owned_window:target.owned_window===true,created:await tabLifecycleSnapshot(target.tab?.id,target.window_id)};
+      const probes={};
+      for(const type of ['JOBBOT_INSPECT_AUTH','JOBBOT_INSPECT_SEARCH_EVENTUALLY']){
+        const probe={type,attempts:[]};
+        try{const response=await inspectTab(target.tab.id,type,{},2,{...trace,attempts:probe.attempts});probe.ok=true;probe.response=inspectResponseSummary(response);}
+        catch(error){probe.ok=false;probe.error=String(error?.message||error);}
+        probes[type]=probe;
+      }
+      result.probes=probes; result.observed=await tabLifecycleSnapshot(target.tab?.id,target.window_id); result.redirected=result.observed.url!==requestedUrl;
+    }catch(error){result.error=String(error?.message||error);result.observed=target?await tabLifecycleSnapshot(target.tab?.id,target.window_id):null;}
+    finally{
+      if(target){try{await closeBackgroundTarget(target);closed=true;}catch(error){result.close_error=String(error?.message||error);}}
+      result.closed=closed;
+      result.after_close=target?await tabLifecycleSnapshot(target.tab?.id,target.window_id):null;
+    }
+    results.push(result);
+    await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'target_diagnostic',message:`${platform} target mode ${mode}`,payload:{platform,requested_url:requestedUrl,foreground_before:foregroundBefore,result}}).catch(()=>{});
+  }
+  const foregroundAfter=await lastFocusedSnapshot();
+  await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'target_diagnostic_matrix',message:`${platform} background target comparison`,payload:{platform,requested_url:requestedUrl,foreground_before:foregroundBefore,foreground_after:foregroundAfter,foreground_preserved:JSON.stringify(foregroundBefore)===JSON.stringify(foregroundAfter),modes:results}}).catch(()=>{});
+}
 function fp(items){return (items||[]).map(x=>x.source_job_id||x.url).filter(Boolean).sort().join('|');}
 function parseCheckpoint(raw){try{return typeof raw==='string'?JSON.parse(raw||'{}'):(raw||{});}catch(_){return {};}}
 function normalizeSearchUrl(raw){try{const u=new URL(raw);if(/(^|\.)linkedin\.com$/i.test(u.hostname))u.searchParams.delete('currentJobId');return u.href;}catch(_){return raw||'';}}
@@ -410,6 +496,8 @@ async function runProduction(runId,expectedBuild='',refreshId=''){
       const n=await requiredRequest('next_task',{run_id:activeRunId,worker_id:`extension-run-${activeRunId}`}); if(n.stop||n.done)break; if(!n.task)break;
       const p=String(n.task.platform||'');
       if(!authChecked.has(p)){
+        try{await runTargetDiagnostics(activeRunId,n.task.task_id,p,n.task.search_url||'');}
+        catch(error){await nativeRequest('browser_event',{run_id:activeRunId,task_id:n.task.task_id,event_type:'target_diagnostic_failed',message:`${p} target diagnostic failed: ${String(error?.message||error).slice(0,300)}`}).catch(()=>{});}
         try{const a=await checkAuth(p,activeRunId,n.task.task_id,n.task.search_url||''); authChecked.set(p,!!a.ready);}catch(e){authChecked.set(p,false);await requiredRequest('platform_readiness',{run_id:activeRunId,task_id:n.task.task_id,platform:p,status:'retryable',auth_state:'unknown',reason:`auth/readiness probe failed: ${e?.message||e}`,search_url:n.task.search_url||''}).catch(()=>{});}
         if(!authChecked.get(p))continue;
       }
