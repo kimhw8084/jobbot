@@ -1,0 +1,229 @@
+{
+  "artifact": "CHG-39-r10",
+  "verification_only": true,
+  "secret_free": true,
+  "started_at": "2026-09-19T00:57:16+00:00",
+  "finished_at": "2026-09-19T00:57:43+00:00",
+  "target": {
+    "requested_commit": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "observed_head_before_validation": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "tree": "f910d69c8f342359aa30e865a3524155014da39a",
+    "merge_parents": [
+      "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+      "b84223c7b2296aa416d94e2e194deb25962fe6f2"
+    ],
+    "branch": "codex/jobbot-CHG-39-r10",
+    "origin_main_observed_at_start": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "exact_target": true,
+    "working_tree_clean_before_validation": true,
+    "target_drift": false
+  },
+  "runtime_identity": {
+    "browser": "Google Chrome",
+    "chrome_binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "chrome_version": "Google Chrome 153.0.8010.52",
+    "profile_directory": "Default",
+    "profile_binding_path": "/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json",
+    "profile_binding_verified": true,
+    "default_profile_secure_preferences_binding_found": true,
+    "canonical_extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "expected_build": "3.2.2-prod-ready.672cf88.11",
+    "expected_source_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+    "stable_deployment": {
+      "classification": "deployed_source_current",
+      "state": "current",
+      "deployed_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+      "expected_identity_matches_deployed": true,
+      "build_matches": true,
+      "marker_source_head": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+      "marker_source_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-a868857e1db8cc3e8d34ce81",
+      "marker_provenance_metadata_matches_target": false,
+      "marker_provenance_note": "The stable marker provenance predates this target, but its deployed bytes/content identity and build match the exact target source identity."
+    },
+    "loaded_extension": {
+      "current_extension_reachability": true,
+      "identity_confirmed": true,
+      "classification": "intended_extension_reachable_and_current",
+      "observed_build": "3.2.2-prod-ready.672cf88.11",
+      "observed_source_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+      "observed_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "live_extension_build_pass": true
+    },
+    "loopback_bridge": {
+      "bind_address": "127.0.0.1",
+      "token_authenticated": true,
+      "unauthorized_request_rejected": true,
+      "self_test_exit_code": 0,
+      "live_bridge_restart_count": 1,
+      "live_bridge_restart_pass": true,
+      "token_value_recorded": false
+    },
+    "dashboard": {
+      "url": "http://127.0.0.1:58322/",
+      "identity_ok": true,
+      "live_refresh_ok": true,
+      "workspace_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-5bae4f2ea2c8ccc320c68d0a",
+      "resolved_database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-5bae4f2ea2c8ccc320c68d0a/data/validation_20260919T005716Z.sqlite3",
+      "database_identity": "9191e7dd63fdc7bd"
+    }
+  },
+  "validator": {
+    "command": "python3 -m jobbot validate-production --stage micro",
+    "stage": "micro",
+    "exit_code": 1,
+    "PROD_READY": false,
+    "terminal_classification": "COMPLETED_PARTIAL_EXTERNAL",
+    "validation_classification": "COMPLETED_PARTIAL_EXTERNAL",
+    "internal_failures": [
+      "primary live micro-validation failed"
+    ],
+    "external_blockers": [
+      {
+        "stage": "primary_live",
+        "platform": "linkedin",
+        "states": {
+          "auth_required": 1,
+          "challenged": 0,
+          "deferred_by_platform": 0
+        }
+      },
+      {
+        "stage": "primary_live",
+        "platform": "indeed",
+        "states": {
+          "auth_required": 0,
+          "challenged": 1,
+          "deferred_by_platform": 0
+        }
+      },
+      {
+        "stage": "primary_live",
+        "platform": "glassdoor",
+        "states": {
+          "auth_required": 0,
+          "challenged": 0,
+          "deferred_by_platform": 1
+        }
+      }
+    ],
+    "reconciliation_ok": true,
+    "database_integrity": "ok",
+    "scope_contamination_persisted": false,
+    "soak_executed": false,
+    "semi_production_executed": false,
+    "full_validation_stop_reason": "External Big-3 readiness blockers were observed during the bounded micro gate; soak and semi-production were intentionally not run."
+  },
+  "isolated_databases": {
+    "production_database": {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-5bae4f2ea2c8ccc320c68d0a/data/jobs.sqlite3",
+      "used_as_validation_store": false,
+      "validation_access": "not used as a validation database; validator production-run check is a safety guard only"
+    },
+    "micro_validation": {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-5bae4f2ea2c8ccc320c68d0a/data/validation_20260919T005716Z.sqlite3",
+      "run_id": 1,
+      "database_identity": "9191e7dd63fdc7bd",
+      "integrity": "ok",
+      "schema_versions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    },
+    "soak": {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-5bae4f2ea2c8ccc320c68d0a/data/validation_soak_20260919T005716Z.sqlite3",
+      "executed": false,
+      "identity": null,
+      "integrity": "not_created"
+    },
+    "semi_production": {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-5bae4f2ea2c8ccc320c68d0a/data/validation_semiprod_20260919T005716Z.sqlite3",
+      "executed": false,
+      "identity": null,
+      "integrity": "not_created"
+    }
+  },
+  "big3_readiness": {
+    "linkedin": {
+      "classification": "external_blocker",
+      "auth_status": "not_authenticated",
+      "auth_state": "not_authenticated",
+      "readiness_state": "sign_in_required",
+      "task_status": "auth_required",
+      "reason": "explicit sign-in control",
+      "probe_time": "2026-09-19T00:57:30+00:00",
+      "pages_visited": 0,
+      "cards_persisted": 0
+    },
+    "indeed": {
+      "classification": "external_blocker",
+      "auth_status": "unknown",
+      "auth_state": "unknown",
+      "readiness_state": "challenged_cooldown",
+      "task_status": "challenged",
+      "reason": "security check",
+      "probe_time": "2026-09-19T00:57:31+00:00",
+      "pages_visited": 0,
+      "cards_persisted": 0
+    },
+    "glassdoor": {
+      "classification": "external_blocker",
+      "auth_status": "unknown",
+      "auth_state": "unknown",
+      "readiness_state": "retryable",
+      "task_status": "deferred_by_platform",
+      "reason": "auth/readiness probe failed: content script did not respond",
+      "probe_time": "2026-09-19T00:57:40+00:00",
+      "pages_visited": 0,
+      "cards_persisted": 0
+    }
+  },
+  "linkedin_substantive_detail": {
+    "go_required": true,
+    "persisted_complete_enriched_records": 0,
+    "nontrivial_substantive_detail_records": 0,
+    "proof": false,
+    "blocker": "not_authenticated/sign_in_required",
+    "go_criterion_met": false
+  },
+  "regressions": {
+    "deterministic_fixtures": {
+      "chg_132_auth_return": {
+        "passed": true,
+        "exit_code": 0
+      },
+      "chg_127_bounded_recovery": {
+        "passed": true,
+        "exit_code": 0
+      }
+    },
+    "live_validation": {
+      "auth_state_undefined": false,
+      "reference_error": false,
+      "contradictory_auth_required_plus_retryable_or_unknown_downgrade": false,
+      "extraction_scope_missing": false,
+      "search_scope_recovery": false,
+      "other_chg_132_or_chg_127_regression": false
+    }
+  },
+  "boundary": {
+    "read_only": true,
+    "applications_submitted": false,
+    "forms_filled": false,
+    "credentials_handled": false,
+    "cookies_exported": false,
+    "challenge_bypass_attempted": false
+  },
+  "final_git_invariants": {
+    "head_remains_requested_target": true,
+    "head": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "tree": "f910d69c8f342359aa30e865a3524155014da39a",
+    "working_tree_before_validation": "clean",
+    "working_tree_after_artifact": "intended_artifact_only",
+    "changed_paths_after_artifact": [
+      "verification/CHG-39-r10.json"
+    ],
+    "product_source_changes": false,
+    "unexpected_repository_changes": [],
+    "verification_commit_created": false,
+    "fabric_audit_or_evidence_refs_authored": false
+  },
+  "classification": "EXTERNAL_READINESS_BLOCKED_STOP_NO_REPOSITORY_DEFECT_ESTABLISHED"
+}
