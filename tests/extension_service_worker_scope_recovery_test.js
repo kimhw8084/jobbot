@@ -22,7 +22,7 @@ function makeWorker({searchPages, detailSurface='success'}={}){
   const detailTab={id:12,windowId:7,status:'complete',url:'about:blank'};
   const pages=[...(searchPages||[])];
   const chrome={
-    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.11'}),getURL:(path)=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
+    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.15'}),getURL:(path)=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
     storage:{local:{
       get:async()=>({jobbot_bridge_config:{port:43123,token:'x'.repeat(24)}}),
       set:async()=>{},remove:async()=>{},
