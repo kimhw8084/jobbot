@@ -1,0 +1,381 @@
+{
+  "accepted_at": "2026-09-19T03:46:04Z",
+  "changed_files": [
+    {
+      "additions": 288,
+      "deletions": 0,
+      "path": "verification/CHG-39-r11.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '200,520p' src/jobbot/runtime_binding.py && rtk sed -n '1,220p' src/jobbot/extension_identity.py && rtk sed -n '1,180p' src/jobbot/run_now.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '760,930p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '930,1215p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,230p' src/jobbot/browser_tasks.py && rtk sed -n '1,240p' src/jobbot/orchestrator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jobbot.runtime_binding import deployment_diagnostics, chrome_target_diagnostics, runtime_binding_diagnostics, stable_extension_root, deployment_marker_path, chrome_profile_binding_path, extension_source_identity\nfrom jobbot.extension_identity import extension_build\nroot=Path.cwd()\nprint(json.dumps({\n  'runtime_binding': runtime_binding_diagnostics(root),\n  'source_build': extension_build(root),\n  'source_extension_identity': extension_source_identity(root),\n  'stable_extension_root': str(stable_extension_root()),\n  'deployment_marker_path': str(deployment_marker_path()),\n  'chrome_profile_binding_path': str(chrome_profile_binding_path()),\n}, indent=2, sort_keys=True, default=str))\nPY\"",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -l \"$HOME/Library/Application Support/JobBot\" \"$HOME/Library/Application Support/JobBot/extension\" \"$HOME/Library/Application Support/JobBot/deployment_identity.json\" \"$HOME/Library/Application Support/JobBot/chrome_profile_binding.json\" 2>&1 | sed -n '\"'1,220p'; rtk cat \\\"\"'$HOME/Library/Application Support/JobBot/deployment_identity.json\"; rtk cat \"$HOME/Library/Application Support/JobBot/chrome_profile_binding.json\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ps -axo pid,ppid,command | rg -i 'jobbot|bridge.server|chrome' | sed -n '1,220p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short && rtk git diff --exit-code -- . ':\"'!verification/CHG-39-r11.json'\"' && rtk git rev-parse --verify HEAD\"'^{commit} && rtk git show --no-patch --format='\"'%H %T %P %s' e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10 && rtk git diff-tree --no-commit-id --name-status -r e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10 | sed -n '1,200p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat \"$HOME/Library/Application Support/JobBot/extension/deployment_identity.json\"; rtk cat \"$HOME/Library/Application Support/JobBot/extension/manifest.json\" | sed -n '\"'1,24p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk command -v python3; rtk command -v python; rtk ls -la .venv/bin 2>&1 | sed -n '1,100p'; rtk python3 --version\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch; rtk git diff --stat; rtk git diff --name-only; rtk git ls-files -m; rtk git rev-parse --show-toplevel; rtk git branch --show-current'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk lsof -nP -iTCP -sTCP:LISTEN | rg '127.0.0.1|8765|python|Chrome' | sed -n '1,160p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nfrom pathlib import Path\nimport hashlib\nroot=Path.cwd(); source=root/'extension'; stable=Path.home()/'Library/Application Support/JobBot/extension'\ndef ident(p):\n d=hashlib.sha256()\n for f in sorted(x for x in p.rglob('*') if x.is_file() and x.name\"'!='\"'deployment_identity.json'):\n  d.update(f.relative_to(p).as_posix().encode()); d.update(b'\\\\0'); d.update(f.read_bytes()); d.update(b'\\\\0')\n return 'sha256:'+d.hexdigest()\nprint('source_identity', ident(source)); print('stable_identity', ident(stable)); print('same', ident(source)==ident(stable))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jobbot.runtime_binding import runtime_binding_diagnostics, deployment_diagnostics, chrome_target_diagnostics, extension_source_identity, stable_extension_root, deployment_marker_path, chrome_profile_binding_path, _extension_tree_identity\nfrom jobbot.extension_identity import extension_build\nroot=Path.cwd(); stable=stable_extension_root()\nprint(json.dumps({\n  'runtime_binding': runtime_binding_diagnostics(root),\n  'source_build': extension_build(root),\n  'source_extension_identity': extension_source_identity(root),\n  'deployed_extension_identity': _extension_tree_identity(stable),\n  'stable_extension_root': str(stable),\n  'deployment_marker_path': str(deployment_marker_path()),\n  'chrome_profile_binding_path': str(chrome_profile_binding_path()),\n  'deployment_marker': json.loads(deployment_marker_path().read_text()),\n}, indent=2, sort_keys=True, default=str))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk curl -sS -o /tmp/jobbot-dashboard-identity.json -w 'identity_http=%{http_code}\\\\n' http://127.0.0.1:8765/api/identity; rtk curl -sS -o /tmp/jobbot-dashboard-summary.json -w 'summary_http=%{http_code}\\\\n' http://127.0.0.1:8765/api/summary; rtk curl -sS -o /tmp/jobbot-dashboard-run.json -w 'run_http=%{http_code}\\\\n' http://127.0.0.1:8765/api/run; rtk sed -n '1,80p' /tmp/jobbot-dashboard-identity.json; rtk sed -n '1,80p' /tmp/jobbot-dashboard-summary.json; rtk sed -n '1,80p' /tmp/jobbot-dashboard-run.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '230,420p' src/jobbot/browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"enqueue_validation|validate.*platform|acceptance|normal-Chrome|auth\\\" README.md docs scripts *.command src tests | sed -n '1,320p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"auth|auth_state|authenticated|auth_required|browser_event|extension_build|ready|readiness|diagnostic|detail_external_blocked|pause_platform\\\" src/jobbot extension/service_worker.js extension/*.js | sed -n '1,340p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find data -maxdepth 1 -type f -name 'validation_*.sqlite3' -print | sort | tail -10\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find out -maxdepth 3 -type f -name '*bridge*' -o -name 'dashboard.log' | sort | tail -20\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk lsof -nP -iTCP -sTCP:LISTEN | rg 'python3|Python' | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -lt data | sed -n '1,80p'; rtk ls -lt out | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ps -p 19033 -o pid,etime,command 2>&1; rtk ps -axo pid,ppid,etime,command | rg '19033|jobbot.bridge|validate-production|chrome-extension|bridge.server' | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport sqlite3, json\nfrom pathlib import Path\np=Path('data/validation_20260919T034906Z.sqlite3')\nc=sqlite3.connect(p); c.row_factory=sqlite3.Row\nfor table in ['browser_runs','browser_platform_runs','browser_search_tasks']:\n print('\\\\n'+table)\n rows=c.execute(f'SELECT * FROM {table} ORDER BY 1 DESC').fetchall()\n for row in rows[:20]: print(dict(row))\nprint('\\\\nrecent events')\nfor row in c.execute(\\\"SELECT event_at,event_type,message,payload_json FROM browser_events ORDER BY event_id DESC LIMIT 40\\\").fetchall(): print(dict(row))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m jobbot validate-production --stage micro'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport sqlite3\np='data/validation_20260919T034906Z.sqlite3'; c=sqlite3.connect(p); c.row_factory=sqlite3.Row\nprint('run',dict(c.execute('SELECT browser_run_id,status,stop_requested,stop_after_current,current_task_id,last_progress_at,last_error FROM browser_runs').fetchone()))\nfor r in c.execute('SELECT platform,auth_status,readiness_state,auth_reason,readiness_reason,tasks_completed,tasks_incomplete,tasks_challenged,tasks_failed,jobs_recorded,auth_checked_at,readiness_checked_at FROM browser_platform_runs ORDER BY CASE platform WHEN \\\"linkedin\\\" THEN 0 WHEN \\\"indeed\\\" THEN 1 ELSE 2 END'): print(dict(r))\nfor r in c.execute('SELECT task_id,platform,status,started_at,pages_visited,results_seen,cards_extracted,cards_persistence_succeeded,detail_count_read,last_error,challenge_reason,requested_search_url,observed_page_url FROM browser_search_tasks ORDER BY task_id'): print(dict(r))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '230,430p' src/jobbot/orchestrator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('out/production-validation/micro-latest.json')\nreport=json.loads(p.read_text())\nprint('top', {k:report.get(k) for k in ['PROD_READY','validation_stage','branch','head','validation_database','dashboard_url','external_blockers','internal_failures']})\nfor key in ['preflight','primary_live']:\n v=report.get(key,{})\n print('\\\\n',key)\n if key=='preflight':\n  print('ok',v.get('ok'),'git',v.get('git'))\n  for c in v.get('checks',[]): print(c.get('name'),c.get('ok'),c.get('detail') if c.get('name') in ['candidate branch','stable extension deployment','targeted Chrome profile','doctor','isolated database'] else '')\n else:\n  print('pass',v.get('pass'),'outcome',v.get('outcome'),'extension_build_pass',v.get('extension_build_pass'),'bridge_restart_pass',v.get('bridge_restart_pass'))\n  print('dashboard',v.get('dashboard'))\n  print('validation_metrics',v.get('validation_metrics'))\n  print('platforms', {p:{k:x.get(k) for k in ['auth_status','auth_reason','readiness_state','readiness_reason','tasks_completed','tasks_challenged','tasks_incomplete','tasks_failed','jobs_recorded']} for p,x in v.get('audit',{}).get('platforms',{}).items()})\n  print('scope',v.get('scope'))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport sqlite3\np='data/validation_20260919T034906Z.sqlite3'; c=sqlite3.connect(p); c.row_factory=sqlite3.Row\nfor table in ['search_task_results','job_versions','jobs']:\n print('\\\\n',table)\n for row in c.execute(f'PRAGMA table_info({table})'): print(row['name'],row['type'])\nprint('\\\\nLinkedIn result proof')\nq='''SELECT r.result_id,r.source_job_id,r.detail_status,r.content_state,r.detail_error,r.canonical_job_id,jv.description,jv.title,jv.company FROM search_task_results r LEFT JOIN job_versions jv ON jv.canonical_job_id=r.canonical_job_id WHERE r.browser_run_id=1 AND r.source_site='linkedin' AND r.detail_status='COMPLETE' AND r.content_state='COMPLETE' ORDER BY length(COALESCE(jv.description,'')) DESC LIMIT 5'''\nfor row in c.execute(q):\n d=dict(row); d['description_len']=len(d.pop('description') or ''); print(d)\nc.close()\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json\nimport sqlite3\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom jobbot.browser_tasks import enqueue_validation\nfrom jobbot.config import PROJECT_ROOT\nfrom jobbot.orchestrator import launch_browser_run\nfrom jobbot.run_now import ensure_dashboard, preflight\nfrom jobbot.validator import _audit, _free_port, _isolated_bundle, _isolated_environment, _scope_diagnostics, _stop_dashboard, _validation_metrics\n\nroot=PROJECT_ROOT\nstamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')\nresults=[]\nfor platform in ('indeed','glassdoor'):\n    db=root/'data'/f'readiness_{platform}_{stamp}.sqlite3'\n    out=root/'out'/f'readiness-{platform}-{stamp}'\n    bundle=_isolated_bundle(db,out,_free_port())\n    dashboard_url=None\n    try:\n        preflight(bundle)\n        dashboard_url,_=ensure_dashboard(bundle,open_browser=True)\n        with _isolated_environment(bundle):\n            run_id=enqueue_validation(root,[platform],bundle=bundle)\n            outcome=launch_browser_run(bundle,run_id,wait=True,open_browser=True,timeout_seconds=180,stop_after_seconds=20,startup_timeout_seconds=45)\n        audit=_audit(bundle,run_id)\n        metrics=_validation_metrics(bundle,run_id,audit)\n        scope=_scope_diagnostics(bundle,run_id)\n        conn=sqlite3.connect(db); conn.row_factory=sqlite3.Row\n        platform_row=dict(conn.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?',(run_id,platform)).fetchone())\n        task_row=dict(conn.execute('SELECT * FROM browser_search_tasks WHERE browser_run_id=? AND platform=?',(run_id,platform)).fetchone())\n        event_types=[str(row[0]) for row in conn.execute('SELECT DISTINCT event_type FROM browser_events WHERE browser_run_id=? ORDER BY event_type',(run_id,))]\n        conn.close()\n        results.append({'platform':platform,'database':str(db),'output_dir':str(out),'dashboard_url':dashboard_url,'run_id':run_id,'outcome':outcome.__dict__,'platform_state':platform_row,'task_state':task_row,'metrics':metrics,'scope':scope.get(platform,{}),'event_types':event_types})\n    except Exception as exc:\n        results.append({'platform':platform,'database':str(db),'output_dir':str(out),'dashboard_url':dashboard_url,'error':f'{type(exc).__name__}: {exc}'})\n    finally:\n        if dashboard_url:\n            _stop_dashboard(bundle,dashboard_url)\nprint(json.dumps({'started_at':stamp,'results':results},indent=2,ensure_ascii=False,default=str))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find out -maxdepth 4 -type f | rg 'readiness-(indeed|glassdoor).*run_1_bridge|readiness-(indeed|glassdoor).*dashboard|readiness-(indeed|glassdoor)' | sort | sed -n '1,160p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport sqlite3, json\nfor platform in ('indeed','glassdoor'):\n p=next(__import__('pathlib').Path('data').glob(f'readiness_{platform}_*.sqlite3'))\n c=sqlite3.connect(p); c.row_factory=sqlite3.Row\n print('\\\\n###',platform,p)\n for row in c.execute(\\\"SELECT event_id,event_at,event_type,message,payload_json FROM browser_events ORDER BY event_id\\\"):\n  d=dict(row); payload=d.pop('payload_json')\n  try: d['payload']=json.loads(payload)\n  except: d['payload']=payload\n  print(json.dumps(d,ensure_ascii=False,default=str))\n c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch; rtk git diff --name-only; rtk git diff --stat; rtk test -e data/jobs.sqlite3 && echo 'production_path_present' || echo 'production_path_absent'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport json,re\nfrom pathlib import Path\nr=json.loads(Path('out/production-validation/micro-latest.json').read_text())\nlocal=r['preflight']['deterministic']['local_tests']\nout=local.get('output','')\nprint('returncode',local.get('returncode'))\nfor line in out.splitlines():\n if line.startswith('Ran ') or line == 'OK' or 'ReferenceError' in line or 'auth_state' in line or 'extraction_scope_missing' in line:\n  print(line)\nprint('tail')\nprint('\\\\n'.join(out.splitlines()[-8:]))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport json\nfrom pathlib import Path\nr=json.loads(Path('out/production-validation/micro-latest.json').read_text())\nprint(json.dumps({'command':'env PYTHONPATH=src python3 -m jobbot validate-production --stage micro','exit':0,'prod_ready':r.get('PROD_READY'),'internal_failures':r.get('internal_failures'),'external_blockers':r.get('external_blockers'),'preflight_ok':r.get('preflight',{}).get('ok'),'primary_pass':r.get('primary_live',{}).get('pass'),'primary_outcome':r.get('primary_live',{}).get('outcome'),'primary_extension_build_pass':r.get('primary_live',{}).get('extension_build_pass'),'primary_bridge_restart_pass':r.get('primary_live',{}).get('bridge_restart_pass'),'dashboard':r.get('primary_live',{}).get('dashboard')},indent=2,ensure_ascii=False,default=str))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport hashlib,sqlite3,json\np='data/validation_20260919T034906Z.sqlite3'; c=sqlite3.connect(p); c.row_factory=sqlite3.Row\nq='''SELECT r.result_id,r.task_id,r.source_site,r.source_job_id,r.source_url,r.canonical_job_id,r.detail_status,r.content_state,r.identity_status,r.card_metadata_status,j.job_id,j.title,j.company,j.description,j.content_state AS job_content_state,j.enrichment_status,j.description_state,j.evidence_provenance_json FROM search_task_results r LEFT JOIN jobs j ON j.job_id=r.canonical_job_id WHERE r.browser_run_id=1 AND r.source_site='linkedin' AND r.detail_status='COMPLETE' AND r.content_state='COMPLETE' AND length(COALESCE(j.description,''))>200 ORDER BY length(COALESCE(j.description,'')) DESC LIMIT 1'''\nrow=c.execute(q).fetchone(); d=dict(row); desc=d.pop('description') or ''; d.update({'description_length':len(desc),'description_sha256':hashlib.sha256(desc.encode()).hexdigest(),'description_prefix':desc[:120],'description_nontrivial':len(desc)>200}); print(json.dumps(d,indent=2,ensure_ascii=False,default=str))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport sqlite3,json,glob\nfor p in sorted(glob.glob('data/readiness_*.sqlite3')):\n c=sqlite3.connect(p); c.row_factory=sqlite3.Row\n run=dict(c.execute('SELECT browser_run_id,status,auth_status,jobs_recorded,tasks_completed,tasks_challenged,tasks_incomplete,last_error FROM browser_runs').fetchone())\n plat=dict(c.execute('SELECT platform,auth_status,auth_reason,readiness_state,readiness_reason,auth_checked_at,readiness_checked_at,tasks_total,tasks_completed,tasks_challenged,tasks_incomplete,tasks_failed,jobs_recorded,cooldown_until FROM browser_platform_runs').fetchone())\n task=dict(c.execute('SELECT task_id,task_key,status,started_at,completed_at,attempts,last_error,challenge_reason,pages_visited,results_seen,cards_extracted,cards_persistence_succeeded,cards_persistence_failed,detail_count_read,requested_search_url,observed_page_url,page_context_status FROM browser_search_tasks').fetchone())\n integ=c.execute('PRAGMA integrity_check').fetchone()[0]\n print(json.dumps({'database':p,'integrity':integ,'run':run,'platform':plat,'task':task},ensure_ascii=False,default=str))\n c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport sqlite3,json\np='data/validation_20260919T034906Z.sqlite3'; c=sqlite3.connect(p); c.row_factory=sqlite3.Row\nprint('integrity',c.execute('PRAGMA integrity_check').fetchone()[0])\nprint('recon')\nfor row in c.execute('SELECT platform,status,COUNT(*) n,COALESCE(SUM(cards_extracted),0) extracted,COALESCE(SUM(cards_persistence_attempted),0) attempted,COALESCE(SUM(cards_persistence_succeeded),0) persisted,COALESCE(SUM(cards_persistence_failed),0) failed FROM browser_search_tasks WHERE browser_run_id=1 GROUP BY platform,status'): print(dict(row))\nfor row in c.execute(\\\"SELECT event_type,COUNT(*) n FROM browser_events WHERE browser_run_id=1 GROUP BY event_type ORDER BY event_type\\\"): print(dict(row))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -l data/jobs.sqlite3 data/validation_20260919T034906Z.sqlite3 data/validation_soak_20260919T034906Z.sqlite3 data/validation_semiprod_20260919T034906Z.sqlite3 2>&1 | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json\nfrom pathlib import Path\nfrom jobbot.runtime_binding import runtime_binding_diagnostics, extension_source_identity, stable_extension_root, deployment_marker_path, chrome_profile_binding_path\nfrom jobbot.extension_identity import extension_build\nfrom jobbot.orchestrator import chrome_path\nroot=Path.cwd(); print(json.dumps({'head':__import__('subprocess').check_output(['git','rev-parse','HEAD'],text=True).strip(),'branch':__import__('subprocess').check_output(['git','branch','--show-current'],text=True).strip(),'source_identity':extension_source_identity(root),'build':extension_build(root),'chrome_executable':chrome_path(),'runtime_binding':runtime_binding_diagnostics(root),'stable_manifest_version_name':json.loads((stable_extension_root()/'manifest.json').read_text())['version_name'],'chrome_binding':json.loads(chrome_profile_binding_path().read_text()),'marker':json.loads(deployment_marker_path().read_text())},indent=2,default=str))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1; rtk git diff --exit-code; rtk git rev-parse HEAD; rtk git rev-parse HEAD''^{tree}; rtk git branch --show-current; rtk git diff --name-only e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10 --; rtk git ls-files --others --exclude-standard | sed -n '\"'1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 -m json.tool verification/CHG-39-r11.json >/tmp/chg39-r11-normalized.json && rtk python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('verification/CHG-39-r11.json'); d=json.loads(p.read_text())\nprint('json_valid=true')\nprint('top_keys=',','.join(d.keys()))\nprint('status=',d['status'],'go=',d['go'],'validator_exit=',d['validator']['exit_code'],'PROD_READY=',d['validator']['PROD_READY'])\nprint('big3=',[(k,v['auth_status'],v['readiness_state'],v['task']['status']) for k,v in d['big_three_readiness'].items()])\nprint('internal_failures=',d['validator']['internal_failures'])\nprint('linkedin_detail=',d['linkedin_substantive_detail_proof']['detail_status'],d['linkedin_substantive_detail_proof']['enrichment_status'],d['linkedin_substantive_detail_proof']['description_length'])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-only e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10 --; rtk git diff --exit-code -- extension src config tests README.md pyproject.toml; rtk git rev-parse HEAD; rtk git branch --show-current'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check; rtk git status --short --branch; rtk git diff --name-only; rtk git diff --stat; rtk git diff --numstat; rtk git diff -- verification/CHG-39-r11.json | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('verification/CHG-39-r11.json'); d=json.loads(p.read_text())\nprint({'status':d['status'],'go':d['go'],'head':d['source_runtime_identity']['repository']['head'],'source_identity_match':d['source_runtime_identity']['extension']['source_identity_match'],'linkedin':d['big_three_readiness']['linkedin']['readiness_state'],'indeed':d['big_three_readiness']['indeed']['readiness_state'],'glassdoor':d['big_three_readiness']['glassdoor']['readiness_state'],'validator_exit':d['validator']['exit_code'],'PROD_READY':d['validator']['PROD_READY'],'internal_failures':d['validator']['internal_failures'],'artifact':str(p)})\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 -m json.tool verification/CHG-39-r11.json >/dev/null && echo 'verification_json=valid'; rtk git diff --check; rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --exit-code -- extension src config tests README.md pyproject.toml && echo 'product_sources_unchanged=true'; rtk git rev-parse HEAD; rtk git branch --show-current; rtk git diff --name-only HEAD; rtk git diff --name-only e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10 --\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 157,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 95.76,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 3798016,
+      "fresh_input_tokens": 167979,
+      "input_tokens": 3965995,
+      "non_reasoning_output_tokens": 16582,
+      "output_tokens": 30187,
+      "reasoning_output_tokens": 13605,
+      "total_processed_tokens": 3996182
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "0751fbed618851828284c0fc7fbadf3d40bc8f95",
+      "subject": "fabric: capture completed model changes [CF-7ee14034c8ac39322ad0a39d]"
+    }
+  ],
+  "diff": {
+    "additions": 288,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 11351,
+        "path": "verification/CHG-39-r11.json",
+        "sha256": "5a2e86f96be2ffa02245bb7ef517e6f2c3d3cd86830307dfdcab308be3eaca36"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": true,
+    "commit_message": "fabric: capture completed model changes [CF-7ee14034c8ac39322ad0a39d]",
+    "commit_sha": "0751fbed618851828284c0fc7fbadf3d40bc8f95",
+    "paths_before": 1,
+    "status_before": [
+      "?? verification/CHG-39-r11.json"
+    ],
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-19T03:59:49Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "branch": "codex/jobbot-CHG-39-r11",
+    "detached_verify": false,
+    "head_sha": "0751fbed618851828284c0fc7fbadf3d40bc8f95",
+    "remote_exact_head": true,
+    "remote_head_sha": "0751fbed618851828284c0fc7fbadf3d40bc8f95",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "work_branch": "codex/jobbot-CHG-39-r11",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-7ee14034c8ac39322ad0a39d",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r11",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r11"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r11",
+  "schema_version": 1,
+  "started_at": "2026-09-19T03:46:04Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 825,
+    "queue_seconds": 0,
+    "total_seconds": 825
+  },
+  "transport": {
+    "bytes": 2957,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2675,
+    "prompt_sha256": "5ae024fc88c6607c551d33f0da30dc243940924d6210cb402b7ec63b672088aa",
+    "sha256": "7ee14034c8ac39322ad0a39d071a5a68ba3363711539827272e4c7e07e97e466"
+  }
+}
