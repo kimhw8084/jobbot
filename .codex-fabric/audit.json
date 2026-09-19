@@ -1,0 +1,335 @@
+{
+  "accepted_at": "2026-09-19T04:31:51Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 10,
+      "deletions": 1,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 62,
+      "deletions": 6,
+      "path": "tests/extension_service_worker_auth_return_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_service_worker_scope_recovery_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && sed -n '1,240p' /Users/haewonkim/.codex/RTK.md && printf '\\\\n--- law.md ---\\\\n' && sed -n '1,260p' /Users/haewonkim/.codex/law.md && printf '\\\\n--- repo top ---\\\\n' && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' | sort | head -50 && git status --short --branch && git log --oneline --decorate -8\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git cat-file -t ce7c717d582fd61676e7418b8e9d5ee890388d90 && rtk git cat-file -t e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a && rtk git show -s --format='candidate=%H%nparents=%P%ntree=%T%nauthor=%an <%ae>%ndate=%aI%nsubject=%s' ce7c717d582fd61676e7418b8e9d5ee890388d90 && rtk git show -s --format='base=%H%nparents=%P%ntree=%T%ndate=%aI%nsubject=%s' e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a && rtk git diff --stat e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a ce7c717d582fd61676e7418b8e9d5ee890388d90 && rtk git status --porcelain=v1 --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git merge --ff-only ce7c717d582fd61676e7418b8e9d5ee890388d90 && rtk git show -s --format='HEAD=%H%nparent=%P%ntree=%T%nsubject=%s' HEAD && rtk git diff --quiet e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a HEAD; test \"'$? -eq 0 || true && rtk git status --porcelain=v1 --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g '\"'!node_modules'\"' -g '\"'!vendor'\"' | sort | sed -n '1,240p' && printf '\\\\n--- candidate metadata matches ---\\\\n' && rtk rg -n \\\"3\\\\.2\\\\.2-prod-ready\\\\.672cf88\\\\.12|CHG-141|Indeed|Glassdoor|acceptance|readiness|audit|installed Chrome|Default\\\" -g '\"'!node_modules'\"' -g '\"'!vendor'\"' . | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,230p' README.md && printf '\\\\n--- acceptance doc ---\\\\n' && rtk sed -n '1,180p' docs/ACCEPTANCE_TEST.md && printf '\\\\n--- operations ---\\\\n' && rtk sed -n '1,180p' docs/OPERATIONS.md && printf '\\\\n--- pyproject ---\\\\n' && rtk sed -n '1,220p' pyproject.toml && printf '\\\\n--- command launchers ---\\\\n' && for f in REFRESH_EXTENSION.command SYNC_EXTENSION.command RUN_ACCEPTANCE_INDEED.command RUN_PLATFORM_INDEED.command RUN_PLATFORM_GLASSDOOR.command VALIDATE_PRODUCTION.command VALIDATE_MICRO.command INSTALL_MAC.command; do echo \\\"--- \"'$f\"; rtk sed -n '\"'1,220p' \\\"\"'$f\"; done'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' scripts/build_release.py && printf '\\\\n--- cli commands ---\\\\n' && rtk sed -n '1,430p' src/jobbot/cli.py && printf '\\\\n--- production env ---\\\\n' && rtk sed -n '1,200p' scripts/production_env.sh && printf '\\\\n--- version/binding refs ---\\\\n' && rtk rg -n \\\"version_name|BUILD_ID|build|sync-extension|refresh-extension|bootstrap-extension|JOBBOT_DATABASE_PATH|JOBBOT_OUTPUT_DIR\\\" src tests extension scripts -g '*.py' -g '*.js' -g '*.sh' -g '*.command' | sed -n '1,300p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/common.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/glassdoor.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/dashboard.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/indeed.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/linkedin.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk .venv/bin/python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/selectors.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/service_worker.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la .venv/bin/python .venv/bin/python3 2>/dev/null || true && rtk command -v python3 && rtk python3 --version && rtk sed -n '1,180p' scripts/mac_python.sh && rtk git status --porcelain=v1 --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,120p' tests/__init__.py && rtk sed -n '1,100p' tests/helpers.py && rtk env PYTHONPATH=src python3 -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' src/jobbot/runtime_binding.py && printf '\\\\n--- doctor ---\\\\n' && rtk sed -n '1,260p' src/jobbot/doctor.py && printf '\\\\n--- browser/runtime config ---\\\\n' && rtk sed -n '1,220p' config/runtime.toml && printf '\\\\n--- candidate identity ---\\\\n' && rtk env PYTHONPATH=src python3 -c 'from pathlib import Path; import json; from jobbot.extension_identity import extension_build, manifest; root=Path.cwd(); print(json.dumps({\\\"manifest_version_name\\\":manifest(root).get(\\\"version_name\\\"),\\\"extension_build\\\":extension_build(root),\\\"manifest_path\\\":str(root/\\\"extension/manifest.json\\\")}, indent=2))' && printf '\\\\n--- local JobBot state paths ---\\\\n' && rtk find \\\"\"'$HOME/Library/Application Support/JobBot\" -maxdepth 3 -type f -print 2>/dev/null | sort | sed -n '\"'1,100p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la \\\"/Users/haewonkim/Library/Application Support/JobBot\\\" && rtk ls -la \\\"/Users/haewonkim/Library/Application Support/JobBot/extension\\\" && rtk sed -n '1,120p' \\\"/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json\\\" && rtk sed -n '1,160p' \\\"/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' scripts/production_env.sh && rtk rg -n \\\"def refresh_extension|chrome_profile_binding|profile_directory|chrome.*Default|Chrome\\\" src/jobbot/orchestrator.py src/jobbot/runtime_binding.py src/jobbot/doctor.py | sed -n '1,220p' && rtk sed -n '280,480p' src/jobbot/orchestrator.py && rtk sed -n '240,380p' src/jobbot/runtime_binding.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python3 -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=data/jobs.sqlite3 JOBBOT_OUTPUT_DIR=out python3 -m jobbot refresh-extension --timeout 60'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' AUDIT.command && rtk sed -n '1,200p' DOCTOR.command && rtk git status --porcelain=v1 --ignored | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"CREATE TABLE.*browser_platform_runs|browser_platform_runs|browser_search_tasks|pages_visited|results_seen|content script did not respond|landing-page|landing_page|requested.*surface|surface\\\" src/jobbot/migrations src/jobbot/browser_tasks.py src/jobbot/bridge src/jobbot/orchestrator.py tests -g '*.py' | sed -n '1,320p' && printf '\\\\n--- browser_tasks schema/metrics ---\\\\n' && rtk sed -n '1,380p' src/jobbot/browser_tasks.py && printf '\\\\n--- bridge event/metrics excerpts ---\\\\n' && rtk rg -n -C 3 \\\"pages_visited|results_seen|content script|landing|readiness_state|auth_status|search_surface|requested_url|observed_url\\\" src/jobbot -g '*.py' | sed -n '1,360p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' src/jobbot/migrations/m0002_browser_tasks.py && rtk sed -n '1,180p' src/jobbot/migrations/m0008_page_reconciliation.py && rtk sed -n '430,735p' src/jobbot/bridge/rpc.py && rtk sed -n '260,345p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"requested_search_url|observed_page_url|page_context_status|readiness_state|AUTH_STATES|READINESS_STATES\\\" src/jobbot/migrations src/jobbot/bridge src/jobbot/browser_tasks.py | sed -n '1,240p' && rtk sed -n '1,180p' src/jobbot/migrations/m0014_extension_runtime_binding.py && rtk sed -n '1,180p' src/jobbot/migrations/m0015_production_integrity_states.py && rtk sed -n '1,120p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '120,285p' src/jobbot/orchestrator.py && rtk sed -n '1,280p' src/jobbot/browser_tasks.py && rtk rg -n \\\"dashboard.html|open_browser|autorun|run_id|search_url\\\" src/jobbot/orchestrator.py extension/dashboard.js extension/service_worker.js | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=data/acceptance-indeed.sqlite3 JOBBOT_OUTPUT_DIR=out/acceptance-indeed JOBBOT_DASHBOARD_PORT=8767 python3 -m jobbot acceptance --platform indeed --days 7 --max-results 20'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json, sqlite3\nfrom pathlib import Path\npath = Path('data/acceptance-indeed.sqlite3')\ncon = sqlite3.connect(path)\ncon.row_factory = sqlite3.Row\nrun = con.execute('SELECT * FROM browser_runs ORDER BY browser_run_id DESC LIMIT 1').fetchone()\nprint('run', json.dumps(dict(run), sort_keys=True))\nfor row in con.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=?', (run['browser_run_id'],)):\n    print('platform', json.dumps(dict(row), sort_keys=True))\nfor row in con.execute('SELECT task_id,query_text,status,results_seen,pages_visited,jobs_recorded,detail_count_read,requested_search_url,observed_page_url,page_context_status,last_error,challenge_reason FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id', (run['browser_run_id'],)):\n    print('task', json.dumps(dict(row), sort_keys=True))\nprint('events:')\nfor row in con.execute(\\\"SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=? ORDER BY event_id\\\", (run['browser_run_id'],)):\n    print(json.dumps({'event_type':row['event_type'],'message':row['message'],'payload':json.loads(row['payload_json'] or '{}')}, sort_keys=True))\ncon.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=data/acceptance-indeed.sqlite3 python3 - <<'PY'\nimport json, os, sqlite3, sys\nfrom pathlib import Path\n\ndb = Path(os.environ['JOBBOT_DATABASE_PATH'])\ncon = sqlite3.connect(db)\ncon.row_factory = sqlite3.Row\nreasons = []\nrun = con.execute(\\\"SELECT * FROM browser_runs ORDER BY browser_run_id DESC LIMIT 1\\\").fetchone()\nplatform = None\nif run is None:\n    reasons.append('no durable browser run')\nelse:\n    platform = con.execute(\\\"SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?\\\", (run['browser_run_id'], run['platform'])).fetchone()\n    if platform is None:\n        reasons.append('no durable platform row')\n    else:\n        if platform['readiness_state'] \"'!= '\"'verified':\n            reasons.append(f\\\"readiness_state={platform['readiness_state']\"'!r}\")\n        if platform['\"'auth_status'] \"'!= '\"'verified':\n            reasons.append(f\\\"auth_status={platform['auth_status']\"'!r}\")\n\ntasks = []\nif run is not None:\n    tasks = con.execute(\"SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id\", (run['\"'browser_run_id'],)).fetchall()\nblocked_phrases = ('content script did not respond', 'landing-page receiver missing', 'landing page receiver missing')\nblocked = []\nfor row in con.execute(\\\"SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=?\\\", ((run['browser_run_id'],) if run else (-1,))):\n    blob = ' '.join((row['event_type'] or '', row['message'] or '', row['payload_json'] or '')).lower()\n    if any(p in blob for p in blocked_phrases):\n        blocked.append({'event_type': row['event_type'], 'message': row['message']})\nif blocked:\n    reasons.append('landing receiver failure evidence present')\n\ndef requested_surface(row):\n    requested = str(row['requested_search_url'] or '')\n    observed = str(row['observed_page_url'] or '')\n    page_context = str(row['page_context_status'] or '').upper()\n    path_ok = '/jobs' in observed.lower()\n    return bool(requested and observed and page_context == 'VERIFIED' and row['pages_visited'] > 0 and row['results_seen'] > 0 and path_ok)\n\nprogress = [dict(row) for row in tasks if requested_surface(row)]\nif not progress:\n    reasons.append('no durable verified requested-search-surface progress (pages_visited>0 and results_seen>0)')\nresult = {\n    'database': str(db.resolve()),\n    'run_id': run['browser_run_id'] if run else None,\n    'platform': run['platform'] if run else None,\n    'readiness_state': platform['readiness_state'] if platform else None,\n    'auth_status': platform['auth_status'] if platform else None,\n    'landing_receiver_failures': blocked,\n    'verified_requested_surface_tasks': progress,\n    'assertion': 'PASS' if not reasons else 'FAIL',\n    'reasons': reasons,\n}\nprint(json.dumps(result, sort_keys=True, default=str))\ncon.close()\nsys.exit(0 if not reasons else 1)\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=data/acceptance-glassdoor.sqlite3 JOBBOT_OUTPUT_DIR=out/acceptance-glassdoor JOBBOT_DASHBOARD_PORT=8768 python3 -m jobbot acceptance --platform glassdoor --days 7 --max-results 20'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python3 - <<'PY'\nimport json, sqlite3\nfrom pathlib import Path\npath = Path('data/acceptance-glassdoor.sqlite3')\ncon = sqlite3.connect(path)\ncon.row_factory = sqlite3.Row\nrun = con.execute('SELECT * FROM browser_runs ORDER BY browser_run_id DESC LIMIT 1').fetchone()\nprint('run', json.dumps(dict(run), sort_keys=True))\nfor row in con.execute('SELECT * FROM browser_platform_runs WHERE browser_run_id=?', (run['browser_run_id'],)):\n    print('platform', json.dumps(dict(row), sort_keys=True))\nfor row in con.execute('SELECT task_id,query_text,status,results_seen,pages_visited,jobs_recorded,detail_count_read,requested_search_url,observed_page_url,page_context_status,last_error,challenge_reason FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id', (run['browser_run_id'],)):\n    print('task', json.dumps(dict(row), sort_keys=True))\nprint('events:')\nfor row in con.execute(\\\"SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=? ORDER BY event_id\\\", (run['browser_run_id'],)):\n    print(json.dumps({'event_type':row['event_type'],'message':row['message'],'payload':json.loads(row['payload_json'] or '{}')}, sort_keys=True))\ncon.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=data/acceptance-glassdoor.sqlite3 python3 - <<'PY'\nimport json, os, sqlite3, sys\nfrom pathlib import Path\n\ndb = Path(os.environ['JOBBOT_DATABASE_PATH'])\ncon = sqlite3.connect(db)\ncon.row_factory = sqlite3.Row\nreasons = []\nrun = con.execute(\\\"SELECT * FROM browser_runs ORDER BY browser_run_id DESC LIMIT 1\\\").fetchone()\nplatform = None\nif run is None:\n    reasons.append('no durable browser run')\nelse:\n    platform = con.execute(\\\"SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?\\\", (run['browser_run_id'], run['platform'])).fetchone()\n    if platform is None:\n        reasons.append('no durable platform row')\n    else:\n        if platform['readiness_state'] \"'!= '\"'verified':\n            reasons.append(f\\\"readiness_state={platform['readiness_state']\"'!r}\")\n        if platform['\"'auth_status'] \"'!= '\"'verified':\n            reasons.append(f\\\"auth_status={platform['auth_status']\"'!r}\")\n\ntasks = []\nif run is not None:\n    tasks = con.execute(\"SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id\", (run['\"'browser_run_id'],)).fetchall()\nblocked_phrases = ('content script did not respond', 'landing-page receiver missing', 'landing page receiver missing')\nblocked = []\nfor row in con.execute(\\\"SELECT event_type,message,payload_json FROM browser_events WHERE browser_run_id=?\\\", ((run['browser_run_id'],) if run else (-1,))):\n    blob = ' '.join((row['event_type'] or '', row['message'] or '', row['payload_json'] or '')).lower()\n    if any(p in blob for p in blocked_phrases):\n        blocked.append({'event_type': row['event_type'], 'message': row['message']})\nif blocked:\n    reasons.append('landing receiver failure evidence present')\n\ndef requested_surface(row):\n    requested = str(row['requested_search_url'] or '')\n    observed = str(row['observed_page_url'] or '')\n    page_context = str(row['page_context_status'] or '').upper()\n    path_ok = '/job/' in observed.lower()\n    return bool(requested and observed and page_context == 'VERIFIED' and row['pages_visited'] > 0 and row['results_seen'] > 0 and path_ok)\n\nprogress = [dict(row) for row in tasks if requested_surface(row)]\nif not progress:\n    reasons.append('no durable verified requested-search-surface progress (pages_visited>0 and results_seen>0)')\nresult = {\n    'database': str(db.resolve()),\n    'run_id': run['browser_run_id'] if run else None,\n    'platform': run['platform'] if run else None,\n    'readiness_state': platform['readiness_state'] if platform else None,\n    'auth_status': platform['auth_status'] if platform else None,\n    'landing_receiver_failures': blocked,\n    'verified_requested_surface_tasks': progress,\n    'assertion': 'PASS' if not reasons else 'FAIL',\n    'reasons': reasons,\n}\nprint(json.dumps(result, sort_keys=True, default=str))\ncon.close()\nsys.exit(0 if not reasons else 1)\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD && rtk git rev-parse HEAD''^ && rtk git rev-parse HEAD''^{tree} && rtk git show -s --format='\"'%H %P %T %s' ce7c717d582fd61676e7418b8e9d5ee890388d90 && rtk git diff --quiet ce7c717d582fd61676e7418b8e9d5ee890388d90 HEAD && rtk git diff --quiet && rtk git diff --cached --quiet && test -z \\\"\"'$(rtk git status --porcelain=v1)\" && rtk env PYTHONPATH=src python3 - <<'\"'PY'\nimport hashlib, json\nfrom pathlib import Path\nfrom jobbot.extension_identity import extension_build, manifest\nfrom jobbot.runtime_binding import deployment_diagnostics, chrome_target_diagnostics\nroot = Path.cwd()\nprint(json.dumps({\n  'manifest_version_name': manifest(root).get('version_name'),\n  'extension_build': extension_build(root),\n  'deployment': deployment_diagnostics(root),\n  'chrome_target': chrome_target_diagnostics(),\n}, sort_keys=True, default=str))\nPY\nrtk sed -n '1,120p' \\\"/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json\\\"\nrtk git status --porcelain=v1 --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 106,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 94.17,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 2810880,
+      "fresh_input_tokens": 174056,
+      "input_tokens": 2984936,
+      "non_reasoning_output_tokens": 8525,
+      "output_tokens": 18699,
+      "reasoning_output_tokens": 10174,
+      "total_processed_tokens": 3003635
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "ce7c717d582fd61676e7418b8e9d5ee890388d90",
+      "subject": "fabric: capture completed model changes [CF-838a2b9fd3900a609680fbbc]"
+    }
+  ],
+  "diff": {
+    "additions": 75,
+    "changed_files": 5,
+    "commit_count": 1,
+    "deletions": 10
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "c9b2a8a458fa13bd85316ab5af3167a410563ee8a1ff02b53a6ff1d55de86606"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-19T04:41:15Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "branch": "codex/jobbot-CHG-141-r2",
+    "detached_verify": false,
+    "head_sha": "ce7c717d582fd61676e7418b8e9d5ee890388d90",
+    "remote_exact_head": true,
+    "remote_head_sha": "ce7c717d582fd61676e7418b8e9d5ee890388d90",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "work_branch": "codex/jobbot-CHG-141-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-f29200508b2ddd69443af3a2",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-141-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-141-r2"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-141-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-19T04:31:51Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 564,
+    "queue_seconds": 0,
+    "total_seconds": 564
+  },
+  "transport": {
+    "bytes": 3420,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3138,
+    "prompt_sha256": "6111957d4f53ef9c9d11659130894ba174de63e6d27f530cb508605d9702ce65",
+    "sha256": "f29200508b2ddd69443af3a2e7d1f03f901fbb46799d6ad51d08c05cfe83039e"
+  }
+}
