@@ -55,6 +55,10 @@ function transientBridgeError(error){
   const s=String(error?.message||error||'').toLowerCase();
   return /unavailable|network|failed to fetch|connection|could not establish connection|receiving end does not exist|timed out|abort|temporar|503|502|504/.test(s);
 }
+function authProbeReceiverFailure(error){
+  const s=String(error?.message||error||'').toLowerCase();
+  return /content script did not respond|could not establish connection|receiving end does not exist|message port closed before a response was received/.test(s);
+}
 async function nativeRequest(action,payload={},timeoutMs=60000){
   const b=await loadBridge();
   const request_id=`r${Date.now()}_${requestSeq++}`;
@@ -155,7 +159,12 @@ async function checkAuth(platform,runId,taskId,searchUrl=''){
   const url=AUTH_URLS[platform]; if(!url)return {authenticated:true,page:{reason:'no auth check configured'}};
   const target=await createBackgroundTarget(url),tab=target.tab;
   try{
-    const p=await inspectTab(tab.id,'JOBBOT_INSPECT_AUTH',{},5);
+    let p;
+    try{p=await inspectTab(tab.id,'JOBBOT_INSPECT_AUTH',{},5);}
+    catch(error){
+      if(!authProbeReceiverFailure(error))throw error;
+      p={platform,authenticated:false,auth_state:'unknown',reason:'landing auth probe receiver unavailable',page_url:url};
+    }
     const authState=String(p.auth_state|| (p.authenticated?'verified':p.login_required?'sign_in_required':'unknown'));
     if(p.challenged){
       await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,auth_state:authState==='verified'?'verified':'unknown',reason:p.challenge_reason||p.reason||'platform challenge',page_url:p.page_url||''});
