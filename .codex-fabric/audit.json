@@ -1,0 +1,381 @@
+{
+  "accepted_at": "2026-09-19T00:31:53Z",
+  "changed_files": [
+    {
+      "additions": 275,
+      "deletions": 0,
+      "path": "verification/CHG-39-r9.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk jq '[.primary_live.audit.events[]? // empty] | map(select((.event_type|tostring)|test(\\\"auth|readiness|scope|extension|error|failure\\\";\\\"i\\\")))' out/production-validation/latest.json 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{preflight:{ok:.preflight.ok,git:.preflight.git,checks:(.preflight.checks|map({name,ok,detail}))},primary_live:{run_id:.primary_live.run_id,outcome:.primary_live.outcome,terminal_classification:.primary_live.terminal_classification,validation_classification:.primary_live.validation_classification,extension_build_pass:.primary_live.extension_build_pass,bridge_restart_pass:.primary_live.bridge_restart_pass,pass:.primary_live.pass,metrics:.primary_live.validation_metrics,scope:.primary_live.scope,dashboard:.primary_live.dashboard,run_audit_platforms:(.primary_live.audit.platforms // {})}}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -c '.internal_failures, .external_blockers, .exit_integrity' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{primary:{run_id:.primary_live.run_id,outcome:.primary_live.outcome,terminal:.primary_live.terminal_classification,validation:.primary_live.validation_classification,pass:.primary_live.pass,extension_build_pass:.primary_live.extension_build_pass,bridge_restart_pass:.primary_live.bridge_restart_pass,dashboard_identity_ok:.primary_live.dashboard.identity_ok,live_refresh_ok:.primary_live.dashboard.live_refresh_ok,metrics:(.primary_live.validation_metrics|{integrity,reconciliation,attempted_tasks,progress_tasks,attempted_failed,attempted_incomplete,attempted_running,extracted,persistence_attempted,persisted,persistence_failed,detail_pending,detail_complete,detail_retryable,detail_external_blocked,task_states,unexplained}),scope:.primary_live.scope}}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{preflight_checks:(.preflight.checks|map({name,ok})),deterministic:.preflight.deterministic,run_now_coverage:.run_now_coverage}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -c '[.primary_live.audit.platforms | to_entries[] | {platform:.key, state:(.value|{planned,queued,running,exhausted,incomplete,challenged,auth_required,deferred_by_platform,failed,results,persisted,detail_complete,detail_retryable,detail_external_blocked,readiness_state,readiness_reason,auth_status,auth_reason})}]' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{task_states:.primary_live.validation_metrics.task_states,unexplained:.primary_live.validation_metrics.unexplained,scope:.primary_live.scope}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{local_tests:.preflight.deterministic.local_tests.returncode,scope_fixtures:.preflight.deterministic.scope_fixtures,platform_isolation:.preflight.deterministic.platform_isolation,watch_cadence:.preflight.deterministic.watch_cadence,watch_stop_latch:.preflight.deterministic.watch_stop_latch,compileall:(.preflight.checks[]|select(.name==\\\"compileall\\\")|.ok),node_syntax:(.preflight.checks[]|select(.name==\\\"node syntax\\\")|.ok),plan:(.preflight.checks[]|select(.name==\\\"uncapped staged/deep search plan\\\")|.detail)}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '[.primary_live.audit.platforms | to_entries[] | {platform:.key, planned:.value.planned,queued:.value.queued,running:.value.running,exhausted:.value.exhausted,incomplete:.value.incomplete,challenged:.value.challenged,auth_required:.value.auth_required,deferred_by_platform:.value.deferred_by_platform,failed:.value.failed,results:.value.results,persisted:.value.persisted,detail_complete:.value.detail_complete,detail_retryable:.value.detail_retryable,detail_external_blocked:.value.detail_external_blocked,auth_status:.value.auth_status,readiness_state:.value.readiness_state,auth_reason:.value.auth_reason,readiness_reason:.value.readiness_reason}]' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.internal_failures[]' out/production-validation/latest.json && rtk jq -c '.external_blockers' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.external_blockers[] | [.stage,.platform,(.states|tojson)] | @tsv' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.primary_live.scope | to_entries[] | [.key,.value.scope_missing_events,.value.contamination_persisted,.value.attempted_pages,.value.scope_found_events,.value.persisted_in_scope,.value.persisted_outside_scope] | @tsv' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.primary_live.validation_metrics.task_states | to_entries[] | [.key,.value] | @tsv' out/production-validation/latest.json; rtk jq -r '.primary_live.validation_metrics | [.integrity,.reconciliation.ok,.unexplained,.extracted,.persistence_attempted,.persisted,.persistence_failed,.progress_tasks,.attempted_tasks] | @tsv' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,360p' verification/CHG-22-r4.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i --hidden -g '\"'!node_modules'\"' -g '\"'!vendor'\"' -g '\"'!.git'\"' 'auth_state is not defined|ReferenceError|extraction_scope_missing|search_scope_recovery|scope_context|context loss' data out logs verification 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'for db in data/verification_linkedin_20260918T000000Z.sqlite3 data/verification_indeed_20260918T000000Z.sqlite3 data/verification_glassdoor_20260918T000000Z.sqlite3 data/validation_20260919T003727Z.sqlite3; do echo \"DB=$db\"; rtk sqlite3 -separator '\"'|' \\\"\"'$db\" \"select '\"'event',event_type,message from browser_events where lower(message) like '%auth_state is not defined%' or lower(message) like '%referenceerror%' or event_type in ('extraction_scope_missing','search_scope_recovery','scope_diagnostics'); select 'task_state',t.platform,t.status,p.auth_status,p.readiness_state,t.last_error from browser_search_tasks t join browser_platform_runs p on p.browser_run_id=t.browser_run_id and p.platform=t.platform where t.status='auth_required' or (t.status='auth_required' and p.auth_status in ('retryable','unknown'));\\\" 2>/dev/null || true; done\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1 --untracked-files=all && rtk git rev-parse HEAD && rtk git diff --quiet e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a --; echo target_drift=$? && rtk git diff-index --quiet e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a --; echo worktree_drift=$?'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column data/validation_20260919T003727Z.sqlite3 \\\"select event_id,event_type,message,payload_json from browser_events where event_type='extension_build' or event_type='extension_refresh_requested' or event_type in ('auth_failed','platform_paused','platform_readiness','run_finished') order by event_id;\\\" 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -column data/validation_20260919T003727Z.sqlite3 \"select browser_run_id,status,auth_status,jobs_recorded,jobs_new,jobs_updated,notes from browser_runs; select platform,auth_status,auth_reason,readiness_state,readiness_reason,tasks_total,tasks_completed,tasks_incomplete,tasks_challenged,tasks_failed,jobs_recorded from browser_platform_runs; select task_id,platform,query_text,status,results_seen,pages_visited,detail_count_read,last_error from browser_search_tasks;\" 2>/dev/null || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '3\\\\.2\\\\.2-prod-ready\\\\.672cf88(?\"'!'\"\\\\.11)' src extension config verification out/production-validation/latest.json -g '\"'!*.sqlite3'\"' 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.primary_live | {run_id,outcome,terminal_classification,validation_classification,extension_build_pass,bridge_restart_pass,pass,metrics,scope}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -column data/validation_20260919T003727Z.sqlite3 \"select event_type,count(*) n from browser_events group by event_type order by event_type; select event_id,event_type,message from browser_events order by event_id limit 30;\" 2>/dev/null || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n --pcre2 '3\\\\.2\\\\.2-prod-ready\\\\.672cf88(?\"'!'\"\\\\.11)' src extension config verification out/production-validation/latest.json -g '\"'!*.sqlite3'\"' 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.primary_live.audit | keys' out/production-validation/latest.json && rtk jq -r '.primary_live.audit.events // \\\"NO_EVENTS\\\"' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -c 'from pathlib import Path; import json; p=Path(\\\"extension/manifest.json\\\"); print(json.loads(p.read_text())[\\\"version_name\\\"]); from jobbot.extension_identity import extension_build; from jobbot.config import PROJECT_ROOT; print(extension_build(PROJECT_ROOT))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column data/validation_20260919T003727Z.sqlite3 \\\"select event_type,count(*) as count from browser_events where event_type in ('extraction_scope_missing','search_scope_recovery','scope_diagnostics') group by event_type; select count(*) as ref_or_auth_errors from browser_events where lower(message) like '%auth_state is not defined%' or lower(message) like '%referenceerror%'; select count(*) as contradictory_auth_downgrades from browser_search_tasks t join browser_platform_runs p on p.browser_run_id=t.browser_run_id and p.platform=t.platform where t.status='auth_required' and p.auth_status in ('retryable','unknown');\\\" 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '{PROD_READY,validation_database,soak_database,semi_production_database,exit_integrity,internal_failures,external_blockers}' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk shasum -a 256 out/production-validation/latest.json data/verification_prereq_20260918T000000Z.sqlite3 data/verification_linkedin_20260918T000000Z.sqlite3 data/verification_indeed_20260918T000000Z.sqlite3 data/verification_glassdoor_20260918T000000Z.sqlite3 2>/dev/null || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD''^{tree} && rtk git show -s --format='\"'%H%n%P%n%s' e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a && rtk git diff --name-only e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a -- && rtk git status --porcelain=v1 --untracked-files=all\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '[.validation_database,.soak_database,.semi_production_database][], (.exit_integrity|to_entries[]|[.key,.value]|@tsv)[]' out/production-validation/latest.json\"",
+      "exit_code": 5,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.primary_live | [.run_id,.outcome.status,.outcome.bridge_restarts,.terminal_classification,.validation_classification,.extension_build_pass,.bridge_restart_pass,.pass,.dashboard.identity_ok,.dashboard.live_refresh_ok] | @tsv' out/production-validation/latest.json; rtk jq -r '.primary_live.validation_metrics | [.integrity,.reconciliation.ok,.unexplained,.extracted,.persistence_attempted,.persisted,.persistence_failed,.progress_tasks,.attempted_tasks] | @tsv' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"for db in data/verification_linkedin_20260918T000000Z.sqlite3 data/verification_indeed_20260918T000000Z.sqlite3 data/verification_glassdoor_20260918T000000Z.sqlite3; do rtk sqlite3 -separator '|' \\\"\"'$db\" \"select platform,auth_status,auth_reason,readiness_state,readiness_reason,tasks_total,tasks_completed,tasks_incomplete,tasks_challenged,tasks_failed,jobs_recorded from browser_platform_runs; select count(*) as complete_enriched from search_task_results where detail_status='\"'COMPLETE' and content_state='COMPLETE';\\\"; done\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.exit_integrity | to_entries[] | [.key,.value] | @tsv' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.exit_integrity | values[]' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"for db in data/verification_linkedin_20260918T000000Z.sqlite3 data/verification_indeed_20260918T000000Z.sqlite3 data/verification_glassdoor_20260918T000000Z.sqlite3 data/validation_20260919T003727Z.sqlite3; do rtk sqlite3 -separator '|' \\\"\"'$db\" \"select '\"'\"'$(basename \"$db\")'\"', (select count(*) from browser_events where event_type in ('extraction_scope_missing','search_scope_recovery','scope_diagnostics')), (select count(*) from browser_events where lower(message) like '%auth_state is not defined%' or lower(message) like '%referenceerror%'), (select count(*) from browser_search_tasks t join browser_platform_runs p on p.browser_run_id=t.browser_run_id and p.platform=t.platform where t.status='auth_required' and p.auth_status in ('retryable','unknown'));\\\"; done\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"for db in data/verification_linkedin_20260918T000000Z.sqlite3 data/verification_indeed_20260918T000000Z.sqlite3 data/verification_glassdoor_20260918T000000Z.sqlite3 data/validation_20260919T003727Z.sqlite3; do rtk sqlite3 -separator '|' \\\"\"'$db\" \"select '\"'\"'$(basename \"$db\")'\"', group_concat(distinct message) from browser_events where event_type='extension_build';\\\"; done\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.preflight.checks[] | select(.name==\\\"deterministic suite\\\") | .detail.output | split(\\\"\\\\n\\\") | .[-8:][]' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.preflight.deterministic.local_tests.output | split(\\\"\\\\n\\\") | .[-8:][]' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.preflight.checks[] | select(.name==\\\"node syntax\\\") | .detail | length' out/production-validation/latest.json; rtk jq -r '.preflight.checks[] | select(.name==\\\"uncapped staged/deep search plan\\\") | .detail | @json' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.preflight.deterministic.local_tests.output | split(\\\"\\\\n\\\")[] | select(test(\\\"Ran |OK|skipped\\\"))' out/production-validation/latest.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -column data/verification_linkedin_20260918T000000Z.sqlite3 \"select task_id,platform,query_text,status,results_seen,pages_visited,detail_count_read,last_error from browser_search_tasks order by task_id;\" 2>/dev/null || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'bridge_token=|X-JobBot-Token|cookie|password|credential|api[_-]?key|secret' verification/CHG-39-r9.json -i || true; rtk wc -c verification/CHG-39-r9.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq empty verification/CHG-39-r9.json && rtk jq '{verification_result,PROD_READY,source_identity,full_production_validation:{exit_code,PROD_READY,internal_failures,external_blockers}}' verification/CHG-39-r9.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.isolated_databases[] | [.stage,.classification,.production_database,.integrity // \\\"n/a\\\"] | @tsv' verification/CHG-39-r9.json; rtk jq -r '.big3_bounded_warmup | to_entries[] | [.key,.value.auth_status,.value.readiness_state,.value.reason,.value.content_complete_records] | @tsv' verification/CHG-39-r9.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1 --untracked-files=all && rtk git diff --name-only && rtk git diff --cached --name-only && rtk git rev-parse HEAD && rtk git diff --quiet e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a --; echo tracked_target_diff=$?'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq '.full_production_validation' verification/CHG-39-r9.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.chg132_regression_observations, .chg127_recovery_observations' verification/CHG-39-r9.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq empty verification/CHG-39-r9.json && rtk jq -r '[.PROD_READY,.verification_result,.source_identity.head_matches_target,.runtime_identity.refresh_gate.identity_confirmed,.full_production_validation.exit_code,.linkedin_substantive_detail_proof.go_permitted] | @json' verification/CHG-39-r9.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk jq -r '.full_production_validation | {exit_code,PROD_READY,preflight_ok,internal_failures,external_blockers,soak_started,semi_production_started}' verification/CHG-39-r9.json && rtk jq -r '.big3_bounded_warmup | to_entries[] | [.key,.value.status,.value.auth_status,.value.readiness_state,.value.reason,.value.content_complete_records] | @tsv' verification/CHG-39-r9.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1 --untracked-files=all && rtk git diff --name-only && rtk git diff --cached --name-only && rtk git rev-parse HEAD && rtk git diff --quiet e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a --; echo tracked_diff_from_target=$?'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 268,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.83,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 4914432,
+      "fresh_input_tokens": 160782,
+      "input_tokens": 5075214,
+      "non_reasoning_output_tokens": 21642,
+      "output_tokens": 35442,
+      "reasoning_output_tokens": 13800,
+      "total_processed_tokens": 5110656
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "3c47ba9884456da708f39dbdf314cd16faa4104f",
+      "subject": "fabric: capture completed model changes [CF-d80bf1108d6294541563c217]"
+    }
+  ],
+  "diff": {
+    "additions": 275,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 11918,
+        "path": "verification/CHG-39-r9.json",
+        "sha256": "1fef912226809d9fb603868c41ea46f4a44122515c142b2546dd0bf9bf5ea22b"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": true,
+    "commit_message": "fabric: capture completed model changes [CF-d80bf1108d6294541563c217]",
+    "commit_sha": "3c47ba9884456da708f39dbdf314cd16faa4104f",
+    "paths_before": 1,
+    "status_before": [
+      "?? verification/CHG-39-r9.json"
+    ],
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-19T00:44:59Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "branch": "codex/jobbot-CHG-39-r9",
+    "detached_verify": false,
+    "head_sha": "3c47ba9884456da708f39dbdf314cd16faa4104f",
+    "remote_exact_head": true,
+    "remote_head_sha": "3c47ba9884456da708f39dbdf314cd16faa4104f",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "work_branch": "codex/jobbot-CHG-39-r9",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-d80bf1108d6294541563c217",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r9",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r9"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r9",
+  "schema_version": 1,
+  "started_at": "2026-09-19T00:31:53Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 786,
+    "queue_seconds": 0,
+    "total_seconds": 786
+  },
+  "transport": {
+    "bytes": 3066,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2786,
+    "prompt_sha256": "9f2f2926b6450efa2bd3b31109d6717b9c9908428ff1be19f6bbf89033e34f23",
+    "sha256": "d80bf1108d6294541563c2178e7afbd039811d93def301e13ff3efc693e1d55e"
+  }
+}
