@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "verification": "CHG-141-r4",
+  "verification_mode": "evidence-only VERIFY",
+  "recorded_at_utc": "2026-09-19T15:44:19Z",
+  "overall_go": false,
+  "overall_reason": "Indeed did not produce durable positive search-surface proof: its live search surface was explicitly challenge-gated and the self-assertion failed closed.",
+  "candidate_and_target": {
+    "target_main": {
+      "commit": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+      "tree": "f910d69c8f342359aa30e865a3524155014da39a",
+      "origin_main_commit": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+      "origin_main_no_drift": true
+    },
+    "accepted_predecessor": {
+      "commit": "2e94796881c803f796df2bb1aa892df803861e90",
+      "tree": "f4ae0b7ed50589361787f794be48027677dd23ba",
+      "product_build": "3.2.2-prod-ready.672cf88.15",
+      "target_is_ancestor": true,
+      "candidate_ancestry_preserved": true
+    },
+    "work_branch": "codex/jobbot-CHG-141-r4",
+    "head_before_artifact": "2e94796881c803f796df2bb1aa892df803861e90",
+    "product_tree_exact_candidate_before_artifact": true,
+    "verification_product_changes_before_artifact": [],
+    "worktree_clean_before_artifact": true
+  },
+  "candidate_fix_proof": {
+    "indeed_listener": {
+      "source": "extension/indeed.js:70",
+      "registers": ["JOBBOT_INSPECT_SEARCH", "JOBBOT_INSPECT_SEARCH_EVENTUALLY"]
+    },
+    "glassdoor_listener": {
+      "source": "extension/glassdoor.js:60",
+      "registers": ["JOBBOT_INSPECT_SEARCH", "JOBBOT_INSPECT_SEARCH_EVENTUALLY"]
+    },
+    "service_worker_eventually_probe_routes": [
+      "extension/service_worker.js:208",
+      "extension/service_worker.js:268",
+      "extension/service_worker.js:310",
+      "extension/service_worker.js:348"
+    ],
+    "chg_132_auth_behavior_intact": true,
+    "chg_132_evidence": "extension_service_worker_auth_return_test.js passed: sign-in/challenge short-circuits, authoritative Indeed/Glassdoor fallback, and fail-closed missing surface.",
+    "chg_127_linkedin_scope_recovery_intact": true,
+    "chg_127_evidence": "extension_service_worker_scope_recovery_test.js passed: bounded recovery, context handoff, fail-closed surfaces, exactly-once persistence; primary-scope fixtures passed."
+  },
+  "deployment_and_loaded_identity": {
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "stable_deployment_state": "current",
+    "stable_deployment_ok": true,
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "expected_build": "3.2.2-prod-ready.672cf88.15",
+    "deployed_build": "3.2.2-prod-ready.672cf88.15",
+    "candidate_source_identity": "sha256:6b7f6efa90de7f938740bd5b387843d34c955349a2af08c5bb48165309d82173",
+    "deployed_tree_identity": "sha256:6b7f6efa90de7f938740bd5b387843d34c955349a2af08c5bb48165309d82173",
+    "deployed_tree_matches_candidate": true,
+    "expected_source_head": "2e94796881c803f796df2bb1aa892df803861e90",
+    "chrome_target": {
+      "browser": "Google Chrome",
+      "profile_directory": "Default",
+      "binding_state": "bound",
+      "binding_ok": true
+    },
+    "loaded_ordinary_chrome_identity": {
+      "ui_surface": "chrome://extensions/",
+      "name": "JobBot v3.2 Platform-First Search Runner",
+      "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+      "version_name": "3.2.2-prod-ready.672cf88.15",
+      "unpacked": true,
+      "enabled": true
+    },
+    "refresh_confirmation": {
+      "status": "confirmed",
+      "identity_confirmed": true,
+      "observed_build": "3.2.2-prod-ready.672cf88.15",
+      "observed_source_identity": "sha256:6b7f6efa90de7f938740bd5b387843d34c955349a2af08c5bb48165309d82173",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "classification": "intended_extension_reachable_and_current",
+      "profile_directory": "Default"
+    }
+  },
+  "deterministic_checks": {
+    "extension_service_worker_auth_return_test.js": {
+      "command": "rtk node tests/extension_service_worker_auth_return_test.js",
+      "exit_code": 0,
+      "pass": true
+    },
+    "extension_primary_scope_test.js": {
+      "command": "rtk node tests/extension_primary_scope_test.js",
+      "exit_code": 0,
+      "pass": true
+    },
+    "extension_service_worker_target_lifecycle_test.js": {
+      "command": "rtk node tests/extension_service_worker_target_lifecycle_test.js",
+      "exit_code": 0,
+      "pass": true
+    },
+    "extension_service_worker_scope_recovery_test.js": {
+      "command": "rtk node tests/extension_service_worker_scope_recovery_test.js",
+      "exit_code": 0,
+      "pass": true
+    },
+    "javascript_syntax": {
+      "command": "rtk bash -lc 'set -e; for file in extension/*.js src/jobbot/web/*.js; do rtk node --check \"$file\"; done'",
+      "exit_code": 0,
+      "pass": true
+    },
+    "bridge_integration": {
+      "command": "rtk env PYTHONPATH=src python3 -m unittest -v tests.integration.test_extension_bridge",
+      "tests_run": 2,
+      "exit_code": 0,
+      "pass": true
+    },
+    "refresh_integration": {
+      "command": "rtk env PYTHONPATH=src python3 -m unittest -v tests.integration.test_extension_refresh",
+      "tests_run": 8,
+      "exit_code": 0,
+      "pass": true
+    },
+    "full_unittest_discovery": {
+      "command": "rtk env PYTHONPATH=src python3 -m unittest discover -s tests -v",
+      "tests_run": 101,
+      "exit_code": 0,
+      "pass": true
+    },
+    "all_required_deterministic_checks_pass": true
+  },
+  "live_acceptance": {
+    "acceptance_parameters": {
+      "days": 7,
+      "max_results_per_query": 20,
+      "ordinary_chrome": true,
+      "production_database_used": false,
+      "production_database_forbidden": "data/jobs.sqlite3",
+      "cli_exit_2_is_bounded_partial_only": true
+    },
+    "self_assertion_command": "rtk python3 - <platform> <isolated_database_path> with the inline SQLite verifier; exit 0 iff all platform proof assertions are true, otherwise exit 1",
+    "indeed": {
+      "acceptance_command": "rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/chg141-live/indeed.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/chg141-live/indeed-out JOBBOT_DASHBOARD_PORT=18766 python3 -m jobbot acceptance --platform indeed --days 7 --max-results 20",
+      "acceptance_command_exit_code": 2,
+      "acceptance_status": "partial",
+      "isolated_database_path": "/private/tmp/chg141-live/indeed.sqlite3",
+      "integrity_result": "ok",
+      "browser_run_id": 1,
+      "browser_run_status": "partial",
+      "auth_status": "unknown",
+      "auth_reason": "indeed search surface challenged: security check",
+      "readiness_state": "challenged_cooldown",
+      "readiness_reason": "indeed search surface challenged: security check",
+      "exact_task_status": ["challenged", "deferred_by_platform", "deferred_by_platform"],
+      "requested_search_url": [
+        "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+        "https://www.indeed.com/jobs?q=patient+access+specialist&l=Remote&fromage=7&sort=date",
+        "https://www.indeed.com/jobs?q=healthcare+operations+coordinator&l=Remote&fromage=7&sort=date"
+      ],
+      "observed_page_url": ["", "", ""],
+      "page_context_status": ["UNVERIFIED", "UNVERIFIED", "UNVERIFIED"],
+      "pages_visited": 0,
+      "results_seen": 0,
+      "cards_persisted": 0,
+      "details_read": 0,
+      "jobs_recorded": 0,
+      "relevant_receiver_message_errors": [
+        {"event_type": "platform_paused", "message": "indeed: indeed search surface challenged: security check"}
+      ],
+      "receiver_errors": [],
+      "durable_failure_reasons": [
+        "indeed search surface challenged: security check",
+        "No requested search surface reached with verified page context; no pages, results, cards, details, or jobs were persisted."
+      ],
+      "self_assertion_pass": false,
+      "self_assertion_command_exit_code": 1
+    },
+    "glassdoor": {
+      "acceptance_command": "rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/chg141-live/glassdoor.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/chg141-live/glassdoor-out JOBBOT_DASHBOARD_PORT=18767 python3 -m jobbot acceptance --platform glassdoor --days 7 --max-results 20",
+      "acceptance_command_exit_code": 2,
+      "acceptance_status": "partial",
+      "isolated_database_path": "/private/tmp/chg141-live/glassdoor.sqlite3",
+      "integrity_result": "ok",
+      "browser_run_id": 1,
+      "browser_run_status": "partial",
+      "auth_status": "verified",
+      "auth_reason": "glassdoor requested search surface ready; requested=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm observed=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "readiness_state": "verified",
+      "readiness_reason": "glassdoor requested search surface ready; requested=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm observed=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "exact_task_status": ["incomplete", "incomplete", "incomplete"],
+      "requested_search_url": [
+        "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+        "https://www.glassdoor.com/Job/remote-patient-access-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,32.htm",
+        "https://www.glassdoor.com/Job/remote-healthcare-operations-coordinator-jobs-SRCH_IL.0,6_IS11047_KO7,40.htm"
+      ],
+      "observed_page_url": [
+        "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+        "",
+        "https://www.glassdoor.com/Job/remote-healthcare-operations-coordinator-jobs-SRCH_IL.0,6_IS11047_KO7,40.htm"
+      ],
+      "page_context_status": ["verified", "UNVERIFIED", "verified"],
+      "pages_visited": 4,
+      "results_seen": 8,
+      "cards_persisted": 4,
+      "details_read": 1,
+      "jobs_recorded": 1,
+      "relevant_receiver_message_errors": [
+        {"event_type": "task_incomplete", "message": "SAFETY_STOP: repeated stable result fingerprint without verified platform end state", "count": 2},
+        {"event_type": "extraction_scope_missing", "message": "glassdoor search extraction scope missing at https://www.glassdoor.com/Job/remote-patient-access-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,32.htm", "count": 1}
+      ],
+      "receiver_errors": [],
+      "durable_failure_reasons": [
+        "task 1: SAFETY_STOP: repeated stable result fingerprint without verified platform end state",
+        "task 2: SAFETY_STOP: glassdoor search extraction scope missing at https://www.glassdoor.com/Job/remote-patient-access-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,32.htm; diagnostics recorded durably",
+        "task 3: SAFETY_STOP: repeated stable result fingerprint without verified platform end state"
+      ],
+      "self_assertion_pass": true,
+      "self_assertion_command_exit_code": 0
+    },
+    "linkedin": {
+      "acceptance_command": "rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/chg141-live/linkedin.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/chg141-live/linkedin-out JOBBOT_DASHBOARD_PORT=18768 python3 -m jobbot acceptance --platform linkedin --days 7 --max-results 20",
+      "acceptance_command_exit_code": 2,
+      "acceptance_status": "partial",
+      "isolated_database_path": "/private/tmp/chg141-live/linkedin.sqlite3",
+      "integrity_result": "ok",
+      "browser_run_id": 1,
+      "browser_run_status": "partial",
+      "auth_status": "verified",
+      "auth_reason": "linkedin requested search surface ready; requested=https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD observed=https://www.linkedin.com/jobs/search/?currentJobId=4460389007&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United%20States&sortBy=DD",
+      "readiness_state": "verified",
+      "readiness_reason": "linkedin requested search surface ready; requested=https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD observed=https://www.linkedin.com/jobs/search/?currentJobId=4460389007&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United%20States&sortBy=DD",
+      "exact_task_status": ["incomplete", "exhausted", "incomplete"],
+      "requested_search_url": [
+        "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+access+specialist&location=United+States&sortBy=DD",
+        "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=healthcare+operations+coordinator&location=United+States&sortBy=DD"
+      ],
+      "observed_page_url": [
+        "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD&start=225",
+        "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+access+specialist&location=United+States&sortBy=DD&start=50",
+        "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=healthcare+operations+coordinator&location=United+States&sortBy=DD&start=225"
+      ],
+      "page_context_status": ["verified", "verified", "verified"],
+      "pages_visited": 23,
+      "results_seen": 161,
+      "cards_persisted": 161,
+      "details_read": 57,
+      "jobs_recorded": 52,
+      "relevant_receiver_message_errors": [
+        {"event_type": "job_error", "message": "detail identity had no substantive description", "count": 5},
+        {"event_type": "task_incomplete", "message": "Acceptance limit reached (20); production has no count limit", "count": 2}
+      ],
+      "receiver_errors": [],
+      "durable_failure_reasons": [
+        "task 1: Acceptance limit reached (20); production has no count limit",
+        "task 3: Acceptance limit reached (20); production has no count limit"
+      ],
+      "self_assertion_pass": true,
+      "self_assertion_command_exit_code": 0
+    }
+  },
+  "safety_boundary_proof": {
+    "read_only": true,
+    "applications_submitted": false,
+    "forms_filled": false,
+    "credentials_used_or_entered": false,
+    "cookies_exported": false,
+    "challenge_bypassed": false,
+    "production_database_used_as_unattended_validation_store": false,
+    "fabric_audit_or_evidence_refs_manipulated": false,
+    "no_safety_boundary_violated": true
+  },
+  "go_gate": {
+    "indeed_self_assertion_pass": false,
+    "glassdoor_self_assertion_pass": true,
+    "linkedin_self_assertion_pass": true,
+    "required_deterministic_checks_pass": true,
+    "exact_build_and_identity_proven": true,
+    "all_platforms_pass": false,
+    "overall_go": false
+  },
+  "post_artifact_verification_required": {
+    "artifact_is_only_work_branch_delta_from_candidate": true,
+    "product_tree_remains_candidate_tree": true,
+    "codex_fabric_runtime_owns_audit_and_evidence_publication": true
+  }
+}
