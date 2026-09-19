@@ -1,0 +1,275 @@
+{
+  "schema": "jobbot-verification",
+  "schema_version": 1,
+  "request": "CHG-39-r9",
+  "verification_result": "NO_GO_EXTERNAL_BLOCKERS",
+  "PROD_READY": false,
+  "observed_at": "2026-09-19T00:37:55Z",
+  "source_identity": {
+    "target_branch": "main",
+    "target_commit": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "target_tree": "f910d69c8f342359aa30e865a3524155014da39a",
+    "checkout_branch": "codex/jobbot-CHG-39-r9",
+    "checkout_head": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "merge_parent_base": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+    "merge_parent_integrated_chg132_r3": "b84223c7b2296aa416d94e2e194deb25962fe6f2",
+    "merge_message": "Merge jobbot CHG-132-r3",
+    "origin_main_matches_target": true,
+    "head_matches_target": true,
+    "target_drift_before_artifact": false
+  },
+  "runtime_identity": {
+    "chrome": {
+      "browser": "Google Chrome",
+      "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "profile_directory": "Default",
+      "profile_binding": "/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json",
+      "classification": "chrome_profile_targeted"
+    },
+    "extension": {
+      "manifest_version": 3,
+      "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+      "manifest_version_string": "3.2.1",
+      "version_name": "3.2.2-prod-ready.672cf88.11",
+      "source_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+      "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "deployment_classification": "deployed_source_current",
+      "deployment_content_identity_match": true,
+      "marker_historical_source_head": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+      "marker_historical_source_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-a868857e1db8cc3e8d34ce81",
+      "marker_source_head_matches_integrated_head": false,
+      "marker_source_root_matches_checkout": false,
+      "marker_metadata_classification": "historical_non_authoritative_metadata_only; stable content identity and runtime identity match"
+    },
+    "refresh_gate": {
+      "command": "jobbot refresh-extension --timeout 60",
+      "status": "confirmed",
+      "identity_confirmed": true,
+      "observed_build": "3.2.2-prod-ready.672cf88.11",
+      "observed_source_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "classification": "intended_extension_reachable_and_current",
+      "bridge": "token-authenticated loopback 127.0.0.1",
+      "launch_profile": "Default"
+    }
+  },
+  "isolated_databases": [
+    {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/verification_prereq_20260918T000000Z.sqlite3",
+      "stage": "deterministic_prerequisites",
+      "classification": "isolated_validation",
+      "production_database": false,
+      "sha256": "971d74f8df243c923c22eb56ae87e04ca735207b3fed8922fc24c7f5aea4ec22"
+    },
+    {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/verification_linkedin_20260918T000000Z.sqlite3",
+      "stage": "linkedin_bounded_warmup",
+      "classification": "isolated_validation",
+      "production_database": false,
+      "sha256": "ba46cb780bf29d8984092a1f527bcf0ae137b235164cf8d6cdc60262f92282b3"
+    },
+    {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/verification_indeed_20260918T000000Z.sqlite3",
+      "stage": "indeed_bounded_warmup",
+      "classification": "isolated_validation",
+      "production_database": false,
+      "sha256": "1f28bc029e199c250ed4e91e1e07f8161adb2999e2610df0e48be9137864faaf"
+    },
+    {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/verification_glassdoor_20260918T000000Z.sqlite3",
+      "stage": "glassdoor_bounded_warmup",
+      "classification": "isolated_validation",
+      "production_database": false,
+      "sha256": "42b90bcae4569a64e2dfda65acfdce09c8ec2c6299104e22236033515a171bea"
+    },
+    {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/validation_20260919T003727Z.sqlite3",
+      "stage": "full_production_validator_primary",
+      "classification": "isolated_validation",
+      "production_database": false,
+      "integrity": "ok"
+    },
+    {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/validation_soak_20260919T003727Z.sqlite3",
+      "stage": "full_production_validator_soak",
+      "classification": "isolated_planned_not_created_after_external_blocked_primary",
+      "production_database": false,
+      "integrity": "missing"
+    },
+    {
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/validation_semiprod_20260919T003727Z.sqlite3",
+      "stage": "full_production_validator_semi_production",
+      "classification": "isolated_planned_not_created_after_external_blocked_primary",
+      "production_database": false,
+      "integrity": "missing"
+    }
+  ],
+  "deterministic_prerequisites": {
+    "isolated_doctor": {
+      "exit_code": 0,
+      "database_migrations": "1-15 current",
+      "loopback_bridge_rpc": "pass",
+      "normal_chrome": "pass",
+      "search_plan": "fast=315 deep=417; production caps=none",
+      "scoring_regressions": "pass"
+    },
+    "repository_unittest": {
+      "command": "python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "tests": 101,
+      "result": "pass"
+    },
+    "python_compileall": "pass",
+    "javascript_syntax": "pass",
+    "extension_regressions": {
+      "chg132_auth_return": "pass",
+      "chg127_scope_recovery": "pass",
+      "primary_scope_and_readiness_fixtures": "pass"
+    },
+    "full_validator_preflight": {
+      "ok": true,
+      "deterministic_suite_exit_code": 0,
+      "deterministic_suite_tests": 101,
+      "node_syntax": "pass",
+      "uncapped_plan": "staged=834 deep=417"
+    }
+  },
+  "big3_bounded_warmup": {
+    "linkedin": {
+      "command": "jobbot acceptance --platform linkedin --days 7 --max-results 20",
+      "exit_code": 2,
+      "run_id": 1,
+      "status": "partial",
+      "auth_status": "not_authenticated",
+      "readiness_state": "sign_in_required",
+      "reason": "explicit sign-in control",
+      "tasks": {"total": 3, "completed": 0, "auth_required": 1, "deferred_by_platform": 2, "challenged": 0},
+      "extension_build": "3.2.2-prod-ready.672cf88.11",
+      "content_complete_records": 0
+    },
+    "indeed": {
+      "command": "jobbot acceptance --platform indeed --days 7 --max-results 20",
+      "exit_code": 2,
+      "run_id": 1,
+      "status": "partial",
+      "auth_status": "unknown",
+      "readiness_state": "challenged_cooldown",
+      "reason": "security check",
+      "tasks": {"total": 3, "completed": 0, "challenged": 1, "deferred_by_platform": 2},
+      "extension_build": "3.2.2-prod-ready.672cf88.11",
+      "content_complete_records": 0
+    },
+    "glassdoor": {
+      "command": "jobbot acceptance --platform glassdoor --days 7 --max-results 20",
+      "exit_code": 2,
+      "run_id": 1,
+      "status": "partial",
+      "auth_status": "unknown",
+      "readiness_state": "retryable",
+      "reason": "auth/readiness probe failed: content script did not respond",
+      "tasks": {"total": 3, "completed": 0, "deferred_by_platform": 3, "challenged": 0},
+      "extension_build": "3.2.2-prod-ready.672cf88.11",
+      "content_complete_records": 0
+    }
+  },
+  "linkedin_substantive_detail_proof": {
+    "required_for_go": true,
+    "persisted_complete_or_enriched_records": 0,
+    "proof": "not acquired",
+    "external_blocker": {
+      "classification": "explicit_external_auth_blocker",
+      "auth_status": "not_authenticated",
+      "readiness_state": "sign_in_required",
+      "reason": "explicit sign-in control"
+    },
+    "go_permitted": false
+  },
+  "full_production_validation": {
+    "command": "./VALIDATE_PRODUCTION.command --semi-minutes 30",
+    "exit_code": 1,
+    "report_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/out/production-validation/latest.json",
+    "report_sha256": "9eaa3bf393c1d75b96fb717ca99a725fc86b9bd017ce67984d112a45696fa4bf",
+    "validation_stage": "full",
+    "PROD_READY": false,
+    "preflight_ok": true,
+    "primary_live": {
+      "run_id": 1,
+      "outcome": "partial",
+      "terminal_classification": "COMPLETED_PARTIAL_EXTERNAL",
+      "validation_classification": "COMPLETED_PARTIAL_EXTERNAL",
+      "extension_build_pass": true,
+      "bridge_restart_pass": true,
+      "dashboard_identity_ok": true,
+      "live_refresh_ok": true,
+      "pass": false,
+      "metrics": {
+        "integrity": "ok",
+        "reconciliation_ok": true,
+        "unexplained": 0,
+        "attempted_tasks": 3,
+        "progress_tasks": 0,
+        "extracted": 0,
+        "persistence_attempted": 0,
+        "persisted": 0,
+        "persistence_failed": 0,
+        "task_states": {
+          "auth_required": 1,
+          "deferred_by_platform": 2,
+          "challenged": 0,
+          "failed": 0,
+          "incomplete": 0,
+          "running": 0,
+          "queued": 0
+        }
+      },
+      "scope": {
+        "linkedin": {"scope_missing_events": 0, "search_scope_recovery_events": 0, "scope_diagnostics_events": 0, "contamination_persisted": 0},
+        "indeed": {"scope_missing_events": 0, "search_scope_recovery_events": 0, "scope_diagnostics_events": 0, "contamination_persisted": 0},
+        "glassdoor": {"scope_missing_events": 0, "search_scope_recovery_events": 0, "scope_diagnostics_events": 0, "contamination_persisted": 0}
+      }
+    },
+    "internal_failures": ["primary live micro-validation failed"],
+    "external_blockers": [
+      {"platform": "linkedin", "states": {"auth_required": 1, "challenged": 0, "deferred_by_platform": 0}},
+      {"platform": "indeed", "states": {"auth_required": 0, "challenged": 0, "deferred_by_platform": 1}},
+      {"platform": "glassdoor", "states": {"auth_required": 0, "challenged": 0, "deferred_by_platform": 1}}
+    ],
+    "soak_started": false,
+    "semi_production_started": false
+  },
+  "chg132_regression_observations": {
+    "auth_state_is_not_defined_events": 0,
+    "reference_error_events": 0,
+    "contradictory_auth_required_plus_retryable_or_unknown_downgrades": 0,
+    "deterministic_auth_return_regression": "pass",
+    "live_auth_state_handling": "auth_required remained not_authenticated/sign_in_required; Indeed and Glassdoor remained separate external retryable/challenge states"
+  },
+  "chg127_recovery_observations": {
+    "deterministic_bounded_recovery_regression": "pass",
+    "live_recovery_exercised": false,
+    "live_extraction_scope_missing_events": 0,
+    "live_search_scope_recovery_events": 0,
+    "live_scope_diagnostics_events": 0,
+    "classification": "not_exercised_due_external_readiness_blockers; no new repository scope defect established"
+  },
+  "boundary_invariants": {
+    "read_only_no_application": true,
+    "no_credential_handling": true,
+    "no_cookie_export": true,
+    "no_challenge_bypass": true,
+    "production_database_used_for_unattended_validation": false,
+    "production_database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-d80bf1108d6294541563c217/data/jobs.sqlite3",
+    "fabric_owned_audit_or_evidence_refs_authored": false
+  },
+  "final_git_invariants": {
+    "head": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "head_matches_target": true,
+    "product_source_diff_from_target": [],
+    "allowed_change": "verification/CHG-39-r9.json",
+    "worktree_status_after_artifact": ["?? verification/CHG-39-r9.json"],
+    "tracked_diff_after_artifact": [],
+    "cached_diff_after_artifact": [],
+    "verification_commit": null,
+    "no_product_source_changes": true
+  }
+}
