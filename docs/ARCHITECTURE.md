@@ -13,7 +13,9 @@ ordinary-Chrome `--profile-directory`. Launchers target that profile with
 supported Chrome command-line behavior, including after Chrome restarts; they
 never inspect or modify Chrome profile files. A launcher or the
 `refresh-extension` command then records an idempotent SQLite refresh request;
-the extension dashboard asks its service worker to call
+a short-lived inactive `bootstrap.html` page asks the service worker to perform
+the handshake, then closes automatically. The persistent operator console is
+the localhost Python dashboard, not an extension page. The service worker calls
 `chrome.runtime.reload()` when the loaded code is stale, and the bridge
 confirms the request only after receiving the loaded `manifest.json`
 `version_name` plus the stable deployment identity. Requests are fail-closed
@@ -21,7 +23,22 @@ for absent/unreachable, wrong-profile, wrong-source, or wrong-build extensions
 and are rejected while any browser run is active, so refresh cannot interrupt a
 checkpointed crawl.
 
-The extension uses one persistent search tab and one reused detail tab per task. A result card is committed to `search_task_results` before age or semantic qualification. The detail is then read and committed before normalization, canonicalization, requirement extraction, remote/employment/credential gates, and scoring. The bridge rejects empty-substance detail payloads and error/login/challenge/interstitial surfaces before they can create or mutate canonical content.
+Each active Big-3 platform owns one serial worker, one ordinary Chrome window,
+and one reused search tab. Cards are committed to `search_task_results` before
+detail work. Detail acquisition selects the card in that search page and waits
+for the embedded pane; identity, pane provenance, and substantive description
+must be proven before the detail is committed. Standalone per-job tabs are only
+available to an explicitly user-invoked re-enrichment compatibility path. The
+bridge rejects empty-substance detail payloads and
+error/login/challenge/interstitial surfaces before they can create or mutate
+canonical content.
+
+`data/crawl_observations.sqlite3` is a disposable, safe observation cache, not
+the ledger. It contains normalized card fields, complete detail evidence,
+hashes, freshness, provenance, and source-build/schema metadata only. Cache
+failure falls back to fresh pane crawling; acceptance/validation samples bypass
+it. SQLite `browser_search_tasks` leases and `browser_platform_runs` remain the
+authoritative checkpoint/runtime state.
 
 ### Evidence and enrichment state
 
@@ -73,3 +90,13 @@ other challenge becomes `challenged_cooldown` without declaring the account
 signed out. The recovery flow is ordinary Chrome only: clear a challenge or
 sign in manually, then use Resume checkpoint so the platform is rechecked while
 other platform work remains checkpointed.
+The dashboard binds only to `127.0.0.1`. For remote operator access, establish
+an ordinary user-controlled SSH local forward, for example
+`ssh -N -L 8765:127.0.0.1:8765 mac-host`, then browse to
+`http://127.0.0.1:8765/` on the remote device. This forwards the dashboard
+only; Chrome, visual challenges, sign-in, and the human clearance step remain
+on the Mac session and are never bypassed.
+
+REC-102 is intentionally superseded for normal Big-3 crawling by the
+one-window/one-search-tab/pane-first design. Historical compatibility remains
+for user-invoked re-enrichment and is covered separately.

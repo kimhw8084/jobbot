@@ -5,14 +5,17 @@ import json
 import hashlib
 import re
 import secrets
+import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from ..config import PROJECT_ROOT
+from ..config import PROJECT_ROOT, load_bundle
 from .. import legacy_engine as j
 from .. import browser_tasks as v3
+from .. import crawl_observations
+from .. import diagnostics
 from ..discoveries import block_detail, claim_next_detail, fail_detail, finish_detail, upsert_card
 from ..extension_identity import extension_build as expected_extension_build
 from ..runtime_binding import deployment_diagnostics
@@ -34,6 +37,109 @@ def open_store():
     db,out,_,cfg,strategy=v3.paths(BASE);store=j.PrecisionStore(db);v3.init_browser_schema(store.conn)
     strategy=with_fallback_activation(strategy, fallback_activation_enabled(store.conn, cfg))
     return store,cfg,strategy,out
+
+
+def _cache_bundle():
+    return load_bundle(BASE)
+
+
+def _safe_source_build() -> str:
+    """Return cache provenance even when an isolated test root has no extension."""
+    try:
+        return expected_extension_build(BASE)
+    except (FileNotFoundError, OSError, ValueError, KeyError, json.JSONDecodeError):
+        return v3.V3_VERSION
+
+
+def _control_row(row: Any) -> dict[str, Any]:
+    if row is None:
+        return {}
+    value = {key: row[key] for key in row.keys()}
+    try:
+        value["result"] = json.loads(value.pop("result_json") or "{}")
+    except (TypeError, ValueError, json.JSONDecodeError):
+        value["result"] = {}
+    return value
+
+
+def _control_request(conn, msg: dict[str, Any], out: Path) -> dict[str, Any]:
+    rid = int(msg.get("run_id") or 0)
+    platform = j.clean_text(msg.get("platform") or "")
+    action = j.clean_text(msg.get("control_action") or msg.get("action_name") or msg.get("requested_action") or "").lower()
+    request_id = j.clean_text(msg.get("control_request_id") or msg.get("request_id") or "")
+    allowed = {"focus_window", "stop_after_current", "resume_platform", "recheck", "emergency_stop", "stop_all", "resume_ready_platforms"}
+    if not rid or get_run(conn, rid) is None:
+        return {"ok": False, "error": "run_not_found"}
+    if action not in allowed:
+        return {"ok": False, "error": "unsupported_control_action", "action": action}
+    if platform and platform not in v3.PLATFORMS:
+        return {"ok": False, "error": "unsupported_platform", "platform": platform}
+    if not request_id:
+        request_id = f"dashboard:{rid}:{platform or 'global'}:{action}"
+    now = j.now_iso()
+    existing = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
+    if existing is not None:
+        if int(existing["browser_run_id"]) != rid or str(existing["platform"] or "") != platform or str(existing["action"]) != action:
+            return {"ok": False, "error": "control_request_conflict", "request_id": request_id}
+        return {"ok": True, "deduplicated": True, "control": _control_row(existing)}
+    conn.execute("""INSERT INTO control_requests(
+      request_id,browser_run_id,platform,action,status,requested_at,requested_by
+    ) VALUES(?,?,?,?,?,?,?)""", (request_id, rid, platform, action, "PENDING", now, j.clean_text(msg.get("requested_by") or "dashboard")))
+    if platform:
+        if action == "stop_after_current":
+            conn.execute("UPDATE browser_platform_runs SET stop_after_current=1,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, rid, platform))
+        elif action == "emergency_stop":
+            conn.execute("UPDATE browser_platform_runs SET emergency_stop=1,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, rid, platform))
+        elif action in {"resume_platform", "recheck"}:
+            conn.execute("UPDATE browser_platform_runs SET stop_after_current=0,emergency_stop=0,readiness_state='unchecked',readiness_reason='',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, rid, platform))
+            conn.execute("""UPDATE browser_search_tasks SET status='queued',completed_at=NULL,challenge_reason='',last_error='',lease_owner='',worker_id='',lease_until=NULL
+              WHERE browser_run_id=? AND platform=? AND status IN ('challenged','deferred_by_platform','auth_required')""", (rid, platform))
+        elif action == "focus_window":
+            conn.execute("UPDATE browser_platform_runs SET focus_requested_at=?,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, now, action, rid, platform))
+    elif action in {"stop_all", "stop_after_current"}:
+        conn.execute("UPDATE browser_runs SET stop_after_current=1,last_error=?,last_progress_at=? WHERE browser_run_id=?", ("stop after current requested from dashboard", now, rid))
+    elif action == "emergency_stop":
+        conn.execute("UPDATE browser_runs SET stop_requested=1,last_error=?,last_progress_at=? WHERE browser_run_id=?", ("emergency stop requested from dashboard", now, rid))
+    event(conn, rid, None, "control_requested", f"{platform or 'global'}: {action}", {"request_id": request_id, "platform": platform, "action": action}, out)
+    conn.commit()
+    row = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
+    return {"ok": True, "deduplicated": False, "control": _control_row(row)}
+
+
+def _consume_controls(conn, msg: dict[str, Any], out: Path) -> dict[str, Any]:
+    rid = int(msg.get("run_id") or 0)
+    platform = j.clean_text(msg.get("platform") or "")
+    worker_id = j.clean_text(msg.get("worker_id") or "")
+    row = conn.execute("""SELECT * FROM control_requests
+      WHERE browser_run_id=? AND status='PENDING' AND (platform=? OR platform='')
+      ORDER BY control_id LIMIT 1""", (rid, platform)).fetchone()
+    if row is None:
+        return {"ok": True, "control": None}
+    event(conn, rid, None, "control_delivered", f"{platform or 'global'}: {row['action']}", {"control_id": row["control_id"], "request_id": row["request_id"], "worker_id": worker_id}, out)
+    conn.commit()
+    return {"ok": True, "control": _control_row(row)}
+
+
+def _ack_control(conn, msg: dict[str, Any], out: Path) -> dict[str, Any]:
+    rid = int(msg.get("run_id") or 0)
+    platform = j.clean_text(msg.get("platform") or "")
+    request_id = j.clean_text(msg.get("request_id") or "")
+    worker_id = j.clean_text(msg.get("worker_id") or "")
+    status = j.clean_text(msg.get("status") or "ACKNOWLEDGED").upper()
+    row = conn.execute("SELECT * FROM control_requests WHERE request_id=? AND browser_run_id=? AND (platform=? OR platform='')", (request_id, rid, platform)).fetchone()
+    if row is None:
+        return {"ok": False, "error": "stale_control_response"}
+    if str(row["status"]) != "PENDING":
+        return {"ok": True, "deduplicated": True, "control": _control_row(row)}
+    now = j.now_iso()
+    result = msg.get("result") if isinstance(msg.get("result"), dict) else {}
+    conn.execute("UPDATE control_requests SET status=?,acknowledged_at=?,worker_id=?,result_json=? WHERE control_id=? AND status='PENDING'", (status if status in {"ACKNOWLEDGED", "REJECTED"} else "ACKNOWLEDGED", now, worker_id, json.dumps(result, ensure_ascii=False), int(row["control_id"])))
+    if platform:
+        conn.execute("UPDATE browser_platform_runs SET last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, str(row["action"]), rid, platform))
+    event(conn, rid, None, "control_acknowledged", f"{platform or 'global'}: {row['action']}", {"request_id": request_id, "worker_id": worker_id, "status": status, "result": result}, out)
+    conn.commit()
+    fresh = conn.execute("SELECT * FROM control_requests WHERE control_id=?", (int(row["control_id"]),)).fetchone()
+    return {"ok": True, "control": _control_row(fresh)}
 
 def run_log(out:Path,run_id:int|None,message:str)->None:
     if not run_id:return
@@ -365,6 +471,14 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
     store,cfg,strategy,out=open_store();conn=store.conn
     try:
         if action=='ping': return {'ok':True,'version':v3.V3_VERSION,'bridge':'loopback'}
+        if action in {'request_control','control_request'}:
+            return _control_request(conn, msg, out)
+        if action in {'consume_control','next_control'}:
+            return _consume_controls(conn, msg, out)
+        if action in {'ack_control','acknowledge_control'}:
+            return _ack_control(conn, msg, out)
+        if action=='observation_stats':
+            return {'ok':True, **crawl_observations.stats(_cache_bundle())}
         if action=='runtime_config':
             runtime=cfg.get('runtime',{})
             return {'ok':True,'heartbeat_seconds':int(runtime.get('heartbeat_seconds',20) or 20),
@@ -428,9 +542,9 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 return {'ok':False,'error':'extension_build_unconfirmed','refresh_id':refresh['refresh_id'],
                         'expected_build':refresh['expected_build'],'status':refresh['status']}
             now=j.now_iso(); expired=now
-            conn.execute("""UPDATE browser_search_tasks SET status='queued',lease_owner='',lease_until=NULL,last_error=CASE WHEN last_error='' THEN 'reclaimed after stale bridge/extension lease' ELSE last_error END
+            conn.execute("""UPDATE browser_search_tasks SET status='queued',lease_owner='',worker_id='',lease_until=NULL,last_error=CASE WHEN last_error='' THEN 'reclaimed after stale bridge/extension lease' ELSE last_error END
                WHERE browser_run_id=? AND status='running' AND (lease_until IS NULL OR lease_until<?)""",(rid,expired))
-            conn.execute("UPDATE browser_runs SET status='running',started_at=COALESCE(started_at,?),completed_at=NULL,last_progress_at=?,last_error='' WHERE browser_run_id=?",(now,now,rid));event(conn,rid,None,'run_started','normal Chrome platform-first run started',msg,out);conn.commit();return {'ok':True}
+            conn.execute("UPDATE browser_runs SET status='running',started_at=COALESCE(started_at,?),completed_at=NULL,last_progress_at=?,last_meaningful_progress_at=?,last_error='',worker_generation=worker_generation+1 WHERE browser_run_id=?",(now,now,now,rid));event(conn,rid,None,'run_started','normal Chrome platform-first run started',msg,out);conn.commit();return {'ok':True}
         if action=='platform_auth_result':
             rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform'));ok=bool(msg.get('authenticated'));reason=j.clean_text(msg.get('reason') or '');auth_state=_auth_state(msg,ok,reason)
             checked=j.now_iso()
@@ -475,8 +589,8 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             requested_auth=j.clean_text(msg.get('auth_state') or '').lower()
             auth_status=requested_auth if requested_auth in AUTH_STATES - {'unchecked'} else ('verified' if current and current['auth_status']=='verified' else 'unknown')
             conn.execute("""UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,cooldown_until=?,
-              readiness_state='challenged_cooldown',readiness_reason=?,readiness_checked_at=?
-              WHERE browser_run_id=? AND platform=?""",(auth_status,reason,cooldown,reason,j.now_iso(),rid,platform))
+              readiness_state='challenged_cooldown',readiness_reason=?,challenge_reason=?,worker_status='challenged',readiness_checked_at=?
+              WHERE browser_run_id=? AND platform=?""",(auth_status,reason,cooldown,reason,reason,j.now_iso(),rid,platform))
             active=conn.execute("""SELECT task_id FROM browser_search_tasks
               WHERE browser_run_id=? AND platform=? AND status='running' AND (?=0 OR task_id=?)""",(rid,platform,tid,tid)).fetchall()
             deferred_count=int(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND platform=? AND status='queued'",(rid,platform)).fetchone()[0])
@@ -493,17 +607,29 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='next_task':
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}
-            if int(r['stop_requested'] or 0):return {'ok':True,'stop':True}
+            requested_platform=j.clean_text(msg.get('platform') or '')
+            if int(r['stop_requested'] or 0):return {'ok':True,'stop':True,'platform':requested_platform}
             # The active atomic task checks stop_after_current after its last
             # detail. No new task may be leased after that latch is set.
-            if int(r['stop_after_current'] or 0):
+            pstate=conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?",(rid,requested_platform)).fetchone() if requested_platform else None
+            if int(r['stop_after_current'] or 0) or (pstate is not None and (int(pstate['stop_after_current'] or 0) or int(pstate['emergency_stop'] or 0))):
                 return {'ok':True,'stop':True,'stop_after_current':True}
             now=j.now_iso(); owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
-            conn.execute("UPDATE browser_search_tasks SET status='queued',lease_owner='',lease_until=NULL WHERE browser_run_id=? AND status='running' AND lease_until IS NOT NULL AND lease_until<?",(rid,now))
+            conn.execute("UPDATE browser_search_tasks SET status='queued',lease_owner='',worker_id='',lease_until=NULL WHERE browser_run_id=? AND status='running' AND lease_until IS NOT NULL AND lease_until<?",(rid,now))
+            platform_clause = " AND platform=?" if requested_platform else ""
+            running_args = (rid, requested_platform, owner, now) if requested_platform else (rid, owner, now)
             t=conn.execute(f"""SELECT * FROM browser_search_tasks
               WHERE browser_run_id=? AND status='running'
+                {platform_clause}
                 AND (lease_owner=? OR lease_until IS NULL OR lease_until<?)
-              ORDER BY task_id LIMIT 1""",(rid,owner,now)).fetchone()
+              ORDER BY task_id LIMIT 1""",running_args).fetchone()
+            if t is None and requested_platform:
+                active_other=conn.execute("""SELECT task_id,worker_id,lease_owner FROM browser_search_tasks
+                  WHERE browser_run_id=? AND platform=? AND status='running'
+                    AND lease_until IS NOT NULL AND lease_until>? AND lease_owner<>?
+                  ORDER BY task_id LIMIT 1""",(rid,requested_platform,now,owner)).fetchone()
+                if active_other is not None:
+                    return {'ok':True,'busy':True,'platform':requested_platform,'active_task_id':int(active_other['task_id'])}
             if t is None:
                 wave_size=max(1,int(cfg.get('runtime',{}).get('platform_wave_size',3) or 3))
                 platform_states={
@@ -511,9 +637,11 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                     for row in conn.execute("SELECT * FROM browser_platform_runs WHERE browser_run_id=?",(rid,)).fetchall()
                 }
                 queued=conn.execute(f"""SELECT * FROM browser_search_tasks
-                  WHERE browser_run_id=? AND status='queued'
-                  ORDER BY {phase_order_sql()},execution_rank,priority,task_id""",(rid,)).fetchall()
+                  WHERE browser_run_id=? AND status='queued' {platform_clause}
+                  ORDER BY {phase_order_sql()},execution_rank,priority,task_id""",(rid, requested_platform) if requested_platform else (rid,)).fetchall()
                 eligible=[]
+                if requested_platform and pstate is not None and str(pstate['readiness_state']) == 'unchecked' and queued:
+                    eligible=list(queued)
                 for candidate in queued:
                     state=platform_states.get(candidate['platform'])
                     if not state or state['auth_status'] in {'not_authenticated','retryable','user_action_required','unknown'} or state['readiness_state'] in {'challenged_cooldown','sign_in_required','retryable','unknown','unverified','user_action_required'}:
@@ -537,8 +665,14 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if not t:return {'ok':True,'done':True}
             if t['status']=='queued':
                 lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
-                conn.execute("UPDATE browser_search_tasks SET status='running',started_at=COALESCE(started_at,?),attempts=attempts+1,lease_owner=?,lease_until=?,current_search_url=COALESCE(NULLIF(current_search_url,''),search_url),last_progress_at=? WHERE task_id=?",(now,owner,lease_time(lease_seconds),now,t['task_id']));event(conn,rid,t['task_id'],'task_started',f"{t['platform']}: {t['query_text']}",msg,out);conn.commit();t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(t['task_id'],)).fetchone()
-            conn.execute("UPDATE browser_runs SET current_task_id=?,last_progress_at=? WHERE browser_run_id=?",(t['task_id'],now,rid));conn.commit()
+                claimed=conn.execute("UPDATE browser_search_tasks SET status='running',started_at=COALESCE(started_at,?),attempts=attempts+1,lease_owner=?,worker_id=?,worker_generation=worker_generation+1,lease_until=?,current_search_url=COALESCE(NULLIF(current_search_url,''),search_url),last_progress_at=? WHERE task_id=? AND status='queued'",(now,owner,owner,lease_time(lease_seconds),now,t['task_id']))
+                if claimed.rowcount != 1:
+                    conn.rollback()
+                    return {'ok':True,'busy':True,'platform':requested_platform,'retry':True}
+                event(conn,rid,t['task_id'],'task_started',f"{t['platform']}: {t['query_text']}",msg,out);conn.commit();t=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=?",(t['task_id'],)).fetchone()
+            conn.execute("UPDATE browser_runs SET current_task_id=?,last_progress_at=?,active_worker_count=(SELECT COUNT(DISTINCT worker_id) FROM browser_search_tasks WHERE browser_run_id=? AND status='running' AND worker_id<>'') WHERE browser_run_id=?",(t['task_id'],now,rid,rid))
+            conn.execute("UPDATE browser_platform_runs SET worker_status='running',worker_id=?,worker_generation=worker_generation+1,worker_heartbeat_at=?,worker_started_at=COALESCE(worker_started_at,?),current_task_id=?,current_query=?,current_search_url=?,receiver_state='connected',chrome_available=1,last_meaningful_progress_at=? WHERE browser_run_id=? AND platform=?",(owner,now,now,t['task_id'],t['query_text'],t['current_search_url'] or t['search_url'],now,rid,t['platform']))
+            conn.commit()
             return {'ok':True,'task':{k:t[k] for k in t.keys()}}
         if action=='record_result':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
@@ -568,8 +702,16 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             discovery=claim_next_detail(conn,run_id=rid,task_id=tid,worker_id=owner,lease_seconds=lease_seconds,
                                         include_recall_negatives=bool(run and str(run['enrichment_mode'])=='all'))
             pending_count=_pending_detail_count(conn,tid)
+            cached=None
+            if discovery is not None and run is not None and str(run['mode']) not in {'acceptance','validation_micro','validation_sample'}:
+                try:
+                    current_hash=crawl_observations.card_hash(discovery.card,source_job_id=discovery.source_job_id,source_url=discovery.source_url,title=discovery.title_hint,company=discovery.company_hint,location=discovery.location_hint)
+                    cached=crawl_observations.lookup(_cache_bundle(),platform=discovery.platform,source_job_id=discovery.source_job_id,source_url=discovery.source_url,current_card_hash=current_hash,source_build=_safe_source_build(),allow_reuse=True)
+                except (OSError, ValueError, sqlite3.Error):
+                    cached=None
             refresh_result_reconciliation(conn,rid,tid);conn.commit()
-            return {'ok':True,'done':discovery is None,'pending_count':int(pending_count),'detail':None if discovery is None else discovery.__dict__}
+            detail=None if discovery is None else {**discovery.__dict__, 'cache_observation': cached}
+            return {'ok':True,'done':discovery is None,'pending_count':int(pending_count),'detail':detail}
         if action=='detail_read':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''));now=j.now_iso()
             lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
@@ -586,6 +728,16 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if not title or not url:return {'ok':False,'error':'insufficient_job_identity'}
             evidence=msg.get('detail_evidence') if isinstance(msg.get('detail_evidence'),dict) else {}
             if not evidence and isinstance(raw.get('detail_evidence'),dict): evidence=raw['detail_evidence']
+            if result_id:
+                observed=conn.execute("SELECT source_job_id,source_url FROM search_task_results WHERE result_id=? AND task_id=?",(result_id,tid)).fetchone()
+                if observed is None:
+                    return {'ok':False,'error':'result_not_found'}
+                if observed['source_job_id'] and sid and str(observed['source_job_id']) != sid:
+                    return {'ok':False,'error':'detail_identity_mismatch'}
+                acquisition=evidence.get('detail_acquisition') if isinstance(evidence.get('detail_acquisition'),dict) else {}
+                mode=j.clean_text(acquisition.get('mode') or evidence.get('acquisition_mode') or '')
+                if mode and mode not in {'search_pane','cache','user_reenrichment'}:
+                    return {'ok':False,'error':'detail_acquisition_mode_not_allowed','mode':mode}
             unsafe=_unsafe_detail_reason(evidence,title,j.clean_text(raw.get('page_url') or url))
             if unsafe:
                 if result_id: block_detail(conn,result_id,f"detail surface rejected as {unsafe}")
@@ -633,7 +785,26 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if result_id: finish_detail(conn,result_id,jid,content_state=content_state)
             else: conn.execute("""UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status=?,content_state=?,detail_completed_at=?
               WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?""",(jid,'COMPLETE' if content_state=='COMPLETE' else 'PARTIAL',content_state,j.now_iso(),tid,source_site,sid,url))
-            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation,'content_state':content_state,'apply_destination_state':apply_state},out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company,'content_state':content_state,'enrichment_status':enrichment_status}
+            acquisition_value=evidence.get('detail_acquisition') if isinstance(evidence.get('detail_acquisition'),dict) else {}
+            conn.execute("UPDATE browser_search_tasks SET detail_acquisition_mode=? WHERE task_id=?", (j.clean_text(acquisition_value.get('mode') or evidence.get('acquisition_mode') or 'search_pane'), tid))
+            cache_published=False
+            if content_state == 'COMPLETE':
+                try:
+                    card_row=conn.execute("SELECT card_json,title_hint,company_hint,location_hint FROM search_task_results WHERE result_id=?",(result_id,)).fetchone() if result_id else None
+                    cache_published=crawl_observations.publish(
+                        _cache_bundle(), platform=source_site, source_job_id=sid, source_url=url,
+                        card=json.loads(card_row['card_json'] or '{}') if card_row else {},
+                        title=title, company=company, location=location, job={
+                            'source_job_id':sid,'canonical_url':url,'title':title,'company':company,'location':location,
+                            'remote_status':remote_status,'employment_type':j.clean_text(raw.get('employment_type') or ''),
+                            'salary_text':j.clean_text(raw.get('salary_text') or ''),'posted_at':j.clean_text(raw.get('posted_at') or ''),
+                            'description':desc,'valid_through':j.clean_text(raw.get('valid_through') or ''),
+                        }, evidence={'detail_acquisition': evidence.get('detail_acquisition', {}) if isinstance(evidence, dict) else {}},
+                        source_build=_safe_source_build(),
+                    )
+                except (OSError, ValueError, sqlite3.Error, json.JSONDecodeError):
+                    cache_published=False
+            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation,'content_state':content_state,'apply_destination_state':apply_state,'cache_published':cache_published},out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company,'content_state':content_state,'enrichment_status':enrichment_status,'cache_published':cache_published}
         if action=='job_error':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);message=j.clean_text(msg.get('message') or '')
             detail_status='FAILED'
@@ -660,11 +831,27 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
               (seen,pages,json.dumps(cp,ensure_ascii=False),requested,requested,observed,observed,context_status,context_status,
                observed,int(cp.get('page_number') or pages),int(cp.get('scroll_generation') or 0),j.clean_text(cp.get('page_fingerprint') or ''),j.clean_text(cp.get('last_job_key') or ''),now,lease_time(lease_seconds),
                int(stats.get('extracted_cards') or 0),int(stats.get('persistence_attempted') or 0),int(stats.get('persistence_succeeded') or 0),int(stats.get('persistence_failed') or 0),int(stats.get('duplicate_cards') or 0),int(stats.get('pending_details') or 0),int(stats.get('details_failed') or 0),tid,rid))
-            refresh_result_reconciliation(conn,rid,tid);conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True,'card_stats':stats,'context_status':context_status or 'UNVERIFIED'}
+            task_row=conn.execute("SELECT platform,worker_id,current_search_url,query_text FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
+            conn.execute("UPDATE browser_runs SET last_progress_at=?,last_meaningful_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,now,tid,rid))
+            if task_row:
+                conn.execute("UPDATE browser_platform_runs SET worker_status='running',worker_id=?,worker_heartbeat_at=?,current_task_id=?,current_query=?,current_search_url=?,current_page_number=?,current_batch_size=?,last_meaningful_progress_at=?,last_progress_message=?,receiver_state='connected',chrome_available=1 WHERE browser_run_id=? AND platform=?",(task_row['worker_id'],now,tid,task_row['query_text'],task_row['current_search_url'],int(cp.get('page_number') or pages),int(stats.get('extracted_cards') or 0),now,j.clean_text(cp.get('last_job_key') or 'progress'),rid,task_row['platform']))
+            conn.commit();return {'ok':True,'card_stats':stats,'context_status':context_status or 'UNVERIFIED'}
         if action=='heartbeat':
-            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180);now=j.now_iso();conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=?",(now,lease_time(lease_seconds),tid,rid));conn.execute("UPDATE browser_runs SET last_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,tid,rid));conn.commit();return {'ok':True}
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);platform=j.clean_text(msg.get('platform') or '');worker_id=j.clean_text(msg.get('worker_id') or '');lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180);now=j.now_iso();
+            conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=? AND (worker_id=? OR ?='')",(now,lease_time(lease_seconds),tid,rid,worker_id,worker_id))
+            if platform:conn.execute("UPDATE browser_platform_runs SET worker_heartbeat_at=?,worker_status='running',receiver_state='connected',chrome_available=1,last_meaningful_progress_at=? WHERE browser_run_id=? AND platform=?",(now,now,rid,platform))
+            conn.execute("UPDATE browser_runs SET last_progress_at=?,last_meaningful_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,now,tid,rid));conn.commit();return {'ok':True,'platform':platform,'worker_id':worker_id}
         if action=='browser_event':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);message=j.clean_text(msg.get('message') or msg.get('event_type') or 'browser event');event(conn,rid,tid,j.clean_text(msg.get('event_type') or 'browser_event'),message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True}
+        if action=='instrumentation_metrics':
+            rid=int(msg.get('run_id') or 0) if msg.get('run_id') not in (None, '') else None
+            return {'ok':True,'metrics':diagnostics.instrumentation(conn,rid)}
+        if action=='worker_runtime':
+            rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform') or '');worker_id=j.clean_text(msg.get('worker_id') or '');worker_status=j.clean_text(msg.get('worker_status') or 'running');now=j.now_iso();
+            conn.execute("""UPDATE browser_platform_runs SET worker_id=?,worker_heartbeat_at=?,worker_status=?,receiver_state=?,chrome_available=?,owned_window=?,window_id=?,window_state=?,window_focused=?,search_tab_id=?,search_tab_url=?,current_search_url=?,last_progress_message=?,last_meaningful_progress_at=? WHERE browser_run_id=? AND platform=?""",(worker_id,now,worker_status,j.clean_text(msg.get('receiver_state') or 'connected'),int(bool(msg.get('chrome_available',True))),int(bool(msg.get('owned_window',True))),msg.get('window_id'),j.clean_text(msg.get('window_state') or ''),int(bool(msg.get('window_focused',False))),msg.get('search_tab_id'),j.clean_text(msg.get('search_tab_url') or ''),j.clean_text(msg.get('search_tab_url') or ''),j.clean_text(msg.get('message') or ''),now,rid,platform))
+            if worker_status in {'terminal','stopped','challenged'}:
+                conn.execute("UPDATE browser_platform_runs SET worker_completed_at=?,current_task_id=CASE WHEN ? IN ('terminal','stopped') THEN NULL ELSE current_task_id END WHERE browser_run_id=? AND platform=?", (now, worker_status, rid, platform))
+            conn.execute("UPDATE browser_runs SET last_progress_at=?,last_meaningful_progress_at=? WHERE browser_run_id=?",(now,now,rid));conn.commit();return {'ok':True,'platform':platform,'worker_id':worker_id}
         if action=='complete_task':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);status=j.clean_text(msg.get('status') or 'completed');reason=j.clean_text(msg.get('reason') or '');exhausted=1 if bool(msg.get('exhausted')) else 0
             if status=='completed': status='exhausted' if exhausted else 'incomplete'
@@ -687,7 +874,10 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 conn.execute("UPDATE browser_runs SET stop_requested=1,current_task_id=NULL,last_error='stop after current job completed' WHERE browser_run_id=?",(rid,))
             event(conn,rid,tid,'task_'+status,reason,msg,out);conn.commit();return {'ok':True}
         if action=='should_stop':
-            rid=int(msg.get('run_id') or 0);r=get_run(conn,rid);return {'ok':True,'stop':bool(r and int(r['stop_requested'] or 0)),'stop_after_current':bool(r and int(r['stop_after_current'] or 0))}
+            rid=int(msg.get('run_id') or 0);platform=j.clean_text(msg.get('platform') or '');r=get_run(conn,rid)
+            pstate=conn.execute("SELECT stop_after_current,emergency_stop FROM browser_platform_runs WHERE browser_run_id=? AND platform=?",(rid,platform)).fetchone() if platform else None
+            platform_stop=bool(pstate and (int(pstate['stop_after_current'] or 0) or int(pstate['emergency_stop'] or 0)))
+            return {'ok':True,'stop':bool(r and int(r['stop_requested'] or 0)) or bool(pstate and int(pstate['emergency_stop'] or 0)),'stop_after_current':bool(r and int(r['stop_after_current'] or 0)) or platform_stop,'platform_stop_after_current':platform_stop}
         if action in {'request_stop','emergency_stop'}:
             rid=int(msg.get('run_id') or 0);r=get_run(conn,rid)
             if not r:return {'ok':False,'error':'run_not_found'}

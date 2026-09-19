@@ -36,6 +36,8 @@ def preflight(bundle: ConfigBundle, platforms: list[str] | None = None,
         bundle.root / "extension" / "manifest.json",
         bundle.root / "extension" / "service_worker.js",
         bundle.root / "extension" / "dashboard.html",
+        bundle.root / "extension" / "bootstrap.html",
+        bundle.root / "extension" / "bootstrap.js",
     )
     missing = [str(path) for path in required if not path.is_file()]
     if missing:

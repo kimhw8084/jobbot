@@ -202,21 +202,27 @@
   }
   function searchPaneSelection(sourceId){
     const scope=locateSearchResults(),target=String(sourceId||''),anchor=[...scope.cards].flatMap(card=>[...card.querySelectorAll(JOB_LINK_SELECTOR)].map(node=>({card,node}))).find(item=>sid(C.absoluteUrl(rawHref(item.node)))===target);
-    if(!anchor)return{selected:false,selection_attempted:false,search_pane_diagnostics:detailDiagnostics('search_pane',target,'none',C.pageSurface())};
+    if(!anchor)return{selected:false,selection_attempted:false,identity_status:'MISSING_CARD',search_pane_diagnostics:detailDiagnostics('search_pane',target,'none',C.pageSurface())};
+    const expectedTitle=C.normalizeTitle(C.clean(anchor.node.getAttribute('aria-label')||anchor.node.innerText||'').replace(/\s+with verification$/i,''));
     let clickAttempted=false;try{if(typeof anchor.node.click==='function'){anchor.node.click();clickAttempted=true;}}catch(_){ }
-    return{selected:clickAttempted,current_job_id:sid(location.href),selection_attempted:true,card_metadata_diagnostics:cardMetadataDiagnostics(anchor.card,anchor.node),search_pane_diagnostics:detailDiagnostics('search_pane',target,'none',C.pageSurface())};
+    return{selected:clickAttempted,selected_title:expectedTitle,selected_source_job_id:target,current_job_id:sid(location.href),selection_attempted:true,card_metadata_diagnostics:cardMetadataDiagnostics(anchor.card,anchor.node),search_pane_diagnostics:detailDiagnostics('search_pane',target,'none',C.pageSurface())};
   }
   async function inspectSearchPane(sourceId,select=true){
+    const searchPath=/\/jobs\/search(?:\/|$)/i.test(new URL(location.href).pathname);
     let last=searchPaneSelection(sourceId);if(select&&!last.selected)return last;
     for(let i=0;i<10;i++){
-      if(last.current_job_id===String(sourceId||'')){
+      const ch=C.challengeInfo();if(ch.challenged)return{...last,page_type:'challenge',challenged:true,challenge_reason:ch.reason};
+      const wall=C.authWallInfo(S.authSignIn,/\/login|\/checkpoint|\/authwall/i);if(wall.required)return{...last,page_type:'login',login_required:true,surface_reason:wall.reason};
+      if(!searchPath||!/\/jobs\/search(?:\/|$)/i.test(new URL(location.href).pathname))return{...last,page_type:'error',navigation_context_lost:true,surface_reason:'search context lost after card selection',page_url:location.href};
+      if(last.current_job_id===String(sourceId||'')||last.selected_title){
         const pane=inspectJob('search_pane');
-        if(pane.page_type!=='job'||String(pane.job?.description||'').trim())return{...last,...pane,acquisition_mode:'search_pane',acquisition_url:location.href,search_pane_diagnostics:detailDiagnostics('search_pane',sourceId,pane.extraction_source||'none',pane.detail_diagnostics?.page_surface||C.pageSurface())};
+        const title=C.normalizeTitle(pane.job?.title||''),identityProven=!!title&&title===last.selected_title;
+        if(pane.page_type==='job'&&String(pane.job?.description||'').trim())return{...last,...pane,surface:'embedded_search_pane',search_pane:true,selected_source_job_id:String(sourceId||''),identity_status:identityProven?'PROVEN':'MISMATCH',identity_proven:identityProven,acquisition_mode:'search_pane',acquisition_url:location.href,detail_acquisition:{mode:'search_pane',surface:'embedded_search_pane',url:location.href},job:{...pane.job,source_job_id:String(sourceId||pane.job?.source_job_id||'')},search_pane_diagnostics:detailDiagnostics('search_pane',sourceId,pane.extraction_source||'none',pane.detail_diagnostics?.page_surface||C.pageSurface())};
       }
       await new Promise(r=>setTimeout(r,300));last=searchPaneSelection(sourceId,false);
     }
     const pane=last.current_job_id===String(sourceId||'')?inspectJob('search_pane'):null;
-    return pane?{...last,...pane,acquisition_mode:'search_pane',acquisition_url:location.href,search_pane_diagnostics:detailDiagnostics('search_pane',sourceId,pane.extraction_source||'none',pane.detail_diagnostics?.page_surface||C.pageSurface())}:last;
+    return pane?{...last,...pane,selected_source_job_id:String(sourceId||''),identity_status:'MISMATCH',identity_proven:false,acquisition_mode:'search_pane',acquisition_url:location.href,detail_acquisition:{mode:'search_pane',url:location.href},search_pane_diagnostics:detailDiagnostics('search_pane',sourceId,pane.extraction_source||'none',pane.detail_diagnostics?.page_surface||C.pageSurface())}:last;
   }
   async function inspectSearchEventually(){
     let page=inspectSearch();
