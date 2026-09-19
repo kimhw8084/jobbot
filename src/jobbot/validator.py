@@ -796,7 +796,7 @@ def _preflight(bundle: ConfigBundle) -> dict[str, Any]:
     executable = chrome_path()
     chrome_ok = bool(executable)
     checks.append({"name": "normal Chrome", "ok": chrome_ok, "detail": executable or "not found"})
-    required = [bundle.root / "extension" / name for name in ("manifest.json", "service_worker.js", "dashboard.html")]
+    required = [bundle.root / "extension" / name for name in ("manifest.json", "service_worker.js", "dashboard.html", "bootstrap.html", "bootstrap.js")]
     extension_ok = all(path.is_file() for path in required)
     checks.append({"name": "current unpacked extension", "ok": extension_ok, "detail": [str(x) for x in required if not x.is_file()]})
     active_run_id = _production_active_run_id()
