@@ -1,0 +1,390 @@
+{
+  "accepted_at": "2026-09-19T16:00:17Z",
+  "changed_files": [
+    {
+      "additions": 248,
+      "deletions": 0,
+      "path": "verification/CHG-39-r12.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,220p' '/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json' && rtk printf '%s\\\\n' '--- deployed vs source hashes ---' && for f in common.js dashboard.html dashboard.js glassdoor.js indeed.js linkedin.js manifest.json selectors.js service_worker.js; do s=\"'$(shasum -a 256 \"extension/$f\" | awk '\"'{print \"'$1}'\"'); d=\"'$(shasum -a 256 \"/Users/haewonkim/Library/Application Support/JobBot/extension/$f\" | awk '\"'{print \"'$1}'\"'); if [ \\\"\"'$s\" = \"$d\" ]; then rtk printf '\"'%s\\\\n' \\\"MATCH \"'$f $s\"; else rtk printf '\"'%s\\\\n' \\\"DRIFT \"'$f source=$s deployed=$d\"; fi; done && rtk printf '\"'%s\\\\n' '--- installed extension settings identity ---' && rtk jq -c '.extensions.settings[\\\"jfdlmelgonjhgnabpbipjefgamedpgfb\\\"] | {location,path,manifest_name:.manifest.name,manifest_version:.manifest.version,manifest_version_name:.manifest.version_name}' '/Users/haewonkim/Library/Application Support/Google/Chrome/Default/Secure Preferences'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'deployment_identity|source_identity|source_head|source_root|deployed_extension_root|stable deployment|3\\\\.2\\\\.2-prod-ready\\\\.672cf88\\\\.15' . --hidden -g '\"'!data/**'\"' -g '\"'!logs/**'\"' -g '\"'!out/**'\"' -g '\"'!verification/**'\"' && rtk printf '%s\\\\n' '--- target and current source metadata ---' && rtk git show c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8:extension/manifest.json | sed -n '1,12p' && rtk git show c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8:config/EXTENSION_ID.txt && rtk git log --oneline --decorate --all --max-count=20 && rtk printf '%s\\\\n' '--- deployment identity related files outside repo ---' && rtk find '/Users/haewonkim/Library/Application Support/JobBot' -maxdepth 3 -type f -print | sort | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' src/jobbot/runtime_binding.py && rtk printf '%s\\\\n' '--- chrome profile binding ---' && rtk sed -n '1,220p' '/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json' && rtk printf '%s\\\\n' '--- doctor implementation ---' && rtk sed -n '1,300p' src/jobbot/doctor.py && rtk printf '%s\\\\n' '--- README operations/validation ---' && sed -n '1,220p' README.md && sed -n '1,220p' docs/OPERATIONS.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' src/jobbot/cli.py && rtk printf '%s\\\\n' '--- validator source (part 1) ---' && sed -n '1,360p' src/jobbot/validator.py && rtk printf '%s\\\\n' '--- validator source (part 2) ---' && sed -n '361,820p' src/jobbot/validator.py && rtk printf '%s\\\\n' '--- config env overrides ---' && rg -n -C 3 'JOBBOT_DATABASE_PATH|JOBBOT_OUTPUT_DIR|JOBBOT_EXTENSION|JOBBOT_' src/jobbot/config.py src/jobbot -g '*.py' | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '220,420p' src/jobbot/runtime_binding.py && rtk printf '%s\\\\n' '--- bridge self-test and runtime binding RPC ---' && sed -n '1,260p' src/jobbot/bridge/server.py && sed -n '1,260p' src/jobbot/bridge/rpc.py && rtk printf '%s\\\\n' '--- relevant validator command/parser tail ---' && rg -n 'def run\\\\(|def command_validate|--stage|micro|soak|semi|production|validation_report|PROD_READY|internal_failures|external_blockers' src/jobbot/validator.py src/jobbot/cli.py | sed -n '1,260p' && sed -n '820,1260p' src/jobbot/validator.py && sed -n '420,620p' src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'def enqueue_validation|def enqueue_validation_sample|auth_status|auth_reason|readiness_state|readiness_reason|requested_search_url|observed_page_url|page_context_status|pages_visited|results_seen|cards_persisted|details_read|jobs_recorded|receiver|challenge|sign_in|login' src/jobbot/browser_tasks.py src/jobbot/audit.py src/jobbot/validator.py src/jobbot/orchestrator.py src/jobbot/bridge/rpc.py | sed -n '1,360p' && rtk sed -n '1,320p' src/jobbot/audit.py && rtk sed -n '1,260p' src/jobbot/run_now.py && rtk sed -n '1,280p' src/jobbot/orchestrator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --stat fbe2bf328eb244f0a5dd3415d36f6ad81bb021be c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8 -- extension src tests config docs && rtk git diff --name-status fbe2bf328eb244f0a5dd3415d36f6ad81bb021be c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8 -- extension && rtk git diff -- extension/indeed.js extension/glassdoor.js extension/service_worker.js fbe2bf328eb244f0a5dd3415d36f6ad81bb021be c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8 | sed -n '1,260p' && rtk git show --stat --oneline 88fd162 && rtk git show --stat --oneline 2e94796\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk mktemp -d /tmp/jobbot-verify-CHG-39-r12.XXXXXX && rtk stat -f '%N %Sm %z bytes' -t '%Y-%m-%d %H:%M:%S' data/jobs.sqlite3 2>&1 || true && rtk .venv/bin/python -c 'from pathlib import Path; from jobbot.runtime_binding import extension_source_identity, deployment_diagnostics, chrome_target_diagnostics, runtime_binding_diagnostics; root=Path.cwd(); print(\\\"source_identity\\\", extension_source_identity(root)); print(\\\"deployment\\\", deployment_diagnostics(root)); print(\\\"chrome_target\\\", chrome_target_diagnostics()); print(\\\"runtime_binding\\\", runtime_binding_diagnostics(root)[\\\"ok\\\"])'\"",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -ld .venv .venv/bin/python python3 && rtk which python3 && rtk python3 --version && rtk find . -maxdepth 3 -type f | rg 'python\"'$|python3$|pytest|unittest'\"' | sed -n '1,80p' && rtk find '/Users/haewonkim/.codex-fabric' -maxdepth 5 -type f -path '*/.venv/bin/python' | sed -n '1,40p'\"",
+      "exit_code": 1,
+      "test_result": {
+        "exit_code": 1,
+        "framework": "pytest",
+        "outcome": "test_failures",
+        "output_bytes": 124,
+        "output_sha256": "f9341de6f93f950d000a97f5a23e7685f919532a4b2eb5591d85c3b1c356ecc7",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -lc 'command -v python3 || true; python3 --version || true; command -v python || true; python --version || true; find . -maxdepth 4 -type f | rg \\\"(python|pytest|unittest)\"'$\" | sed -n \"1,80p\"; find /Users/haewonkim/.codex-fabric -maxdepth 6 -type f -path \"*/.venv/bin/python\" | sed -n \"1,40p\"'\"'\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,200p' scripts/mac_python.sh && rtk sed -n '1,200p' pyproject.toml && rtk /opt/anaconda3/bin/python -c 'import sys; print(sys.executable); print(sys.version)' && rtk /opt/anaconda3/bin/python -m unittest --version\"",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'from pathlib import Path; from jobbot.runtime_binding import extension_source_identity, deployment_diagnostics, chrome_target_diagnostics, runtime_binding_diagnostics; root=Path.cwd(); print(\\\"source_identity\\\", extension_source_identity(root)); print(\\\"deployment_ok\\\", deployment_diagnostics(root)[\\\"ok\\\"]); print(\\\"deployment_state\\\", deployment_diagnostics(root)[\\\"state\\\"]); print(\\\"chrome_target\\\", chrome_target_diagnostics()); print(\\\"runtime_binding_ok\\\", runtime_binding_diagnostics(root)[\\\"ok\\\"])' && rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m jobbot --help | sed -n '1,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/doctor.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/doctor-out JOBBOT_DASHBOARD_PORT=18765 /opt/anaconda3/bin/python -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'set -e; for file in extension/*.js; do node --check \\\"\"'$file\"; done; node tests/extension_primary_scope_test.js; node tests/extension_linkedin_scope_test.js; node tests/extension_service_worker_auth_return_test.js; node tests/extension_service_worker_scope_recovery_test.js; node tests/extension_service_worker_target_lifecycle_test.js'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/focused.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/focused-out JOBBOT_DASHBOARD_PORT=18766 /opt/anaconda3/bin/python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_runtime_binding tests.integration.test_validator'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,300p' tests/integration/test_extension_refresh.py && rtk sed -n '1,280p' tests/integration/test_runtime_binding.py && rtk sed -n '1,220p' tests/integration/test_extension_bridge.py && rtk rg -n 'active_run|extension_refresh_requests|paths\\\\(|JOBBOT_DATABASE_PATH|init_browser_schema|migrate' tests/integration/test_extension_refresh.py tests/integration/test_runtime_binding.py tests/helpers.py src/jobbot/browser_tasks.py src/jobbot/legacy_engine.py | sed -n '1,300p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_runtime_binding tests.integration.test_validator'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'load_bundle\\\\(PROJECT_ROOT\\\\)|Database\\\\(.*PROJECT_ROOT|data/jobs\\\\.sqlite3|JOBBOT_DATABASE_PATH|ConfigBundle\\\\(' tests -g '*.py' | sed -n '1,300p' && rtk rg -n 'load_bundle\\\\(|Database\\\\(' tests/unit tests/regression tests/integration -g '*.py' | sed -n '1,300p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest discover -s tests -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/preflight.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/preflight-out JOBBOT_DASHBOARD_PORT=18767 /opt/anaconda3/bin/python -c 'from jobbot.config import PROJECT_ROOT, load_bundle; from jobbot.run_now import preflight; b=load_bundle(PROJECT_ROOT); r=preflight(b, [\\\"linkedin\\\",\\\"indeed\\\",\\\"glassdoor\\\"], require_runtime_binding=True); print({\\\"task_count\\\":r.task_count,\\\"database\\\":str(r.database_path),\\\"dashboard_url\\\":r.dashboard_url})' && rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan-out JOBBOT_DASHBOARD_PORT=18768 /opt/anaconda3/bin/python -m jobbot search-plan --mode fast && rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan-out JOBBOT_DASHBOARD_PORT=18768 /opt/anaconda3/bin/python -m jobbot search-plan --mode deep\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,380p' src/jobbot/browser_tasks.py && rtk sed -n '400,760p' src/jobbot/bridge/rpc.py && rtk sed -n '280,520p' src/jobbot/validator.py && rtk sed -n '520,840p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12/readiness-out JOBBOT_DASHBOARD_PORT=18769 /opt/anaconda3/bin/python -c 'import sqlite3,json; p=\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; print(json.dumps({\\\"runs\\\":[dict(x) for x in c.execute(\\\"select browser_run_id,status,last_error,auth_status,tasks_completed,tasks_incomplete,tasks_challenged from browser_runs\\\")],\\\"platforms\\\":[dict(x) for x in c.execute(\\\"select * from browser_platform_runs\\\")],\\\"tasks\\\":[dict(x) for x in c.execute(\\\"select task_id,platform,status,results_seen,pages_visited,detail_count_read,jobs_recorded,requested_search_url,observed_page_url,page_context_status,challenge_reason,last_error from browser_search_tasks\\\")],\\\"events\\\":[dict(x) for x in c.execute(\\\"select event_type,message,payload_json from browser_events order by event_id desc limit 20\\\")]},ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness-out JOBBOT_DASHBOARD_PORT=18769 /opt/anaconda3/bin/python -c 'import sqlite3,json; p=\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; out={\\\"runs\\\":[dict(x) for x in c.execute(\\\"select browser_run_id,status,last_error,auth_status,tasks_completed,tasks_incomplete,tasks_challenged from browser_runs\\\")],\\\"platforms\\\":[dict(x) for x in c.execute(\\\"select platform,auth_status,auth_reason,readiness_state,readiness_reason,tasks_total,tasks_completed,tasks_incomplete,tasks_challenged,jobs_recorded from browser_platform_runs\\\")],\\\"tasks\\\":[dict(x) for x in c.execute(\\\"select platform,status,results_seen,pages_visited,detail_count_read,jobs_recorded,requested_search_url,observed_page_url,page_context_status,challenge_reason,last_error from browser_search_tasks\\\")],\\\"events\\\":[dict(x) for x in c.execute(\\\"select event_type,message from browser_events order by event_id desc limit 8\\\")]}; print(json.dumps(out,ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness-out JOBBOT_DASHBOARD_PORT=18769 /opt/anaconda3/bin/python -c 'from jobbot.browser_tasks import request_stop; print(request_stop(__import__(\\\"pathlib\\\").Path.cwd(),1))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12/readiness-out JOBBOT_DASHBOARD_PORT=18769 /opt/anaconda3/bin/python -c 'import json; from jobbot.config import PROJECT_ROOT, load_bundle; from jobbot.browser_tasks import enqueue_validation; from jobbot.orchestrator import launch_browser_run; from jobbot.validator import _audit; b=load_bundle(PROJECT_ROOT); rid=enqueue_validation(PROJECT_ROOT,[\\\"linkedin\\\",\\\"indeed\\\",\\\"glassdoor\\\"],bundle=b); outcome=launch_browser_run(b,rid,wait=True,open_browser=True,timeout_seconds=300,startup_timeout_seconds=45); audit=_audit(b,rid); print(json.dumps({\\\"run_id\\\":rid,\\\"outcome\\\":outcome.__dict__,\\\"terminal_classification\\\":audit.get(\\\"terminal_classification\\\"),\\\"platforms\\\":audit.get(\\\"platforms\\\"),\\\"global\\\":audit.get(\\\"global\\\"),\\\"reconciliation\\\":audit.get(\\\"reconciliation\\\"),\\\"diagnosis\\\":audit.get(\\\"diagnosis\\\")},ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness-out JOBBOT_DASHBOARD_PORT=18769 /opt/anaconda3/bin/python -c 'import sqlite3,json; c=sqlite3.connect(\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\"); c.row_factory=sqlite3.Row; print(json.dumps([dict(x) for x in c.execute(\\\"select browser_run_id,status,stop_requested,stop_after_current,last_error,tasks_completed,tasks_incomplete,tasks_challenged from browser_runs\\\")]))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-out JOBBOT_DASHBOARD_PORT=18770 /opt/anaconda3/bin/python -c 'import json; from jobbot.config import PROJECT_ROOT, load_bundle; from jobbot.browser_tasks import enqueue_validation; from jobbot.orchestrator import launch_browser_run; from jobbot.validator import _audit; b=load_bundle(PROJECT_ROOT); rid=enqueue_validation(PROJECT_ROOT,[\\\"indeed\\\"],bundle=b); o=launch_browser_run(b,rid,wait=True,open_browser=True,timeout_seconds=120,stop_after_seconds=45,startup_timeout_seconds=45); a=_audit(b,rid); print(json.dumps({\\\"run_id\\\":rid,\\\"outcome\\\":o.__dict__,\\\"terminal_classification\\\":a.get(\\\"terminal_classification\\\"),\\\"platforms\\\":a.get(\\\"platforms\\\"),\\\"global\\\":a.get(\\\"global\\\"),\\\"reconciliation\\\":a.get(\\\"reconciliation\\\"),\\\"diagnosis\\\":a.get(\\\"diagnosis\\\")},ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-out JOBBOT_DASHBOARD_PORT=18770 /opt/anaconda3/bin/python -c 'import sqlite3,json; c=sqlite3.connect(\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3\\\"); c.row_factory=sqlite3.Row; out={\\\"platform\\\":dict(c.execute(\\\"select platform,auth_status,auth_reason,readiness_state,readiness_reason,requested_search_url,observed_page_url,page_context_status,auth_checked_at,readiness_checked_at,jobs_recorded,tasks_total,tasks_completed,tasks_challenged from browser_platform_runs left join browser_search_tasks using(browser_run_id,platform) where platform=\\\\\\\"indeed\\\\\\\"\\\").fetchone()),\\\"task\\\":dict(c.execute(\\\"select platform,status,results_seen,pages_visited,detail_count_read,jobs_recorded,requested_search_url,observed_page_url,page_context_status,challenge_reason,last_error from browser_search_tasks where platform=\\\\\\\"indeed\\\\\\\"\\\").fetchone()),\\\"events\\\":[dict(x) for x in c.execute(\\\"select event_type,message,payload_json from browser_events where event_type in (\\\\\\\"platform_readiness\\\\\\\",\\\\\\\"platform_paused\\\\\\\",\\\\\\\"auth_failed\\\\\\\",\\\\\\\"auth_verified\\\\\\\",\\\\\\\"navigation\\\\\\\") order by event_id\\\")]}; print(json.dumps(out,ensure_ascii=False,default=str))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-out JOBBOT_DASHBOARD_PORT=18770 /opt/anaconda3/bin/python -c 'import sqlite3,json; c=sqlite3.connect(\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3\\\"); c.row_factory=sqlite3.Row; p=dict(c.execute(\\\"select platform,auth_status,auth_reason,readiness_state,readiness_reason,auth_checked_at,readiness_checked_at,jobs_recorded,tasks_total,tasks_completed,tasks_challenged from browser_platform_runs where platform=\\\\\\\"indeed\\\\\\\"\\\").fetchone()); t=dict(c.execute(\\\"select platform,status,results_seen,pages_visited,detail_count_read,jobs_recorded,requested_search_url,observed_page_url,page_context_status,challenge_reason,last_error from browser_search_tasks where platform=\\\\\\\"indeed\\\\\\\"\\\").fetchone()); e=[dict(x) for x in c.execute(\\\"select event_type,message,payload_json from browser_events where event_type in (\\\\\\\"platform_readiness\\\\\\\",\\\\\\\"platform_paused\\\\\\\",\\\\\\\"auth_failed\\\\\\\",\\\\\\\"auth_verified\\\\\\\",\\\\\\\"navigation\\\\\\\") order by event_id\\\")]; print(json.dumps({\\\"platform\\\":p,\\\"task\\\":t,\\\"events\\\":e},ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-out JOBBOT_DASHBOARD_PORT=18771 /opt/anaconda3/bin/python -c 'import json; from jobbot.config import PROJECT_ROOT, load_bundle; from jobbot.browser_tasks import enqueue_validation; from jobbot.orchestrator import launch_browser_run; from jobbot.validator import _audit; b=load_bundle(PROJECT_ROOT); rid=enqueue_validation(PROJECT_ROOT,[\\\"glassdoor\\\"],bundle=b); o=launch_browser_run(b,rid,wait=True,open_browser=True,timeout_seconds=120,stop_after_seconds=45,startup_timeout_seconds=45); a=_audit(b,rid); print(json.dumps({\\\"run_id\\\":rid,\\\"outcome\\\":o.__dict__,\\\"terminal_classification\\\":a.get(\\\"terminal_classification\\\"),\\\"platforms\\\":a.get(\\\"platforms\\\"),\\\"global\\\":a.get(\\\"global\\\"),\\\"reconciliation\\\":a.get(\\\"reconciliation\\\"),\\\"diagnosis\\\":a.get(\\\"diagnosis\\\")},ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-out JOBBOT_DASHBOARD_PORT=18771 /opt/anaconda3/bin/python -c 'import sqlite3,json; c=sqlite3.connect(\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3\\\"); c.row_factory=sqlite3.Row; p=dict(c.execute(\\\"select platform,auth_status,auth_reason,readiness_state,readiness_reason,auth_checked_at,readiness_checked_at,jobs_recorded,tasks_total,tasks_completed,tasks_challenged from browser_platform_runs where platform=\\\\\\\"glassdoor\\\\\\\"\\\").fetchone()); t=dict(c.execute(\\\"select platform,status,results_seen,pages_visited,detail_count_read,jobs_recorded,requested_search_url,observed_page_url,page_context_status,challenge_reason,last_error from browser_search_tasks where platform=\\\\\\\"glassdoor\\\\\\\"\\\").fetchone()); e=[dict(x) for x in c.execute(\\\"select event_type,message,payload_json from browser_events where event_type in (\\\\\\\"platform_readiness\\\\\\\",\\\\\\\"platform_paused\\\\\\\",\\\\\\\"auth_failed\\\\\\\",\\\\\\\"auth_verified\\\\\\\",\\\\\\\"navigation\\\\\\\",\\\\\\\"result_batch\\\\\\\") order by event_id\\\")]; print(json.dumps({\\\"platform\\\":p,\\\"task\\\":t,\\\"events\\\":e},ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'import sqlite3,json; paths={\\\"linkedin\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\",\\\"indeed\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3\\\",\\\"glassdoor\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3\\\"}; out={};\nfor platform,path in paths.items():\n c=sqlite3.connect(path); c.row_factory=sqlite3.Row\n tables=[r[0] for r in c.execute(\\\"select name from sqlite_master where type=\\\\\\\"table\\\\\\\" and name in (\\\\\\\"browser_platform_runs\\\\\\\",\\\\\\\"browser_search_tasks\\\\\\\",\\\\\\\"browser_events\\\\\\\",\\\\\\\"search_task_results\\\\\\\",\\\\\\\"jobs\\\\\\\",\\\\\\\"job_versions\\\\\\\")\\\")]\n events=[dict(r) for r in c.execute(\\\"select event_type,message,payload_json from browser_events where lower(event_type) like \\\\\\\"%receiver%\\\\\\\" or lower(message) like \\\\\\\"%receiver%\\\\\\\" or lower(message) like \\\\\\\"%challenge%\\\\\\\" or lower(message) like \\\\\\\"%security%\\\\\\\" or lower(message) like \\\\\\\"%sign in%\\\\\\\" order by event_id\\\")]\n out[platform]={\\\"tables\\\":tables,\\\"receiver_or_blocker_events\\\":events,\\\"result_columns\\\":[r[1] for r in c.execute(\\\"pragma table_info(search_task_results)\\\")] if \\\"search_task_results\\\" in tables else []}\n if \\\"search_task_results\\\" in tables: out[platform][\\\"result_rows\\\"]=[dict(r) for r in c.execute(\\\"select * from search_task_results where browser_run_id=1 limit 5\\\")]\n if \\\"jobs\\\" in tables: out[platform][\\\"job_columns\\\":[r[1] for r in c.execute(\\\"pragma table_info(jobs)\\\")],\\\"jobs\\\":[dict(r) for r in c.execute(\\\"select * from jobs where source_site=\\\\\\\"linkedin\\\\\\\" limit 5\\\")]\n c.close()\nprint(json.dumps(out,ensure_ascii=False,default=str))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'import sqlite3,json; paths={\\\"linkedin\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\",\\\"indeed\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3\\\",\\\"glassdoor\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3\\\"}; out={};\nfor platform,path in paths.items():\n c=sqlite3.connect(path); c.row_factory=sqlite3.Row; tables=[r[0] for r in c.execute(\\\"select name from sqlite_master where type=\\\\\\\"table\\\\\\\" and name in (\\\\\\\"browser_platform_runs\\\\\\\",\\\\\\\"browser_search_tasks\\\\\\\",\\\\\\\"browser_events\\\\\\\",\\\\\\\"search_task_results\\\\\\\",\\\\\\\"jobs\\\\\\\",\\\\\\\"job_versions\\\\\\\")\\\")]; events=[dict(r) for r in c.execute(\\\"select event_type,message from browser_events where lower(event_type) like \\\\\\\"%receiver%\\\\\\\" or lower(message) like \\\\\\\"%receiver%\\\\\\\" or lower(message) like \\\\\\\"%challenge%\\\\\\\" or lower(message) like \\\\\\\"%security%\\\\\\\" or lower(message) like \\\\\\\"%sign in%\\\\\\\" order by event_id\\\")]; out[platform]={\\\"tables\\\":tables,\\\"receiver_or_blocker_events\\\":events,\\\"result_columns\\\":[r[1] for r in c.execute(\\\"pragma table_info(search_task_results)\\\")],\\\"job_columns\\\":[r[1] for r in c.execute(\\\"pragma table_info(jobs)\\\")]}; c.close()\nprint(json.dumps(out,ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard-out JOBBOT_DASHBOARD_PORT=18772 /opt/anaconda3/bin/python -c 'import json; from jobbot.config import PROJECT_ROOT,load_bundle; from jobbot.run_now import ensure_dashboard; from jobbot.validator import _dashboard_probe,_stop_dashboard; b=load_bundle(PROJECT_ROOT); url,started=ensure_dashboard(b,open_browser=False); probe=_dashboard_probe(b,url); print(json.dumps({\\\"url\\\":url,\\\"started\\\":started,\\\"probe\\\":probe},ensure_ascii=False,default=str)); _stop_dashboard(b,url)'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard-out JOBBOT_DASHBOARD_PORT=18772 /opt/anaconda3/bin/python -c 'import json; from jobbot.config import PROJECT_ROOT,load_bundle; from jobbot.db import Database; from jobbot.run_now import ensure_dashboard; from jobbot.validator import _dashboard_probe,_stop_dashboard; b=load_bundle(PROJECT_ROOT); Database(b).migrate(); url,started=ensure_dashboard(b,open_browser=False); probe=_dashboard_probe(b,url); print(json.dumps({\\\"url\\\":url,\\\"started\\\":started,\\\"probe\\\":probe},ensure_ascii=False,default=str)); _stop_dashboard(b,url)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'import sqlite3,json; paths={\\\"linkedin\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\",\\\"indeed\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3\\\",\\\"glassdoor\\\":\\\"/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3\\\"}; out={};\nfor platform,path in paths.items():\n c=sqlite3.connect(path); c.row_factory=sqlite3.Row; builds=[dict(r) for r in c.execute(\\\"select event_type,message,payload_json from browser_events where event_type=\\\\\\\"extension_build\\\\\\\" order by event_id\\\")]; receivers=[dict(r) for r in c.execute(\\\"select event_type,message from browser_events where lower(event_type) like \\\\\\\"%receiver%\\\\\\\" or lower(message) like \\\\\\\"%receiver%\\\\\\\"\\\")]; readiness=dict(c.execute(\\\"select platform,auth_status,auth_reason,readiness_state,readiness_reason from browser_platform_runs where platform=?\\\",(platform,)).fetchone()); task=dict(c.execute(\\\"select platform,status,results_seen,pages_visited,detail_count_read,jobs_recorded,requested_search_url,observed_page_url,page_context_status,challenge_reason,last_error from browser_search_tasks where platform=?\\\",(platform,)).fetchone()); out[platform]={\\\"builds\\\":builds,\\\"receivers\\\":receivers,\\\"readiness\\\":readiness,\\\"task\\\":task};\n if platform==\\\"linkedin\\\":\n  rows=[dict(r) for r in c.execute(\\\"select r.result_id,r.source_job_id,r.canonical_job_id,r.detail_status,r.content_state,r.detail_completed_at,j.title,j.company,length(j.description) as description_length,j.description_state,j.enrichment_status,j.content_state as job_content_state from search_task_results r join jobs j on j.job_id=r.canonical_job_id where r.source_site=\\\\\\\"linkedin\\\\\\\" and r.detail_status in (\\\\\\\"COMPLETE\\\\\\\",\\\\\\\"ENRICHED\\\\\\\") and r.content_state=\\\\\\\"COMPLETE\\\\\\\" and length(j.description)>100 order by r.result_id limit 3\\\")]; out[platform][\\\"substantive_detail_proof\\\"]=rows; out[platform][\\\"counts\\\"]={\\\"complete_results\\\":c.execute(\\\"select count(*) from search_task_results where source_site=\\\\\\\"linkedin\\\\\\\" and detail_status in (\\\\\\\"COMPLETE\\\\\\\",\\\\\\\"ENRICHED\\\\\\\") and content_state=\\\\\\\"COMPLETE\\\\\\\"\\\").fetchone()[0],\\\"complete_descriptions\\\":c.execute(\\\"select count(*) from jobs where canonical_source_site=\\\\\\\"linkedin\\\\\\\" and description_state=\\\\\\\"COMPLETE\\\\\\\" and length(description)>100\\\").fetchone()[0]}; c.close()\nprint(json.dumps(out,ensure_ascii=False,default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'import sqlite3,json,os; paths=[\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/doctor.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/preflight.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3\\\"]; out=[];\nfor p in paths:\n c=sqlite3.connect(p); c.row_factory=sqlite3.Row; out.append({\\\"path\\\":p,\\\"exists\\\":os.path.exists(p),\\\"integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0],\\\"schema_versions\\\":[r[0] for r in c.execute(\\\"select version from schema_migrations order by version\\\")],\\\"rows\\\":{\\\"runs\\\":c.execute(\\\"select count(*) from browser_runs\\\").fetchone()[0],\\\"tasks\\\":c.execute(\\\"select count(*) from browser_search_tasks\\\").fetchone()[0],\\\"results\\\":c.execute(\\\"select count(*) from search_task_results\\\").fetchone()[0],\\\"jobs\\\":c.execute(\\\"select count(*) from jobs\\\").fetchone()[0]}}); c.close()\nprint(json.dumps({\\\"databases\\\":out,\\\"production_db_exists\\\":os.path.exists(\\\"data/jobs.sqlite3\\\")},ensure_ascii=False,default=str))' && rtk git status --short --branch && rtk git diff --name-status && rtk git ls-files verification/CHG-39-r12.json && rtk ps auxww | rg '[j]obbot|[j]obbot-bridge' | sed -n '1,80p' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'import sqlite3,json,os; paths=[\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/doctor.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/preflight.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3\\\",\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3\\\"]; out=[];\nfor p in paths:\n c=sqlite3.connect(p); tables={r[0] for r in c.execute(\\\"select name from sqlite_master where type=\\\\\\\"table\\\\\\\"\\\")}; out.append({\\\"path\\\":p,\\\"exists\\\":os.path.exists(p),\\\"integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0],\\\"schema_versions\\\":[r[0] for r in c.execute(\\\"select version from schema_migrations order by version\\\")] if \\\"schema_migrations\\\" in tables else [],\\\"rows\\\":{\\\"runs\\\":c.execute(\\\"select count(*) from browser_runs\\\").fetchone()[0] if \\\"browser_runs\\\" in tables else 0,\\\"tasks\\\":c.execute(\\\"select count(*) from browser_search_tasks\\\").fetchone()[0] if \\\"browser_search_tasks\\\" in tables else 0,\\\"results\\\":c.execute(\\\"select count(*) from search_task_results\\\").fetchone()[0] if \\\"search_task_results\\\" in tables else 0,\\\"jobs\\\":c.execute(\\\"select count(*) from jobs\\\").fetchone()[0] if \\\"jobs\\\" in tables else 0}}); c.close()\nprint(json.dumps({\\\"databases\\\":out,\\\"production_db_exists\\\":os.path.exists(\\\"data/jobs.sqlite3\\\")},ensure_ascii=False,default=str))' && rtk git status --short --branch && rtk git diff --name-status && rtk git ls-files verification/CHG-39-r12.json && rtk ps auxww | rg '[j]obbot|[j]obbot-bridge' | sed -n '1,80p' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk stat -f '%N %Sm %z bytes' -t '%Y-%m-%d %H:%M:%S' data/jobs.sqlite3 && rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'import sqlite3,json; p=\\\"data/jobs.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; tables=[r[0] for r in c.execute(\\\"select name from sqlite_master where type=\\\\\\\"table\\\\\\\"\\\")]; out={\\\"tables\\\":tables,\\\"integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0]};\nfor t in (\\\"browser_runs\\\",\\\"browser_search_tasks\\\",\\\"browser_events\\\",\\\"jobs\\\",\\\"search_task_results\\\",\\\"runs\\\",\\\"source_occurrences\\\"):\n if t in tables:\n  out[t]={\\\"count\\\":c.execute(\\\"select count(*) from \\\"+t).fetchone()[0]}\n  if t==\\\"browser_runs\\\": out[t][\\\"rows\\\"]=[dict(r) for r in c.execute(\\\"select browser_run_id,mode,platform,status,created_at,last_error from browser_runs order by browser_run_id\\\")]\nprint(json.dumps(out,ensure_ascii=False,default=str))' && rtk git status --short --ignored data/jobs.sqlite3 data | sed -n '1,40p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find data/backups -maxdepth 2 -type f | sed -n '1,80p' && rtk ls -la data/backups | sed -n '1,80p' && rtk mkdir -p /private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/rejected && rtk mv data/jobs.sqlite3 /private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/rejected/jobs.sqlite3-created-by-tests && rtk stat -f '%N %Sm %z bytes' -t '%Y-%m-%d %H:%M:%S' /private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/rejected/jobs.sqlite3-created-by-tests && rtk test \"'! -e data/jobs.sqlite3 && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk mv data/backups/jobs_pre_v3_2_migration_20260919_161807.sqlite3 /private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/rejected/jobs_pre_v3_2_migration_20260919_161807.sqlite3 && rtk find data/backups -maxdepth 1 -type f | sed -n '1,40p' && rtk ls -la data/backups | sed -n '1,40p' && rtk ls -la data | sed -n '1,40p' && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python -c 'import sqlite3,json,os; p=\\\"/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/rejected/jobs.sqlite3-created-by-tests\\\"; c=sqlite3.connect(p); print(json.dumps({\\\"production_path_exists\\\":os.path.exists(\\\"data/jobs.sqlite3\\\"),\\\"moved_copy_integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0],\\\"browser_runs\\\":c.execute(\\\"select count(*) from browser_runs\\\").fetchone()[0],\\\"jobs\\\":c.execute(\\\"select count(*) from jobs\\\").fetchone()[0],\\\"results\\\":c.execute(\\\"select count(*) from search_task_results\\\").fetchone()[0]})); c.close()' && rtk stat -f '%N %Sm %z bytes' -t '%Y-%m-%d %H:%M:%S' /private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/rejected/jobs_pre_v3_2_migration_20260919_161807.sqlite3 2>&1 || true && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ' && rtk git rev-parse HEAD\"'^{tree} && rtk git status --porcelain=v1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python -m json.tool verification/CHG-39-r12.json >/dev/null && rtk git diff --check && rtk git diff --name-status && rtk git status --short --branch && rtk rg -n 'token|cookie|password|credential|bridge_token|X-JobBot-Token' verification/CHG-39-r12.json || true && rtk test -e data/jobs.sqlite3; rtk printf 'production-db-exists-after-artifact-check=%s\\\\n' \\\"\"'$?\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git add verification/CHG-39-r12.json && rtk git commit -m 'verify: record CHG-39-r12 evidence' && rtk git rev-parse HEAD && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-39-r12.json && rtk git commit --amend --no-edit && rtk git rev-parse HEAD && rtk git status --short --branch && rtk git diff --check && rtk git diff HEAD''^ HEAD --name-status && rtk git diff HEAD''^ HEAD --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-39-r12.json && rtk git commit --amend --no-edit && rtk /opt/anaconda3/bin/python -m json.tool verification/CHG-39-r12.json >/dev/null && rtk git diff --check && rtk git status --short --branch && rtk git diff HEAD''^ HEAD --name-status && rtk git rev-parse HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-list --count c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD && rtk git diff c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD --name-status && rtk git diff --exit-code c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD -- extension src tests config docs scripts >/dev/null && rtk git status --porcelain=v1 && rtk /opt/anaconda3/bin/python -m json.tool verification/CHG-39-r12.json >/dev/null && rtk git diff --check && rtk sh -c 'if [ -e data/jobs.sqlite3 ]; then echo production_db_present; exit 1; else echo production_db_absent; fi' && rtk ps auxww | rg '[j]obbot|[j]obbot-bridge' | sed -n '1,40p' || true && rtk git show -s --format='%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-list --count c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD && rtk git diff c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD --name-status && rtk git status --porcelain=v1 --branch && rtk git show -s --format='%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --exit-code c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD -- extension src tests config docs scripts && rtk jq -e '.source.target_head == \\\"c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8\\\" and .runtime.loaded_build == \\\"3.2.2-prod-ready.672cf88.15\\\" and .validator.PROD_READY == false' verification/CHG-39-r12.json && rtk sh -c 'test \"'! -e data/jobs.sqlite3 && echo production_db_absent'\"'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 165,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.77,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 12485376,
+      "fresh_input_tokens": 284545,
+      "input_tokens": 12769921,
+      "non_reasoning_output_tokens": 25673,
+      "output_tokens": 46480,
+      "reasoning_output_tokens": 20807,
+      "total_processed_tokens": 12816401
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "cb70ca264e644acb4fe32fd4b779eb138c333645",
+      "subject": "verify: record CHG-39-r12 evidence"
+    }
+  ],
+  "diff": {
+    "additions": 248,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 13829,
+        "path": "verification/CHG-39-r12.json",
+        "sha256": "55ed4c0b3daa6f0249e557f1f0f3e6246461e60ddabe9983095606f75fadb377"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-19T16:26:10Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "branch": "codex/jobbot-CHG-39-r12",
+    "detached_verify": false,
+    "head_sha": "cb70ca264e644acb4fe32fd4b779eb138c333645",
+    "remote_exact_head": true,
+    "remote_head_sha": "cb70ca264e644acb4fe32fd4b779eb138c333645",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "work_branch": "codex/jobbot-CHG-39-r12",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-10f709953870b48092e003ef",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-39-r12",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-39-r12"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-39-r12",
+  "schema_version": 1,
+  "started_at": "2026-09-19T16:00:17Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1553,
+    "queue_seconds": 0,
+    "total_seconds": 1553
+  },
+  "transport": {
+    "bytes": 3812,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3530,
+    "prompt_sha256": "51b9bb600dbd4221b3f2b0305752a1fd07eb4d1afdd0a48fecbf92d6630b0366",
+    "sha256": "10f709953870b48092e003ef491c99ae93ffb2410027304251eb8992c8775b8e"
+  }
+}
