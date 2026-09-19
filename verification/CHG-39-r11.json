@@ -1,0 +1,288 @@
+{
+  "verification": "CHG-39-r11",
+  "operation": "VERIFY",
+  "status": "STOPPED_EXTERNAL_BLOCKER",
+  "go": false,
+  "stop_reason": "Indeed and Glassdoor remained externally retryable during the repository-native normal-Chrome readiness probes; the full production gate was not started.",
+  "source_runtime_identity": {
+    "repository": {
+      "branch": "codex/jobbot-CHG-39-r11",
+      "head": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+      "tree": "f910d69c8f342359aa30e865a3524155014da39a",
+      "target_exact": true,
+      "worktree_clean_before_artifact": true,
+      "product_source_drift": false,
+      "scheduler_or_concurrency_changes": false
+    },
+    "chrome": {
+      "browser": "Google Chrome",
+      "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "version": "153.0.8010.48 (Official Build) (arm64)",
+      "profile_directory": "Default",
+      "profile_path": "/Users/haewonkim/Library/Application Support/Google/Chrome/Default",
+      "binding_state": "chrome_profile_targeted"
+    },
+    "extension": {
+      "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+      "enabled_in_chrome": true,
+      "manifest_version": 3,
+      "source_build": "3.2.2-prod-ready.672cf88.11",
+      "loaded_build": "3.2.2-prod-ready.672cf88.11",
+      "stable_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "source_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+      "deployed_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+      "source_identity_match": true,
+      "deployment_classification": "deployed_source_current",
+      "deployment_marker": {
+        "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+        "version_name": "3.2.2-prod-ready.672cf88.11",
+        "source_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+        "source_head_observed": "a526b5b827e5f5711975000bf9151e1f5cd2c4f9",
+        "source_root_observed": "/Users/haewonkim/.codex-fabric/worktrees/CF-a868857e1db8cc3e8d34ce81",
+        "deployed_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension"
+      },
+      "runtime_reachability": {
+        "extension_build_event": true,
+        "observed_build": "3.2.2-prod-ready.672cf88.11",
+        "observed_source_identity": "sha256:bacb0b6b3388628988f705888f13e2950e55385a879bc7687494395ea06d84c4",
+        "classification": "intended_extension_reachable_and_current"
+      }
+    },
+    "loopback_bridge": {
+      "host": "127.0.0.1",
+      "token_authenticated": true,
+      "authorized_health": "passed",
+      "unauthorized_health_http": 403,
+      "rpc_self_test": "passed",
+      "micro_bridge_restart_pass": true,
+      "secrets_persisted": false
+    },
+    "dashboard": {
+      "url": "http://127.0.0.1:52413/",
+      "identity_ok": true,
+      "live_refresh_ok": true,
+      "jobbot_version": "3.2.1",
+      "workspace_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-7ee14034c8ac39322ad0a39d",
+      "resolved_database_path": "/Users/haewonkim/.codex-fabric/worktrees/CF-7ee14034c8ac39322ad0a39d/data/validation_20260919T034906Z.sqlite3",
+      "database_identity": "a763f9ab8b7985f5"
+    }
+  },
+  "big_three_readiness": {
+    "linkedin": {
+      "database": "data/validation_20260919T034906Z.sqlite3",
+      "integrity": "ok",
+      "run_id": 1,
+      "run_status": "stopped",
+      "auth_status": "verified",
+      "readiness_state": "verified",
+      "auth_reason": "linkedin requested search surface ready; requested=https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD observed=https://www.linkedin.com/jobs/search/?currentJobId=4469508198&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United%20States&sortBy=DD",
+      "readiness_checked_at": "2026-09-19T03:49:48+00:00",
+      "task": {
+        "task_key": "VALIDATION|linkedin|patient enrollment specialist",
+        "status": "stopped",
+        "attempts": 2,
+        "pages_visited": 7,
+        "results_seen": 49,
+        "cards_extracted": 49,
+        "cards_persistence_succeeded": 49,
+        "cards_persistence_failed": 0,
+        "detail_count_read": 17,
+        "page_context_status": "verified",
+        "safety_cutoff": "VALIDATION_WINDOW_COMPLETE"
+      },
+      "external_blocker": false
+    },
+    "indeed": {
+      "database": "data/readiness_indeed_20260919T035415Z.sqlite3",
+      "integrity": "ok",
+      "run_id": 1,
+      "run_status": "partial",
+      "auth_status": "unknown",
+      "readiness_state": "retryable",
+      "auth_reason": "auth/readiness probe failed: content script did not respond",
+      "readiness_reason": "auth/readiness probe failed: content script did not respond",
+      "readiness_checked_at": "2026-09-19T03:54:25+00:00",
+      "task": {
+        "task_key": "VALIDATION|indeed|patient enrollment specialist",
+        "status": "deferred_by_platform",
+        "attempts": 1,
+        "last_error": "auth/readiness probe failed: content script did not respond",
+        "pages_visited": 0,
+        "results_seen": 0,
+        "cards_extracted": 0,
+        "cards_persistence_succeeded": 0,
+        "cards_persistence_failed": 0,
+        "detail_count_read": 0,
+        "page_context_status": "UNVERIFIED"
+      },
+      "external_blocker": true
+    },
+    "glassdoor": {
+      "database": "data/readiness_glassdoor_20260919T035415Z.sqlite3",
+      "integrity": "ok",
+      "run_id": 1,
+      "run_status": "partial",
+      "auth_status": "unknown",
+      "readiness_state": "retryable",
+      "auth_reason": "auth/readiness probe failed: content script did not respond",
+      "readiness_reason": "auth/readiness probe failed: content script did not respond",
+      "readiness_checked_at": "2026-09-19T03:54:36+00:00",
+      "task": {
+        "task_key": "VALIDATION|glassdoor|patient enrollment specialist",
+        "status": "deferred_by_platform",
+        "attempts": 1,
+        "last_error": "auth/readiness probe failed: content script did not respond",
+        "pages_visited": 0,
+        "results_seen": 0,
+        "cards_extracted": 0,
+        "cards_persistence_succeeded": 0,
+        "cards_persistence_failed": 0,
+        "detail_count_read": 0,
+        "page_context_status": "UNVERIFIED"
+      },
+      "external_blocker": true
+    }
+  },
+  "validator": {
+    "command": "rtk env PYTHONPATH=src python3 -m jobbot validate-production --stage micro",
+    "exit_code": 0,
+    "PROD_READY": false,
+    "report": "out/production-validation/micro-latest.json",
+    "preflight_ok": true,
+    "primary_micro_pass": true,
+    "internal_failures": [],
+    "external_blockers_in_validator_report": [],
+    "full_gate": {
+      "command": "rtk env PYTHONPATH=src python3 -m jobbot validate-production --stage full --semi-minutes 30",
+      "status": "not_started",
+      "reason": "external Big-3 readiness blockers detected before full gate"
+    }
+  },
+  "isolated_databases": {
+    "validation": {
+      "path": "data/validation_20260919T034906Z.sqlite3",
+      "integrity": "ok",
+      "used": true
+    },
+    "readiness_indeed": {
+      "path": "data/readiness_indeed_20260919T035415Z.sqlite3",
+      "integrity": "ok",
+      "used": true
+    },
+    "readiness_glassdoor": {
+      "path": "data/readiness_glassdoor_20260919T035415Z.sqlite3",
+      "integrity": "ok",
+      "used": true
+    },
+    "soak": {
+      "path": "data/validation_soak_20260919T034906Z.sqlite3",
+      "integrity": "not_run",
+      "used": false
+    },
+    "semi_production": {
+      "path": "data/validation_semiprod_20260919T034906Z.sqlite3",
+      "integrity": "not_run",
+      "used": false
+    },
+    "production_database": {
+      "path": "data/jobs.sqlite3",
+      "used_as_validation_store": false,
+      "unattended_validation_access": false,
+      "note": "Pre-existing production path was not used for task enqueue, bridge, dashboard, or validation persistence."
+    }
+  },
+  "linkedin_substantive_detail_proof": {
+    "database": "data/validation_20260919T034906Z.sqlite3",
+    "result_id": 21,
+    "task_id": 1,
+    "source_job_id": "4467255833",
+    "canonical_job_id": "J329BF46495682C",
+    "source_url": "https://www.linkedin.com/jobs/view/4467255833/",
+    "title": "Customer Service Representative III (Service and Repair)",
+    "company": "Medtronic",
+    "identity_status": "PERSISTED",
+    "detail_status": "COMPLETE",
+    "content_state": "COMPLETE",
+    "job_content_state": "COMPLETE",
+    "enrichment_status": "ENRICHED",
+    "description_state": "COMPLETE",
+    "description_length": 8400,
+    "description_nontrivial": true,
+    "description_sha256": "8e84e383247cdbfca292ac68531bdf77e4d6defefe916dea042f5439523edf6e",
+    "evidence_provenance": "observed_substantive_detail"
+  },
+  "chg_132_chg_127_observations": {
+    "deterministic_suite": {
+      "command": "PYTHONPATH=src python3 -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "tests": 101,
+      "result": "OK"
+    },
+    "CHG-132": {
+      "fixture": "tests/extension_service_worker_auth_return_test.js",
+      "result": "passed",
+      "observed": [
+        "auth_state remained defined",
+        "no ReferenceError",
+        "auth return emitted one deterministic auth RPC",
+        "no contradictory auth_required plus retryable/unknown downgrade"
+      ]
+    },
+    "CHG-127": {
+      "fixture": "tests/extension_service_worker_scope_recovery_test.js",
+      "result": "passed",
+      "observed": [
+        "bounded LinkedIn scope recovery",
+        "context handoff",
+        "fail-closed surfaces",
+        "exactly-once persistence",
+        "no unhandled extraction_scope_missing regression"
+      ]
+    },
+    "primary_scope_fixtures": {
+      "command": "node tests/extension_primary_scope_test.js",
+      "result": "passed"
+    }
+  },
+  "safety_boundaries": {
+    "read_only": true,
+    "applications_submitted": false,
+    "forms_filled": false,
+    "credentials_used_or_exported": false,
+    "cookies_exported": false,
+    "challenge_bypassed": false,
+    "cross_platform_parallel_workers": false,
+    "single_worker_serial_scheduler_preserved": true,
+    "fabric_audit_json_modified": false
+  },
+  "external_blockers": [
+    {
+      "platform": "indeed",
+      "classification": "external_or_transient_normal_chrome_surface_block",
+      "auth_status": "unknown",
+      "readiness_state": "retryable",
+      "task_status": "deferred_by_platform",
+      "reason": "auth/readiness probe failed: content script did not respond"
+    },
+    {
+      "platform": "glassdoor",
+      "classification": "external_or_transient_normal_chrome_surface_block",
+      "auth_status": "unknown",
+      "readiness_state": "retryable",
+      "task_status": "deferred_by_platform",
+      "reason": "auth/readiness probe failed: content script did not respond"
+    }
+  ],
+  "final_git_invariants": {
+    "head": "e5ccd65c84f5b42bcb29a3ab3481f5dafa6eb10a",
+    "branch": "codex/jobbot-CHG-39-r11",
+    "product_source_changes": [],
+    "scheduler_changes": [],
+    "tracked_changes_before_artifact": [],
+    "tracked_changes_after_artifact": [
+      "verification/CHG-39-r11.json"
+    ],
+    "allowed_change": "verification/CHG-39-r11.json",
+    "fabric_runtime_owns_audit_and_evidence_publication": true
+  }
+}
