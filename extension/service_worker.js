@@ -163,7 +163,7 @@ async function checkAuth(platform,runId,taskId,searchUrl=''){
     }
     if(authState==='sign_in_required'){
       await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:p.reason||'explicit sign-in wall',page_url:p.page_url||'',requested_url:searchUrl||url,observed_url:p.page_url||''});
-      return {authenticated:false,ready:false,auth_state, page:p};
+      return {authenticated:false,ready:false,auth_state:authState, page:p};
     }
     // Landing-page account heuristics are only advisory. The actual requested
     // search surface is authoritative when it is usable, and must be probed
