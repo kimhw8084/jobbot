@@ -1,0 +1,248 @@
+{
+  "artifact": "CHG-39-r12",
+  "mode": "VERIFY",
+  "started_at": "2026-09-19T15:55:00Z",
+  "finished_at": "2026-09-19T16:21:25Z",
+  "decision": "STOP_EXTERNAL_BLOCKER",
+  "PROD_READY": false,
+  "source": {
+    "expected_head": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "observed_head": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "head_exact": true,
+    "expected_tree": "f4ae0b7ed50589361787f794be48027677dd23ba",
+    "observed_tree": "f4ae0b7ed50589361787f794be48027677dd23ba",
+    "tree_exact": true,
+    "branch": "codex/jobbot-CHG-39-r12",
+    "candidate_branch_policy": "pass",
+    "worktree_before_artifact": "clean",
+    "product_source_changes": 0,
+    "test_config_documentation_selector_scheduler_concurrency_changes": 0,
+    "fabric_evidence_refs_manipulated": false
+  },
+  "extension": {
+    "canonical_extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "source_version_name": "3.2.2-prod-ready.672cf88.15",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "chrome_profile_binding": {
+      "browser": "Google Chrome",
+      "profile_directory": "Default",
+      "binding_state": "bound",
+      "targeted": true
+    },
+    "source_identity": "sha256:6b7f6efa90de7f938740bd5b387843d34c955349a2af08c5bb48165309d82173",
+    "deployed_identity": "sha256:6b7f6efa90de7f938740bd5b387843d34c955349a2af08c5bb48165309d82173",
+    "deployed_files_equal_source": true,
+    "runtime_identity": {
+      "loaded_build": "3.2.2-prod-ready.672cf88.15",
+      "expected_build": "3.2.2-prod-ready.672cf88.15",
+      "identity_confirmed": true,
+      "classification": "intended_extension_reachable_and_current",
+      "observed_source_identity": "sha256:6b7f6efa90de7f938740bd5b387843d34c955349a2af08c5bb48165309d82173",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension"
+    },
+    "marker_history_observation": {
+      "expected_source_head": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+      "observed_marker_source_head": "fbe2bf328eb244f0a5dd3415d36f6ad81bb021be",
+      "source_head_exact": false,
+      "source_root_observed": "/Users/haewonkim/.codex-fabric/worktrees/CF-4251181c9e4586bfaef3791e",
+      "note": "Historical marker metadata differs, but the repository runtime gate accepts the exact .15 build, content identity, and stable deployment root. VERIFY did not rewrite machine-local metadata."
+    }
+  },
+  "bridge": {
+    "host": "127.0.0.1",
+    "token_authenticated": true,
+    "authorized_rpc_exit_code": 0,
+    "unauthorized_rejection_http_status": 403,
+    "token_values_recorded": false
+  },
+  "dashboard": {
+    "command": "isolated ensure_dashboard + identity/summary/run probe",
+    "exit_code": 0,
+    "url": "http://127.0.0.1:18772/",
+    "jobbot_version": "3.2.1",
+    "identity_ok": true,
+    "live_refresh_ok": true,
+    "database": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard.sqlite3"
+  },
+  "deterministic_commands": [
+    {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python -m jobbot doctor (isolated database)",
+      "exit_code": 0,
+      "observations": ["Python 3.11.7", "migrations 1-15 current", "bridge token auth pass", "normal Chrome found", "fast=315 deep=417 uncapped"]
+    },
+    {
+      "command": "node --check extension/*.js plus extension regression scripts",
+      "exit_code": 0,
+      "observations": ["JavaScript syntax pass", "primary scope pass", "LinkedIn structural scope pass", "auth/readiness return pass", "bounded LinkedIn recovery pass", "target lifecycle pass"]
+    },
+    {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python -m unittest -v tests.integration.test_extension_bridge tests.integration.test_extension_refresh tests.integration.test_runtime_binding tests.integration.test_validator",
+      "exit_code": 0,
+      "tests": 38
+    },
+    {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "tests": 101
+    },
+    {
+      "command": "isolated run_now.preflight for linkedin,indeed,glassdoor",
+      "exit_code": 0,
+      "staged_task_count": 864,
+      "database": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/preflight.sqlite3"
+    },
+    {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python -m jobbot search-plan --mode fast",
+      "exit_code": 0,
+      "task_count": 315,
+      "database": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan.sqlite3"
+    },
+    {
+      "command": "PYTHONPATH=src /opt/anaconda3/bin/python -m jobbot search-plan --mode deep",
+      "exit_code": 0,
+      "task_count": 417,
+      "database": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/plan.sqlite3"
+    }
+  ],
+  "regressions": {
+    "CHG-141": {
+      "status": "pass",
+      "indeed_receivers": ["JOBBOT_INSPECT_SEARCH", "JOBBOT_INSPECT_SEARCH_EVENTUALLY"],
+      "glassdoor_receivers": ["JOBBOT_INSPECT_SEARCH", "JOBBOT_INSPECT_SEARCH_EVENTUALLY"],
+      "observation": "Primary search receiver fixtures and authoritative fallback delivery passed; no live receiver error recurred."
+    },
+    "CHG-132": {
+      "status": "pass",
+      "observation": "Sign-in and challenge surfaces short-circuit; unknown auth is not misclassified as signed out; authoritative Indeed/Glassdoor fallback remains fail-closed."
+    },
+    "CHG-127": {
+      "status": "pass",
+      "observation": "LinkedIn recovery remains bounded, preserves context, fails closed on ambiguous surfaces, and persists exactly once."
+    }
+  },
+  "readiness_probes": {
+    "probe_contract": "ordinary installed Google Chrome Default profile; read-only navigation; no form fill, credentials, cookies, challenge bypass, or application submission",
+    "linkedin": {
+      "database": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3",
+      "auth_status": "verified",
+      "auth_reason": "linkedin requested search surface ready; requested=https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD observed=https://www.linkedin.com/jobs/search/?currentJobId=4460542635&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United%20States&sortBy=DD",
+      "readiness_state": "verified",
+      "readiness_reason": "linkedin requested search surface ready; requested=https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD observed=https://www.linkedin.com/jobs/search/?currentJobId=4460542635&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD",
+      "requested_search_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+      "observed_page_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD&start=150",
+      "page_context_status": "verified",
+      "pages_visited": 7,
+      "results_seen": 53,
+      "cards_persisted": 53,
+      "details_read": 14,
+      "jobs_recorded": 12,
+      "receiver_errors": 0,
+      "challenge_or_signin_evidence": {"challenge": false, "sign_in_wall": false, "evidence": []},
+      "durable_reconciliation": {"integrity": "ok", "reconciliation": true},
+      "probe_terminal_observation": "bounded stop persisted as incomplete after manual stop; readiness and persisted records remain valid",
+      "substantive_detail_proof": {
+        "complete_result_count": 12,
+        "complete_description_count_over_100_chars": 9,
+        "source_job_id": "4469541698",
+        "canonical_job_id": "J3ED7671A6D2707",
+        "detail_status": "COMPLETE",
+        "content_state": "COMPLETE",
+        "enrichment_status": "ENRICHED",
+        "title": "Care Coordinator II (Foster Care)",
+        "company": "Centene Corporation",
+        "description_length": 3562
+      }
+    },
+    "indeed": {
+      "database": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3",
+      "auth_status": "unknown",
+      "auth_reason": "indeed search surface challenged: security check",
+      "readiness_state": "challenged_cooldown",
+      "readiness_reason": "indeed search surface challenged: security check",
+      "requested_search_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+      "observed_page_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+      "task_row_requested_search_url": "",
+      "task_row_observed_page_url": "",
+      "page_context_status": "UNVERIFIED",
+      "pages_visited": 0,
+      "results_seen": 0,
+      "cards_persisted": 0,
+      "details_read": 0,
+      "jobs_recorded": 0,
+      "receiver_errors": 0,
+      "challenge_or_signin_evidence": {"challenge": true, "challenge_type": "security check", "sign_in_wall": false, "evidence": ["platform_paused event"]},
+      "tasks_challenged": 1,
+      "durable_reconciliation": {"integrity": "ok", "reconciliation": true},
+      "external_blocker": true
+    },
+    "glassdoor": {
+      "database": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3",
+      "auth_status": "verified",
+      "auth_reason": "glassdoor requested search surface ready; requested=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm observed=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "readiness_state": "verified",
+      "readiness_reason": "glassdoor requested search surface ready; requested=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm observed=https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "requested_search_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "observed_page_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+      "page_context_status": "verified",
+      "pages_visited": 2,
+      "results_seen": 4,
+      "cards_persisted": 4,
+      "details_read": 1,
+      "jobs_recorded": 1,
+      "receiver_errors": 0,
+      "challenge_or_signin_evidence": {"challenge": false, "sign_in_wall": false, "evidence": []},
+      "durable_reconciliation": {"integrity": "ok", "reconciliation": true},
+      "probe_terminal_observation": "bounded stop after current task; readiness and persisted records remain valid"
+    }
+  },
+  "validator": {
+    "command": "./VALIDATE_PRODUCTION.command",
+    "exit_code": null,
+    "status": "not_run",
+    "reason": "Required Indeed readiness was blocked by a genuine external security check; fail-closed stop required before micro/soak/semi-production validation.",
+    "PROD_READY": false,
+    "internal_failures": [],
+    "external_blockers": [
+      {
+        "platform": "indeed",
+        "state": "challenged_cooldown",
+        "reason": "indeed search surface challenged: security check",
+        "action": "stop; normal manual clearance and later resume only; no bypass attempted"
+      }
+    ]
+  },
+  "database_isolation": {
+    "production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-10f709953870b48092e003ef/data/jobs.sqlite3",
+    "production_database_existed_at_start": false,
+    "production_database_exists_at_finish": false,
+    "production_path_records": {"browser_runs": 0, "jobs": 0, "search_task_results": 0},
+    "transient_schema_only_file_observation": {
+      "path": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/rejected/jobs.sqlite3-created-by-tests",
+      "integrity": "ok",
+      "browser_runs": 0,
+      "jobs": 0,
+      "search_task_results": 0,
+      "action": "moved out of production path recoverably"
+    },
+    "isolated_databases": [
+      {"path": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/doctor.sqlite3", "integrity": "ok", "schema_versions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]},
+      {"path": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/preflight.sqlite3", "integrity": "ok", "schema_versions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]},
+      {"path": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/dashboard.sqlite3", "integrity": "ok", "schema_versions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]},
+      {"path": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/readiness.sqlite3", "integrity": "ok", "rows": {"browser_runs": 1, "browser_search_tasks": 3, "search_task_results": 53, "jobs": 9}},
+      {"path": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/indeed-readiness.sqlite3", "integrity": "ok", "rows": {"browser_runs": 1, "browser_search_tasks": 1, "search_task_results": 0, "jobs": 0}},
+      {"path": "/private/tmp/jobbot-verify-CHG-39-r12.KpkZaV/glassdoor-readiness.sqlite3", "integrity": "ok", "rows": {"browser_runs": 1, "browser_search_tasks": 1, "search_task_results": 2, "jobs": 1}}
+    ]
+  },
+  "verification_internal_observations": [
+    "The expected repository .venv was absent; checks used Python 3.11.7 with PYTHONPATH=src and no third-party dependencies.",
+    "Full unittest discovery exited 0 but created an empty schema-only production-path data/jobs.sqlite3; it contained zero validation records and was moved recoverably out of the production path. No live probe used that path."
+  ],
+  "final_git_invariants_before_artifact": {
+    "head": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "tree": "f4ae0b7ed50589361787f794be48027677dd23ba",
+    "status": "clean",
+    "non_artifact_changes": 0,
+    "parent_of_final_commit": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "final_commit_scope": ["verification/CHG-39-r12.json"]
+  }
+}
