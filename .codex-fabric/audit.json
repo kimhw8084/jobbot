@@ -1,0 +1,707 @@
+{
+  "accepted_at": "2026-09-19T19:51:44Z",
+  "changed_files": [
+    {
+      "additions": 8,
+      "deletions": 6,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "config/runtime.toml",
+      "status": "M"
+    },
+    {
+      "additions": 29,
+      "deletions": 2,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 18,
+      "deletions": 0,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 6,
+      "path": "docs/TROUBLESHOOTING.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "extension/bootstrap.html",
+      "status": "A"
+    },
+    {
+      "additions": 4,
+      "deletions": 0,
+      "path": "extension/bootstrap.js",
+      "status": "A"
+    },
+    {
+      "additions": 28,
+      "deletions": 1,
+      "path": "extension/glassdoor.js",
+      "status": "M"
+    },
+    {
+      "additions": 28,
+      "deletions": 1,
+      "path": "extension/indeed.js",
+      "status": "M"
+    },
+    {
+      "additions": 11,
+      "deletions": 5,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "extension/selectors.js",
+      "status": "M"
+    },
+    {
+      "additions": 145,
+      "deletions": 56,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 208,
+      "deletions": 18,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "src/jobbot/config.py",
+      "status": "M"
+    },
+    {
+      "additions": 198,
+      "deletions": 0,
+      "path": "src/jobbot/crawl_observations.py",
+      "status": "A"
+    },
+    {
+      "additions": 70,
+      "deletions": 1,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 121,
+      "deletions": 0,
+      "path": "src/jobbot/diagnostics.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 108,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0016_chg146_workers_controls.py",
+      "status": "A"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "src/jobbot/orchestrator.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "src/jobbot/run_now.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 14,
+      "deletions": 115,
+      "path": "src/jobbot/web/dashboard.css",
+      "status": "M"
+    },
+    {
+      "additions": 14,
+      "deletions": 18,
+      "path": "src/jobbot/web/dashboard.html",
+      "status": "M"
+    },
+    {
+      "additions": 40,
+      "deletions": 126,
+      "path": "src/jobbot/web/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 128,
+      "deletions": 0,
+      "path": "tests/extension_chg146_pane_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 13,
+      "deletions": 0,
+      "path": "tests/fixtures/glassdoor_search_pane.html",
+      "status": "A"
+    },
+    {
+      "additions": 13,
+      "deletions": 0,
+      "path": "tests/fixtures/indeed_search_pane.html",
+      "status": "A"
+    },
+    {
+      "additions": 137,
+      "deletions": 0,
+      "path": "tests/integration/test_chg146_workers_cache.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 5,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    },
+    {
+      "additions": 55,
+      "deletions": 0,
+      "path": "verification/CHG-146-r1.json",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-drawer-open.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-guide-drawer-closed.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-mixed.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-partial-error.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-populated.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/narrow-mixed.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/short-mixed.png",
+      "status": "A"
+    },
+    {
+      "additions": 60,
+      "deletions": 0,
+      "path": "verification/CHG-146-r1/ui-evidence.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nfrom pathlib import Path\nfrom playwright.sync_api import sync_playwright\nout=Path('verification/CHG-146-r1')\nwith sync_playwright() as p:\n    browser=p.chromium.launch(headless=True)\n    page=browser.new_page(viewport={'width':1440,'height':900},device_scale_factor=1)\n    page.goto('http://127.0.0.1:8876/',wait_until='networkidle')\n    page.screenshot(path=str(out/'desktop-mixed.png'),full_page=True)\n    page.locator('#pendingOnlyButton').click(); page.wait_for_load_state('networkidle'); page.wait_for_timeout(100)\n    page.screenshot(path=str(out/'desktop-populated.png'),full_page=True)\n    page.locator('.job-title-cell button').first.click(); page.wait_for_timeout(150)\n    page.screenshot(path=str(out/'desktop-drawer-open.png'),full_page=True)\n    page.close(); browser.close()\nprint('captured populated and drawer states')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport sqlite3\np='/tmp/jobbot-chg146-render.sqlite3'\nc=sqlite3.connect(p)\nc.execute(\\\"UPDATE browser_runs SET status='partial',last_error='LinkedIn worker stalled after a safe checkpoint; no false completion reported',tasks_incomplete=1 WHERE browser_run_id=1\\\")\nc.execute(\\\"UPDATE browser_platform_runs SET worker_status='failed',readiness_state='retryable',readiness_reason='No progress after bounded recovery',last_error='worker heartbeat stale; checkpoint retained' WHERE browser_run_id=1 AND platform='linkedin'\\\")\nc.commit(); c.close()\nPY\nrtk python - <<'PY'\nfrom pathlib import Path\nfrom playwright.sync_api import sync_playwright\nout=Path('verification/CHG-146-r1')\nwith sync_playwright() as p:\n    browser=p.chromium.launch(headless=True)\n    page=browser.new_page(viewport={'width':1440,'height':900},device_scale_factor=1)\n    page.goto('http://127.0.0.1:8876/',wait_until='networkidle')\n    page.screenshot(path=str(out/'desktop-partial-error.png'),full_page=True)\n    browser.close()\nprint('captured partial/error state')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nfrom pathlib import Path\nfrom playwright.sync_api import sync_playwright\nout=Path('verification/CHG-146-r1')\nwith sync_playwright() as p:\n    browser=p.chromium.launch(headless=True)\n    page=browser.new_page(viewport={'width':1440,'height':900},device_scale_factor=1)\n    page.goto('http://127.0.0.1:8876/',wait_until='networkidle')\n    page.locator('#pendingOnlyButton').click(); page.wait_for_timeout(100); page.evaluate('window.scrollTo(0,0)'); page.screenshot(path=str(out/'desktop-populated.png'),full_page=True)\n    page.locator('.job-title-cell button').first.click(); page.wait_for_timeout(150); page.evaluate('window.scrollTo(0,0)'); page.screenshot(path=str(out/'desktop-drawer-open.png'),full_page=True)\n    page.close(); browser.close()\nprint('recaptured at top anchor')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport sqlite3\np='/tmp/jobbot-chg146-render.sqlite3'\nc=sqlite3.connect(p)\nc.execute(\\\"UPDATE browser_runs SET status='running',last_error='',tasks_incomplete=0 WHERE browser_run_id=1\\\")\nc.execute(\\\"UPDATE browser_platform_runs SET worker_status='running',readiness_state='unchecked',readiness_reason='',last_error='' WHERE browser_run_id=1 AND platform='linkedin'\\\")\nc.execute(\\\"UPDATE browser_platform_runs SET worker_status='challenged',readiness_state='challenged_cooldown',readiness_reason='Visual verification required; checkpoint preserved for human clearance',challenge_reason='Visual verification required; checkpoint preserved for human clearance',last_error='' WHERE browser_run_id=1 AND platform='indeed'\\\")\nc.commit(); c.close()\nPY\nrtk python - <<'PY'\nfrom pathlib import Path\nfrom playwright.sync_api import sync_playwright\nout=Path('verification/CHG-146-r1')\nwith sync_playwright() as p:\n    browser=p.chromium.launch(headless=True)\n    for name,width,height in [('desktop-mixed',1440,900),('short-mixed',1280,720),('narrow-mixed',390,844)]:\n        page=browser.new_page(viewport={'width':width,'height':height},device_scale_factor=1)\n        page.goto('http://127.0.0.1:8876/',wait_until='networkidle'); page.screenshot(path=str(out/f'{name}.png'),full_page=True); page.close()\n    page=browser.new_page(viewport={'width':1440,'height':900},device_scale_factor=1)\n    page.goto('http://127.0.0.1:8876/',wait_until='networkidle'); page.locator('#pendingOnlyButton').click(); page.wait_for_timeout(100); page.evaluate('window.scrollTo(0,0)'); page.screenshot(path=str(out/'desktop-populated.png'),full_page=True); page.locator('.job-title-cell button').first.click(); page.wait_for_timeout(150); page.evaluate('window.scrollTo(0,0)'); page.screenshot(path=str(out/'desktop-drawer-open.png'),full_page=True); page.close(); browser.close()\nprint('captured final mixed matrix')\nPY\nrtk python - <<'PY'\nimport sqlite3\np='/tmp/jobbot-chg146-render.sqlite3'\nc=sqlite3.connect(p)\nc.execute(\\\"UPDATE browser_runs SET status='partial',last_error='LinkedIn worker stalled after a safe checkpoint; no false completion reported',tasks_incomplete=1 WHERE browser_run_id=1\\\")\nc.execute(\\\"UPDATE browser_platform_runs SET worker_status='failed',readiness_state='retryable',readiness_reason='No progress after bounded recovery',last_error='worker heartbeat stale; checkpoint retained' WHERE browser_run_id=1 AND platform='linkedin'\\\")\nc.commit(); c.close()\nPY\nrtk python - <<'PY'\nfrom pathlib import Path\nfrom playwright.sync_api import sync_playwright\nout=Path('verification/CHG-146-r1')\nwith sync_playwright() as p:\n    browser=p.chromium.launch(headless=True); page=browser.new_page(viewport={'width':1440,'height':900},device_scale_factor=1); page.goto('http://127.0.0.1:8876/',wait_until='networkidle'); page.screenshot(path=str(out/'desktop-partial-error.png'),full_page=True); browser.close()\nprint('captured final partial/error')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,35p' tests/integration/test_extension_refresh.py && rtk rg -n \\\"PREDECESSOR|REPAIRED\\\" tests/integration/test_extension_refresh.py tests/integration/test_extension_bridge.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src python -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js && rtk node tests/extension_chg146_pane_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src python -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport subprocess, sys\nfrom pathlib import Path\ntests=sorted(Path('tests').glob('extension_*_test.js'))\nfailed=[]\nfor path in tests:\n    print(f'RUN {path}', flush=True)\n    result=subprocess.run(['node',str(path)],text=True,capture_output=True)\n    sys.stdout.write(result.stdout)\n    sys.stderr.write(result.stderr)\n    if result.returncode:\n        failed.append(str(path))\nprint('JS_TESTS',len(tests),'FAILED',failed)\nraise SystemExit(1 if failed else 0)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport subprocess, sys\nfrom pathlib import Path\nfailed=[]\nfor path in sorted(Path('extension').glob('*.js')):\n    result=subprocess.run(['node','--check',str(path)],text=True,capture_output=True)\n    if result.returncode:\n        print(result.stderr); failed.append(str(path))\nprint('EXTENSION_SYNTAX',len(list(Path('extension').glob('*.js'))),'FAILED',failed)\nraise SystemExit(1 if failed else 0)\nPY\nrtk python -m compileall -q src\nrtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"navigation|tab|window|detail.*navigation|performance|metrics|instrument\" src/jobbot extension tests | head -160'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"event_type|record_result|job_recorded|detail_navigation|pane_selection|worker_window_created|browser_event|detail_acquisition_mode\" src/jobbot/bridge/rpc.py extension/service_worker.js src/jobbot/dashboard.py | head -160'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '120,180p' src/jobbot/bridge/rpc.py && rtk sed -n '660,825p' src/jobbot/bridge/rpc.py && rtk sed -n '825,885p' src/jobbot/bridge/rpc.py && rtk sed -n '430,525p' extension/service_worker.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,380p' src/jobbot/dashboard.py && rtk sed -n '1,220p' tests/integration/test_chg146_workers_cache.py && rtk sed -n '1,160p' src/jobbot/migrations/__init__.py && rtk sed -n '1,180p' src/jobbot/crawl_observations.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"def do_GET|/api/|def do_POST|active_run\\\\(|live_discoveries|query_jobs\\\" src/jobbot/dashboard.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '460,620p' src/jobbot/dashboard.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' src/jobbot/web/dashboard.js && rtk sed -n '1,240p' src/jobbot/web/dashboard.html && rtk sed -n '1,220p' src/jobbot/web/dashboard.css\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk tail -n 40 src/jobbot/web/dashboard.js && rtk sed -n '1,180p' src/jobbot/web/dashboard.html\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,80p' src/jobbot/bridge/rpc.py && rtk sed -n '780,855p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk tail -n 100 tests/integration/test_chg146_workers_cache.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk PYTHONPATH=src python -m unittest tests.integration.test_chg146_workers_cache -v'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_chg146_workers_cache -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"CREATE TABLE.*browser_runs|browser_runs\\\\(\\\" src/jobbot/migrations src/jobbot | head -80 && rtk rg -n \\\"created_at|started_at\\\" src/jobbot/migrations/m0002_browser_tasks.py | head -40\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short && rtk git diff --stat && rtk git diff --check && rtk git diff -- src/jobbot/diagnostics.py src/jobbot/bridge/rpc.py src/jobbot/dashboard.py extension/service_worker.js src/jobbot/crawl_observations.py tests/integration/test_chg146_workers_cache.py | head -260'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import pathlib,subprocess,sys; files=[\\\"tests/extension_chg146_pane_test.js\\\",\\\"tests/extension_linkedin_scope_test.js\\\",\\\"tests/extension_primary_scope_auth_test.js\\\",\\\"tests/extension_auth_return_test.js\\\",\\\"tests/extension_scope_recovery_test.js\\\",\\\"tests/extension_target_lifecycle_test.js\\\"]; results=[]; [results.append((f,subprocess.run([\\\"node\\\",f],text=True,capture_output=True))) for f in files]; [print(r.stdout,end=\\\"\\\") for _,r in results]; bad=[(f,r.stderr) for f,r in results if r.returncode]; print(\\\"JS_TESTS\\\",len(results),\\\"FAILED\\\",bad); sys.exit(1 if bad else 0)'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files tests | rg 'extension_.*test\\\\.js\"'$'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import subprocess,sys; files=[\\\"tests/extension_chg146_pane_test.js\\\",\\\"tests/extension_linkedin_scope_test.js\\\",\\\"tests/extension_primary_scope_test.js\\\",\\\"tests/extension_service_worker_auth_return_test.js\\\",\\\"tests/extension_service_worker_scope_recovery_test.js\\\",\\\"tests/extension_service_worker_target_lifecycle_test.js\\\"]; results=[(f,subprocess.run([\\\"node\\\",f],text=True,capture_output=True)) for f in files]; [print(r.stdout,end=\\\"\\\") for _,r in results]; bad=[(f,r.stderr) for f,r in results if r.returncode]; print(\\\"JS_TESTS\\\",len(results),\\\"FAILED\\\",bad); sys.exit(1 if bad else 0)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import pathlib,subprocess,sys; files=sorted(pathlib.Path(\\\"extension\\\").glob(\\\"*.js\\\")); bad=[]; [bad.append((str(f),subprocess.run([\\\"node\\\",\\\"--check\\\",str(f)],text=True,capture_output=True).stderr)) for f in files if subprocess.run([\\\"node\\\",\\\"--check\\\",str(f)],text=True,capture_output=True).returncode]; print(f\\\"EXTENSION_SYNTAX {len(files)} FAILED {bad}\\\"); sys.exit(1 if bad else 0)' && rtk env PYTHONPATH=src python -m compileall -q src && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk curl -fsS http://127.0.0.1:8876/api/metrics'",
+      "exit_code": 22,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env JOBBOT_DATABASE_PATH=/tmp/jobbot-chg146-render.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg146-render-out PYTHONPATH=src python -m jobbot dashboard --port 8876 --no-open'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk curl -fsS http://127.0.0.1:8876/api/metrics'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find verification/CHG-146-r1 -maxdepth 1 -type f -print -exec sh -c 'echo --- \"'$1; sed -n \"1,220p\" \"$1\"'\"' sh {} \\\\;\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files verification/CHG-146-r1 && rtk sed -n '1,220p' verification/CHG-146-r1/README.md && rtk sed -n '1,260p' verification/CHG-146-r1/ui-evidence.json\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la verification/CHG-146-r1 && rtk sed -n '1,260p' verification/CHG-146-r1/ui-evidence.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import json; p=\\\"verification/CHG-146-r1.json\\\"; json.load(open(p)); print(\\\"verification-json OK\\\")'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files | rg 'render|playwright|CHG-146|screenshot' | head -120\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'version_name|crawl_observations|bootstrap|instrumentation' extension/manifest.json config/runtime.toml src/jobbot/config.py src/jobbot/run_now.py src/jobbot/validator.py docs/ARCHITECTURE.md README.md | head -120 && rtk git branch --show-current && rtk git status --short | tail -30\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import json; json.load(open(\\\"verification/CHG-146-r1.json\\\")); print(\\\"verification-json OK\\\")'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'from playwright.sync_api import sync_playwright; import sys; p=sync_playwright().start(); b=p.chromium.launch(headless=True); page=b.new_page(viewport={\\\"width\\\":1440,\\\"height\\\":900}); page.goto(\\\"http://127.0.0.1:8876/\\\",wait_until=\\\"networkidle\\\"); page.wait_for_timeout(400); text=page.locator(\\\"body\\\").inner_text(); checks=[\\\"ACTION REQUIRED\\\",\\\"INDEED · CHALLENGED\\\",\\\"LinkedIn\\\",\\\"Glassdoor\\\",\\\"Stop all after current\\\"]; missing=[x for x in checks if x not in text]; overflow=page.evaluate(\\\"document.body.scrollWidth > window.innerWidth\\\"); print({\\\"missing\\\":missing,\\\"horizontal_overflow\\\":overflow,\\\"title\\\":page.title()}); b.close(); p.stop(); sys.exit(1 if missing or overflow else 0)'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk curl -fsS http://127.0.0.1:8876/api/run | head -c 800 && rtk env PYTHONPATH=src python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); b=p.chromium.launch(headless=True); q=b.new_page(viewport={\\\"width\\\":1440,\\\"height\\\":900}); q.goto(\\\"http://127.0.0.1:8876/\\\",wait_until=\\\"networkidle\\\"); q.wait_for_timeout(800); print(q.locator(\\\"body\\\").inner_text()[:2400]); b.close(); p.stop()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); b=p.chromium.launch(headless=True); q=b.new_page(viewport={\\\"width\\\":1440,\\\"height\\\":900}); q.goto(\\\"http://127.0.0.1:8876/\\\",wait_until=\\\"networkidle\\\"); q.wait_for_timeout(800); print(q.locator(\\\"body\\\").inner_text()[:2200]); b.close(); p.stop()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'from playwright.sync_api import sync_playwright; import sys; p=sync_playwright().start(); b=p.chromium.launch(headless=True); page=b.new_page(viewport={\\\"width\\\":1440,\\\"height\\\":900}); page.goto(\\\"http://127.0.0.1:8876/\\\",wait_until=\\\"networkidle\\\"); page.wait_for_timeout(400); body=page.locator(\\\"body\\\").inner_text().casefold(); checks=[\\\"action required\\\",\\\"indeed · challenged\\\",\\\"linkedin\\\",\\\"glassdoor\\\",\\\"stop all after current\\\"]; missing=[x for x in checks if x not in body]; overflow=page.evaluate(\\\"document.body.scrollWidth > window.innerWidth\\\"); print({\\\"missing\\\":missing,\\\"horizontal_overflow\\\":overflow,\\\"title\\\":page.title()}); b.close(); p.stop(); sys.exit(1 if missing or overflow else 0)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check && rtk git status --short -- .codex-fabric/audit.json && rtk git status --short | rg '(\"'^|/)(data|.*'\"\\\\.sqlite3|.*\\\\.token|\\\\.env)' || true && rtk git add README.md config/runtime.toml docs/ARCHITECTURE.md docs/OPERATIONS.md docs/TROUBLESHOOTING.md extension src tests verification/CHG-146-r1.json && rtk git commit -m \\\"Build CHG-146 dashboard-first control plane\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-parse HEAD && rtk git rev-parse c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8 && rtk git status --porcelain && rtk git branch -vv && rtk git diff --stat c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD && rtk git ls-files | rg '(\"'^|/)(data/|.*'\"\\\\.sqlite3\"'$|.*'\"\\\\.token\"'$|'\"\\\\.env\"'$)'\"' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la verification/CHG-146-r1 && rtk git status --short --untracked-files=all && rtk file 'verification/CHG-146-r1/git branch'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-146-r1 && rtk git commit --amend --no-edit'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD && rtk git status --porcelain && rtk git diff --check && rtk git diff --stat c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD | tail -5 && rtk git status --short -- .codex-fabric/audit.json && rtk git ls-files verification/CHG-146-r1 | wc -l'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env JOBBOT_DATABASE_PATH=/tmp/jobbot-chg146-render.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg146-render-out PYTHONPATH=src python -m jobbot dashboard --port 8876 --no-open'",
+      "exit_code": 130,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD''^{tree} && rtk git status --porcelain && rtk git rev-parse --abbrev-ref HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.154.0",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 551,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.18,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 39415552,
+      "fresh_input_tokens": 729920,
+      "input_tokens": 40145472,
+      "non_reasoning_output_tokens": 114160,
+      "output_tokens": 150973,
+      "reasoning_output_tokens": 36813,
+      "total_processed_tokens": 40296445
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "248a90d8757a60df0dcff59075407627bbc425c2",
+      "subject": "Build CHG-146 dashboard-first control plane"
+    }
+  ],
+  "diff": {
+    "additions": 1485,
+    "changed_files": 42,
+    "commit_count": 1,
+    "deletions": 362
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 18,
+    "items": [
+      {
+        "bytes": 8700,
+        "path": "README.md",
+        "sha256": "9fb561a72e74b9909fe1b6c20bb875759e65e7239b1b4cc1c2f89ad687f5698a"
+      },
+      {
+        "bytes": 6990,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "8f68a9d639165cc3964d38ace82e2bf0551e134f416e6c64d8ca36bd759158b0"
+      },
+      {
+        "bytes": 4341,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "aa630e37c99b33dc3c3dd9f35a03893a36950ac0af0ac565bfcfbaba29fd56a5"
+      },
+      {
+        "bytes": 4079,
+        "path": "docs/TROUBLESHOOTING.md",
+        "sha256": "29a3101f48d024f36d386460ab99e7a256da0e1c6057444c5e7eb46afd5a05c5"
+      },
+      {
+        "bytes": 155,
+        "path": "extension/bootstrap.html",
+        "sha256": "fe0a1a6b212f86a0ff09e826f54536d2ccb122bae02010c9928c0fb1baccb148"
+      },
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "f5771bc1b0f2e0cd78b26b4fc0f863d082c23bca081952322361e8c4767caf73"
+      },
+      {
+        "bytes": 10572,
+        "path": "src/jobbot/web/dashboard.html",
+        "sha256": "f681f1bf99c23a25e9b633f4f2b290592ad3cb9461606ea8958be89567d471a3"
+      },
+      {
+        "bytes": 868,
+        "path": "tests/fixtures/glassdoor_search_pane.html",
+        "sha256": "cc9923037be20c993973f2ff5b090922fe3e89570c5fa0c2f8a11234786f38fd"
+      },
+      {
+        "bytes": 945,
+        "path": "tests/fixtures/indeed_search_pane.html",
+        "sha256": "1fdb80b669281dc0ff484f6258077f4538f2bd3eaf400cb4ea22de94ac9672a3"
+      },
+      {
+        "bytes": 4524,
+        "path": "verification/CHG-146-r1.json",
+        "sha256": "00d54ade9b4800d2dbda88b5ae31bb4d92070949fb161cfea3721f89e8f8c4d6"
+      },
+      {
+        "bytes": 377055,
+        "path": "verification/CHG-146-r1/desktop-drawer-open.png",
+        "sha256": "2f1a8e161d1a9402de23fbc915e9bfe8a167028bbfdada40fe428a8c182a977e"
+      },
+      {
+        "bytes": 413484,
+        "path": "verification/CHG-146-r1/desktop-guide-drawer-closed.png",
+        "sha256": "2be1040ae6cd36573485365d589aaef7e2c7d3fb95ec352d648e378dee2096f4"
+      },
+      {
+        "bytes": 323654,
+        "path": "verification/CHG-146-r1/desktop-mixed.png",
+        "sha256": "90338c3895a98ba5e8f79a3f2e21717f6844224d406599a1828101770c7431e9"
+      },
+      {
+        "bytes": 334137,
+        "path": "verification/CHG-146-r1/desktop-partial-error.png",
+        "sha256": "2b048c9be8742d27a98fac700feb8e314a62646348162c006656fc87052d50c3"
+      },
+      {
+        "bytes": 333446,
+        "path": "verification/CHG-146-r1/desktop-populated.png",
+        "sha256": "dd47e5980ddc7ea95e9113c4e534659a3664a6a9572714562de535140eb65b36"
+      },
+      {
+        "bytes": 306031,
+        "path": "verification/CHG-146-r1/narrow-mixed.png",
+        "sha256": "7e044b5360818d449ef0ee154495ad12079ebde70ba879baaf208876f5941784"
+      },
+      {
+        "bytes": 321568,
+        "path": "verification/CHG-146-r1/short-mixed.png",
+        "sha256": "2627693224f1883beba9f1b5f4fb7eacf66b37ad69eefbbdae4b5402f00d84b0"
+      },
+      {
+        "bytes": 1501,
+        "path": "verification/CHG-146-r1/ui-evidence.json",
+        "sha256": "0aa8087f39e4b9dd0bd6eebd591246f13475bbc03aeeb1621f6d974b26f2360c"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-19T20:53:31Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "branch": "codex/jobbot-CHG-146-r1",
+    "detached_verify": false,
+    "head_sha": "248a90d8757a60df0dcff59075407627bbc425c2",
+    "remote_exact_head": true,
+    "remote_head_sha": "248a90d8757a60df0dcff59075407627bbc425c2",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "work_branch": "codex/jobbot-CHG-146-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-fb7531408a255ccdc9684d4a",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-146-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-146-r1"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "44756118cd7fda0c45cd23ba1d31a48a3f4f2422d687df15264ba4406f40e1f2",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-146-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-19T19:51:44Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 3707,
+    "queue_seconds": 0,
+    "total_seconds": 3707
+  },
+  "transport": {
+    "bytes": 18475,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 18193,
+    "prompt_sha256": "f93737bee7ac986b51aefba8f64bdc8b7c34a708858ba36e3e685061ea8bea5d",
+    "sha256": "fb7531408a255ccdc9684d4afb721be98543fd40c526000addd68980ea164319"
+  }
+}
