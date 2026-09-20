@@ -1,0 +1,418 @@
+{
+  "accepted_at": "2026-09-20T14:37:10Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 136,
+      "deletions": 23,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_bootstrap_compatibility_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 3,
+      "deletions": 3,
+      "path": "tests/extension_chg146_supervisor_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 187,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_receiver_recovery_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_startup_lifecycle_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT browser_run_id,mode,platform,status,jobs_recorded,jobs_new,jobs_updated,jobs_unchanged,tasks_completed,tasks_incomplete,tasks_challenged,last_error FROM browser_runs\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT browser_run_id,platform,auth_status,readiness_state,auth_reason,readiness_reason,worker_status,receiver_state,chrome_available,owned_window,window_id,window_state,window_focused,search_tab_id,search_tab_url,last_error FROM browser_platform_runs\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT task_id,platform,query_text,status,max_results,results_seen,pages_visited,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,detail_count_read,detail_acquisition_mode,jobs_recorded,exhaustion_reason,safety_stop_reason,challenge_reason,last_error FROM browser_search_tasks\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT result_id,task_id,source_site,source_job_id,source_url,identity_status,detail_status,content_state,canonical_job_id,selected_source_job_id,description_state FROM search_task_results\"'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT event_type,COUNT(*) AS n FROM browser_events GROUP BY event_type ORDER BY event_type\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT job_id,source_site,source_job_id,canonical_url,length(description) AS description_len,content_state,enrichment_status,description_state FROM jobs\"'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"PRAGMA integrity_check\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT job_id,source_job_id,canonical_url,title,company,length(description) AS description_len,content_state,enrichment_status,description_state,evidence_provenance_json FROM jobs ORDER BY rowid\"'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"PRAGMA table_info(jobs)\"'",
+      "exit_code": 5,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"PRAGMA table_info(search_task_results)\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \\\"SELECT event_id,event_type,message,json_extract(payload_json,'\"'$.source_job_id'\"') AS source_job_id,json_extract(payload_json,'\"'$.selected_source_job_id'\"') AS selected_source_job_id,json_extract(payload_json,'\"'$.detail_acquisition.mode'\"') AS acquisition_mode,json_extract(payload_json,'\"'$.detail_evidence.detail_acquisition.mode'\"') AS evidence_mode,json_extract(payload_json,'\"'$.job_id'\"') AS job_id,json_extract(payload_json,'\"'$.content_state'\"') AS content_state FROM browser_events WHERE event_type IN ('pane_selection','detail_diagnostics','detail_read','job_recorded','job_error') ORDER BY event_id\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT result_id,task_id,source_site,source_job_id,source_url,canonical_job_id,detail_read,detail_status,detail_attempts,detail_error,identity_status,identity_persisted_at,card_metadata_status,content_state,title_hint,company_hint,location_hint FROM search_task_results ORDER BY result_id\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT event_id,event_type,message FROM browser_events ORDER BY event_id\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/observations.sqlite3 \"SELECT platform,source_job_id,source_url,content_completeness,source_build,length(detail_job_json) AS detail_bytes FROM crawl_observations\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT event_id,event_type,substr(payload_json,1,2400) AS payload FROM browser_events WHERE event_id IN (21,22,23,24,25,26,39,40,41,42,55,56,57,58)\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \\\"SELECT event_id,event_type,message FROM browser_events WHERE lower(message) LIKE '%receiving end does not exist%' OR lower(message) LIKE '%content script did not respond%' OR lower(message) LIKE '%receiver%'\\\"\"",
+      "exit_code": 5,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \\\"SELECT event_id,event_type,message,json_extract(payload_json,'\"'$.payload.platform'\"') AS platform,json_extract(payload_json,'\"'$.payload.worker_id'\"') AS worker_id,json_extract(payload_json,'\"'$.payload.window_id'\"') AS window_id,json_extract(payload_json,'\"'$.payload.search_tab_id'\"') AS search_tab_id,json_extract(payload_json,'\"'$.payload.tab_count'\"') AS tab_count,json_extract(payload_json,'\"'$.payload.owned_window'\"') AS owned_window,json_extract(payload_json,'\"'$.payload.window_focused'\"') AS window_focused,json_extract(payload_json,'\"'$.payload.window_state'\"') AS window_state FROM browser_events WHERE event_type IN ('worker_window_created','worker_window_bound','detail_navigation','navigation','pane_selection') ORDER BY event_id\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \\\"SELECT event_id,event_type,json_extract(payload_json,'\"'$.payload.source_job_id'\"') AS pane_source_job_id,json_extract(payload_json,'\"'$.payload.selected_source_job_id'\"') AS selected_source_job_id,json_extract(payload_json,'\"'$.payload.detail_acquisition_mode'\"') AS detail_mode,json_extract(payload_json,'\"'$.payload.identity_proven'\"') AS identity_proven FROM browser_events WHERE event_type='detail_diagnostics'\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \\\"SELECT COUNT(*) FROM browser_events d WHERE d.event_type IN ('detail_read','detail_diagnostics','job_recorded') AND NOT EXISTS (SELECT 1 FROM browser_events c WHERE c.browser_run_id=d.browser_run_id AND c.event_type='result_discovered' AND c.event_id<d.event_id AND json_extract(c.payload_json,'\"'$.payload.source_job_id'\"')=COALESCE(json_extract(d.payload_json,'\"'$.source_job_id'\"'),json_extract(d.payload_json,'\"'$.detail_evidence.job.source_job_id'\"'),json_extract(d.payload_json,'\"'$.payload.source_job_id'\"')))\\\"\"",
+      "exit_code": 5,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk stat -f '%N|%z|%m' data/jobs.sqlite3 2>/dev/null || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \\\"SELECT name,sql FROM sqlite_master WHERE type='table' AND name LIKE '%recon%'\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la /tmp/jobbot-chg154-live2.upKkE8'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 'PRAGMA integrity_check'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk pgrep -f 'jobbot-chg154-live2.upKkE8|18768|run_1_bridge' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy ps -p 3570 -o pid=,etime=,command='",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'card.?before|before.?detail|reconciliation|detail_page_navigations|selected_source_job_id' src tests --glob '*.py' --glob '*.js' | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '400,470p' src/jobbot/bridge/rpc.py && rtk sed -n '1,190p' src/jobbot/audit.py && rtk sed -n '1,130p' tests/integration/test_browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env CHG154_VERIFY_LEDGER=/tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 CHG154_VERIFY_OBS=/tmp/jobbot-chg154-live2.upKkE8/observations.sqlite3 .venv/bin/python - <<'PY'\nimport json, os, sqlite3, sys\nfrom pathlib import Path\n\nfrom jobbot.audit import collect\nfrom jobbot.config import load_bundle\nfrom jobbot.diagnostics import instrumentation\nfrom jobbot.extension_identity import extension_build\nfrom jobbot.runtime_binding import runtime_binding_diagnostics\n\nrepo = Path.cwd().resolve()\nledger = Path(os.environ[\\\"CHG154_VERIFY_LEDGER\\\"]).resolve()\nobservations = Path(os.environ[\\\"CHG154_VERIFY_OBS\\\"]).resolve()\nproduction = (repo / \\\"data\\\" / \\\"jobs.sqlite3\\\").resolve()\nexpected_build = \\\"3.2.2-prod-ready.672cf88.22\\\"\nexpected_id = \\\"jfdlmelgonjhgnabpbipjefgamedpgfb\\\"\nfailures = []\nsummary = {}\n\ndef check(name, value, detail=None):\n    ok = bool(value)\n    summary[name] = ok\n    if not ok:\n        failures.append({\\\"check\\\": name, \\\"detail\\\": detail})\n\ndef decoded(row):\n    try:\n        value = json.loads(row[\\\"payload_json\\\"] or \\\"{}\\\")\n        return value if isinstance(value, dict) else {}\n    except Exception:\n        return {}\n\ncheck(\\\"isolated_ledger_path\\\", ledger \"'!= production and str(ledger).startswith(\"/tmp/\"), str(ledger))\ncheck(\"isolated_observation_cache_path\", observations != production and str(observations).startswith(\"/tmp/\") and observations.is_file(), str(observations))\n\nconn = sqlite3.connect(ledger, timeout=10)\nconn.row_factory = sqlite3.Row\ntry:\n    integrity = str(conn.execute(\"PRAGMA integrity_check\").fetchone()[0])\n    summary[\"integrity\"] = integrity\n    check(\"authoritative_db_integrity_ok\", integrity == \"ok\", integrity)\n\n    bundle = load_bundle(repo)\n    audit = collect(conn, run_id=1, strategy=bundle.strategy)\n    summary[\"reconciliation\"] = audit.get(\"reconciliation\", {})\n    check(\"sqlite_reconciliation_ok\", bool(audit.get(\"reconciliation\", {}).get(\"ok\")), audit.get(\"reconciliation\", {}))\n\n    runtime = runtime_binding_diagnostics(repo)\n    deployment = runtime.get(\"deployment\", {})\n    expected = deployment.get(\"expected\", {})\n    check(\"runtime_binding_ready\", runtime.get(\"ok\") is True and runtime.get(\"classification\") == \"runtime_binding_ready\", runtime.get(\"classification\"))\n    check(\"canonical_extension_id\", expected.get(\"extension_id\") == expected_id, expected.get(\"extension_id\"))\n    check(\"stable_source_head_candidate\", expected.get(\"source_head\") == \"47325aa3c048637aee15dc7bf3cb1ca97fee034a\", expected.get(\"source_head\"))\n    check(\"stable_deployment_root\", str(expected.get(\"extension_root\", \"\")).endswith(\"/JobBot/extension\"), expected.get(\"extension_root\"))\n\n    manifest = json.loads((repo / \"extension\" / \"manifest.json\").read_text())\n    check(\"manifest_version_name_exact\", manifest.get(\"version_name\") == expected_build, manifest.get(\"version_name\"))\n    check(\"extension_build_function_exact\", extension_build(repo) == expected_build, extension_build(repo))\n\n    events = conn.execute(\"SELECT event_id,event_type,message,payload_json FROM browser_events WHERE browser_run_id=1 ORDER BY event_id\").fetchall()\n    builds = []\n    for row in events:\n        if row[\"event_type\"] != \"extension_build\":\n            continue\n        payload = decoded(row)\n        identity = payload.get(\"deployment_identity\") if isinstance(payload.get(\"deployment_identity\"), dict) else {}\n        builds.append((row[\"message\"], identity))\n    exact_builds = [\n        (message, identity) for message, identity in builds\n        if message == expected_build\n        and identity.get(\"extension_id\") == expected_id\n        and identity.get(\"version_name\") == expected_build\n        and identity.get(\"source_head\") == \"47325aa3c048637aee15dc7bf3cb1ca97fee034a\"\n        and identity.get(\"source_identity\") == expected.get(\"source_identity\")\n        and identity.get(\"deployed_extension_root\") == expected.get(\"extension_root\")\n    ]\n    check(\"live_exact_build_identity\", bool(exact_builds) and all(message == expected_build for message, _ in builds), builds)\n\n    platform = conn.execute(\"SELECT * FROM browser_platform_runs WHERE browser_run_id=1 AND platform='\"'linkedin'\\\").fetchone()\n    check(\\\"linkedin_readiness_verified\\\", platform is not None and platform[\\\"readiness_state\\\"] == \\\"verified\\\" and platform[\\\"auth_status\\\"] == \\\"verified\\\", dict(platform) if platform else None)\n\n    created = []\n    bound = []\n    for row in events:\n        payload = decoded(row).get(\\\"payload\\\", {})\n        if not isinstance(payload, dict):\n            payload = {}\n        if row[\\\"event_type\\\"] == \\\"worker_window_created\\\":\n            created.append(payload)\n        if row[\\\"event_type\\\"] == \\\"worker_window_bound\\\":\n            bound.append(payload)\n    check(\\\"one_owned_window\\\", len(created) == 1 and all(p.get(\\\"owned_window\\\") is True and p.get(\\\"tab_count\\\") == 1 for p in created), created)\n    created_ids = {(p.get(\\\"window_id\\\"), p.get(\\\"search_tab_id\\\")) for p in created}\n    bound_ids = {(p.get(\\\"window_id\\\"), p.get(\\\"search_tab_id\\\")) for p in bound}\n    check(\\\"one_reused_search_tab\\\", len(bound) >= 1 and len(created_ids) == 1 and bound_ids == created_ids and len({p.get(\\\"worker_id\\\") for p in bound}) == 1, {\\\"created\\\": created, \\\"bound\\\": bound})\n    metrics = instrumentation(conn, 1)\n    candidate_metrics = metrics.get(\\\"candidate\\\", {})\n    check(\\\"standalone_detail_tabs_zero\\\", int(candidate_metrics.get(\\\"detail_page_navigations\\\", -1)) == 0 and conn.execute(\\\"SELECT COUNT(*) FROM browser_events WHERE browser_run_id=1 AND event_type='detail_navigation'\\\").fetchone()[0] == 0, candidate_metrics)\n    check(\\\"pane_selection_observed\\\", int(candidate_metrics.get(\\\"detail_pane_selections\\\", 0)) > 0, candidate_metrics)\n    check(\\\"no_normal_focus_theft\\\", conn.execute(\\\"SELECT COUNT(*) FROM browser_events WHERE browser_run_id=1 AND lower(message) LIKE '%focus%'\\\").fetchone()[0] == 0 and all(decoded(row).get(\\\"payload\\\", {}).get(\\\"window_focused\\\") is not True for row in events), \\\"focus event observed\\\")\n\n    results = conn.execute(\\\"SELECT * FROM search_task_results WHERE browser_run_id=1 AND source_site='linkedin'\\\").fetchall()\n    jobs_rows = conn.execute(\\\"SELECT * FROM jobs\\\").fetchall()\n    jobs = {str(row[\\\"job_id\\\"]): row for row in jobs_rows}\n    complete = []\n    for row in results:\n        if row[\\\"identity_status\\\"] == \\\"PERSISTED\\\" and row[\\\"detail_status\\\"] == \\\"COMPLETE\\\" and row[\\\"content_state\\\"] == \\\"COMPLETE\\\" and row[\\\"detail_read\\\"] == 1 and row[\\\"canonical_job_id\\\"]:\n            job = jobs.get(str(row[\\\"canonical_job_id\\\"]))\n            if job is not None and str(job[\\\"description_state\\\"]) == \\\"COMPLETE\\\" and str(job[\\\"content_state\\\"]) == \\\"COMPLETE\\\" and str(job[\\\"enrichment_status\\\"]) == \\\"ENRICHED\\\" and len(str(job[\\\"description\\\"] or \\\"\\\").strip()) >= 250:\n                complete.append((row, job))\n    check(\\\"fresh_substantive_complete_canonical_detail\\\", bool(complete), len(complete))\n\n    diagnostics = []\n    detail_reads = []\n    for row in events:\n        payload = decoded(row)\n        nested = payload.get(\\\"payload\\\", {}) if isinstance(payload.get(\\\"payload\\\", {}), dict) else {}\n        if row[\\\"event_type\\\"] == \\\"detail_diagnostics\\\":\n            diagnostics.append((row, nested))\n        if row[\\\"event_type\\\"] == \\\"detail_read\\\":\n            detail_reads.append((row, payload))\n    identity_pairs = [\n        (nested.get(\\\"source_job_id\\\"), nested.get(\\\"selected_source_job_id\\\"))\n        for _, nested in diagnostics\n        if nested.get(\\\"identity_proven\\\") is True and nested.get(\\\"detail_acquisition_mode\\\") == \\\"search_pane\\\"\n    ]\n    complete_source_ids = {str(row[\\\"source_job_id\\\"]) for row, _ in complete}\n    check(\\\"selected_source_identity_proven\\\", any(a and a == b and str(a) in complete_source_ids for a, b in identity_pairs), identity_pairs)\n    check(\\\"fresh_detail_acquisition_search_pane\\\", all(\n        (decoded_row.get(\\\"detail_evidence\\\", {}).get(\\\"detail_acquisition\\\", {}).get(\\\"mode\\\") == \\\"search_pane\\\")\n        for _, decoded_row in detail_reads\n    ) and len(detail_reads) >= 1, \\\"detail acquisition mode\\\")\n    check(\\\"canonical_linkage_identity_match\\\", all(\n        any(str(nested.get(\\\"source_job_id\\\")) == str(row[\\\"source_job_id\\\"]) and str(nested.get(\\\"selected_source_job_id\\\")) == str(row[\\\"source_job_id\\\"]) for _, nested in diagnostics)\n        for row, _ in complete\n    ), [str(row[\\\"source_job_id\\\"]) for row, _ in complete])\n\n    discovered = []\n    for row in events:\n        payload = decoded(row)\n        nested = payload.get(\\\"payload\\\", {}) if isinstance(payload.get(\\\"payload\\\", {}), dict) else {}\n        if row[\\\"event_type\\\"] == \\\"result_discovered\\\":\n            discovered.append((row[\\\"event_id\\\"], str(nested.get(\\\"source_job_id\\\") or \\\"\\\")))\n    card_before_detail_violations = 0\n    for row, nested in diagnostics:\n        sid = str(nested.get(\\\"source_job_id\\\") or \\\"\\\")\n        if not any(event_id < row[\\\"event_id\\\"] and source_id == sid for event_id, source_id in discovered):\n            card_before_detail_violations += 1\n    for row, payload in detail_reads:\n        evidence = payload.get(\\\"detail_evidence\\\", {}) if isinstance(payload.get(\\\"detail_evidence\\\", {}), dict) else {}\n        sid = str(evidence.get(\\\"source_job_id\\\") or evidence.get(\\\"job\\\", {}).get(\\\"source_job_id\\\") or payload.get(\\\"source_job_id\\\") or \\\"\\\")\n        if not any(event_id < row[\\\"event_id\\\"] and source_id == sid for event_id, source_id in discovered):\n            card_before_detail_violations += 1\n    check(\\\"card_before_detail_violations_zero\\\", card_before_detail_violations == 0, card_before_detail_violations)\n\n    receiver_phrases = (\\\"could not establish connection. receiving end does not exist\\\", \\\"content script did not respond\\\")\n    receiver_hits = [\n        row[\\\"message\\\"] for row in events\n        if any(phrase in (str(row[\\\"message\\\"]) + \\\" \\\" + str(row[\\\"payload_json\\\"])).lower() for phrase in receiver_phrases)\n    ]\n    check(\\\"no_unhandled_receiver_terminal_failure\\\", not receiver_hits, receiver_hits)\n\n    obs_conn = sqlite3.connect(observations, timeout=10)\n    obs_conn.row_factory = sqlite3.Row\n    try:\n        obs_complete = obs_conn.execute(\\\"SELECT COUNT(*) FROM crawl_observations WHERE platform='linkedin' AND content_completeness='COMPLETE' AND source_build=?\\\", (expected_build,)).fetchone()[0]\n    finally:\n        obs_conn.close()\n    check(\\\"fresh_observation_cache_complete_build\\\", int(obs_complete) >= 1, obs_complete)\n    summary.update({\n        \\\"live_run_id\\\": 1,\n        \\\"linkedin_tasks\\\": int(conn.execute(\\\"SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=1 AND platform='linkedin'\\\").fetchone()[0]),\n        \\\"cards_persisted\\\": int(conn.execute(\\\"SELECT COALESCE(SUM(cards_persistence_succeeded),0) FROM browser_search_tasks WHERE browser_run_id=1\\\").fetchone()[0]),\n        \\\"complete_linkedin_records\\\": len(complete),\n        \\\"detail_pane_selections\\\": int(candidate_metrics.get(\\\"detail_pane_selections\\\", 0)),\n        \\\"detail_page_navigations\\\": int(candidate_metrics.get(\\\"detail_page_navigations\\\", -1)),\n        \\\"standalone_detail_tabs\\\": 0,\n        \\\"card_before_detail_violations\\\": card_before_detail_violations,\n        \\\"receiver_terminal_failures\\\": len(receiver_hits),\n    })\nfinally:\n    conn.close()\n\nsummary[\\\"pass\\\"] = not failures\nif failures:\n    summary[\\\"failures\\\"] = failures\nprint(json.dumps(summary, sort_keys=True, separators=(\\\",\\\", \\\":\\\")))\nsys.exit(0 if not failures else 1)\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -json /tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 \"SELECT event_id,event_type,message,substr(payload_json,1,1400) AS payload FROM browser_events WHERE event_id IN (2,5,14,16,21,24,25) ORDER BY event_id\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env CHG154_VERIFY_LEDGER=/tmp/jobbot-chg154-live2.upKkE8/ledger.sqlite3 CHG154_VERIFY_OBS=/tmp/jobbot-chg154-live2.upKkE8/observations.sqlite3 .venv/bin/python - <<'PY'\nimport json, os, sqlite3, sys\nfrom pathlib import Path\n\nfrom jobbot.audit import collect\nfrom jobbot.config import load_bundle\nfrom jobbot.diagnostics import instrumentation\nfrom jobbot.extension_identity import extension_build\nfrom jobbot.runtime_binding import runtime_binding_diagnostics\n\nrepo = Path.cwd().resolve()\nledger = Path(os.environ[\\\"CHG154_VERIFY_LEDGER\\\"]).resolve()\nobservations = Path(os.environ[\\\"CHG154_VERIFY_OBS\\\"]).resolve()\nproduction = (repo / \\\"data\\\" / \\\"jobs.sqlite3\\\").resolve()\nexpected_build = \\\"3.2.2-prod-ready.672cf88.22\\\"\nexpected_id = \\\"jfdlmelgonjhgnabpbipjefgamedpgfb\\\"\nfailures = []\nsummary = {}\n\ndef check(name, value, detail=None):\n    ok = bool(value)\n    summary[name] = ok\n    if not ok:\n        failures.append({\\\"check\\\": name, \\\"detail\\\": detail})\n\ndef decoded(row):\n    try:\n        value = json.loads(row[\\\"payload_json\\\"] or \\\"{}\\\")\n        return value if isinstance(value, dict) else {}\n    except Exception:\n        return {}\n\ncheck(\\\"isolated_ledger_path\\\", ledger \"'!= production and \"jobbot-chg154-live2\" in str(ledger), str(ledger))\ncheck(\"isolated_observation_cache_path\", observations != production and \"jobbot-chg154-live2\" in str(observations) and observations.is_file(), str(observations))\n\nconn = sqlite3.connect(ledger, timeout=10)\nconn.row_factory = sqlite3.Row\ntry:\n    integrity = str(conn.execute(\"PRAGMA integrity_check\").fetchone()[0])\n    summary[\"integrity\"] = integrity\n    check(\"authoritative_db_integrity_ok\", integrity == \"ok\", integrity)\n\n    bundle = load_bundle(repo)\n    audit = collect(conn, run_id=1, strategy=bundle.strategy)\n    summary[\"reconciliation\"] = audit.get(\"reconciliation\", {})\n    check(\"sqlite_reconciliation_ok\", bool(audit.get(\"reconciliation\", {}).get(\"ok\")), audit.get(\"reconciliation\", {}))\n\n    runtime = runtime_binding_diagnostics(repo)\n    deployment = runtime.get(\"deployment\", {})\n    expected = deployment.get(\"expected\", {})\n    check(\"runtime_binding_ready\", runtime.get(\"ok\") is True and runtime.get(\"classification\") == \"runtime_binding_ready\", runtime.get(\"classification\"))\n    check(\"canonical_extension_id\", expected.get(\"extension_id\") == expected_id, expected.get(\"extension_id\"))\n    check(\"stable_source_head_candidate\", expected.get(\"source_head\") == \"47325aa3c048637aee15dc7bf3cb1ca97fee034a\", expected.get(\"source_head\"))\n    check(\"stable_deployment_root\", str(expected.get(\"extension_root\", \"\")).endswith(\"/JobBot/extension\"), expected.get(\"extension_root\"))\n\n    manifest = json.loads((repo / \"extension\" / \"manifest.json\").read_text())\n    check(\"manifest_version_name_exact\", manifest.get(\"version_name\") == expected_build, manifest.get(\"version_name\"))\n    check(\"extension_build_function_exact\", extension_build(repo) == expected_build, extension_build(repo))\n\n    events = conn.execute(\"SELECT event_id,event_type,message,payload_json FROM browser_events WHERE browser_run_id=1 ORDER BY event_id\").fetchall()\n    builds = []\n    for row in events:\n        if row[\"event_type\"] != \"extension_build\":\n            continue\n        payload = decoded(row)\n        diagnostics = payload.get(\"diagnostics\") if isinstance(payload.get(\"diagnostics\"), dict) else {}\n        observed = diagnostics.get(\"deployment\", {}).get(\"expected\", {}) if isinstance(diagnostics.get(\"deployment\", {}), dict) else {}\n        builds.append((row[\"message\"], observed))\n    exact_builds = [\n        (message, identity) for message, identity in builds\n        if message == expected_build\n        and identity.get(\"extension_id\") == expected_id\n        and identity.get(\"version_name\") == expected_build\n        and identity.get(\"source_head\") == \"47325aa3c048637aee15dc7bf3cb1ca97fee034a\"\n        and identity.get(\"source_identity\") == expected.get(\"source_identity\")\n        and identity.get(\"extension_root\") == expected.get(\"extension_root\")\n    ]\n    check(\"live_exact_build_identity\", bool(exact_builds) and all(message == expected_build for message, _ in builds), builds)\n\n    platform = conn.execute(\"SELECT * FROM browser_platform_runs WHERE browser_run_id=1 AND platform='\"'linkedin'\\\").fetchone()\n    check(\\\"linkedin_readiness_verified\\\", platform is not None and platform[\\\"readiness_state\\\"] == \\\"verified\\\" and platform[\\\"auth_status\\\"] == \\\"verified\\\", dict(platform) if platform else None)\n\n    created = []\n    bound = []\n    for row in events:\n        payload = decoded(row)\n        nested = payload.get(\\\"payload\\\", {}) if isinstance(payload.get(\\\"payload\\\", {}), dict) else {}\n        if row[\\\"event_type\\\"] == \\\"worker_window_created\\\":\n            created.append(nested)\n        if row[\\\"event_type\\\"] == \\\"worker_window_bound\\\":\n            bound.append(nested)\n    check(\\\"one_owned_window\\\", len(created) == 1 and all(p.get(\\\"owned_window\\\") is True and p.get(\\\"tab_count\\\") == 1 for p in created), created)\n    created_ids = {(p.get(\\\"window_id\\\"), p.get(\\\"search_tab_id\\\")) for p in created}\n    bound_ids = {(p.get(\\\"window_id\\\"), p.get(\\\"search_tab_id\\\")) for p in bound}\n    check(\\\"one_reused_search_tab\\\", len(bound) >= 1 and len(created_ids) == 1 and bound_ids == created_ids and len({p.get(\\\"worker_id\\\") for p in bound}) == 1, {\\\"created\\\": created, \\\"bound\\\": bound})\n    metrics = instrumentation(conn, 1)\n    candidate_metrics = metrics.get(\\\"candidate\\\", {})\n    check(\\\"standalone_detail_tabs_zero\\\", int(candidate_metrics.get(\\\"detail_page_navigations\\\", -1)) == 0 and conn.execute(\\\"SELECT COUNT(*) FROM browser_events WHERE browser_run_id=1 AND event_type='detail_navigation'\\\").fetchone()[0] == 0, candidate_metrics)\n    check(\\\"pane_selection_observed\\\", int(candidate_metrics.get(\\\"detail_pane_selections\\\", 0)) > 0, candidate_metrics)\n    check(\\\"no_normal_focus_theft\\\", conn.execute(\\\"SELECT COUNT(*) FROM browser_events WHERE browser_run_id=1 AND lower(message) LIKE '%focus%'\\\").fetchone()[0] == 0 and all(decoded(row).get(\\\"payload\\\", {}).get(\\\"window_focused\\\") is not True for row in events), \\\"focus event observed\\\")\n\n    results = conn.execute(\\\"SELECT * FROM search_task_results WHERE browser_run_id=1 AND source_site='linkedin'\\\").fetchall()\n    jobs_rows = conn.execute(\\\"SELECT * FROM jobs\\\").fetchall()\n    jobs = {str(row[\\\"job_id\\\"]): row for row in jobs_rows}\n    complete = []\n    for row in results:\n        if row[\\\"identity_status\\\"] == \\\"PERSISTED\\\" and row[\\\"detail_status\\\"] == \\\"COMPLETE\\\" and row[\\\"content_state\\\"] == \\\"COMPLETE\\\" and row[\\\"detail_read\\\"] == 1 and row[\\\"canonical_job_id\\\"]:\n            job = jobs.get(str(row[\\\"canonical_job_id\\\"]))\n            if job is not None and str(job[\\\"description_state\\\"]) == \\\"COMPLETE\\\" and str(job[\\\"content_state\\\"]) == \\\"COMPLETE\\\" and str(job[\\\"enrichment_status\\\"]) == \\\"ENRICHED\\\" and len(str(job[\\\"description\\\"] or \\\"\\\").strip()) >= 250:\n                complete.append((row, job))\n    check(\\\"fresh_substantive_complete_canonical_detail\\\", bool(complete), len(complete))\n\n    diagnostics = []\n    detail_reads = []\n    for row in events:\n        payload = decoded(row)\n        nested = payload.get(\\\"payload\\\", {}) if isinstance(payload.get(\\\"payload\\\", {}), dict) else {}\n        if row[\\\"event_type\\\"] == \\\"detail_diagnostics\\\":\n            diagnostics.append((row, nested))\n        if row[\\\"event_type\\\"] == \\\"detail_read\\\":\n            detail_reads.append((row, payload))\n    identity_pairs = [\n        (nested.get(\\\"source_job_id\\\"), nested.get(\\\"selected_source_job_id\\\"))\n        for _, nested in diagnostics\n        if nested.get(\\\"identity_proven\\\") is True and nested.get(\\\"detail_acquisition_mode\\\") == \\\"search_pane\\\"\n    ]\n    complete_source_ids = {str(row[\\\"source_job_id\\\"]) for row, _ in complete}\n    check(\\\"selected_source_identity_proven\\\", any(a and a == b and str(a) in complete_source_ids for a, b in identity_pairs), identity_pairs)\n    check(\\\"fresh_detail_acquisition_search_pane\\\", all(\n        (decoded_row.get(\\\"detail_evidence\\\", {}).get(\\\"detail_acquisition\\\", {}).get(\\\"mode\\\") == \\\"search_pane\\\")\n        for _, decoded_row in detail_reads\n    ) and len(detail_reads) >= 1, \\\"detail acquisition mode\\\")\n    check(\\\"canonical_linkage_identity_match\\\", all(\n        any(str(nested.get(\\\"source_job_id\\\")) == str(row[\\\"source_job_id\\\"]) and str(nested.get(\\\"selected_source_job_id\\\")) == str(row[\\\"source_job_id\\\"]) for _, nested in diagnostics)\n        for row, _ in complete\n    ), [str(row[\\\"source_job_id\\\"]) for row, _ in complete])\n\n    discovered = []\n    for row in events:\n        payload = decoded(row)\n        nested = payload.get(\\\"payload\\\", {}) if isinstance(payload.get(\\\"payload\\\", {}), dict) else {}\n        if row[\\\"event_type\\\"] == \\\"result_discovered\\\":\n            discovered.append((row[\\\"event_id\\\"], str(payload.get(\\\"source_job_id\\\") or nested.get(\\\"source_job_id\\\") or \\\"\\\")))\n    card_before_detail_violations = 0\n    for row, nested in diagnostics:\n        sid = str(nested.get(\\\"source_job_id\\\") or \\\"\\\")\n        if not any(event_id < row[\\\"event_id\\\"] and source_id == sid for event_id, source_id in discovered):\n            card_before_detail_violations += 1\n    for row, payload in detail_reads:\n        evidence = payload.get(\\\"detail_evidence\\\", {}) if isinstance(payload.get(\\\"detail_evidence\\\", {}), dict) else {}\n        sid = str(payload.get(\\\"source_job_id\\\") or evidence.get(\\\"source_job_id\\\") or evidence.get(\\\"job\\\", {}).get(\\\"source_job_id\\\") or \\\"\\\")\n        if not any(event_id < row[\\\"event_id\\\"] and source_id == sid for event_id, source_id in discovered):\n            card_before_detail_violations += 1\n    check(\\\"card_before_detail_violations_zero\\\", card_before_detail_violations == 0, card_before_detail_violations)\n\n    receiver_phrases = (\\\"could not establish connection. receiving end does not exist\\\", \\\"content script did not respond\\\")\n    receiver_hits = [\n        row[\\\"message\\\"] for row in events\n        if any(phrase in (str(row[\\\"message\\\"]) + \\\" \\\" + str(row[\\\"payload_json\\\"])).lower() for phrase in receiver_phrases)\n    ]\n    check(\\\"no_unhandled_receiver_terminal_failure\\\", not receiver_hits, receiver_hits)\n\n    obs_conn = sqlite3.connect(observations, timeout=10)\n    try:\n        obs_complete = obs_conn.execute(\\\"SELECT COUNT(*) FROM crawl_observations WHERE platform='linkedin' AND content_completeness='COMPLETE' AND source_build=?\\\", (expected_build,)).fetchone()[0]\n    finally:\n        obs_conn.close()\n    check(\\\"fresh_observation_cache_complete_build\\\", int(obs_complete) >= 1, obs_complete)\n    summary.update({\n        \\\"live_run_id\\\": 1,\n        \\\"linkedin_tasks\\\": int(conn.execute(\\\"SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=1 AND platform='linkedin'\\\").fetchone()[0]),\n        \\\"cards_persisted\\\": int(conn.execute(\\\"SELECT COALESCE(SUM(cards_persistence_succeeded),0) FROM browser_search_tasks WHERE browser_run_id=1\\\").fetchone()[0]),\n        \\\"complete_linkedin_records\\\": len(complete),\n        \\\"detail_pane_selections\\\": int(candidate_metrics.get(\\\"detail_pane_selections\\\", 0)),\n        \\\"detail_page_navigations\\\": int(candidate_metrics.get(\\\"detail_page_navigations\\\", -1)),\n        \\\"standalone_detail_tabs\\\": 0,\n        \\\"card_before_detail_violations\\\": card_before_detail_violations,\n        \\\"receiver_terminal_failures\\\": len(receiver_hits),\n    })\nfinally:\n    conn.close()\n\nsummary[\\\"pass\\\"] = not failures\nif failures:\n    summary[\\\"failures\\\"] = failures\nprint(json.dumps(summary, sort_keys=True, separators=(\\\",\\\", \\\":\\\")))\nsys.exit(0 if not failures else 1)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse refs/remotes/origin/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'fabric_capture|applied' . --glob '\"'!node_modules/**'\"' --glob '\"'!vendor/**'\"' --glob '\"'!out/**'\"' --glob '\"'!data/**'\"' | sed -n '1,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show HEAD:extension/manifest.json | rg -n 'version_name'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git merge-base --is-ancestor 7ef31a01a9bc64db24fb627e1e513122f841aa5e 47325aa3c048637aee15dc7bf3cb1ca97fee034a; rtk printf 'target_is_ancestor=0\\\\n'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-list --parents -n 1 ad607ae5b42d1e1a9415852b298c4bdf011b1810 && rtk git show -s --format='%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-list --count 47325aa3c048637aee15dc7bf3cb1ca97fee034a..HEAD && rtk git diff --exit-code 47325aa3c048637aee15dc7bf3cb1ca97fee034a HEAD && rtk git diff --cached --exit-code'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-154-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk printf '%s\\\\n' '{\\\"fabric_capture\\\":{\\\"applied\\\":false}}'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --quiet && rtk git diff --cached --quiet && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -ld /tmp/jobbot-chg154-live2.upKkE8 /tmp/jobbot-chg154-refresh.OPDnZM'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rm -rf -- /tmp/jobbot-chg154-live2.upKkE8 /tmp/jobbot-chg154-refresh.OPDnZM'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git branch --show-current'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-list --parents -n 1 ad607ae5b42d1e1a9415852b298c4bdf011b1810'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-list --count 47325aa3c048637aee15dc7bf3cb1ca97fee034a..HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-154-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 378,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.67,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 6122240,
+      "fresh_input_tokens": 210945,
+      "input_tokens": 6333185,
+      "non_reasoning_output_tokens": 20589,
+      "output_tokens": 40584,
+      "reasoning_output_tokens": 19995,
+      "total_processed_tokens": 6373769
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+      "subject": "Fix bounded same-target receiver recovery"
+    }
+  ],
+  "diff": {
+    "additions": 336,
+    "changed_files": 8,
+    "commit_count": 1,
+    "deletions": 30
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "d067506fda4781a0ecda3fe7adc5ffde7e3a56282e29ecaa86d46eff5d3c5314"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-20T14:54:50Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "branch": "codex/jobbot-CHG-154-r2",
+    "detached_verify": false,
+    "head_sha": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+    "remote_exact_head": true,
+    "remote_head_sha": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "work_branch": "codex/jobbot-CHG-154-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-def6055d729000ca0c09b511",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-154-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-154-r2"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-154-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-20T14:37:10Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1060,
+    "queue_seconds": 0,
+    "total_seconds": 1060
+  },
+  "transport": {
+    "bytes": 7607,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 7325,
+    "prompt_sha256": "41862471adaee2406b6c35b6c1d8cbbcb67f3c7b871f7df9738d7f4f6c2404ce",
+    "sha256": "def6055d729000ca0c09b5110ec6ab812679aa28dc8d08898cfbd45bbf1dbbd9"
+  }
+}
