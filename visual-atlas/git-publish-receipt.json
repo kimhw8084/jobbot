@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "project": "jobbot",
+  "request": "CHG-159-r2",
+  "operation": "VERIFY",
+  "source_sha": "264e00d294fad8981fa2953f9253869e8f19edd7",
+  "tree_sha": "9948fdca709bca827a02eb8b29bebe1ceb905235",
+  "artifact_ref": "refs/heads/project-os-artifacts/jobbot/CHG-159-r2",
+  "carrier_parent_commit": "15cf6e1b8ead96e3da53ec0d87de980e6d019521",
+  "screenshot_count": 28,
+  "manifest_sha256": "c723adfec71d37e6ea6b0816e12c583677e964e564b27d419932e0db24c03ecc",
+  "capture_report_sha256": "95a0eb810aff6ab9ace262ec6dbd509833070a8f66cde3cd4194c3866893badd",
+  "reader_index_sha256": "971a644119397ad1a2a43496e3fa65303980080d8f0641a0533e04cd08312782",
+  "review_desktop_sha256": "581f5ccb5a3fe43d2aa99bbf62db5bea69e3c639f9852eb495da6be262b314bb",
+  "review_mobile_sha256": "b765e21e4b1f65368c2e7079a0d28eee4a4c9d3c829fd296160fe07c0adc3d08",
+  "bundle_sha256": "32e48f191aa9531a8cea32a42df1bdd4ac8a26dceeb174309a429df78af295e7",
+  "git_package_verified": true,
+  "status": "GIT_PUBLISHED_AWAITING_AUDIT",
+  "publisher_contract": {
+    "ref": "refs/heads/project-os-artifacts/jobbot/CHG-159-r2",
+    "immutable_no_overwrite": true,
+    "recovery_mode": "add_missing_receipt_only",
+    "conflict_code": "GIT_ARTIFACT_CONFLICT"
+  },
+  "carrier_inventory": "visual-atlas/surface-manifest.json, visual-atlas/capture-report.json, visual-atlas/reader-index.json, visual-atlas/review-desktop.pdf, visual-atlas/review-mobile.pdf, visual-atlas/screenshots/*.png, visual-atlas/artifact-bundle.zip, visual-atlas/git-publish-receipt.json",
+  "preserved_existing_package_bytes": true,
+  "no_product_source_bytes": true,
+  "published_as": "dedicated non-Product recovery ref; not Product main or Product history"
+}
