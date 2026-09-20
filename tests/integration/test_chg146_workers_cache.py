@@ -31,6 +31,12 @@ class Chg146WorkersCacheTests(unittest.TestCase):
         runtime["runtime"]["crawl_observations_path"] = str(root / "data" / "crawl_observations.sqlite3")
         return ConfigBundle(root, original.strategy, original.candidate, runtime)
 
+    def assert_cache_file_released(self, bundle: ConfigBundle) -> None:
+        path = crawl_observations.observation_path(bundle)
+        moved = path.with_name(path.name + ".lifecycle-probe")
+        path.rename(moved)
+        moved.unlink()
+
     def test_one_serial_lease_per_platform_and_replay_safe_controls(self) -> None:
         previous = rpc.BASE
         with tempfile.TemporaryDirectory() as td:
@@ -100,15 +106,25 @@ class Chg146WorkersCacheTests(unittest.TestCase):
             card = {"posted_text": "1 day ago", "posted_age_days": 1}
             job = {"source_job_id": "cache-1", "canonical_url": "https://www.indeed.com/viewjob?jk=cache-1", "title": "Patient Access Specialist", "company": "Access Co", "location": "Remote — United States", "description": "Substantive detail evidence for patient access, documentation accuracy, privacy-safe communication, insurance verification, and healthcare operations. " * 4}
             evidence = {"detail_acquisition": {"mode": "search_pane", "surface": "embedded_search_pane"}}
-            self.assertTrue(crawl_observations.publish(bundle, platform="indeed", source_job_id="cache-1", source_url=job["canonical_url"], card=card, title=job["title"], company=job["company"], location=job["location"], job=job, evidence=evidence, source_build="build-146"))
+            def publish_fixture() -> bool:
+                return crawl_observations.publish(bundle, platform="indeed", source_job_id="cache-1", source_url=job["canonical_url"], card=card, title=job["title"], company=job["company"], location=job["location"], job=job, evidence=evidence, source_build="build-146")
+
+            self.assertTrue(publish_fixture())
+            self.assert_cache_file_released(bundle)
+            self.assertTrue(publish_fixture())
             current_hash = crawl_observations.card_hash(card, source_job_id="cache-1", source_url=job["canonical_url"], title=job["title"], company=job["company"], location=job["location"])
             cached = crawl_observations.lookup(bundle, platform="indeed", source_job_id="cache-1", source_url=job["canonical_url"], current_card_hash=current_hash, source_build="build-146")
             self.assertEqual(cached["detail_acquisition"]["mode"], "cache")
             self.assertEqual(cached["provenance"], "crawl_observation_cache")
+            self.assert_cache_file_released(bundle)
+            self.assertTrue(publish_fixture())
             changed_hash = crawl_observations.card_hash({**card, "posted_text": "2 days ago"}, source_job_id="cache-1", source_url=job["canonical_url"], title=job["title"], company=job["company"], location=job["location"])
             self.assertIsNone(crawl_observations.lookup(bundle, platform="indeed", source_job_id="cache-1", source_url=job["canonical_url"], current_card_hash=changed_hash, source_build="build-146"))
+            self.assert_cache_file_released(bundle)
+            self.assertTrue(publish_fixture())
             self.assertFalse(crawl_observations.publish(bundle, platform="indeed", source_job_id="unsafe", source_url="https://www.indeed.com/viewjob?jk=unsafe", card={"cookie": "never"}, title="Unsafe", company="", location="", job=job, evidence=evidence, source_build="build-146"))
             self.assertEqual(crawl_observations.stats(bundle)["complete"], 1)
+            self.assert_cache_file_released(bundle)
 
     def test_dashboard_exposes_platform_attention_and_persists_control(self) -> None:
         previous = rpc.BASE

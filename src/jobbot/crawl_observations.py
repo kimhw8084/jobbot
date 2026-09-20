@@ -82,10 +82,14 @@ def connect(bundle: ConfigBundle) -> sqlite3.Connection:
     path = observation_path(bundle)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
-    conn.row_factory = sqlite3.Row
-    configure_connection(conn, busy_timeout_ms=5000, synchronous="NORMAL")
-    ensure_schema(conn)
-    return conn
+    try:
+        conn.row_factory = sqlite3.Row
+        configure_connection(conn, busy_timeout_ms=5000, synchronous="NORMAL")
+        ensure_schema(conn)
+        return conn
+    except Exception:
+        conn.close()
+        raise
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -136,7 +140,9 @@ def publish(
         provenance = evidence.get("detail_acquisition", {}) if isinstance(evidence, dict) else {}
         completeness = "COMPLETE" if len(str(normalized_job.get("description", "")).strip()) >= 250 else "PARTIAL"
         now = _now()
-        with connect(bundle) as conn:
+        conn = None
+        try:
+            conn = connect(bundle)
             conn.execute("""INSERT INTO crawl_observations(
               platform,source_job_id,source_url,card_hash,detail_hash,observed_at,
               normalized_card_json,detail_job_json,detail_provenance_json,content_completeness,source_build,schema_version
@@ -149,6 +155,14 @@ def publish(
                 (platform, source_job_id, source_url, card_hash(card, source_job_id=source_job_id, source_url=source_url, title=title, company=company, location=location),
                  detail_hash(normalized_job, evidence), now, _json(normalized_card), _json(normalized_job), _json(provenance), completeness, source_build, SCHEMA_VERSION),
             )
+            conn.commit()
+        except (OSError, sqlite3.Error, TypeError, ValueError):
+            if conn is not None:
+                conn.rollback()
+            raise
+        finally:
+            if conn is not None:
+                conn.close()
         return True
     except (OSError, sqlite3.Error, TypeError, ValueError):
         # The production ledger must never fail because an optional cache is
@@ -164,7 +178,9 @@ def lookup(
     if not allow_reuse:
         return None
     try:
-        with connect(bundle) as conn:
+        conn = None
+        try:
+            conn = connect(bundle)
             row = conn.execute("""SELECT * FROM crawl_observations
               WHERE platform=? AND source_job_id=? AND source_url=?
                 AND content_completeness='COMPLETE'
@@ -185,14 +201,22 @@ def lookup(
                 "detail_acquisition": {**json.loads(row["detail_provenance_json"] or "{}"), "mode": "cache", "cache_observation_id": int(row["observation_id"])},
                 "provenance": "crawl_observation_cache",
             }
+        finally:
+            if conn is not None:
+                conn.close()
     except (OSError, sqlite3.Error, TypeError, ValueError, json.JSONDecodeError):
         return None
 
 
 def stats(bundle: ConfigBundle) -> dict[str, Any]:
     try:
-        with connect(bundle) as conn:
+        conn = None
+        try:
+            conn = connect(bundle)
             row = conn.execute("SELECT COUNT(*) total,COALESCE(SUM(content_completeness='COMPLETE'),0) complete FROM crawl_observations").fetchone()
             return {"path": str(observation_path(bundle)), "available": True, "total": int(row["total"]), "complete": int(row["complete"]), "schema_version": SCHEMA_VERSION}
+        finally:
+            if conn is not None:
+                conn.close()
     except (OSError, sqlite3.Error):
         return {"path": str(observation_path(bundle)), "available": False, "total": 0, "complete": 0, "schema_version": SCHEMA_VERSION}

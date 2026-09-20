@@ -539,6 +539,17 @@ def job_detail(conn: sqlite3.Connection, job_id: str) -> dict[str, Any] | None:
     return {"job": job, "occurrences": occurrences, "versions": versions, "diffs": diffs, "applications": applications, "verifications": verifications}
 
 
+def _launch_resume_process(bundle: ConfigBundle, run_id: int) -> subprocess.Popen:
+    log_path = bundle.output_dir / "logs" / f"run_{run_id}_dashboard_resume.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("ab") as log_handle:
+        return subprocess.Popen(
+            [sys.executable, "-m", "jobbot", "resume", "--run-id", str(run_id)],
+            cwd=bundle.root, stdout=log_handle, stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+
+
 class DashboardServer(ThreadingHTTPServer):
     daemon_threads = True
 
@@ -645,14 +656,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     action = str(payload.get("action", "")).strip().lower()
                     result = control_run(conn, action, payload.get("run_id"), payload.get("control_request_id"))
                     if result["canonical_action"] == "resume_ready_platforms":
-                        log_path = self.bundle.output_dir / "logs" / f"run_{result['run_id']}_dashboard_resume.log"
-                        log_path.parent.mkdir(parents=True, exist_ok=True)
-                        with log_path.open("ab") as log_handle:
-                            subprocess.Popen(
-                                [sys.executable, "-m", "jobbot", "resume", "--run-id", str(result["run_id"])],
-                                cwd=self.bundle.root, stdout=log_handle, stderr=subprocess.STDOUT,
-                                start_new_session=True,
-                            )
+                        _launch_resume_process(self.bundle, int(result["run_id"]))
                         result["launcher_started"] = True
                         result["message"] += " Browser resume launcher started; this dashboard will update from SQLite."
                     self._json(200, result)
