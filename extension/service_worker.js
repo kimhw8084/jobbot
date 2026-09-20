@@ -6,6 +6,7 @@ const JOBBOT_EXTENSION_BUILD=String(chrome.runtime?.getManifest?.().version_name
 let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
 const MAX_IDENTICAL_FINGERPRINTS=3;
 const LINKEDIN_SCOPE_RECOVERY_MAX_ATTEMPTS=2,LINKEDIN_SCOPE_REINSPECT_WAIT_MS=350,LINKEDIN_SCOPE_RELOAD_WAIT_MS=700;
+const RECEIVER_RECOVERY_IDLE_WAIT_MS=350;
 const PRIMARY_PLATFORMS=['linkedin','indeed','glassdoor'];
 const AUTH_URLS={
   linkedin:'https://www.linkedin.com/jobs/',
@@ -64,8 +65,11 @@ function transientBridgeError(error){
   return /unavailable|network|failed to fetch|connection|could not establish connection|receiving end does not exist|timed out|abort|temporar|503|502|504/.test(s);
 }
 function authProbeReceiverFailure(error){
+  return receiverUnavailableError(error);
+}
+function receiverUnavailableError(error){
   const s=String(error?.message||error||'').toLowerCase();
-  return /content script did not respond|could not establish connection|receiving end does not exist|message port closed before a response was received/.test(s);
+  return /content script did not respond|could not establish connection\.\s*receiving end does not exist|receiving end does not exist|message port closed before a response was received/.test(s);
 }
 async function nativeRequest(action,payload={},timeoutMs=60000){
   const b=await loadBridge();
@@ -189,7 +193,101 @@ async function reattachPlatformTarget(runId,platform){
   return{target:null,blocked,state:row};
 }
 async function waitTabComplete(tabId,timeoutMs=45000){const deadline=Date.now()+timeoutMs;while(Date.now()<deadline){const tab=await chrome.tabs.get(tabId);if(tab.status==='complete')return tab;await sleep(400);}throw new Error('page load timed out');}
-async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4,trace=null){
+function isReceiverRecoveryError(error){return String(error?.name||'')==='ReceiverRecoveryError';}
+function receiverRecoveryCheckpoint(context){
+  const cp=context?.checkpoint&&typeof context.checkpoint==='object'?context.checkpoint:{};
+  return{
+    requested_search_url:diagnosticUrl(cp.requested_search_url||context?.requested_url||''),
+    search_url:diagnosticUrl(cp.search_url||''),
+    observed_page_url:diagnosticUrl(cp.observed_page_url||''),
+    context_status:String(cp.context_status||''),
+    page_number:Number(cp.page_number||0),
+    scroll_generation:Number(cp.scroll_generation||0),
+    page_fingerprint:String(cp.page_fingerprint||'').slice(0,500),
+    last_job_key:String(cp.last_job_key||'').slice(0,300),
+  };
+}
+function receiverRecoveryAttemptSummary(trace){
+  return(trace?.attempts||[]).map(item=>({
+    attempt:item.attempt||0,phase:item.phase||'',type:item.type||'',ok:item.ok===true,
+    error:item.error||'',tab_id:item.tab?.tab_id??item.tab_id??null,window_id:item.tab?.window_id??item.window_id??null,
+  })).slice(-16);
+}
+async function emitReceiverRecovery(context,payload){
+  if(!context?.run_id)return;
+  await nativeRequest('browser_event',{
+    run_id:Number(context.run_id||0),task_id:Number(context.task_id||0),event_type:'receiver_recovery',
+    message:`${context.platform||'platform'} receiver recovery ${payload.outcome||'diagnostic'}`,
+    payload,
+  }).catch(()=>{});
+}
+function receiverRecoveryError(message,details){
+  const error=new Error(message);error.name='ReceiverRecoveryError';error.receiver_recovery=details;return error;
+}
+async function recoveryTargetState(platform,target,tabId){
+  if(!target||target.owned_window!==true||target.window_id==null||target.tab?.id!==tabId)return{valid:false,reason:'target_not_owned'};
+  let tab;
+  try{tab=await chrome.tabs.get(tabId);}catch(error){return{valid:false,reason:'target_missing',error:String(error?.message||error)};}
+  if(tab?.id!==tabId||tab.windowId!==target.window_id)return{valid:false,reason:'target_replaced',tab};
+  if(!platformTargetUrlMatches(platform,tab.url))return{valid:false,reason:'wrong_platform_origin',tab};
+  if(typeof chrome.windows?.get==='function')try{await chrome.windows.get(target.window_id);}catch(error){return{valid:false,reason:'window_missing',tab,error:String(error?.message||error)};}
+  return{valid:true,tab};
+}
+async function recoverReceiverInspection(tabId,type,extra,retries,trace,context,lastError){
+  const requestedUrl=String(context?.requested_url||'');
+  const before=await recoveryTargetState(context?.platform,context?.target,tabId);
+  const base={
+    platform:String(context?.platform||''),run_id:Number(context?.run_id||0),task_id:Number(context?.task_id||0),
+    requested_url:diagnosticUrl(requestedUrl),observed_url:diagnosticUrl(before.tab?.url||''),
+    tab_id:tabId,window_id:context?.target?.window_id??before.tab?.windowId??null,
+    target_owned:context?.target?.owned_window===true,receiver_error:String(lastError?.message||lastError||''),
+    ordinary_inspect_retries:Number(retries||0),reload_attempts:0,reinspection_retries:0,
+    checkpoint:receiverRecoveryCheckpoint(context),attempts:receiverRecoveryAttemptSummary(trace),
+    windows_created_delta:0,tabs_created_delta:0,standalone_detail_tabs_delta:0,detail_page_navigations_delta:0,
+  };
+  if(!before.valid){
+    const details={...base,outcome:before.reason==='wrong_platform_origin'?'not_eligible':'target_unavailable',same_target:false,target_state:before.reason};
+    await emitReceiverRecovery(context,details);
+    throw receiverRecoveryError(`receiver recovery not attempted: ${before.reason}`,details);
+  }
+  base.reload_attempts=1;base.observed_url=diagnosticUrl(before.tab.url||'');
+  try{
+    let reloadMethod='tabs.reload';
+    if(typeof chrome.tabs.reload==='function')await chrome.tabs.reload(tabId);
+    else{reloadMethod='tabs.update_same_url';await chrome.tabs.update(tabId,{url:before.tab.url});}
+    trace?.attempts?.push({attempt:1,phase:'same_target_reload',type,ok:true,tab:await tabLifecycleSnapshot(tabId,before.tab.windowId),reload_method:reloadMethod});
+    const loaded=await waitTabComplete(tabId,context?.wait_timeout_ms||trace?.wait_timeout_ms||45000);
+    await sleep(Number(context?.idle_wait_ms??RECEIVER_RECOVERY_IDLE_WAIT_MS));
+    const response=await inspectTab(tabId,type,extra,retries,trace?{...trace,phase_prefix:'recovery_'}:null,null);
+    const after=await recoveryTargetState(context?.platform,context?.target,tabId);
+    if(!after.valid){
+      const details={...base,outcome:'target_unavailable',same_target:false,target_state:after.reason,observed_url:diagnosticUrl(after.tab?.url||loaded?.url||''),attempts:receiverRecoveryAttemptSummary(trace)};
+      await emitReceiverRecovery(context,details);
+      throw receiverRecoveryError(`receiver recovery target changed after reload: ${after.reason}`,details);
+    }
+    const observedUrl=String(response?.page_url||after.tab.url||'');
+    const contextStatus=typeof context?.context_check==='function'?String(context.context_check(response,observedUrl)||''):
+      (requestedUrl?searchContextStatus(requestedUrl,observedUrl,context?.platform):'');
+    const details={...base,outcome:'restored',same_target:true,observed_url:diagnosticUrl(observedUrl),
+      context_status:contextStatus,reinspection_retries:Number(retries||0),attempts:receiverRecoveryAttemptSummary(trace),
+      response:inspectResponseSummary(response),reload_method:reloadMethod};
+    await emitReceiverRecovery(context,details);
+    return response;
+  }catch(error){
+    if(isReceiverRecoveryError(error))throw error;
+    const afterFailure=await recoveryTargetState(context?.platform,context?.target,tabId);
+    const targetUnavailable=!afterFailure.valid;
+    const details={...base,outcome:targetUnavailable?'target_unavailable':'retryable',same_target:!targetUnavailable,
+      target_state:targetUnavailable?afterFailure.reason:'',observed_url:diagnosticUrl(afterFailure.tab?.url||before.tab.url||''),
+      reinspection_retries:Number(retries||0),attempts:receiverRecoveryAttemptSummary(trace),error:String(error?.message||error)};
+    await emitReceiverRecovery(context,details);
+    if(!targetUnavailable&&!receiverUnavailableError(error))throw error;
+    throw receiverRecoveryError(`receiver recovery exhausted after one same-target reload: ${error?.message||error}`,details);
+  }
+}
+async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4,trace=null,recovery=null){
+  if(recovery&&!trace)trace={window_id:recovery.target?.window_id??null,attempts:[]};
+  let lastError=null;
   for(let i=0;i<retries;i++){
     try{
       const tab=await waitTabComplete(tabId,trace?.wait_timeout_ms||45000);
@@ -197,14 +295,18 @@ async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4,trace=n
       const resp=await chrome.tabs.sendMessage(tabId,{type,...extra});
       if(trace)trace.attempts.push({attempt:i+1,phase:'sendMessage',type,ok:true,response:inspectResponseSummary(resp)});
       if(resp)return resp;
+      lastError=new Error('content script did not respond');
       if(trace)trace.attempts.push({attempt:i+1,phase:'sendMessage',type,ok:false,error:'empty response'});
     }catch(e){
+      lastError=e;
       if(trace)trace.attempts.push({attempt:i+1,phase:'sendMessage',type,ok:false,error:String(e?.message||e),tab:await tabLifecycleSnapshot(tabId,trace.window_id)});
-      if(i===retries-1)throw e;
+      if(i===retries-1)break;
     }
-    await sleep(700+i*220);
+    if(i<retries-1)await sleep(700+i*220);
   }
-  throw new Error('content script did not respond');
+  const exhausted=lastError||new Error('content script did not respond');
+  if(recovery&&receiverUnavailableError(exhausted))return recoverReceiverInspection(tabId,type,extra,retries,trace,recovery,exhausted);
+  throw exhausted;
 }
 function expectedContentScriptMatch(raw){
   try{
@@ -315,19 +417,21 @@ async function checkAuthLegacy(platform,runId,taskId,searchUrl){
   } finally { await closeBackgroundTarget(target); }
 }
 
-async function checkAuth(platform,runId,taskId,searchTabId,searchUrl=''){
+async function checkAuth(platform,runId,taskId,searchTabId,searchUrl='',target=null){
   // Preserve the pre-CHG-146 test/user-invoked probe signature while normal
   // production workers pass a numeric, persistent search tab id.
   if(typeof searchTabId==='string'&&!searchUrl)return checkAuthLegacy(platform,runId,taskId,searchTabId);
   const url=AUTH_URLS[platform]||searchUrl;
+  const recovery=target?{platform,run_id:runId,task_id:taskId,target,requested_url:searchUrl,context_check:(_response,observed)=>searchContextStatus(searchUrl,observed,platform)}:null;
   let p;
-  try{p=await inspectTab(searchTabId,'JOBBOT_INSPECT_AUTH',{},5);}
+  try{p=await inspectTab(searchTabId,'JOBBOT_INSPECT_AUTH',{},5,null,recovery);}
   catch(error){
+    if(isReceiverRecoveryError(error))throw error;
     if(!authProbeReceiverFailure(error))throw error;
     p={platform,authenticated:false,auth_state:'unknown',reason:'search auth probe receiver unavailable',page_url:searchUrl||url};
   }
   const authState=String(p.auth_state|| (p.authenticated?'verified':p.login_required?'sign_in_required':'unknown'));
-  const surface=await inspectTab(searchTabId,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4);
+  const surface=await inspectTab(searchTabId,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4,null,recovery);
   const observed=surface.page_url||searchUrl||url;
   if(p.challenged||surface.challenged){
     await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,auth_state:authState==='verified'?'verified':'unknown',reason:p.challenge_reason||surface.challenge_reason||p.reason||'platform challenge',requested_url:searchUrl||url,observed_url:observed});
@@ -347,11 +451,11 @@ async function checkAuth(platform,runId,taskId,searchTabId,searchUrl=''){
   return {authenticated:!!p.authenticated,ready:false,auth_state:p.authenticated?'verified':'unknown',page:p,search_surface:surface};
 }
 
-async function gatherStableSearch(tabId,initial){
+async function gatherStableSearch(tabId,initial,recovery=null){
   let page=initial; const merged=new Map((page.result_links||[]).map(x=>[x.source_job_id||x.url,x])); let stable=0;
   for(let i=0;i<4&&stable<1;i++){
     const before=merged.size;
-    const after=await inspectTab(tabId,'JOBBOT_SCROLL_AND_INSPECT',{wait_ms:800+i*150});
+    const after=await inspectTab(tabId,'JOBBOT_SCROLL_AND_INSPECT',{wait_ms:800+i*150},4,null,recovery);
     if(after.challenged||after.extraction_scope_missing)return after;
     for(const x of (after.result_links||[]))merged.set(x.source_job_id||x.url,x);
     page.next_url=page.next_url||after.next_url||'';
@@ -361,13 +465,13 @@ async function gatherStableSearch(tabId,initial){
   page.result_links=[...merged.values()]; return page;
 }
 
-async function recoverLinkedInSearchScope(tabId,requestedUrl,initial,runId,taskId){
+async function recoverLinkedInSearchScope(tabId,requestedUrl,initial,runId,taskId,recovery=null){
   let page=initial;
   for(let attempt=1;attempt<=LINKEDIN_SCOPE_RECOVERY_MAX_ATTEMPTS;attempt++){
     const mode=attempt===1?'same_url_reinspect':'same_url_reload';
     if(attempt===1)await sleep(LINKEDIN_SCOPE_REINSPECT_WAIT_MS);
     else{await chrome.tabs.update(tabId,{url:requestedUrl});await sleep(LINKEDIN_SCOPE_RELOAD_WAIT_MS);}
-    page=await inspectTab(tabId,'JOBBOT_INSPECT_SEARCH_EVENTUALLY');
+    page=await inspectTab(tabId,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4,null,recovery);
     const contextStatus=searchContextStatus(requestedUrl,page.page_url||'', 'linkedin');
     const outcome=page.challenged?'challenge':page.login_required?'login':contextStatus!=='verified'?contextStatus:page.page_type==='error'?'error':page.extraction_scope_missing?'scope_missing':'scope_restored';
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'search_scope_recovery',message:`LinkedIn search scope recovery attempt ${attempt}: ${outcome}`,payload:{attempt,mode,outcome,requested_search_url:requestedUrl,observed_page_url:page.page_url||'',context_status:contextStatus,extraction_scope_missing:!!page.extraction_scope_missing,extraction_diagnostics:page.extraction_diagnostics||null}}).catch(()=>{});
@@ -376,12 +480,12 @@ async function recoverLinkedInSearchScope(tabId,requestedUrl,initial,runId,taskI
   return page;
 }
 
-async function advanceSearch(tabId,page){
+async function advanceSearch(tabId,page,recovery=null){
   if(page.next_url){const next=normalizeSearchUrl(page.next_url);await chrome.tabs.update(tabId,{url:next});await sleep(600);return {advanced:true,url:next};}
   try{
-    const r=await inspectTab(tabId,'JOBBOT_ADVANCE_SEARCH',{},3);
+    const r=await inspectTab(tabId,'JOBBOT_ADVANCE_SEARCH',{},3,null,recovery);
     if(r?.advanced){await sleep(800);return {advanced:true,url:normalizeSearchUrl(r.page_url||'')};}
-  }catch(_){}
+  }catch(error){if(isReceiverRecoveryError(error))throw error;}
   return {advanced:false,url:''};
 }
 
@@ -395,6 +499,7 @@ async function processTask(runId,task,workerTarget=null,workerId=''){
   const fingerprintCounts=new Map(); let searchTarget=workerTarget,searchTab=workerTarget?.tab||null,detailTab=null,lastMeaningfulAt=Date.now(),contextRecoveryAttempts=Number(task.context_recovery_attempts||cp.context_recovery_attempts||0);
   const cardStats=()=>({extracted_cards:cardsExtracted,persistence_attempted:persistenceAttempted,persistence_succeeded:persistenceSucceeded,persistence_failed:persistenceFailed,duplicate_cards:duplicateCards,pending_details:pendingDetails,details_completed:detailRead,details_failed:detailsFailed});
   const progressPayload=(page,pageFp,contextStatus='verified')=>({run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:normalizeSearchUrl(page.page_url||searchUrl),requested_search_url:requestedSearchUrl,observed_page_url:normalizeSearchUrl(page.page_url||searchUrl),context_status:contextStatus,page_fingerprint:pageFp,processed,page_number:pagesVisited,scroll_generation:pagesVisited,context_recovery_attempts:contextRecoveryAttempts,card_stats:cardStats()}});
+  const receiverRecovery=(validateContext=true)=>({platform,run_id:runId,task_id:taskId,target:searchTarget,requested_url:searchUrl,checkpoint:{...cp,search_url:searchUrl,requested_search_url:requestedSearchUrl,observed_page_url:searchUrl,page_number:pagesVisited,scroll_generation:pagesVisited,context_status:cp.context_status||'verified',page_fingerprint:cp.page_fingerprint||''},context_check:validateContext?(_response,observed)=>searchContextStatus(searchUrl,observed,platform):()=>''});
   const finishIncomplete=async(reason)=>{try{await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'incomplete',reason});}catch(_){/* preserve the original failure when the bridge is unavailable */}};
   try{
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open search ${searchUrl}`});
@@ -407,11 +512,11 @@ async function processTask(runId,task,workerTarget=null,workerId=''){
       const stop=await requiredRequest('should_stop',{run_id:runId,platform}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
       await keepBackgroundTab(searchTab.id,searchTarget.window_id);
       let scopeRecoveryAttempted=false;
-      let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_EVENTUALLY');
+      let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4,null,receiverRecovery());
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       let contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);
-      if(contextStatus==='verified'&&platform==='linkedin'&&page.extraction_scope_missing){scopeRecoveryAttempted=true;page=await recoverLinkedInSearchScope(searchTab.id,searchUrl,page,runId,taskId);contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);}
+      if(contextStatus==='verified'&&platform==='linkedin'&&page.extraction_scope_missing){scopeRecoveryAttempted=true;page=await recoverLinkedInSearchScope(searchTab.id,searchUrl,page,runId,taskId,receiverRecovery());contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);}
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       if(contextStatus!=='verified'){
@@ -428,12 +533,12 @@ async function processTask(runId,task,workerTarget=null,workerId=''){
       }
       if(scopeRecoveryAttempted&&page.page_type==='error'){await finishIncomplete(`SAFETY_STOP: ${platform} search error surface at ${page.page_url||searchUrl}`);return;}
       if(page.extraction_scope_missing){const message=`${platform} search extraction scope missing at ${page.page_url}; diagnostics=${JSON.stringify(page.extraction_diagnostics||{})}`;await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_scope_missing',message});await finishIncomplete(`SAFETY_STOP: ${message}`);return;}
-      page=await gatherStableSearch(searchTab.id,page);
+      page=await gatherStableSearch(searchTab.id,page,receiverRecovery());
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);
       if(contextStatus!=='verified'){const message=`INCOMPLETE: ${contextStatus} after bounded recovery requested_search_url=${searchUrl} observed=${page.page_url||''}`;await requiredRequest('task_progress',progressPayload(page,'',contextStatus));await finishIncomplete(message);return;}
-      if(platform==='linkedin'&&page.extraction_scope_missing){scopeRecoveryAttempted=true;page=await recoverLinkedInSearchScope(searchTab.id,searchUrl,page,runId,taskId);}
+      if(platform==='linkedin'&&page.extraction_scope_missing){scopeRecoveryAttempted=true;page=await recoverLinkedInSearchScope(searchTab.id,searchUrl,page,runId,taskId,receiverRecovery());}
       if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);
@@ -507,7 +612,7 @@ async function processTask(runId,task,workerTarget=null,workerId=''){
           try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(error){detail={page_type:'error',surface_reason:String(error?.message||error)};}
           detail={...detail,selected:true,identity_proven:true,detail_acquisition:{mode:'user_reenrichment',url:detail?.page_url||link.url}};
         }else{
-          try{searchPaneEvidence=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_PANE',{source_job_id:link.source_job_id,select:true},4);}catch(error){searchPaneEvidence={selected:false,selection_attempted:false,error:String(error?.message||error).slice(0,300)};}
+          try{searchPaneEvidence=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_PANE',{source_job_id:link.source_job_id,select:true},4,null,receiverRecovery(false));}catch(error){if(isReceiverRecoveryError(error))throw error;searchPaneEvidence={selected:false,selection_attempted:false,error:String(error?.message||error).slice(0,300)};}
           detail=searchPaneEvidence;
         }
         const expectedId=String(link.source_job_id||'');
@@ -539,7 +644,7 @@ async function processTask(runId,task,workerTarget=null,workerId=''){
       if(maxResults!==null&&processed>=maxResults){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'test_limit',reason:`Acceptance limit reached (${maxResults}); production has no count limit`});return;}
       if(items.length>0&&eligibleCards===0&&items.every(x=>x.posted_age_days!=null&&x.posted_age_days>windowDays)){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'exhausted',reason:`newest-sorted results exceeded configured ${windowDays}-day boundary`,exhausted:true});return;}
       await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:'advance search result batch/page'});
-      const adv=await advanceSearch(searchTab.id,page);
+      const adv=await advanceSearch(searchTab.id,page,receiverRecovery());
       if(!adv.advanced){
         if(page.exhausted){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'exhausted',reason:page.exhaustion_reason||'platform reported no more results',exhausted:true});}
         else{await finishIncomplete('SAFETY_STOP: no next page/batch and no verified platform end state');}
@@ -547,7 +652,15 @@ async function processTask(runId,task,workerTarget=null,workerId=''){
       }
       searchUrl=normalizeSearchUrl(adv.url||page.next_url||searchUrl); await sleep(400);
     }
-  }catch(e){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'failed',reason:String(e?.message||e).slice(0,700)}).catch(()=>{});}
+  }catch(e){
+    if(isReceiverRecoveryError(e)){
+      const reason=`INCOMPLETE: ${String(e?.message||e).slice(0,700)}`;
+      await finishIncomplete(reason);
+      await requiredRequest('platform_readiness',{run_id:runId,task_id:taskId,platform,status:'retryable',auth_state:'unknown',reason,search_url:searchUrl}).catch(()=>{});
+      return;
+    }
+    await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'failed',reason:String(e?.message||e).slice(0,700)}).catch(()=>{});
+  }
   finally{activeTasks.delete(platform);if(!workerTarget)await closeBackgroundTarget(searchTarget,[searchTab?.id,detailTab?.id]);}
 }
 
@@ -606,7 +719,7 @@ async function runPlatformWorker(runId,platform,expectedBuild,refreshId){
         await nativeRequest('browser_event',{run_id:runId,task_id:task.task_id,event_type:'worker_window_created',message:`${platform} owned Chrome window ready`,payload:{platform,worker_id:workerId,window_id:target.window_id,search_tab_id:target.tab?.id,owned_window:target.owned_window===true,tab_count:1}}).catch(()=>{});
       }
       if(!authReady){
-          try{const a=await checkAuth(platform,runId,task.task_id,target.tab.id,task.search_url||'');authReady=!!a.ready;if(!authReady){paused=true;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform readiness blocked; window preserved for human inspection');continue;}}
+          try{const a=await checkAuth(platform,runId,task.task_id,target.tab.id,task.search_url||'',target);authReady=!!a.ready;if(!authReady){paused=true;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform readiness blocked; window preserved for human inspection');continue;}}
         catch(e){authReady=false;paused=true;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await requiredRequest('platform_readiness',{run_id:runId,task_id:task.task_id,platform,status:'retryable',auth_state:'unknown',reason:`auth/readiness probe failed: ${e?.message||e}`,search_url:task.search_url||''}).catch(()=>{});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'readiness probe failed; waiting for explicit recovery control');continue;}
       }
       const outcome=await processTask(runId,task,target,workerId);
