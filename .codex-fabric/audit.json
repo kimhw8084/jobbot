@@ -1,0 +1,830 @@
+{
+  "accepted_at": "2026-09-20T04:17:09Z",
+  "changed_files": [
+    {
+      "additions": 8,
+      "deletions": 6,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "config/runtime.toml",
+      "status": "M"
+    },
+    {
+      "additions": 42,
+      "deletions": 2,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 18,
+      "deletions": 0,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 6,
+      "path": "docs/TROUBLESHOOTING.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "extension/bootstrap.html",
+      "status": "A"
+    },
+    {
+      "additions": 115,
+      "deletions": 0,
+      "path": "extension/bootstrap.js",
+      "status": "A"
+    },
+    {
+      "additions": 29,
+      "deletions": 1,
+      "path": "extension/glassdoor.js",
+      "status": "M"
+    },
+    {
+      "additions": 28,
+      "deletions": 1,
+      "path": "extension/indeed.js",
+      "status": "M"
+    },
+    {
+      "additions": 11,
+      "deletions": 5,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "extension/selectors.js",
+      "status": "M"
+    },
+    {
+      "additions": 235,
+      "deletions": 75,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 253,
+      "deletions": 22,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "src/jobbot/config.py",
+      "status": "M"
+    },
+    {
+      "additions": 198,
+      "deletions": 0,
+      "path": "src/jobbot/crawl_observations.py",
+      "status": "A"
+    },
+    {
+      "additions": 216,
+      "deletions": 57,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 121,
+      "deletions": 0,
+      "path": "src/jobbot/diagnostics.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 108,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0016_chg146_workers_controls.py",
+      "status": "A"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "src/jobbot/orchestrator.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "src/jobbot/run_now.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "src/jobbot/validator.py",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 115,
+      "path": "src/jobbot/web/dashboard.css",
+      "status": "M"
+    },
+    {
+      "additions": 14,
+      "deletions": 18,
+      "path": "src/jobbot/web/dashboard.html",
+      "status": "M"
+    },
+    {
+      "additions": 41,
+      "deletions": 126,
+      "path": "src/jobbot/web/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 149,
+      "deletions": 0,
+      "path": "tests/extension_bootstrap_compatibility_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 131,
+      "deletions": 0,
+      "path": "tests/extension_chg146_pane_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 80,
+      "deletions": 0,
+      "path": "tests/extension_chg146_supervisor_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 221,
+      "deletions": 0,
+      "path": "tests/extension_startup_lifecycle_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 13,
+      "deletions": 0,
+      "path": "tests/fixtures/glassdoor_search_pane.html",
+      "status": "A"
+    },
+    {
+      "additions": 13,
+      "deletions": 0,
+      "path": "tests/fixtures/indeed_search_pane.html",
+      "status": "A"
+    },
+    {
+      "additions": 175,
+      "deletions": 0,
+      "path": "tests/integration/test_chg146_r2_controls.py",
+      "status": "A"
+    },
+    {
+      "additions": 137,
+      "deletions": 0,
+      "path": "tests/integration/test_chg146_workers_cache.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    },
+    {
+      "additions": 55,
+      "deletions": 0,
+      "path": "verification/CHG-146-r1.json",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-drawer-open.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-guide-drawer-closed.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-mixed.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-partial-error.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/desktop-populated.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/narrow-mixed.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r1/short-mixed.png",
+      "status": "A"
+    },
+    {
+      "additions": 60,
+      "deletions": 0,
+      "path": "verification/CHG-146-r1/ui-evidence.json",
+      "status": "A"
+    },
+    {
+      "additions": 226,
+      "deletions": 0,
+      "path": "verification/CHG-146-r5.json",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r5/dashboard-desktop-1440x900.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r5/dashboard-narrow-390x844.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r5/dashboard-populated-full.png",
+      "status": "A"
+    },
+    {
+      "additions": null,
+      "deletions": null,
+      "path": "verification/CHG-146-r5/dashboard-short-1280x720.png",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python - <<'PY'\nimport json\nfrom playwright.sync_api import sync_playwright\nwith sync_playwright() as p:\n    browser = p.chromium.launch(headless=True)\n    page = browser.new_page(viewport={\\\"width\\\": 390, \\\"height\\\": 844}, reduced_motion=\\\"reduce\\\")\n    page.goto(\\\"http://127.0.0.1:8876/\\\", wait_until=\\\"networkidle\\\")\n    page.wait_for_timeout(1200)\n    checks = {\n        \\\"viewport_width\\\": page.evaluate(\\\"window.innerWidth\\\"),\n        \\\"document_scroll_width\\\": page.evaluate(\\\"document.documentElement.scrollWidth\\\"),\n        \\\"page_horizontal_overflow\\\": page.evaluate(\\\"document.documentElement.scrollWidth > window.innerWidth\\\"),\n        \\\"reduced_motion\\\": page.evaluate(\\\"matchMedia('(prefers-reduced-motion: reduce)').matches\\\"),\n        \\\"named_buttons\\\": page.locator(\\\"button\\\").evaluate_all(\\\"(nodes) => nodes.every(n => (n.textContent || '').trim() || n.getAttribute('aria-label'))\\\"),\n        \\\"global_controls_named\\\": page.locator(\\\"#stopRunButton,#resumeRunButton,#emergencyRunButton,#refreshButton\\\").evaluate_all(\\\"(nodes) => nodes.every(n => (n.textContent || '').trim() && n.getAttribute('type') === 'button')\\\"),\n        \\\"drawer_aria_modal\\\": page.locator(\\\"#drawerCard\\\").get_attribute(\\\"aria-modal\\\"),\n        \\\"drawer_initially_hidden\\\": page.locator(\\\"#jobDrawer\\\").get_attribute(\\\"aria-hidden\\\"),\n    }\n    page.locator(\\\"#allViewButton\\\").click()\n    page.wait_for_timeout(400)\n    row = page.locator(\\\".jobs-table .link-button\\\").first\n    row.click()\n    page.wait_for_timeout(500)\n    checks[\\\"drawer_open_focus\\\"] = page.evaluate(\\\"document.activeElement && document.activeElement.id\\\")\n    page.keyboard.press(\\\"Shift+Tab\\\")\n    checks[\\\"drawer_shift_tab_wrap_focus\\\"] = page.evaluate(\\\"document.activeElement && document.activeElement.id\\\")\n    page.keyboard.press(\\\"Escape\\\")\n    checks[\\\"drawer_closed_after_escape\\\"] = page.locator(\\\"#jobDrawer\\\").get_attribute(\\\"aria-hidden\\\")\n    checks[\\\"drawer_return_focus\\\"] = page.evaluate(\\\"document.activeElement && document.activeElement.textContent\\\")\n    checks[\\\"drawer_focus_trap\\\"] = checks[\\\"drawer_shift_tab_wrap_focus\\\"] == \\\"saveNoteButton\\\"\n    checks[\\\"drawer_returned_to_origin\\\"] = \\\"Medical Records Specialist\\\" in (checks[\\\"drawer_return_focus\\\"] or \\\"\\\")\n    browser.close()\nprint(json.dumps(checks, sort_keys=True))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy playwright screenshot --wait-for-timeout 2500 --viewport-size \"390,844\" http://127.0.0.1:8876/ verification/CHG-146-r5/dashboard-narrow-390x844.png'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy playwright screenshot --wait-for-timeout 2500 --viewport-size \"1280,720\" http://127.0.0.1:8876/ verification/CHG-146-r5/dashboard-short-1280x720.png'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy playwright screenshot --wait-for-timeout 2500 --viewport-size \"1440,900\" http://127.0.0.1:8876/ verification/CHG-146-r5/dashboard-desktop-1440x900.png'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git diff --stat && rtk git diff -- src/jobbot/web/dashboard.css'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add src/jobbot/web/dashboard.css && rtk git commit -m \"Fix CHG-146 narrow dashboard overflow\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg146-r5-live-crawl_observations.sqlite3 '.tables' 'PRAGMA integrity_check;' 'PRAGMA user_version;'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg146-r5-glassdoor21-crawl_observations.sqlite3 '.tables' 'PRAGMA integrity_check;' 'PRAGMA user_version;'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg146-r5-live-ledger.sqlite3 '.tables' 'PRAGMA integrity_check;' 'PRAGMA user_version;'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg146-r5-glassdoor21-ledger.sqlite3 '.tables' 'PRAGMA integrity_check;' 'PRAGMA user_version;'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg146-r5-glassdoor21-ledger.sqlite3 '.schema browser_events' '.schema jobs' '.schema source_occurrences'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg146-r5-live-crawl_observations.sqlite3 '.schema crawl_observations' '.schema observation_schema'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 /tmp/jobbot-chg146-r5-live-ledger.sqlite3 '.schema browser_events' '.schema browser_platform_runs' '.schema browser_runs' '.schema schema_migrations'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-live-crawl_observations.sqlite3 \"\nSELECT COUNT(*) AS rows,COUNT(DISTINCT platform) AS platforms,COUNT(DISTINCT source_job_id) AS source_jobs,MIN(observed_at) AS first_observed,MAX(observed_at) AS last_observed FROM crawl_observations;\nSELECT platform,source_job_id,LENGTH(normalized_card_json) AS card_json_bytes,LENGTH(detail_job_json) AS detail_json_bytes,content_completeness,source_build,schema_version FROM crawl_observations ORDER BY platform,source_job_id;\nSELECT version,name,applied_at FROM observation_schema ORDER BY version;\n\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-glassdoor21-crawl_observations.sqlite3 \"\nSELECT COUNT(*) AS rows,COUNT(DISTINCT platform) AS platforms,COUNT(DISTINCT source_job_id) AS source_jobs,MIN(observed_at) AS first_observed,MAX(observed_at) AS last_observed FROM crawl_observations;\nSELECT platform,source_job_id,LENGTH(normalized_card_json) AS card_json_bytes,LENGTH(detail_job_json) AS detail_json_bytes,content_completeness,source_build,schema_version FROM crawl_observations ORDER BY platform,source_job_id;\nSELECT version,name,applied_at FROM observation_schema ORDER BY version;\n\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-glassdoor21-ledger.sqlite3 \\\"\nSELECT browser_run_id,version,mode,platform,status,started_at,completed_at,jobs_recorded,tasks_completed,tasks_challenged,tasks_incomplete,active_worker_count,worker_generation,last_error FROM browser_runs;\nSELECT platform,worker_id,worker_generation,worker_status,worker_started_at,worker_heartbeat_at,readiness_state,auth_status,chrome_available,owned_window,window_id,search_tab_id,window_state,current_task_id,tasks_completed,tasks_challenged,tasks_incomplete,jobs_recorded FROM browser_platform_runs ORDER BY platform;\nSELECT event_type,COUNT(*) AS n,MIN(event_at) AS first_at,MAX(event_at) AS last_at FROM browser_events GROUP BY event_type ORDER BY first_at;\nSELECT COUNT(*) AS detail_page_navigations FROM browser_events WHERE event_type='detail_navigation';\nSELECT source_site,source_job_id,source_url,identity_status,detail_status,content_state,detail_read,card_metadata FROM source_occurrences JOIN jobs ON jobs.job_id=source_occurrences.job_id;\n\\\"\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-live-ledger.sqlite3 \\\"\nSELECT browser_run_id,version,mode,platform,status,started_at,completed_at,jobs_recorded,tasks_completed,tasks_challenged,tasks_incomplete,active_worker_count,worker_generation,last_error FROM browser_runs;\nSELECT platform,worker_id,worker_generation,worker_status,worker_started_at,worker_heartbeat_at,readiness_state,auth_status,chrome_available,owned_window,window_id,search_tab_id,window_state,current_task_id,tasks_completed,tasks_challenged,tasks_incomplete,jobs_recorded FROM browser_platform_runs ORDER BY platform;\nSELECT event_type,COUNT(*) AS n,MIN(event_at) AS first_at,MAX(event_at) AS last_at FROM browser_events GROUP BY event_type ORDER BY first_at;\nSELECT COUNT(*) AS detail_page_navigations FROM browser_events WHERE event_type='detail_navigation';\nSELECT COUNT(*) AS pane_events FROM browser_events WHERE event_type IN ('detail_diagnostics','detail_read');\nSELECT COUNT(*) AS card_events FROM browser_events WHERE event_type IN ('card_persisted','cards_persisted','card_extracted');\nSELECT COUNT(*) AS begin_events FROM browser_events WHERE event_type='begin_run';\n\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-glassdoor21-ledger.sqlite3 \"\nSELECT so.source_site,so.source_job_id,so.source_url,so.apply_url,LENGTH(j.description) AS description_length,j.content_state,j.description_state,j.canonical_url,j.first_seen,j.last_seen FROM source_occurrences so JOIN jobs j ON j.job_id=so.job_id;\nSELECT version,name,applied_at FROM schema_migrations ORDER BY version;\n\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-glassdoor21-ledger.sqlite3 \\\"\nSELECT event_type,event_at,substr(payload_json,1,1100) AS payload FROM browser_events WHERE event_type IN ('worker_window_created','worker_window_bound','platform_readiness','detail_diagnostics','detail_read','job_recorded','result_discovered','result_batch') ORDER BY event_at,event_id;\n\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-live-ledger.sqlite3 \"\nSELECT version,name,applied_at FROM schema_migrations ORDER BY version;\nSELECT source_site,COUNT(*) AS n FROM source_occurrences GROUP BY source_site;\nSELECT COUNT(*) AS jobs,COUNT(DISTINCT canonical_url) AS canonical_urls FROM jobs;\nSELECT COUNT(*) AS duplicate_occurrence_keys FROM (SELECT occurrence_key,COUNT(*) n FROM source_occurrences GROUP BY occurrence_key HAVING n>1);\n\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-live-ledger.sqlite3 \\\"\nSELECT event_type,event_at,substr(payload_json,1,700) AS payload FROM browser_events WHERE event_type IN ('task_started','worker_window_created','worker_window_bound','platform_paused','detail_diagnostics','detail_read','job_recorded','result_discovered','result_batch') ORDER BY event_at,event_id;\n\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python - <<'PY'\nimport json, sqlite3, re\npaths = [\\\"/tmp/jobbot-chg146-r5-live-crawl_observations.sqlite3\\\", \\\"/tmp/jobbot-chg146-r5-glassdoor21-crawl_observations.sqlite3\\\"]\nfor path in paths:\n    con=sqlite3.connect(path)\n    rows=con.execute(\\\"select platform,source_job_id,normalized_card_json,detail_job_json,detail_provenance_json,content_completeness,source_build from crawl_observations\\\").fetchall()\n    safe=[]\n    for platform,source_id,card,detail,prov,complete,build in rows:\n        vals=[card,detail,prov]\n        joined=\\\" \\\".join(vals).lower()\n        forbidden=sorted(set(re.findall(r\\\"(?i)(?:cookie|password|credential|access[_ -]?token|refresh[_ -]?token|session[_ -]?id|bridge[_ -]?token|secret)\\\", joined)))\n        safe.append({\\\"platform\\\":platform,\\\"source_job_id\\\":source_id,\\\"card_keys\\\":sorted(json.loads(card).keys()),\\\"detail_keys\\\":sorted(json.loads(detail).keys()),\\\"provenance_keys\\\":sorted(json.loads(prov).keys()),\\\"content_completeness\\\":complete,\\\"source_build\\\":build,\\\"forbidden_key_terms\\\":forbidden})\n    print(path)\n    print(json.dumps(safe,sort_keys=True))\n    con.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'set -e; for path in extension/*.js tests/*.js src/jobbot/web/dashboard.js; do node --check \\\"\"'$path\"; done; for path in tests/extension_*.js; do node \"$path\"; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m jobbot sync-extension'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg146-r5-final-refresh.sqlite3 /opt/anaconda3/bin/python -m jobbot refresh-extension --timeout 15'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m jobbot refresh-extension --help | head -100'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD && rtk git rev-parse HEAD''^{tree} && rtk git status --short --branch && rtk git log --oneline --ancestry-path c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8..HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'for commit in c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8 248a90d939f470e6cdb0bd6c06b1b7f39bc32eb6 9399ca6 9147762b40ec155cbe15642103cae948d114cf8b; do rtk git merge-base --is-ancestor \"$commit\" HEAD && echo \"$commit ancestor-ok\"; done'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'r1=$(rtk git rev-parse 248a90d); rtk git merge-base --is-ancestor \"$r1\" HEAD && echo \"$r1 ancestor-ok\"; rtk git log --format='\"'%H %s' --reverse HEAD~12..HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git branch -vv && rtk git worktree list'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git remote -v && rtk git ls-remote --heads origin codex/jobbot-CHG-146-r5'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -1 /tmp/jobbot-chg146-r5*refresh* 2>/dev/null && rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-refresh-18.sqlite3 'SELECT * FROM extension_refresh_requests;' 2>/dev/null\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'for db in /tmp/jobbot-chg146-r5-refresh-19.sqlite3 /tmp/jobbot-chg146-r5-refresh-20.sqlite3 /tmp/jobbot-chg146-r5-refresh-20b.sqlite3 /tmp/jobbot-chg146-r5-refresh-21.sqlite3 /tmp/jobbot-chg146-r5-refresh.sqlite3; do echo \"DB=$db\"; rtk sqlite3 -header -column \"$db\" '\"'SELECT expected_build,observed_build,status,reload_count,observed_source_identity FROM extension_refresh_requests ORDER BY requested_at DESC LIMIT 2;' 2>/dev/null; done\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-refresh-20.sqlite3 'SELECT expected_build,observed_build,status,reload_count,last_error,diagnostics_json FROM extension_refresh_requests;' | head -40\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git worktree remove /private/tmp/jobbot-chg146-r4-stage && rtk git worktree prune && rtk git worktree list'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'for x in bd8b42d 62873b3 997034a fb10ffd 84d8135 fa3144b; do rtk git rev-parse \"$x\"; done'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-live-ledger.sqlite3 \\\"SELECT source_site,source_job_id,LENGTH(j.description) AS description_length,j.content_state,j.description_state,j.canonical_url FROM source_occurrences so JOIN jobs j ON j.job_id=so.job_id;\\\" && rtk sqlite3 -header -column /tmp/jobbot-chg146-r5-live-crawl_observations.sqlite3 \\\"SELECT platform,source_job_id,LENGTH(json_extract(detail_job_json,'\"'$.description'\"')) AS description_length FROM crawl_observations;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls tests/extension_*.js | wc -l && rtk ls tests/extension_*.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy playwright screenshot --wait-for-timeout 2500 --viewport-size \"1440,900\" --full-page http://127.0.0.1:8876/ verification/CHG-146-r5/dashboard-populated-full.png'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk file verification/CHG-146-r5/dashboard-*.png'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /opt/anaconda3/bin/python -m json.tool verification/CHG-146-r5.json >/dev/null && rtk git diff --check && rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'bridge_token|cookie|password|credential|access[_ -]?token|refresh[_ -]?token|session[_ -]?id|secret' verification/CHG-146-r5.json || true && rtk find verification/CHG-146-r5 -maxdepth 1 -type f -print\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg146-r5-live-ledger.sqlite3 JOBBOT_CRAWL_OBSERVATIONS_PATH=/tmp/jobbot-chg146-r5-live-crawl_observations.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg146-r5-live-out /opt/anaconda3/bin/python -m jobbot dashboard --no-open --port 8876'",
+      "exit_code": 130,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ps -ax | rtk rg 'jobbot dashboard|8876' || true && rtk git add verification/CHG-146-r5.json verification/CHG-146-r5 && rtk git commit -m \\\"Record CHG-146 r5 live qualification\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^{tree} && rtk git push -u origin codex/jobbot-CHG-146-r5'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1 && rtk git diff --check && rtk git ls-remote --heads origin codex/jobbot-CHG-146-r5 && rtk /opt/anaconda3/bin/python -m json.tool verification/CHG-146-r5.json >/dev/null && rtk git merge-base --is-ancestor c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8 HEAD && rtk git merge-base --is-ancestor 248a90d8757a60df0dcff59075407627bbc425c2 HEAD && rtk git merge-base --is-ancestor 9399ca6c1cd77b6de01be1feba88cd7a38ee5f81 HEAD && rtk git merge-base --is-ancestor 9147762b40ec155cbe15642103cae948d114cf8b HEAD && rtk git log --oneline -7'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /opt/anaconda3/bin/python -m json.tool verification/CHG-146-r5.json >/dev/null && rtk git diff --check && rtk git add verification/CHG-146-r5.json && rtk git commit -m \"Correct CHG-146 refresh evidence\" && rtk git push'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^{tree} && rtk git ls-remote --heads origin codex/jobbot-CHG-146-r5 && rtk git ls-files | rtk rg '\"'(\"'^|/)(data/|.*'\"\\\\.sqlite3\"'$|.*'\"\\\\.db\"'$|.*'\"\\\\.sqlite\"'$|.*'\"\\\\.env\"'$)'\"' || true && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 351,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.44,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 16892800,
+      "fresh_input_tokens": 443806,
+      "input_tokens": 17336606,
+      "non_reasoning_output_tokens": 39751,
+      "output_tokens": 77466,
+      "reasoning_output_tokens": 37715,
+      "total_processed_tokens": 17414072
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "cdbf8f217c51763a892f1e0d8e1eaf4020da94af",
+      "subject": "Correct CHG-146 refresh evidence"
+    },
+    {
+      "sha": "3a53fa493af1d528c371eb9a936beee3a1fe1e95",
+      "subject": "Record CHG-146 r5 live qualification"
+    },
+    {
+      "sha": "fa3144bb93c35723f15744740985aee605b02765",
+      "subject": "Fix CHG-146 narrow dashboard overflow"
+    },
+    {
+      "sha": "84d81357958051b59ab90d41cc28c59ee33d0dce",
+      "subject": "Preserve CHG-146 Glassdoor result linkage"
+    },
+    {
+      "sha": "fb10ffd70bb75bfcdc816258d1876b49776d9050",
+      "subject": "Repair CHG-146 Glassdoor pane identity"
+    },
+    {
+      "sha": "997034a69250486b23907460f56b1f3158c4f85d",
+      "subject": "Fix CHG-146 run-scoped startup ownership"
+    },
+    {
+      "sha": "9147762b40ec155cbe15642103cae948d114cf8b",
+      "subject": "Fix CHG-146 predecessor-compatible bootstrap refresh"
+    },
+    {
+      "sha": "62873b34a0d4cfe87007ebfc22c304a849661096",
+      "subject": "Merge commit 'bd8b42db882dcb3bed9d9acdaa27a90f2607137e' into codex/jobbot-CHG-146-r4"
+    },
+    {
+      "sha": "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+      "subject": "Preserve exact CHG-146-r1 candidate ancestry"
+    },
+    {
+      "sha": "6f76e8305b07976b84c9068a578c226956932a81",
+      "subject": "Fix CHG-146 r2 control and supervisor lifecycle"
+    },
+    {
+      "sha": "9399ca6c1cd77b6de01be1feba88cd7a38ee5f81",
+      "subject": "Build CHG-146 dashboard-first control plane"
+    },
+    {
+      "sha": "248a90d8757a60df0dcff59075407627bbc425c2",
+      "subject": "Build CHG-146 dashboard-first control plane"
+    }
+  ],
+  "diff": {
+    "additions": 2752,
+    "changed_files": 51,
+    "commit_count": 12,
+    "deletions": 441
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 23,
+    "items": [
+      {
+        "bytes": 8700,
+        "path": "README.md",
+        "sha256": "9fb561a72e74b9909fe1b6c20bb875759e65e7239b1b4cc1c2f89ad687f5698a"
+      },
+      {
+        "bytes": 7885,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "42b6349d74f0de46114ad659210823ebdd3bed5ab2570bf007ec49176dac13cb"
+      },
+      {
+        "bytes": 4341,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "aa630e37c99b33dc3c3dd9f35a03893a36950ac0af0ac565bfcfbaba29fd56a5"
+      },
+      {
+        "bytes": 4079,
+        "path": "docs/TROUBLESHOOTING.md",
+        "sha256": "29a3101f48d024f36d386460ab99e7a256da0e1c6057444c5e7eb46afd5a05c5"
+      },
+      {
+        "bytes": 155,
+        "path": "extension/bootstrap.html",
+        "sha256": "fe0a1a6b212f86a0ff09e826f54536d2ccb122bae02010c9928c0fb1baccb148"
+      },
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "a77c562930aa27ce80efa1817561327dea91dfdd403e3de277f9466f907fda25"
+      },
+      {
+        "bytes": 10572,
+        "path": "src/jobbot/web/dashboard.html",
+        "sha256": "f681f1bf99c23a25e9b633f4f2b290592ad3cb9461606ea8958be89567d471a3"
+      },
+      {
+        "bytes": 868,
+        "path": "tests/fixtures/glassdoor_search_pane.html",
+        "sha256": "cc9923037be20c993973f2ff5b090922fe3e89570c5fa0c2f8a11234786f38fd"
+      },
+      {
+        "bytes": 945,
+        "path": "tests/fixtures/indeed_search_pane.html",
+        "sha256": "1fdb80b669281dc0ff484f6258077f4538f2bd3eaf400cb4ea22de94ac9672a3"
+      },
+      {
+        "bytes": 4524,
+        "path": "verification/CHG-146-r1.json",
+        "sha256": "00d54ade9b4800d2dbda88b5ae31bb4d92070949fb161cfea3721f89e8f8c4d6"
+      },
+      {
+        "bytes": 377055,
+        "path": "verification/CHG-146-r1/desktop-drawer-open.png",
+        "sha256": "2f1a8e161d1a9402de23fbc915e9bfe8a167028bbfdada40fe428a8c182a977e"
+      },
+      {
+        "bytes": 413484,
+        "path": "verification/CHG-146-r1/desktop-guide-drawer-closed.png",
+        "sha256": "2be1040ae6cd36573485365d589aaef7e2c7d3fb95ec352d648e378dee2096f4"
+      },
+      {
+        "bytes": 323654,
+        "path": "verification/CHG-146-r1/desktop-mixed.png",
+        "sha256": "90338c3895a98ba5e8f79a3f2e21717f6844224d406599a1828101770c7431e9"
+      },
+      {
+        "bytes": 334137,
+        "path": "verification/CHG-146-r1/desktop-partial-error.png",
+        "sha256": "2b048c9be8742d27a98fac700feb8e314a62646348162c006656fc87052d50c3"
+      },
+      {
+        "bytes": 333446,
+        "path": "verification/CHG-146-r1/desktop-populated.png",
+        "sha256": "dd47e5980ddc7ea95e9113c4e534659a3664a6a9572714562de535140eb65b36"
+      },
+      {
+        "bytes": 306031,
+        "path": "verification/CHG-146-r1/narrow-mixed.png",
+        "sha256": "7e044b5360818d449ef0ee154495ad12079ebde70ba879baaf208876f5941784"
+      },
+      {
+        "bytes": 321568,
+        "path": "verification/CHG-146-r1/short-mixed.png",
+        "sha256": "2627693224f1883beba9f1b5f4fb7eacf66b37ad69eefbbdae4b5402f00d84b0"
+      },
+      {
+        "bytes": 1501,
+        "path": "verification/CHG-146-r1/ui-evidence.json",
+        "sha256": "0aa8087f39e4b9dd0bd6eebd591246f13475bbc03aeeb1621f6d974b26f2360c"
+      },
+      {
+        "bytes": 10243,
+        "path": "verification/CHG-146-r5.json",
+        "sha256": "e6e09efcfeab0085756278040ef5d5f158de77b34aa516e464803b02016a9389"
+      },
+      {
+        "bytes": 220784,
+        "path": "verification/CHG-146-r5/dashboard-desktop-1440x900.png",
+        "sha256": "65a08ec163cf1a8b51562d9350539dd91c8cc07f0e1d8f0c0b86fb7788ac7834"
+      },
+      {
+        "bytes": 71465,
+        "path": "verification/CHG-146-r5/dashboard-narrow-390x844.png",
+        "sha256": "7746780570d43e5574335a644f0cb0349ec546bf7044ec5bd552b075439726e8"
+      },
+      {
+        "bytes": 422409,
+        "path": "verification/CHG-146-r5/dashboard-populated-full.png",
+        "sha256": "7b44165178a629a36eaf26980b4b05c8cf76ee3765f669003218e4761655f150"
+      },
+      {
+        "bytes": 138387,
+        "path": "verification/CHG-146-r5/dashboard-short-1280x720.png",
+        "sha256": "e028624bf95788b429e956d3a9a54d253c94f20569e66dc259cd286f7a14e6b6"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-20T04:54:53Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "branch": "codex/jobbot-CHG-146-r5",
+    "detached_verify": false,
+    "head_sha": "cdbf8f217c51763a892f1e0d8e1eaf4020da94af",
+    "remote_exact_head": true,
+    "remote_head_sha": "cdbf8f217c51763a892f1e0d8e1eaf4020da94af",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "work_branch": "codex/jobbot-CHG-146-r5",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-e1a8ae9449effb580fe7a349",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-146-r5",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-146-r5"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-146-r5",
+  "schema_version": 1,
+  "started_at": "2026-09-20T04:17:09Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 2264,
+    "queue_seconds": 0,
+    "total_seconds": 2264
+  },
+  "transport": {
+    "bytes": 13122,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 12842,
+    "prompt_sha256": "3dc205582c74e56cf029303dfaa8b4d3f037da96b7ad427b4182cc9cf453bcfc",
+    "sha256": "e1a8ae9449effb580fe7a349f68efbabf4c30992edb88125d9f6086f36eda72f"
+  }
+}
