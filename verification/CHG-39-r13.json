@@ -1,0 +1,349 @@
+{
+  "artifact": "CHG-39-r13",
+  "mode": "VERIFY",
+  "decision": "STOP_EXTERNAL_BLOCKER",
+  "PROD_READY": false,
+  "started_at": "2026-09-20T13:00:00Z",
+  "finished_at": "2026-09-20T13:30:00Z",
+  "source": {
+    "target_main": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "observed_HEAD": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "observed_origin_main": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "branch": "codex/jobbot-CHG-39-r13",
+    "work_branch_starts_at_target": true,
+    "accepted_CHG_146_head": "b61ddbfce7558ace45c7ccc9382876608a28288e",
+    "accepted_head_in_main_ancestry": true,
+    "merge_commit": {
+      "parents": [
+        "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+        "b61ddbfce7558ace45c7ccc9382876608a28288e"
+      ],
+      "tree": "396b8a3c7bc064f48853d25faf097461cdbc6863",
+      "tree_equals_accepted_candidate": true,
+      "tree_delta_beyond_accepted_candidate": 0
+    },
+    "worktree_initial": "clean",
+    "product_source_changes": 0,
+    "test_config_documentation_selector_migration_scheduler_browser_architecture_concurrency_changes": 0,
+    "fabric_evidence_refs_manipulated": false
+  },
+  "extension": {
+    "canonical_extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "manifest_version_name": "3.2.2-prod-ready.672cf88.21",
+    "source_identity": "sha256:1d8489dc457ac062688b967d9c303f8837f17fb3b933eb5f9f7db855d3a063aa",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "deployment_marker": "/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json",
+    "deployment": {
+      "state": "current",
+      "classification": "deployed_source_current",
+      "deployed_identity": "sha256:1d8489dc457ac062688b967d9c303f8837f17fb3b933eb5f9f7db855d3a063aa",
+      "source_head": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+      "observed_marker_source_head": "84d81357958051b59ab90d41cc28c59ee33d0dce",
+      "content_identity_matches": true,
+      "marker_source_head_matches": false,
+      "marker_note": "Historical machine-local marker metadata differs; loaded content, build, stable root, and runtime identity are exact."
+    },
+    "chrome_binding": {
+      "browser": "Google Chrome",
+      "profile_directory": "Default",
+      "state": "bound",
+      "binding_path": "/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json",
+      "targeted_stable_root": "/Users/haewonkim/Library/Application Support/JobBot/extension"
+    },
+    "refresh": {
+      "path": "python -m jobbot refresh-extension",
+      "exit_code": 0,
+      "identity_confirmed": true,
+      "observed_build": "3.2.2-prod-ready.672cf88.21",
+      "observed_source_identity": "sha256:1d8489dc457ac062688b967d9c303f8837f17fb3b933eb5f9f7db855d3a063aa",
+      "delivery": "confirmed_by_extension_identity",
+      "bridge_token_values_recorded": false
+    },
+    "bootstrap_page": {
+      "role": "transient_authenticated_handshake",
+      "path": "/bootstrap.html",
+      "auto_close_contract_verified": true,
+      "persistent_extension_status_ui": false,
+      "operator_ui": "http://127.0.0.1:<isolated-port>/"
+    },
+    "bridge": {
+      "host": "127.0.0.1",
+      "authorized_rpc": "pass",
+      "unauthorized_rejection_http_status": 403,
+      "self_test_exit_code": 0
+    }
+  },
+  "deterministic": {
+    "doctor": {
+      "exit_code": 0,
+      "migrations_current": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      "normal_chrome": "pass",
+      "bridge_auth": "pass",
+      "search_plan_fast": 315,
+      "search_plan_deep": 417
+    },
+    "preflight": {
+      "exit_code": 0,
+      "platforms": ["linkedin", "indeed", "glassdoor"],
+      "staged_uncapped_tasks": 864,
+      "database": "/private/tmp/jobbot-verify-CHG-39-r13.SMxu0a/preflight.sqlite3"
+    },
+    "full_unittest_discovery": {
+      "command": "python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "tests": 107,
+      "skipped": 2,
+      "result": "OK",
+      "execution_root": "/private/tmp/jobbot-verify-CHG-39-r13.SMxu0a/source-copy",
+      "source_content_identity_matches_worktree": true
+    },
+    "focused_regression_suite": {
+      "exit_code": 0,
+      "tests": 72,
+      "skipped": 1,
+      "result": "OK",
+      "coverage": [
+        "CHG-146 startup/bootstrap/control/supervisor/worker/cache/pane",
+        "CHG-141 receiver/readiness",
+        "CHG-132 auth-return",
+        "CHG-127 bounded LinkedIn scope recovery",
+        "target lifecycle",
+        "bridge/refresh/runtime binding",
+        "ledger/migration/integrity",
+        "validator",
+        "browser task lifecycle"
+      ]
+    },
+    "javascript": {
+      "node_syntax_exit_code": 0,
+      "regression_scripts_exit_code": 0,
+      "result": "all extension and dashboard JavaScript syntax/regressions passed",
+      "coverage": [
+        "bootstrap compatibility",
+        "CHG-146 pane oracle for LinkedIn/Indeed/Glassdoor",
+        "CHG-146 supervisor",
+        "startup lifecycle",
+        "primary scope and readiness",
+        "auth-return",
+        "bounded LinkedIn scope recovery",
+        "target lifecycle"
+      ]
+    },
+    "compileall_exit_code": 0,
+    "deep_search_plan": {"exit_code": 0, "task_count": 417},
+    "git_diff_check_exit_code": 0,
+    "initial_invalid_isolation_attempt": {
+      "exit_code": 1,
+      "classification": "discarded_test_harness_contamination",
+      "cause": "A shared JOBBOT_DATABASE_PATH overrode each test's own temporary ConfigBundle paths and caused schema collisions.",
+      "not_used_as_exact_source_result": true,
+      "corrected_rerun": "fresh exact-content temporary checkout with no database override; 107 tests OK"
+    }
+  },
+  "live_readiness": {
+    "run_id": 1,
+    "mode": "validation_micro",
+    "started_at": "2026-09-20T13:23:38Z",
+    "completed_at": "2026-09-20T13:24:38Z",
+    "outcome": "partial",
+    "worker_overlap": {
+      "workers": 3,
+      "generations": [1, 1, 1],
+      "owned_windows_created": 3,
+      "one_search_tab_per_platform": true,
+      "workers_started_in_same_live_run": true,
+      "normal_focus_theft_observed": false
+    },
+    "platforms": {
+      "linkedin": {
+        "worker_id": "extension-run-1-linkedin",
+        "worker_generation": 1,
+        "worker_status": "terminal",
+        "auth_status": "verified",
+        "auth_reason": "requested search surface ready",
+        "readiness_state": "verified",
+        "readiness_reason": "requested search surface ready",
+        "challenge": false,
+        "requested_search_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+        "observed_page_url": "https://www.linkedin.com/jobs/search/?currentJobId=4439613063&f_TPR=r604800&f_WT=2&keywords=patient%20enrollment%20specialist&location=United+States&sortBy=DD&start=200",
+        "page_context_status": "verified",
+        "owned_window": {"window_id": 137910050, "owned": true, "final_state": "closed", "final_focused": false},
+        "search_tab": {"tab_id": 137910051, "reused": true, "routine_detail_tabs": 0},
+        "pages_visited": 9,
+        "results_seen": 70,
+        "cards_persisted": 70,
+        "pane_selections": 44,
+        "details_read": 24,
+        "jobs_recorded": 24,
+        "receiver_errors": ["Could not establish connection. Receiving end does not exist."],
+        "standalone_detail_tabs": 0,
+        "detail_page_navigations": 0,
+        "task_terminal_state": "failed",
+        "task_terminal_reason": "Could not establish connection. Receiving end does not exist."
+      },
+      "indeed": {
+        "worker_id": "extension-run-1-indeed",
+        "worker_generation": 1,
+        "worker_status": "challenged",
+        "auth_status": "unknown",
+        "auth_reason": "security check",
+        "readiness_state": "challenged_cooldown",
+        "readiness_reason": "security check",
+        "challenge": true,
+        "challenge_type": "security check",
+        "requested_search_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+        "observed_page_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+        "page_context_status": "UNVERIFIED",
+        "owned_window": {"window_id": 137910052, "owned": true, "final_state": "human_inspectable", "final_focused": false},
+        "search_tab": {"tab_id": 137910053, "reused": true, "routine_detail_tabs": 0},
+        "pages_visited": 0,
+        "results_seen": 0,
+        "cards_persisted": 0,
+        "pane_selections": 0,
+        "details_read": 0,
+        "jobs_recorded": 0,
+        "receiver_errors": [],
+        "standalone_detail_tabs": 0,
+        "detail_page_navigations": 0,
+        "task_terminal_state": "challenged",
+        "task_terminal_reason": "security check",
+        "checkpoint_preserved": true
+      },
+      "glassdoor": {
+        "worker_id": "extension-run-1-glassdoor",
+        "worker_generation": 1,
+        "worker_status": "terminal",
+        "auth_status": "verified",
+        "auth_reason": "requested search surface ready",
+        "readiness_state": "verified",
+        "readiness_reason": "requested search surface ready",
+        "challenge": false,
+        "requested_search_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+        "observed_page_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+        "page_context_status": "verified",
+        "owned_window": {"window_id": 137910054, "owned": true, "final_state": "closed", "final_focused": false},
+        "search_tab": {"tab_id": 137910055, "reused": true, "routine_detail_tabs": 0},
+        "pages_visited": 2,
+        "results_seen": 4,
+        "cards_persisted": 4,
+        "pane_selections": 0,
+        "details_read": 0,
+        "jobs_recorded": 0,
+        "receiver_errors": [],
+        "standalone_detail_tabs": 0,
+        "detail_page_navigations": 0,
+        "task_terminal_state": "incomplete",
+        "task_terminal_reason": "SAFETY_STOP: repeated stable result fingerprint without verified platform end state"
+      }
+    },
+    "challenge_safety": {
+      "bypassed": false,
+      "credentials_or_cookies_used": false,
+      "fingerprint_or_stealth_changes": false,
+      "repeated_unchanged_challenge_rechecks": false,
+      "healthy_platform_workers_continued": true
+    },
+    "pane_first": {
+      "card_before_detail_ordering": "pass; no violations",
+      "routine_standalone_detail_tabs": 0,
+      "routine_detail_page_navigations": 0,
+      "linkedin": {
+        "pane_detail_diagnostics": 24,
+        "identity_proven": 24,
+        "acquisition_mode": "search_pane",
+        "selected_source_ids_matched": true,
+        "substantive_complete_records": 21
+      },
+      "indeed": {"not_attempted": true, "reason": "external security check before readiness"},
+      "glassdoor": {"not_completed": true, "reason": "fail-closed safety stop before pane hydration"}
+    },
+    "linkedin_substantive_detail": {
+      "source_job_id": "4469541698",
+      "canonical_job_id": "J3ED7671A6D2707",
+      "detail_status": "COMPLETE",
+      "content_state": "COMPLETE",
+      "enrichment_status": "ENRICHED",
+      "acquisition_mode": "search_pane",
+      "identity_proven": true,
+      "description_length": 3562,
+      "fresh_live_proof": true,
+      "cache_used_for_first_proof": false
+    },
+    "live_reconciliation": {
+      "authoritative_database": "/private/tmp/jobbot-verify-CHG-39-r13.SMxu0a/live.sqlite3",
+      "integrity": "ok",
+      "schema_versions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      "reconciliation": true,
+      "cards_persisted": 74,
+      "persistence_failures": 0,
+      "duplicate_source_identity_rows": 0,
+      "duplicate_sightings": 6,
+      "card_before_detail_violations": 0,
+      "authoritative_detail_events_from_cache": 0,
+      "authoritative_application_or_funnel_truth_from_cache": false
+    }
+  },
+  "dashboard": {
+    "url": "http://127.0.0.1:49785/",
+    "persistent_operator_ui": "localhost Python dashboard",
+    "identity_ok": true,
+    "workspace_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-58cf8dd6a54873251f7d6c4b",
+    "resolved_database_path": "/private/tmp/jobbot-verify-CHG-39-r13.SMxu0a/live.sqlite3",
+    "live_refresh_ok": true,
+    "run_status": "partial",
+    "worker_lanes": 3,
+    "discoveries": 72,
+    "jobs": 20,
+    "pending_enrichment": 51,
+    "enrichment_partial": 3,
+    "details_complete": 21,
+    "attention": [{"platform": "indeed", "state": "challenged_cooldown", "reason": "security check", "checkpoint_preserved": true, "next_action": "recheck"}],
+    "global_control": null,
+    "durable_control_schema": "present",
+    "stale_partial_truth_visible": true
+  },
+  "database_isolation": {
+    "production_database": "/Users/haewonkim/.codex-fabric/worktrees/CF-58cf8dd6a54873251f7d6c4b/data/jobs.sqlite3",
+    "production_database_touched": false,
+    "production_database_exists_after_run": false,
+    "authoritative_validation_database": "/private/tmp/jobbot-verify-CHG-39-r13.SMxu0a/live.sqlite3",
+    "observation_cache_database": "/private/tmp/jobbot-verify-CHG-39-r13.SMxu0a/live-observation-cache.sqlite3",
+    "authoritative_and_cache_distinct": true,
+    "cache_before": {"total": 0, "complete": 0},
+    "cache_after": {"total": 21, "complete": 21},
+    "cache_safe_field_audit": {"forbidden_key_hits": 0, "credentials_cookies_tokens_profile_material_present": false},
+    "authoritative_integrity": "ok",
+    "cache_schema_version": 1
+  },
+  "validator": {
+    "command": "./VALIDATE_PRODUCTION.command",
+    "status": "not_run",
+    "exit_code": null,
+    "PROD_READY": false,
+    "internal_failures": ["validator_not_started_due_to_required_platform_external_blocker"],
+    "external_blockers": [{"platform": "indeed", "state": "challenged_cooldown", "reason": "security check", "action": "stop; human clearance and later resume only; no bypass attempted"}],
+    "reason": "A required platform security challenge prevented the complete validator from starting/completing."
+  },
+  "regressions": {
+    "CHG-146": "pass; startup/bootstrap/control/supervisor/worker/cache/pane deterministic and live architecture evidence captured",
+    "CHG-141": "pass; receiver/readiness regression fixtures",
+    "CHG-132": "pass; auth-return regression fixtures",
+    "CHG-127": "pass; bounded LinkedIn scope recovery regression fixtures"
+  },
+  "resource_lifetimes": {
+    "bridge_process_cleanup": "pass",
+    "sqlite_handles": "closed by verification probes",
+    "intentional_persistent_process": "localhost dashboard only",
+    "leaked_subprocess_or_sqlite_handle_observed": false
+  },
+  "final_git_invariants": {
+    "verified_source_head": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "verified_source_tree": "396b8a3c7bc064f48853d25faf097461cdbc6863",
+    "source_tree_clean_before_artifact": true,
+    "non_artifact_changes": 0,
+    "parent_of_verification_commit": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "artifact_scope": ["verification/CHG-39-r13.json"],
+    "post_artifact_worktree": "clean",
+    "no_product_source_fix_applied": true
+  }
+}
