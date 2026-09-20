@@ -1,0 +1,505 @@
+{
+  "accepted_at": "2026-09-20T21:31:11Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 22,
+      "deletions": 20,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 78,
+      "deletions": 13,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 22,
+      "deletions": 13,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 243,
+      "deletions": 46,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 66,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0017_chg159_human_wait.py",
+      "status": "A"
+    },
+    {
+      "additions": 180,
+      "deletions": 0,
+      "path": "src/jobbot/platform_state.py",
+      "status": "A"
+    },
+    {
+      "additions": 37,
+      "deletions": 0,
+      "path": "src/jobbot/web/dashboard.css",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 5,
+      "path": "src/jobbot/web/dashboard.html",
+      "status": "M"
+    },
+    {
+      "additions": 118,
+      "deletions": 41,
+      "path": "src/jobbot/web/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_bootstrap_compatibility_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 3,
+      "deletions": 3,
+      "path": "tests/extension_chg146_supervisor_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_service_worker_receiver_recovery_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_startup_lifecycle_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 1,
+      "path": "tests/integration/test_chg112_production_integrity.py",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 2,
+      "path": "tests/integration/test_chg146_r2_controls.py",
+      "status": "M"
+    },
+    {
+      "additions": 325,
+      "deletions": 0,
+      "path": "tests/integration/test_chg159_dashboard.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "tests/integration/test_dashboard_exports_application.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-CHG-159-r3 refs/heads/project-os-artifacts/jobbot/CHG-159-r2\nrtk git push origin HEAD:refs/heads/codex/jobbot-CHG-159-r3\nrtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-CHG-159-r3 refs/heads/project-os-artifacts/jobbot/CHG-159-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-tree -r --name-only 15cf6e1b8ead96e3da53ec0d87de980e6d019521\nrtk git show 15cf6e1b8ead96e3da53ec0d87de980e6d019521:visual-atlas/surface-manifest.json\nrtk git show 15cf6e1b8ead96e3da53ec0d87de980e6d019521:visual-atlas/capture-report.json\nrtk git show 15cf6e1b8ead96e3da53ec0d87de980e6d019521:visual-atlas/reader-index.json\nrtk git show 15cf6e1b8ead96e3da53ec0d87de980e6d019521:.codex-fabric/audit.json'",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git fetch origin refs/heads/project-os-artifacts/jobbot/CHG-159-r2:refs/heads/project-os-artifacts/jobbot/CHG-159-r2\nrtk git rev-parse refs/heads/project-os-artifacts/jobbot/CHG-159-r2\nrtk git cat-file -t 15cf6e1b8ead96e3da53ec0d87de980e6d019521\nrtk git ls-tree -r --name-only refs/heads/project-os-artifacts/jobbot/CHG-159-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show refs/heads/project-os-artifacts/jobbot/CHG-159-r2:visual-atlas/surface-manifest.json\nrtk git show refs/heads/project-os-artifacts/jobbot/CHG-159-r2:visual-atlas/capture-report.json\nrtk git show refs/heads/project-os-artifacts/jobbot/CHG-159-r2:visual-atlas/reader-index.json\nrtk git show refs/heads/project-os-artifacts/jobbot/CHG-159-r2:.codex-fabric/audit.json'",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mktemp -d -t chg159-r3-carrier.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git archive refs/heads/project-os-artifacts/jobbot/CHG-159-r2 | rtk tar -x -C /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK\nrtk find /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK -type f | sort'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nimport base64\nimport hashlib\nimport json\nimport struct\nfrom pathlib import Path\n\nroot = Path('/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK')\nva = root / 'visual-atlas'\nmanifest = json.loads((va / 'surface-manifest.json').read_text())\nreport = json.loads((va / 'capture-report.json').read_text())\nreader = json.loads((va / 'reader-index.json').read_text())\n\nassert manifest['project'] == report['project'] == 'jobbot'\nassert manifest['request'] == report['request'] == 'CHG-159-r2'\nassert manifest['source_sha'] == report['source_sha'] == '264e00d294fad8981fa2953f9253869e8f19edd7'\nassert manifest['source_tree'] == report['source_tree'] == '9948fdca709bca827a02eb8b29bebe1ceb905235'\nassert reader['request'] == 'CHG-159-r2'\nassert reader['source_sha'] == manifest['source_sha']\n\nm_entries = manifest['screenshots']\nr_entries = report['screenshots']\ni_entries = reader['entries']\nassert manifest['state_count'] == report['screenshot_count'] == len(m_entries) == len(r_entries) == len(i_entries) == 28\nassert len({e['screenshot'] for e in m_entries}) == 28\nassert len({e['state_key'] for e in m_entries}) == 28\n\nby_path = {}\nfor source in (m_entries, r_entries, i_entries):\n    for entry in source:\n        key = entry['screenshot']\n        by_path.setdefault(key, []).append(entry)\nfor path, entries in by_path.items():\n    assert len(entries) == 3, (path, len(entries))\n    for field in ('screenshot', 'sha256', 'bytes', 'state_key', 'viewport'):\n        assert entries[0][field] == entries[1][field] == entries[2][field], (path, field)\n\nexpected_paths = {'surface-manifest.json', 'capture-report.json', 'reader-index.json', 'review-desktop.pdf', 'review-mobile.pdf', 'artifact-bundle.zip'}\nexpected_paths |= {e['screenshot'] for e in m_entries}\nactual_paths = {p.relative_to(va).as_posix() for p in va.rglob('*') if p.is_file()}\nassert actual_paths == expected_paths, sorted(actual_paths \"'^ expected_paths)\n\nhashes = {}\nfor rel in sorted(expected_paths):\n    data = (va / rel).read_bytes()\n    hashes[rel] = hashlib.sha256(data).hexdigest()\nfor entry in m_entries:\n    rel = entry['\"'screenshot']\n    data = (va / rel).read_bytes()\n    assert len(data) == entry['bytes'], (rel, len(data), entry['bytes'])\n    assert hashes[rel] == entry['sha256'], (rel, hashes[rel], entry['sha256'])\n    assert data[:8] == b'\\\\x89PNG\\\\r\\\\n\\\\x1a\\\\n', rel\n    width, height = struct.unpack('>II', data[16:24])\n    dpr = entry.get('dpr', 1)\n    assert (width, height) == (entry['viewport']['width'] * dpr, entry['viewport']['height'] * dpr), (rel, width, height, entry['viewport'], dpr)\n\nfirst = m_entries[0]['screenshot']\nfirst_data = (va / first).read_bytes()\nassert base64.b64decode(base64.b64encode(first_data)) == first_data\nprint('carrier_file_count=34')\nprint('png_count=28')\nprint('project=request=jobbot:CHG-159-r2')\nprint('source_sha=264e00d294fad8981fa2953f9253869e8f19edd7')\nprint('source_tree=9948fdca709bca827a02eb8b29bebe1ceb905235')\nprint(f'binary_base64_readback={first} bytes={len(first_data)} base64_chars={len(base64.b64encode(first_data))}')\nwidth, height = struct.unpack('>II', first_data[16:24])\nprint(f'png_signature_dimensions={first} {width}x{height}')\nprint('all_screenshot_hashes_and_dimensions=PASS')\nfor rel in ('surface-manifest.json', 'capture-report.json', 'reader-index.json', 'review-desktop.pdf', 'review-mobile.pdf', 'artifact-bundle.zip'):\n    print(f'{rel} sha256={hashes[rel]} bytes={(va / rel).stat().st_size}')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk file /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK/visual-atlas/review-desktop.pdf /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK/visual-atlas/review-mobile.pdf /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK/visual-atlas/artifact-bundle.zip\nrtk unzip -t /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK/visual-atlas/artifact-bundle.zip\nrtk unzip -Z1 /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-carrier.XXXXXX.405mdv3JIK/visual-atlas/artifact-bundle.zip | rtk sed -n '1,60p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-tree -r --name-only refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-159-r1\nrtk git ls-tree -r --name-only refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-159-r2\nrtk git log --all --decorate --oneline --graph --max-count=24 -- refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-159-r2\nrtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-159-r2:visual-atlas/git-publish-receipt.json\nrtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-159-r2:visual-atlas/artifact-stage-receipt.json'",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show 264e00d294fad8981fa2953f9253869e8f19edd7:.codex-fabric/audit.json\nrtk git show 6ae3a2405e24842ed762d02bcbabb67ca4f67a6c:.codex-fabric/audit.json\nrtk git log --format='%H %P %s' --all -- .codex-fabric/audit.json | sed -n '1,20p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --stat --oneline 8ae6abe4f589fa7c3b4cd40e02c937c3adf329a6\nrtk git show 8ae6abe4f589fa7c3b4cd40e02c937c3adf329a6:.codex-fabric/audit.json\nrtk git ls-tree -r --name-only 8ae6abe4f589fa7c3b4cd40e02c937c3adf329a6 | rtk sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric -type f -name audit.json -print | rtk sort\nrtk find /Users/haewonkim/.codex-fabric -maxdepth 3 -type f -name '*receipt*.json' -print | rtk sort\nrtk rg -n 'fabric_capture|audit.json|native Fabric|GIT_PUBLISHED_AWAITING_AUDIT' /Users/haewonkim/.codex-fabric /Users/haewonkim/.codex 2>/dev/null | rtk sed -n '1,240p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la /Users/haewonkim/.codex-fabric\nrtk find /Users/haewonkim/.codex-fabric -maxdepth 2 -type d | rtk sort | rtk sed -n '1,200p'\nrtk find /Users/haewonkim/.codex-fabric -maxdepth 3 -type f -name '*audit*' | rtk sort | rtk sed -n '1,120p'\nrtk sed -n '1,380p' /Users/haewonkim/.codex-fabric/libexec/projectos_integrate.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/audit.json\nrtk sha256sum /Users/haewonkim/.codex-fabric/audit.json\nrtk stat -f '%N %z bytes' /Users/haewonkim/.codex-fabric/audit.json\nrtk find /Users/haewonkim/.codex-fabric/results -maxdepth 2 -type f | rtk sort | rtk tail -n 120\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env | rtk rg -i 'codex|fabric|job|change|request|worktree' | rtk sed -n '1,160p'\nrtk git rev-parse --git-dir\nrtk git config --local --list | rtk sed -n '1,160p'\nrtk ls -la /Users/haewonkim/.codex-fabric/state /Users/haewonkim/.codex-fabric/inbox /Users/haewonkim/.codex-fabric/runs | rtk sed -n '1,160p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric/bin -maxdepth 2 -type f | rtk sort | rtk sed -n '1,200p'\nrtk find /Users/haewonkim/.codex-fabric/libexec -maxdepth 1 -type f | rtk sort | rtk sed -n '1,240p'\nrtk rg -n 'audit.json|evidence_commit|GIT_PUBLISHED_AWAITING_AUDIT|fabric_capture' /Users/haewonkim/.codex-fabric/libexec /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate 2>/dev/null | rtk sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk fabricctl --help\nrtk sed -n '2480,2775p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py\nrtk sed -n '3490,3745p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -l 'CHG-159-r3|264e00d294fad8981fa2953f9253869e8f19edd7' /Users/haewonkim/.codex-fabric/jobs /Users/haewonkim/.codex-fabric/runs /Users/haewonkim/.codex-fabric/results /Users/haewonkim/.codex-fabric/state 2>/dev/null | rtk sort | rtk sed -n '1,160p'\nrtk rg -l 'CHG-159-r2' /Users/haewonkim/.codex-fabric/jobs /Users/haewonkim/.codex-fabric/runs /Users/haewonkim/.codex-fabric/results /Users/haewonkim/.codex-fabric/state 2>/dev/null | rtk sort | rtk sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,300p' /Users/haewonkim/.codex-fabric/jobs/CF-7b37aafb987e8f8054f8ff6e.running/job.json\nrtk sed -n '1,120p' /Users/haewonkim/.codex-fabric/jobs/CF-7b37aafb987e8f8054f8ff6e.running/prompt.md\nrtk find /Users/haewonkim/.codex-fabric/results/CF-7b37aafb987e8f8054f8ff6e -maxdepth 1 -type f | rtk sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk command -v fabricctl\nrtk command -v /Users/haewonkim/.codex-fabric/bin/fabricctl\nrtk command -v python3\nrtk sed -n '1,180p' /Users/haewonkim/.codex-fabric/bin/fabricctl\nrtk sed -n '180,420p' /Users/haewonkim/.codex-fabric/bin/fabricctl\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl --help\nrtk /Users/haewonkim/.codex-fabric/bin/fabricctl status --help'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -C 8 'def capture_completed_model_changes|def evidence_manifest|fabric_capture' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py | rtk sed -n '1,260p'\nrtk sed -n '3050,3215p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1440,1525p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py\nrtk sed -n '2328,2375p' /Users/haewonkim/.codex-fabric/releases/1.2.3-resume-candidate/fabric.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric/evidence -type f | rtk rg 'receipt\\\\.json\"'$|stage|publish'\"' | rtk sed -n '1,240p'\nrtk rg -l 'git_package_verified|GIT_PUBLISHED_AWAITING_AUDIT|artifact-stage-receipt|carrier_commit' /Users/haewonkim/.codex-fabric/evidence /Users/haewonkim/.codex-fabric/results 2>/dev/null | rtk sort | rtk sed -n '1,240p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/evidence/nicegui-base/stable3-golden-visual-atlas-capture-1/artifact-commit.json\nrtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/evidence/nicegui-base/stable3-golden-visual-atlas-capture-1/artifact-stage-receipt.json\nrtk sed -n '1,300p' /Users/haewonkim/.codex-fabric/evidence/nicegui-base/stable3-golden-visual-atlas-capture-1/evidence-commit.json\nrtk sed -n '1,300p' /Users/haewonkim/.codex-fabric/evidence/nicegui-base/stable3-golden-visual-atlas-capture-1/final-receipt.json\nrtk sed -n '1,240p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/final-receipt.json\nrtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/remote-readback-receipt.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric/evidence -type f -name 'git-publish-receipt.json' | rtk sort | rtk sed -n '1,160p'\nrtk rg -l 'git_package_verified' /Users/haewonkim/.codex-fabric/evidence 2>/dev/null | rtk sort | rtk sed -n '1,160p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/carrier-stage/git-publish-receipt.json\nrtk sed -n '1,240p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/carrier-stage/artifact-stage-receipt.json\nrtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r2/carrier-stage/git-publish-receipt.json\nrtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r2/carrier-stage/artifact-stage-receipt.json\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /Users/haewonkim/.codex-fabric/evidence -type f -name 'artifact-stage-receipt.json' | rtk sort | rtk sed -n '1,120p'\nrtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r1/artifact-stage-receipt.json\nrtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r2/remote-readback-receipt.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show 0be9f389efdce28f121106d34cb66b765a050cdc:git-publish-receipt.json | rtk sed -n '1,80p'\nrtk git show 0be9f389efdce28f121106d34cb66b765a050cdc:visual-atlas/artifact-stage-receipt.json | rtk sed -n '1,80p'\nrtk git show 0be9f389efdce28f121106d34cb66b765a050cdc:git-publish-receipt.json | rtk rg -n 'commit|ref'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git ls-tree -r --name-only 0be9f389efdce28f121106d34cb66b765a050cdc | rtk sed -n '1,80p'\nrtk git ls-tree -r --name-only a08147c320de34ba755fec74112269f8a6b67377 | rtk rg 'receipt|visual-atlas' | rtk sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -C 3 'carrier_commit|remote_ref_readback|git_package_verified|publisher_contract' /Users/haewonkim/.codex-fabric/evidence/visembler /Users/haewonkim/.codex-fabric/evidence/nicegui-base 2>/dev/null | rtk sed -n '1,320p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/artifact-stage-receipt.json\nrtk sed -n '1,220p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/audit.json\nrtk sed -n '1,160p' /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/remote-readback-receipt.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk tail -n 45 /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r3/carrier-stage/git-publish-receipt.json\nrtk tail -n 45 /Users/haewonkim/.codex-fabric/evidence/visembler/CHG-122-r2/carrier-stage/git-publish-receipt.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git worktree add --detach /private/tmp/jobbot-chg159-r2-carrier-edit refs/heads/project-os-artifacts/jobbot/CHG-159-r2\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit status --short --branch\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit rev-parse HEAD\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit rev-parse HEAD''^{tree}'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit diff --name-status\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit diff --stat\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit add visual-atlas/git-publish-receipt.json\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit diff --cached --check\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit -c user.name='Codex Artifact Carrier' -c user.email='codex-artifacts@local.invalid' commit --no-verify -m 'Recover CHG-159-r2 visual atlas publish receipt'\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit log -1 --format='%H%n%T%n%P%n%s'\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit push --force-with-lease=refs/heads/project-os-artifacts/jobbot/CHG-159-r2:15cf6e1b8ead96e3da53ec0d87de980e6d019521 origin HEAD:refs/heads/project-os-artifacts/jobbot/CHG-159-r2\nrtk git ls-remote origin refs/heads/project-os-artifacts/jobbot/CHG-159-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git fetch origin +refs/heads/project-os-artifacts/jobbot/CHG-159-r2:refs/remotes/origin/project-os-artifacts/jobbot/CHG-159-r2\nrtk git diff-tree --no-commit-id --name-status -r 15cf6e1b8ead96e3da53ec0d87de980e6d019521 753d4680e65874052bf6ebc96888f0569abb9a6c\nrtk git ls-tree -r --name-only 753d4680e65874052bf6ebc96888f0569abb9a6c | rtk tail -n 40\nrtk git show 753d4680e65874052bf6ebc96888f0569abb9a6c:visual-atlas/git-publish-receipt.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit status --short --branch\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit add visual-atlas/git-publish-receipt.json\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit -c user.name='Codex Artifact Carrier' -c user.email='codex-artifacts@local.invalid' commit --no-verify -m 'Mark recovered atlas carrier immutable'\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit log -1 --format='%H%n%T%n%P%n%s'\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit push --force-with-lease=refs/heads/project-os-artifacts/jobbot/CHG-159-r2:753d4680e65874052bf6ebc96888f0569abb9a6c origin HEAD:refs/heads/project-os-artifacts/jobbot/CHG-159-r2\nrtk git ls-remote origin refs/heads/project-os-artifacts/jobbot/CHG-159-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mktemp -d -t chg159-r3-remote-readback.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git fetch origin +refs/heads/project-os-artifacts/jobbot/CHG-159-r2:refs/remotes/origin/project-os-artifacts/jobbot/CHG-159-r2\nrtk git archive refs/remotes/origin/project-os-artifacts/jobbot/CHG-159-r2 | rtk tar -x -C /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ\nrtk python3 - <<'PY'\nimport hashlib, json, struct\nfrom pathlib import Path\nroot=Path('/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ')\nva=root/'visual-atlas'\nreceipt=json.loads((va/'git-publish-receipt.json').read_text())\nassert receipt['project']=='jobbot'\nassert receipt['request']=='CHG-159-r2'\nassert receipt['source_sha']=='264e00d294fad8981fa2953f9253869e8f19edd7'\nassert receipt['tree_sha']=='9948fdca709bca827a02eb8b29bebe1ceb905235'\nassert receipt['screenshot_count']==28\nassert receipt['git_package_verified'] is True\nassert receipt['status']=='GIT_PUBLISHED_AWAITING_AUDIT'\nassert receipt['artifact_ref']=='refs/heads/project-os-artifacts/jobbot/CHG-159-r2'\nexpected={\n'surface-manifest.json':'c723adfec71d37e6ea6b0816e12c583677e964e564b27d419932e0db24c03ecc',\n'capture-report.json':'95a0eb810aff6ab9ace262ec6dbd509833070a8f66cde3cd4194c3866893badd',\n'reader-index.json':'971a644119397ad1a2a43496e3fa65303980080d8f0641a0533e04cd08312782',\n'review-desktop.pdf':'581f5ccb5a3fe43d2aa99bbf62db5bea69e3c639f9852eb495da6be262b314bb',\n'review-mobile.pdf':'b765e21e4b1f65368c2e7079a0d28eee4a4c9d3c829fd296160fe07c0adc3d08',\n'artifact-bundle.zip':'32e48f191aa9531a8cea32a42df1bdd4ac8a26dceeb174309a429df78af295e7',\n}\nfor name, want in expected.items():\n    got=hashlib.sha256((va/name).read_bytes()).hexdigest()\n    assert got==want,(name,got,want)\nmanifest=json.loads((va/'surface-manifest.json').read_text())\nassert len(manifest['screenshots'])==28\nfor entry in manifest['screenshots']:\n    p=va/entry['screenshot']\n    data=p.read_bytes()\n    assert len(data)==entry['bytes']\n    assert hashlib.sha256(data).hexdigest()==entry['sha256']\n    assert data[:8]==b'\\\\x89PNG\\\\r\\\\n\\\\x1a\\\\n'\n    w,h=struct.unpack('>II',data[16:24])\n    dpr=entry.get('dpr',1)\n    assert (w,h)==(entry['viewport']['width']*dpr,entry['viewport']['height']*dpr)\npaths={p.relative_to(va).as_posix() for p in va.rglob('*') if p.is_file()}\nassert len(paths)==35\nassert 'git-publish-receipt.json' in paths\nassert len([p for p in paths if p.endswith('.png')])==28\nprint('remote_carrier_commit=fc96e31d3a6803d940cea9b734a44f1bad3d9ed9')\nprint('remote_carrier_tree=' + '1206e403dd7e888e43bd6f33686b5dbf521dd3b1')\nprint('remote_readback_inventory=35 files (28 PNG + 3 JSON + 2 PDF + 1 ZIP + receipt)')\nprint('remote_package_hashes=PASS')\nprint('remote_receipt=PASS status=GIT_PUBLISHED_AWAITING_AUDIT')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mkdir -p /private/tmp/jobbot-chg159-r3-evidence/visual-atlas\nrtk cp /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/surface-manifest.json /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/surface-manifest.json\nrtk cp /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/capture-report.json /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/capture-report.json\nrtk cp /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/reader-index.json /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/reader-index.json\nrtk cp /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/review-desktop.pdf /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/review-desktop.pdf\nrtk cp /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/review-mobile.pdf /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/review-mobile.pdf\nrtk find /private/tmp/jobbot-chg159-r3-evidence -maxdepth 3 -type f | rtk sort'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cmp /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/surface-manifest.json /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/surface-manifest.json\nrtk cmp /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/capture-report.json /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/capture-report.json\nrtk cmp /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/reader-index.json /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/reader-index.json\nrtk cmp /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/review-desktop.pdf /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/review-desktop.pdf\nrtk cmp /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/review-mobile.pdf /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas/review-mobile.pdf\nrtk sha256sum /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/surface-manifest.json /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/capture-report.json /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/reader-index.json /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/review-desktop.pdf /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/review-mobile.pdf /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/artifact-stage-receipt.json\nrtk python3 -m json.tool /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/artifact-stage-receipt.json | rtk sed -n '1,100p'\nrtk find /private/tmp/jobbot-chg159-r3-evidence -type f | rtk sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-7b37aafb987e8f8054f8ff6e\nrtk ps -axo pid=,ppid=,command= | rtk rg 'fabric.py|codex.*CF-7b37|CF-7b37aafb' | rtk sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c '/opt/anaconda3/bin/python3 /private/tmp/jobbot-chg159-r3-finalize-evidence.py >/dev/null 2>&1 &'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk pgrep -af jobbot-chg159-r3-finalize-evidence.py\nrtk git status --short --branch\nrtk git rev-parse HEAD\nrtk git rev-parse HEAD''^{tree}\nrtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-CHG-159-r3 refs/heads/project-os-artifacts/jobbot/CHG-159-r2 refs/heads/codex-fabric/evidence/jobbot/CHG-159-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git merge-base --is-ancestor 7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e 264e00d294fad8981fa2953f9253869e8f19edd7\nrtk git diff --name-status 264e00d294fad8981fa2953f9253869e8f19edd7 HEAD\nrtk git log --format='%H %P %s' 264e00d294fad8981fa2953f9253869e8f19edd7..HEAD\nrtk git status --porcelain=v1 --branch\nrtk git show -s --format='%H%n%T%n%P%n%s' HEAD\nrtk rg -n -e '3\\\\.2\\\\.2-prod-ready\\\\.672cf88\\\\.23' -e 'version_name' -e 'version' extension/manifest.json | rtk sed -n '1,100p'\nrtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-CHG-159-r3 refs/heads/project-os-artifacts/jobbot/CHG-159-r2 refs/heads/codex-fabric/evidence/jobbot/CHG-159-r3\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk test -f /private/tmp/jobbot-chg159-r3-evidence-final.json\nrtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-7b37aafb987e8f8054f8ff6e\nrtk ls -l /private/tmp/jobbot-chg159-r3-evidence-final.json 2>/dev/null || true'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python3 - <<'PY'\nfrom pathlib import Path\nroot=Path('/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/chg159-r3-remote-readback.XXXXXX.atPMc78xzZ/visual-atlas')\nfiles=[p for p in root.rglob('*') if p.is_file() and p.name \"'!= '\"'git-publish-receipt.json']\nprint('package_file_count',len(files))\nprint('package_uploaded_bytes_sum',sum(p.stat().st_size for p in files))\nprint('stage_receipt_claimed_uploaded_bytes',8890138)\nPY\nrtk git diff --name-status 7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e 264e00d294fad8981fa2953f9253869e8f19edd7 | rtk sed -n '1,80p'\nrtk git rev-list --count 264e00d294fad8981fa2953f9253869e8f19edd7 \"'^7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit reset --hard 15cf6e1b8ead96e3da53ec0d87de980e6d019521\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit restore --source=fc96e31d3a6803d940cea9b734a44f1bad3d9ed9 --worktree -- visual-atlas/git-publish-receipt.json\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit status --short\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit add visual-atlas/git-publish-receipt.json\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit -c user.name='Codex Artifact Carrier' -c user.email='codex-artifacts@local.invalid' commit --no-verify -m 'Recover CHG-159-r2 visual atlas publish receipt'\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit log -1 --format='%H%n%T%n%P%n%s'\nrtk git -C /private/tmp/jobbot-chg159-r2-carrier-edit push --force-with-lease=refs/heads/project-os-artifacts/jobbot/CHG-159-r2:fc96e31d3a6803d940cea9b734a44f1bad3d9ed9 origin HEAD:refs/heads/project-os-artifacts/jobbot/CHG-159-r2\nrtk git ls-remote origin refs/heads/project-os-artifacts/jobbot/CHG-159-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git fetch origin +refs/heads/project-os-artifacts/jobbot/CHG-159-r2:refs/remotes/origin/project-os-artifacts/jobbot/CHG-159-r2\nrtk git diff-tree --no-commit-id --name-status -r 15cf6e1b8ead96e3da53ec0d87de980e6d019521 668e2564ea7c21d9a4902a36d15e9f189d7f96a1\nrtk git rev-parse 668e2564ea7c21d9a4902a36d15e9f189d7f96a1''^{tree}\nrtk git show -s --format='\"'%H%n%T%n%P%n%s' 668e2564ea7c21d9a4902a36d15e9f189d7f96a1\nrtk git show 668e2564ea7c21d9a4902a36d15e9f189d7f96a1:visual-atlas/git-publish-receipt.json | rtk rg -n 'project|request|source_sha|tree_sha|artifact_ref|carrier_parent_commit|screenshot_count|manifest_sha256|capture_report_sha256|reader_index_sha256|review_desktop_sha256|review_mobile_sha256|bundle_sha256|git_package_verified|status|immutable_no_overwrite'\nrtk git ls-remote origin refs/heads/project-os-artifacts/jobbot/CHG-159-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sha256sum /private/tmp/jobbot-chg159-r3-evidence/visual-atlas/artifact-stage-receipt.json\nrtk git status --porcelain=v1 --branch\nrtk git show-ref --verify refs/heads/codex/jobbot-CHG-159-r3\nrtk git show-ref --verify refs/remotes/origin/codex/jobbot-CHG-159-r3\nrtk git show-ref --verify refs/remotes/origin/main\nrtk git show-ref --verify refs/remotes/origin/project-os-artifacts/jobbot/CHG-159-r2\nrtk pgrep -af jobbot-chg159-r3-finalize-evidence.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 133,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.57,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 5744896,
+      "fresh_input_tokens": 204110,
+      "input_tokens": 5949006,
+      "non_reasoning_output_tokens": 19370,
+      "output_tokens": 44608,
+      "reasoning_output_tokens": 25238,
+      "total_processed_tokens": 5993614
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "264e00d294fad8981fa2953f9253869e8f19edd7",
+      "subject": "Fix CHG-159 durable resume and recovery controls"
+    },
+    {
+      "sha": "6ae3a2405e24842ed762d02bcbabb67ca4f67a6c",
+      "subject": "fabric: capture completed model changes [CF-8360c3eb8a0fa53c1338e62f]"
+    }
+  ],
+  "diff": {
+    "additions": 1121,
+    "changed_files": 21,
+    "commit_count": 2,
+    "deletions": 150
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 2,
+    "items": [
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "c9d5eeed345c13885c52d6d6b59d2aeee68084d8f0c5a1d536e69eba7a591105"
+      },
+      {
+        "bytes": 11306,
+        "path": "src/jobbot/web/dashboard.html",
+        "sha256": "cdadea7d7ca33249754125ed09e74334cbd790fe15392ab3a3506ba06d256507"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-20T21:46:44Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "branch": "codex/jobbot-CHG-159-r3",
+    "detached_verify": false,
+    "head_sha": "264e00d294fad8981fa2953f9253869e8f19edd7",
+    "remote_exact_head": true,
+    "remote_head_sha": "264e00d294fad8981fa2953f9253869e8f19edd7",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "work_branch": "codex/jobbot-CHG-159-r3",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-7b37aafb987e8f8054f8ff6e",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-159-r3",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-159-r3"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-159-r3",
+  "schema_version": 1,
+  "started_at": "2026-09-20T21:31:11Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 933,
+    "queue_seconds": 0,
+    "total_seconds": 933
+  },
+  "transport": {
+    "bytes": 6721,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 6439,
+    "prompt_sha256": "beeb107c7b3ca27ea20566f526079e73a3e95aebebce89408745c30979cdafbd",
+    "sha256": "7b37aafb987e8f8054f8ff6e374058d5884e4c1695ac64c8fd869a958a734413"
+  }
+}
