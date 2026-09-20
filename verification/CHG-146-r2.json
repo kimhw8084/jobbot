@@ -1,0 +1,83 @@
+{
+  "change": "CHG-146-r2",
+  "candidate": {
+    "code_candidate_commit": "6f76e8305b07976b84c9068a578c226956932a81",
+    "code_candidate_tree": "fed1da23c36b4aca63cca56dd14782141e6eb4da",
+    "ancestry_merge_commit": "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+    "target_main_commit": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "r1_candidate_commit": "248a90d8757a60df0dcff59075407627bbc425c2",
+    "branch": "codex/jobbot-CHG-146-r2",
+    "extension_version_name": "3.2.2-prod-ready.672cf88.17",
+    "migration": 16
+  },
+  "architecture_preserved": {
+    "workers": ["linkedin", "indeed", "glassdoor"],
+    "parallelism": "one serial worker per primary platform; maximum three concurrently",
+    "browser_targets": "one owned ordinary Chrome Default-profile window and one reused search tab per platform",
+    "detail_acquisition": "cards first, pane-first selection and enrichment; routine detail_page_navigations=0",
+    "cache": "observation cache remains separate from authoritative production/application state",
+    "ledger": "migration 16, checkpoints, source occurrences, versions, diffs, funnel/application history preserved",
+    "write_order": "card-before-detail write-through preserved",
+    "scope": "CHG-146 only; CHG-39 was not reopened"
+  },
+  "fixes": {
+    "defect_1_global_control_contract": "Dashboard actions stop_all, resume_ready_platforms, and emergency_stop cross the real HTTP handler into one explicit canonical boundary, durable control_requests rows, RPC consume/ack, and worker behavior. Graceful stop-after-current remains distinct from emergency stop; resume-ready does not clear challenge truth or completed work.",
+    "defect_2_challenged_supervisor": "A challenged platform becomes a low-activity commandable supervisor. It preserves its owned target, consumes bounded durable controls, supports focus/recheck/resume/stop, and performs no repeated readiness probes, reloads, navigation, or source-site polling while challenged.",
+    "service_worker_reattachment": "On MV3/service-worker restart, recorded IDs are validated through current chrome.windows/chrome.tabs state and expected-platform URL checks before reuse. Stale IDs are diagnostics only; explicit recovery creates at most one replacement target and normal resume never duplicates windows/tabs.",
+    "defect_3_control_instance_identity": "Each dashboard activation gets one UUID request instance held across HTTP retries. Exact duplicate delivery deduplicates one effect; tuple conflicts are rejected; later same-action activations get independent durable rows and acknowledgements, with stale-ack protection retained.",
+    "run_finalization": "Paused/challenged worker state is visible and partial/incomplete rather than falsely completed or indefinitely healthy-running; healthy terminal workers remain distinguishable from externally blocked work."
+  },
+  "control_and_supervisor_test_matrix": [
+    {"case": "global stop_all succeeds through dashboard HTTP/API, durable row, consume/ack, and active workers", "test": "tests/integration/test_chg146_r2_controls.py", "result": "passed"},
+    {"case": "global resume_ready_platforms starts/resumes eligible supervisors without clearing challenged truth", "test": "tests/integration/test_chg146_r2_controls.py", "result": "passed"},
+    {"case": "global emergency_stop succeeds and preserves global semantics", "test": "tests/integration/test_chg146_r2_controls.py", "result": "passed"},
+    {"case": "challenged Indeed remains commandable while LinkedIn and Glassdoor continue", "test": "tests/integration/test_chg146_r2_controls.py; tests/extension_chg146_supervisor_test.js", "result": "passed"},
+    {"case": "focus foregrounds preserved target without navigation", "test": "tests/extension_chg146_supervisor_test.js", "result": "passed"},
+    {"case": "explicit recheck performs exactly one readiness attempt and can resume", "test": "tests/extension_chg146_supervisor_test.js", "result": "passed"},
+    {"case": "continued challenge remains challenged without reload loop", "test": "tests/extension_chg146_supervisor_test.js", "result": "passed"},
+    {"case": "two legitimate rechecks create two instances and both acknowledge", "test": "tests/integration/test_chg146_r2_controls.py", "result": "passed"},
+    {"case": "duplicate request ID has one effect; stale acknowledgement cannot satisfy newer request", "test": "tests/integration/test_chg146_r2_controls.py", "result": "passed"},
+    {"case": "service-worker restart reattaches valid target without duplicate window/tab", "test": "tests/extension_chg146_supervisor_test.js", "result": "passed"},
+    {"case": "missing/stale target recovers with at most one replacement", "test": "tests/extension_chg146_supervisor_test.js", "result": "passed"},
+    {"case": "local stop-after-current and emergency-stop do not stop other workers", "test": "tests/integration/test_chg146_r2_controls.py", "result": "passed"}
+  ],
+  "verification": {
+    "focused_python": "14 tests OK across CHG-146 controls/workers/cache, CHG-112 production integrity, and dashboard exports",
+    "full_unittest_discovery": "107 tests OK, 1 skipped",
+    "javascript_regression_files": [
+      "tests/extension_chg146_pane_test.js",
+      "tests/extension_chg146_supervisor_test.js",
+      "tests/extension_linkedin_scope_test.js",
+      "tests/extension_primary_scope_test.js",
+      "tests/extension_service_worker_auth_return_test.js",
+      "tests/extension_service_worker_scope_recovery_test.js",
+      "tests/extension_service_worker_target_lifecycle_test.js"
+    ],
+    "javascript_regressions": "all passed",
+    "syntax": "service_worker.js, dashboard.js, changed Python modules, and new tests passed syntax checks",
+    "compileall": "passed",
+    "git_diff_check": "passed",
+    "isolated_databases": "unattended tests use disposable temporary databases; data/jobs.sqlite3 was not used",
+    "sqlite_integrity": "migration 1..16 and durable control/checkpoint paths preserved",
+    "fabric_boundary": "codex-fabric/audit.json and deterministic evidence refs were not touched",
+    "secrets": "no runtime secrets, credentials, tokens, cookies, or profile data committed"
+  },
+  "rendered_dashboard_evidence": {
+    "mixed_state": "local Chrome render observed with LinkedIn running, Indeed challenged-awaiting-human with enabled Focus/Resume/Recheck, and Glassdoor complete",
+    "global_controls": ["Stop all after current", "Resume ready platforms", "Emergency stop"],
+    "desktop_1440x900": "observed in Chrome with truthful accessible control names and lifecycle state; no visible page-level horizontal overflow",
+    "short_height_1280x720": "live CUA refresh unverified; inherited R1 repository render evidence remains",
+    "narrow_390px": "live CUA refresh unverified; inherited R1 repository render evidence remains",
+    "drawer_keyboard_reduced_motion": "R1 rendered evidence retained; r2 preserves the UI architecture and adds lifecycle state without redesign",
+    "safety_boundary": "no live production-site challenge clearance or challenge-provoking traffic was used"
+  },
+  "invariants": {
+    "max_primary_workers": 3,
+    "one_serial_worker_per_platform": true,
+    "one_owned_window_and_search_tab_per_platform": true,
+    "routine_detail_page_navigations": 0,
+    "external_challenge_truth_preserved": true,
+    "readiness_fail_closed": true,
+    "checkpoint_ownership_preserved": true
+  }
+}
