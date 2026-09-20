@@ -6,7 +6,7 @@ const vm = require('vm');
 
 const SOURCE = fs.readFileSync('extension/bootstrap.js', 'utf8');
 const EXECUTABLE = SOURCE.replace('bootstrap().finally', 'globalThis.__bootstrapPromise = bootstrap().finally');
-const EXPECTED_BUILD = '3.2.2-prod-ready.672cf88.21';
+const EXPECTED_BUILD = '3.2.2-prod-ready.672cf88.22';
 const BRIDGE_TOKEN = 'x'.repeat(32);
 
 function makePage({ mode, runId = 0, maintenance = false, store = {}, state = {} }) {
