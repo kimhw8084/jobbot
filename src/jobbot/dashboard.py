@@ -9,6 +9,7 @@ import sys
 import threading
 import urllib.parse
 import webbrowser
+import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -175,11 +176,83 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
                 "checkpoint_preserved": True,
                 "next_action": "recheck" if readiness == "challenged_cooldown" else "focus_window" if row["window_id"] else "recheck",
             })
-    return {"run": _dict(run), "current_task": _dict(current), "platforms": [_dict(row) for row in platforms], "watch": _dict(watch), "attention": attention}
+    platform_values = []
+    for row in platforms:
+        value = _dict(row) or {}
+        control = conn.execute(
+            """SELECT request_id,action,status,requested_at,acknowledged_at,result_json
+               FROM control_requests WHERE browser_run_id=? AND platform=?
+               ORDER BY control_id DESC LIMIT 1""", (run_id, row["platform"]),
+        ).fetchone()
+        if control is not None:
+            value["control_request_id"] = control["request_id"]
+            value["control_action"] = control["action"]
+            value["control_status"] = control["status"]
+            value["control_requested_at"] = control["requested_at"]
+            value["control_acknowledged_at"] = control["acknowledged_at"]
+        platform_values.append(value)
+    global_control = conn.execute(
+        """SELECT request_id,action,status,requested_at,acknowledged_at
+           FROM control_requests WHERE browser_run_id=? AND platform=''
+           ORDER BY control_id DESC LIMIT 1""", (run_id,),
+    ).fetchone()
+    return {
+        "run": _dict(run), "current_task": _dict(current), "platforms": platform_values,
+        "watch": _dict(watch), "attention": attention, "global_control": _dict(global_control),
+    }
 
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+RUN_CONTROL_ALIASES = {
+    "stop": "stop_all",
+    "resume": "resume_ready_platforms",
+    "emergency": "emergency_stop",
+}
+RUN_CONTROL_ACTIONS = {"stop_all", "resume_ready_platforms", "emergency_stop"}
+
+
+def _normalize_run_control_action(value: Any) -> tuple[str, str]:
+    """Normalize the browser-facing run control vocabulary at one boundary."""
+    requested = str(value or "").strip().lower()
+    action = RUN_CONTROL_ALIASES.get(requested, requested)
+    if action not in RUN_CONTROL_ACTIONS:
+        raise ValueError(f"unsupported run control: {requested}")
+    return requested, action
+
+
+def _new_control_request_id() -> str:
+    return f"dashboard:{uuid.uuid4()}"
+
+
+def _insert_control_request(
+    conn: sqlite3.Connection,
+    *,
+    request_id: str,
+    run_id: int,
+    platform: str,
+    action: str,
+    now: str,
+) -> tuple[sqlite3.Row | None, bool]:
+    """Insert one control instance, rejecting reuse for another command tuple."""
+    existing = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
+    if existing is not None:
+        if (
+            int(existing["browser_run_id"]) != run_id
+            or str(existing["platform"] or "") != platform
+            or str(existing["action"]) != action
+        ):
+            raise ValueError(f"control request id conflicts with an existing command: {request_id}")
+        return existing, True
+    conn.execute(
+        """INSERT INTO control_requests(
+          request_id,browser_run_id,platform,action,status,requested_at,requested_by
+        ) VALUES(?,?,?,?,?,?,?)""",
+        (request_id, run_id, platform, action, "PENDING", now, "dashboard"),
+    )
+    return None, False
 
 
 def _control_run_id(conn: sqlite3.Connection, requested: Any) -> int:
@@ -201,114 +274,126 @@ def _control_run_id(conn: sqlite3.Connection, requested: Any) -> int:
     return int(row[0])
 
 
-def control_run(conn: sqlite3.Connection, action: str, requested_run_id: Any = None) -> dict[str, Any]:
-    """Apply a dashboard run control to durable state and commit immediately."""
+def control_run(
+    conn: sqlite3.Connection,
+    action: str,
+    requested_run_id: Any = None,
+    control_request_id: Any = None,
+) -> dict[str, Any]:
+    """Apply one canonical dashboard run control to durable state."""
+    requested_action, action = _normalize_run_control_action(action)
+    legacy_resume = requested_action == "resume"
     run_id = _control_run_id(conn, requested_run_id)
     run = conn.execute("SELECT status FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()
     if run is None:
         raise ValueError(f"browser run not found: {run_id}")
     current_status = str(run[0])
     now = _utc_now()
-    request_id = f"dashboard:{run_id}:global:{action}"
-    conn.execute("""INSERT OR IGNORE INTO control_requests(
-      request_id,browser_run_id,platform,action,status,requested_at,requested_by
-    ) VALUES(?,?,?,?,?,?,?)""", (request_id, run_id, "", "emergency_stop" if action == "emergency" else "stop_all" if action == "stop" else "resume_ready_platforms" if action == "resume" else action, "PENDING", now, "dashboard"))
-    if action == "stop":
-        if current_status in {"completed", "partial", "failed"}:
+    request_id = str(control_request_id or _new_control_request_id())
+    existing, deduplicated = _insert_control_request(
+        conn, request_id=request_id, run_id=run_id, platform="", action=action, now=now,
+    )
+    if deduplicated:
+        return {
+            "ok": True, "run_id": run_id, "status": str(existing["status"]),
+            "action": requested_action, "canonical_action": action, "request_id": request_id,
+            "deduplicated": True, "message": f"{action} was already recorded for this control instance.",
+        }
+    if action == "stop_all":
+        if current_status in {"completed", "failed"}:
             raise ValueError(f"run {run_id} is already terminal ({current_status})")
         conn.execute(
             "UPDATE browser_runs SET stop_after_current=1,last_error=?,last_progress_at=? WHERE browser_run_id=?",
             ("stop after current job requested from dashboard", now, run_id),
         )
         message = "Stop requested; the current atomic job will finish before acquisition stops."
-    elif action == "emergency":
+    elif action == "emergency_stop":
         if current_status == "completed":
             raise ValueError(f"run {run_id} is already terminal (completed)")
         conn.execute(
             """UPDATE search_task_results
                SET detail_status='RETRYABLE',detail_error='requeued after dashboard emergency stop',
                    detail_lease_owner='',detail_lease_until=NULL
-               WHERE browser_run_id=? AND detail_status='RUNNING'""",
-            (run_id,),
+               WHERE browser_run_id=? AND detail_status='RUNNING'""", (run_id,),
         )
         conn.execute(
             """UPDATE browser_search_tasks
                SET status='incomplete',completed_at=?,lease_owner='',lease_until=NULL,
                    safety_stop_reason='manual_emergency_stop',last_error='manual emergency stop',last_progress_at=?
-               WHERE browser_run_id=? AND status='running'""",
-            (now, now, run_id),
+               WHERE browser_run_id=? AND status='running'""", (now, now, run_id),
         )
         conn.execute(
             """UPDATE browser_runs
                SET status='stopped',stop_requested=1,stop_after_current=0,completed_at=?,current_task_id=NULL,
                    tasks_incomplete=(SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND status='incomplete'),
                    last_progress_at=?,last_error='manual emergency stop'
-               WHERE browser_run_id=?""",
-            (now, run_id, now, run_id),
+               WHERE browser_run_id=?""", (now, run_id, now, run_id),
+        )
+        conn.execute(
+            """UPDATE browser_platform_runs
+               SET emergency_stop=1,stop_after_current=0,worker_status='stopped',
+                   last_control_at=?,last_control_action=? WHERE browser_run_id=?""",
+            (now, action, run_id),
         )
         message = "Emergency stop persisted; unfinished task and detail work remain resumable."
-    elif action == "resume":
+    elif action == "resume_ready_platforms":
+        blocked = """platform NOT IN (
+          SELECT platform FROM browser_platform_runs
+          WHERE browser_run_id=? AND (readiness_state IN
+            ('challenged_cooldown','sign_in_required','user_action_required','retryable','unverified')
+            OR worker_status IN ('challenged','sign_in_required','paused'))
+        )"""
         conn.execute(
-            """UPDATE browser_search_tasks
+            f"""UPDATE browser_search_tasks
                SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,last_error='',safety_stop_reason=''
                WHERE browser_run_id=? AND (status IN ('running','stopped') OR
-                 (status='incomplete' AND safety_stop_reason NOT LIKE 'Acceptance limit reached%'))""",
-            (run_id,),
+                 (status='incomplete' AND safety_stop_reason NOT LIKE 'Acceptance limit reached%')) AND {blocked}""",
+            (run_id, run_id),
         )
         conn.execute(
             """UPDATE search_task_results
                SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL,
                    detail_error=CASE WHEN detail_error='' THEN 'requeued after dashboard resume' ELSE detail_error END
-               WHERE browser_run_id=? AND detail_status='RUNNING'""",
-            (run_id,),
+               WHERE browser_run_id=? AND detail_status='RUNNING'""", (run_id,),
         )
         conn.execute(
-            """UPDATE browser_search_tasks
-               SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
-                   challenge_reason='',last_error=''
-               WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform')
-                 AND platform IN (SELECT platform FROM browser_platform_runs
-                                  WHERE browser_run_id=? AND auth_status IN ('not_authenticated','unknown','retryable','user_action_required'))""",
-            (run_id, run_id),
+            f"""UPDATE browser_platform_runs
+               SET stop_after_current=0,emergency_stop=0,resumed_at=?
+               WHERE browser_run_id=? AND {blocked}""", (now, run_id, run_id),
         )
-        conn.execute(
-            """UPDATE browser_search_tasks
-               SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
-                   challenge_reason='',last_error=''
-               WHERE browser_run_id=? AND status IN ('challenged','deferred_by_platform')
-                 AND platform IN (SELECT platform FROM browser_platform_runs
-                                  WHERE browser_run_id=? AND COALESCE(cooldown_until,'')<=?)""",
-            (run_id, run_id, now),
-        )
-        conn.execute(
-            """UPDATE search_task_results SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL
-               WHERE browser_run_id=? AND detail_status='EXTERNAL_BLOCKED' AND task_id IN
-                 (SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')""",
-            (run_id, run_id),
-        )
-        conn.execute(
-            """UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',readiness_state='unchecked',readiness_reason='',readiness_checked_at=NULL,resumed_at=?
-               WHERE browser_run_id=? AND platform IN
-                 (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')""",
-            (now, run_id, run_id),
-        )
+        if legacy_resume:
+            # Compatibility for the pre-canonical Python maintenance caller;
+            # the browser/API contract uses resume_ready_platforms above.
+            conn.execute(
+                """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,last_error=''
+                   WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform')""", (run_id,),
+            )
+            conn.execute(
+                """UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',readiness_state='unchecked',
+                   readiness_reason='',readiness_checked_at=NULL,worker_status='rechecking',resumed_at=?
+                   WHERE browser_run_id=? AND platform IN
+                     (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')""",
+                (now, run_id, run_id),
+            )
         conn.execute(
             """UPDATE browser_runs SET status='queued',completed_at=NULL,stop_requested=0,
-                   stop_after_current=0,last_error='',last_progress_at=? WHERE browser_run_id=?""",
-            (now, run_id),
+                   stop_after_current=0,last_error='',last_progress_at=? WHERE browser_run_id=?""", (now, run_id),
         )
-        message = "Run re-queued from durable checkpoints; completed details remain complete."
-    else:
+        message = "Ready platform work re-queued from durable checkpoints; completed details and challenge truth remain intact."
+    else:  # pragma: no cover - guarded by _normalize_run_control_action
         raise ValueError(f"unsupported run control: {action}")
     conn.execute(
         "INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)",
-        (run_id, now, f"dashboard_{action}", message, json.dumps({"action": action})),
+        (run_id, now, f"dashboard_{action}", message, json.dumps({"action": action, "request_id": request_id})),
     )
-    if action in {"stop", "emergency"}:
+    if action in {"stop_all", "emergency_stop"}:
         conn.execute("UPDATE watch_state SET status='STOPPED',stop_requested=1,current_phase='',current_run_id=NULL,last_error=?,updated_at=? WHERE watch_id=1", (message, now))
     conn.commit()
     refreshed = conn.execute("SELECT status FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()
-    return {"ok": True, "run_id": run_id, "status": str(refreshed[0]), "action": action, "message": message}
+    return {
+        "ok": True, "run_id": run_id, "status": str(refreshed[0]), "action": requested_action,
+        "canonical_action": action, "request_id": request_id, "deduplicated": False, "message": message,
+    }
 
 
 def control_platform(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
@@ -327,11 +412,17 @@ def control_platform(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[
     action = aliases.get(action, action)
     if action not in {"focus_window", "stop_after_current", "resume_platform", "recheck", "emergency_stop"}:
         raise ValueError(f"unsupported platform control: {action}")
-    request_id = str(payload.get("control_request_id") or f"dashboard:{run_id}:{platform}:{action}")
+    request_id = str(payload.get("control_request_id") or _new_control_request_id())
     now = _utc_now()
-    conn.execute("""INSERT OR IGNORE INTO control_requests(
-      request_id,browser_run_id,platform,action,status,requested_at,requested_by
-    ) VALUES(?,?,?,?,?,?,?)""", (request_id, run_id, platform, action, "PENDING", now, "dashboard"))
+    existing, deduplicated = _insert_control_request(
+        conn, request_id=request_id, run_id=run_id, platform=platform, action=action, now=now,
+    )
+    if deduplicated:
+        return {
+            "ok": True, "run_id": run_id, "platform": platform, "action": action,
+            "request_id": request_id, "status": str(existing["status"]), "deduplicated": True,
+            "message": f"{platform.title()} control {action} was already recorded for this control instance.",
+        }
     if action == "stop_after_current":
         conn.execute("UPDATE browser_platform_runs SET stop_after_current=1,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, run_id, platform))
     elif action == "emergency_stop":
@@ -339,15 +430,16 @@ def control_platform(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[
           WHERE browser_run_id=? AND platform=? AND status='running'""", (now, now, run_id, platform))
         conn.execute("UPDATE browser_platform_runs SET emergency_stop=1,worker_status='stopped',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, run_id, platform))
     elif action in {"resume_platform", "recheck"}:
-        conn.execute("""UPDATE browser_platform_runs SET stop_after_current=0,emergency_stop=0,readiness_state='unchecked',readiness_reason='',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?""", (now, action, run_id, platform))
-        conn.execute("""UPDATE browser_search_tasks SET status='queued',completed_at=NULL,challenge_reason='',last_error='',lease_owner='',worker_id='',lease_until=NULL
+        conn.execute("""UPDATE browser_platform_runs SET stop_after_current=0,emergency_stop=0,worker_status='rechecking',readiness_state='unchecked',readiness_reason='',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?""", (now, action, run_id, platform))
+        conn.execute("""UPDATE browser_search_tasks SET status='queued',completed_at=NULL,last_error='',lease_owner='',worker_id='',lease_until=NULL
           WHERE browser_run_id=? AND platform=? AND status IN ('challenged','deferred_by_platform','auth_required')""", (run_id, platform))
+        conn.execute("UPDATE browser_runs SET status='running',completed_at=NULL,stop_requested=0,last_progress_at=? WHERE browser_run_id=?", (now, run_id))
     elif action == "focus_window":
         conn.execute("UPDATE browser_platform_runs SET focus_requested_at=?,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, now, action, run_id, platform))
     conn.execute("INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)", (run_id, now, "control_requested", f"{platform}: {action}", json.dumps({"request_id": request_id, "platform": platform, "action": action})))
     conn.commit()
     row = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
-    return {"ok": True, "run_id": run_id, "platform": platform, "action": action, "request_id": request_id, "status": row["status"] if row else "PENDING", "message": f"{platform.title()} control {action} recorded; worker acknowledgement will appear from SQLite."}
+    return {"ok": True, "run_id": run_id, "platform": platform, "action": action, "request_id": request_id, "status": row["status"] if row else "PENDING", "deduplicated": False, "message": f"{platform.title()} control {action} recorded; worker acknowledgement will appear from SQLite."}
 
 
 def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "") -> dict[str, Any]:
@@ -551,10 +643,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             if self.path == "/api/run/control":
                 try:
                     action = str(payload.get("action", "")).strip().lower()
-                    if action == "emergency_stop":
-                        action = "emergency"
-                    result = control_run(conn, action, payload.get("run_id"))
-                    if action == "resume":
+                    result = control_run(conn, action, payload.get("run_id"), payload.get("control_request_id"))
+                    if result["canonical_action"] == "resume_ready_platforms":
                         log_path = self.bundle.output_dir / "logs" / f"run_{result['run_id']}_dashboard_resume.log"
                         log_path.parent.mkdir(parents=True, exist_ok=True)
                         with log_path.open("ab") as log_handle:

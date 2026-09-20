@@ -7,6 +7,7 @@ import re
 import secrets
 import sqlite3
 import sys
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -75,7 +76,7 @@ def _control_request(conn, msg: dict[str, Any], out: Path) -> dict[str, Any]:
     if platform and platform not in v3.PLATFORMS:
         return {"ok": False, "error": "unsupported_platform", "platform": platform}
     if not request_id:
-        request_id = f"dashboard:{rid}:{platform or 'global'}:{action}"
+        request_id = f"bridge:{uuid.uuid4()}"
     now = j.now_iso()
     existing = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
     if existing is not None:
@@ -91,15 +92,22 @@ def _control_request(conn, msg: dict[str, Any], out: Path) -> dict[str, Any]:
         elif action == "emergency_stop":
             conn.execute("UPDATE browser_platform_runs SET emergency_stop=1,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, rid, platform))
         elif action in {"resume_platform", "recheck"}:
-            conn.execute("UPDATE browser_platform_runs SET stop_after_current=0,emergency_stop=0,readiness_state='unchecked',readiness_reason='',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, rid, platform))
-            conn.execute("""UPDATE browser_search_tasks SET status='queued',completed_at=NULL,challenge_reason='',last_error='',lease_owner='',worker_id='',lease_until=NULL
+            conn.execute("UPDATE browser_platform_runs SET stop_after_current=0,emergency_stop=0,worker_status='rechecking',readiness_state='unchecked',readiness_reason='',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, rid, platform))
+            conn.execute("""UPDATE browser_search_tasks SET status='queued',completed_at=NULL,last_error='',lease_owner='',worker_id='',lease_until=NULL
               WHERE browser_run_id=? AND platform=? AND status IN ('challenged','deferred_by_platform','auth_required')""", (rid, platform))
+            conn.execute("UPDATE browser_runs SET status='running',completed_at=NULL,stop_requested=0,last_progress_at=? WHERE browser_run_id=?", (now, rid))
         elif action == "focus_window":
             conn.execute("UPDATE browser_platform_runs SET focus_requested_at=?,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, now, action, rid, platform))
     elif action in {"stop_all", "stop_after_current"}:
         conn.execute("UPDATE browser_runs SET stop_after_current=1,last_error=?,last_progress_at=? WHERE browser_run_id=?", ("stop after current requested from dashboard", now, rid))
     elif action == "emergency_stop":
-        conn.execute("UPDATE browser_runs SET stop_requested=1,last_error=?,last_progress_at=? WHERE browser_run_id=?", ("emergency stop requested from dashboard", now, rid))
+        conn.execute("""UPDATE browser_search_tasks SET status='incomplete',completed_at=?,lease_owner='',lease_until=NULL,
+            safety_stop_reason='manual_emergency_stop',last_error='manual emergency stop',last_progress_at=?
+            WHERE browser_run_id=? AND status='running'""", (now, now, rid))
+        conn.execute("""UPDATE browser_runs SET status='stopped',stop_requested=1,stop_after_current=0,completed_at=?,current_task_id=NULL,
+            tasks_incomplete=(SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND status='incomplete'),last_error=?,last_progress_at=?
+            WHERE browser_run_id=?""", (now, rid, "manual emergency stop", now, rid))
+        conn.execute("UPDATE browser_platform_runs SET emergency_stop=1,stop_after_current=0,worker_status='stopped',last_control_at=?,last_control_action=? WHERE browser_run_id=?", (now, action, rid))
     event(conn, rid, None, "control_requested", f"{platform or 'global'}: {action}", {"request_id": request_id, "platform": platform, "action": action}, out)
     conn.commit()
     row = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
@@ -550,9 +558,11 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             checked=j.now_iso()
             readiness = 'verified' if auth_state=='verified' else ('sign_in_required' if auth_state=='not_authenticated' else 'retryable')
             conn.execute("""UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=?,
-              readiness_state=?,readiness_reason=?,readiness_checked_at=?,resumed_at=CASE WHEN ? THEN ? ELSE resumed_at END
+              readiness_state=?,readiness_reason=?,readiness_checked_at=?,worker_status=CASE WHEN ? THEN 'running' ELSE worker_status END,
+              challenge_reason=CASE WHEN ? THEN '' ELSE challenge_reason END,
+              resumed_at=CASE WHEN ? THEN ? ELSE resumed_at END
               WHERE browser_run_id=? AND platform=?""",
-              (auth_state,reason,checked,readiness,reason,checked,int(auth_state=='verified'),checked,rid,platform))
+              (auth_state,reason,checked,readiness,reason,checked,int(auth_state=='verified'),int(auth_state=='verified'),int(auth_state=='verified'),checked,rid,platform))
             if auth_state != 'verified':
                 tid=int(msg.get('task_id') or 0)
                 task_status='auth_required' if auth_state=='not_authenticated' else 'deferred_by_platform'
@@ -570,8 +580,10 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             explicit_auth=j.clean_text(msg.get('auth_state') or '').lower()
             auth_status='verified' if status in {'verified','resumed'} else (explicit_auth if explicit_auth in AUTH_STATES - {'unchecked'} else 'unknown')
             if status=='sign_in_required': auth_status='not_authenticated'
-            conn.execute("""UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=?,readiness_state=?,readiness_reason=?,readiness_checked_at=?,resumed_at=CASE WHEN ? THEN ? ELSE resumed_at END
-              WHERE browser_run_id=? AND platform=?""",(auth_status,reason,now,status,reason,now,int(status in {'verified','resumed'}),now,rid,platform))
+            conn.execute("""UPDATE browser_platform_runs SET auth_status=?,auth_reason=?,auth_checked_at=?,readiness_state=?,readiness_reason=?,readiness_checked_at=?,worker_status=CASE WHEN ? THEN 'running' ELSE worker_status END,
+              challenge_reason=CASE WHEN ? THEN '' ELSE challenge_reason END,
+              resumed_at=CASE WHEN ? THEN ? ELSE resumed_at END
+              WHERE browser_run_id=? AND platform=?""",(auth_status,reason,now,status,reason,now,int(status in {'verified','resumed'}),int(status in {'verified','resumed'}),int(status in {'verified','resumed'}),now,rid,platform))
             if status not in {'verified','resumed'}:
                 tid=int(msg.get('task_id') or 0)
                 conn.execute("""UPDATE browser_search_tasks SET status='deferred_by_platform',completed_at=NULL,last_error=?,lease_owner='',lease_until=NULL
@@ -839,8 +851,13 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='heartbeat':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);platform=j.clean_text(msg.get('platform') or '');worker_id=j.clean_text(msg.get('worker_id') or '');lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180);now=j.now_iso();
             conn.execute("UPDATE browser_search_tasks SET last_progress_at=?,lease_until=? WHERE task_id=? AND browser_run_id=? AND (worker_id=? OR ?='')",(now,lease_time(lease_seconds),tid,rid,worker_id,worker_id))
-            if platform:conn.execute("UPDATE browser_platform_runs SET worker_heartbeat_at=?,worker_status='running',receiver_state='connected',chrome_available=1,last_meaningful_progress_at=? WHERE browser_run_id=? AND platform=?",(now,now,rid,platform))
-            conn.execute("UPDATE browser_runs SET last_progress_at=?,last_meaningful_progress_at=?,current_task_id=? WHERE browser_run_id=?",(now,now,tid,rid));conn.commit();return {'ok':True,'platform':platform,'worker_id':worker_id}
+            worker_status=j.clean_text(msg.get('worker_status') or 'running')
+            meaningful=worker_status not in {'challenged','paused'}
+            if platform:
+                conn.execute("""UPDATE browser_platform_runs SET worker_heartbeat_at=?,worker_status=?,receiver_state='connected',chrome_available=1,
+                  last_meaningful_progress_at=CASE WHEN ? THEN ? ELSE last_meaningful_progress_at END
+                  WHERE browser_run_id=? AND platform=?""",(now,worker_status,int(meaningful),now,rid,platform))
+            conn.execute("UPDATE browser_runs SET last_progress_at=?,last_meaningful_progress_at=CASE WHEN ? THEN ? ELSE last_meaningful_progress_at END,current_task_id=? WHERE browser_run_id=?",(now,int(meaningful),now,tid or None,rid));conn.commit();return {'ok':True,'platform':platform,'worker_id':worker_id,'worker_status':worker_status}
         if action=='browser_event':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);message=j.clean_text(msg.get('message') or msg.get('event_type') or 'browser event');event(conn,rid,tid,j.clean_text(msg.get('event_type') or 'browser_event'),message,msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True}
         if action=='instrumentation_metrics':
@@ -851,7 +868,31 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             conn.execute("""UPDATE browser_platform_runs SET worker_id=?,worker_heartbeat_at=?,worker_status=?,receiver_state=?,chrome_available=?,owned_window=?,window_id=?,window_state=?,window_focused=?,search_tab_id=?,search_tab_url=?,current_search_url=?,last_progress_message=?,last_meaningful_progress_at=? WHERE browser_run_id=? AND platform=?""",(worker_id,now,worker_status,j.clean_text(msg.get('receiver_state') or 'connected'),int(bool(msg.get('chrome_available',True))),int(bool(msg.get('owned_window',True))),msg.get('window_id'),j.clean_text(msg.get('window_state') or ''),int(bool(msg.get('window_focused',False))),msg.get('search_tab_id'),j.clean_text(msg.get('search_tab_url') or ''),j.clean_text(msg.get('search_tab_url') or ''),j.clean_text(msg.get('message') or ''),now,rid,platform))
             if worker_status in {'terminal','stopped','challenged'}:
                 conn.execute("UPDATE browser_platform_runs SET worker_completed_at=?,current_task_id=CASE WHEN ? IN ('terminal','stopped') THEN NULL ELSE current_task_id END WHERE browser_run_id=? AND platform=?", (now, worker_status, rid, platform))
-            conn.execute("UPDATE browser_runs SET last_progress_at=?,last_meaningful_progress_at=? WHERE browser_run_id=?",(now,now,rid));conn.commit();return {'ok':True,'platform':platform,'worker_id':worker_id}
+            if worker_status in {'running','rechecking'}:
+                conn.execute("UPDATE browser_runs SET status=CASE WHEN stop_requested=0 THEN 'running' ELSE status END,completed_at=NULL,last_progress_at=?,last_meaningful_progress_at=? WHERE browser_run_id=?",(now,now,rid))
+            elif worker_status in {'challenged','paused'}:
+                healthy_pending=conn.execute("""SELECT COUNT(*) FROM browser_search_tasks t
+                  JOIN browser_platform_runs p ON p.browser_run_id=t.browser_run_id AND p.platform=t.platform
+                  WHERE t.browser_run_id=? AND t.status IN ('queued','running')
+                    AND p.worker_status NOT IN ('challenged','paused','sign_in_required')""",(rid,)).fetchone()[0]
+                blocked_work=conn.execute("""SELECT COUNT(*) FROM browser_search_tasks
+                  WHERE browser_run_id=? AND status IN ('challenged','deferred_by_platform','auth_required','incomplete','failed','stopped')""",(rid,)).fetchone()[0]
+                if not healthy_pending and blocked_work:
+                    conn.execute("UPDATE browser_runs SET status='partial',completed_at=COALESCE(completed_at,?),last_error=?,last_progress_at=? WHERE browser_run_id=? AND stop_requested=0",(now,f'{platform} supervisor paused: external platform action required',now,rid))
+                else:
+                    conn.execute("UPDATE browser_runs SET last_progress_at=? WHERE browser_run_id=?",(now,rid))
+            else:
+                healthy_pending=conn.execute("""SELECT COUNT(*) FROM browser_search_tasks t
+                  JOIN browser_platform_runs p ON p.browser_run_id=t.browser_run_id AND p.platform=t.platform
+                  WHERE t.browser_run_id=? AND t.status IN ('queued','running')
+                    AND p.worker_status NOT IN ('challenged','paused','sign_in_required')""",(rid,)).fetchone()[0]
+                blocked_work=conn.execute("""SELECT COUNT(*) FROM browser_search_tasks
+                  WHERE browser_run_id=? AND status IN ('challenged','deferred_by_platform','auth_required','incomplete','failed','stopped')""",(rid,)).fetchone()[0]
+                if worker_status in {'terminal','stopped'} and not healthy_pending and blocked_work and not int((conn.execute("SELECT stop_requested FROM browser_runs WHERE browser_run_id=?",(rid,)).fetchone() or {'stop_requested': 0})['stop_requested'] or 0):
+                    conn.execute("UPDATE browser_runs SET status='partial',completed_at=COALESCE(completed_at,?),last_error=?,last_progress_at=? WHERE browser_run_id=?",(now,'platform supervisor paused: external platform action required',now,rid))
+                else:
+                    conn.execute("UPDATE browser_runs SET last_progress_at=?,last_meaningful_progress_at=? WHERE browser_run_id=?",(now,now,rid))
+            conn.commit();return {'ok':True,'platform':platform,'worker_id':worker_id,'worker_status':worker_status}
         if action=='complete_task':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);status=j.clean_text(msg.get('status') or 'completed');reason=j.clean_text(msg.get('reason') or '');exhausted=1 if bool(msg.get('exhausted')) else 0
             if status=='completed': status='exhausted' if exhausted else 'incomplete'
