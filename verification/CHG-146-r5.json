@@ -1,0 +1,220 @@
+{
+  "verification_id": "CHG-146-r5",
+  "target": {
+    "main_sha": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "target_drift": false,
+    "carried_product_candidate": "9147762b40ec155cbe15642103cae948d114cf8b",
+    "ancestry_preserved": [
+      "248a90d8757a60df0dcff59075407627bbc425c2",
+      "9399ca6c1cd77b6de01be1feba88cd7a38ee5f81",
+      "6f76e8305b07976b84c9068a578c226956932a81",
+      "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+      "62873b34a0d4cfe87007ebfc22c304a849661096",
+      "9147762b40ec155cbe15642103cae948d114cf8b"
+    ]
+  },
+  "final_product": {
+    "integration_head": "fa3144bb93c35723f15744740985aee605b02765",
+    "tree": "4aae10b8938e63f496a1fbfdb8fd8659079e895f",
+    "build": "3.2.2-prod-ready.672cf88.21",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "extension_source_identity": "sha256:1d8489dc457ac062688b967d9c303f8837f17fb3b933eb5f9f7db855d3a063aa",
+    "product_commits": [
+      {"sha": "997034a69250486b23907460f56b1f3158c4f85d", "change": "run-scoped startup ownership; build .19"},
+      {"sha": "fb10ffd70bb75bfcdc816258d1876b49776d9050", "change": "Glassdoor pane identity repair; build .20"},
+      {"sha": "84d81357958051b59ab90d41cc28c59ee33d0dce", "change": "Glassdoor selected-result linkage; build .21"},
+      {"sha": "fa3144bb93c35723f15744740985aee605b02765", "change": "narrow dashboard URL wrapping; extension payload/build unchanged"}
+    ],
+    "worktree_clean_before_evidence": true
+  },
+  "startup_lifecycle": {
+    "implementation": "startupRunId + startupPromise shared by ensureResume, JOBBOT_START_RUN and bootstrap continuation",
+    "sole_scheduler": "runProduction",
+    "regression_file": "tests/extension_startup_lifecycle_test.js",
+    "required_cases": 10,
+    "passed": true,
+    "covered": [
+      "no saved run leaves startup idle",
+      "idle resume followed by real start invokes runProduction/begin_run once",
+      "valid nonterminal saved run resumes once",
+      "same-run duplicate is idempotent",
+      "different run is rejected with actual owner ID",
+      "terminal or missing saved run clears ownership",
+      "status/bridge failure before handoff clears ownership",
+      "repeated no-run alarms do not wedge later start",
+      "predecessor bootstrap reload handoff resumes once",
+      "maintenance refresh with no run stays idle"
+    ]
+  },
+  "supported_refresh_upgrade": {
+    "path": "repository sync-extension then refresh-extension",
+    "manual_extension_reload": false,
+    "chrome_extensions_page": false,
+    "chrome_profile_file_access": false,
+    "binding": {
+      "extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "profile_directory": "Default",
+      "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+    },
+    "steps": [
+      {
+        "from": "3.2.2-prod-ready.672cf88.18",
+        "to": "3.2.2-prod-ready.672cf88.19",
+        "source_identity": "sha256:632bd760111da8496ce3b41fd465c9af7aef8f70c934d492497f050ac694e26e",
+        "observed_build": "3.2.2-prod-ready.672cf88.19",
+        "reload_count": 1,
+        "identity_confirmed": true
+      },
+      {
+        "from": "3.2.2-prod-ready.672cf88.19",
+        "to": "3.2.2-prod-ready.672cf88.20",
+        "observed_build": "3.2.2-prod-ready.672cf88.20",
+        "source_identity": "sha256:0d0ee1369c7c20637a4491c181851bf2ccca681b3e9e55d77cb77e706401b741",
+        "identity_confirmed": true,
+        "supported_retry_after_transient_unreachable": true
+      },
+      {
+        "from": "3.2.2-prod-ready.672cf88.20",
+        "to": "3.2.2-prod-ready.672cf88.21",
+        "observed_build": "3.2.2-prod-ready.672cf88.21",
+        "source_identity": "sha256:1d8489dc457ac062688b967d9c303f8837f17fb3b933eb5f9f7db855d3a063aa",
+        "reload_count": 1,
+        "identity_confirmed": true
+      }
+    ],
+    "final_supported_confirmation": {
+      "expected_build": "3.2.2-prod-ready.672cf88.21",
+      "observed_build": "3.2.2-prod-ready.672cf88.21",
+      "observed_source_identity": "sha256:1d8489dc457ac062688b967d9c303f8837f17fb3b933eb5f9f7db855d3a063aa",
+      "identity_confirmed": true,
+      "stable_deployment_current": true
+    }
+  },
+  "live_architecture": {
+    "isolated_ledger": "/tmp/jobbot-chg146-r5-live-ledger.sqlite3",
+    "isolated_observation_cache": "/tmp/jobbot-chg146-r5-live-crawl_observations.sqlite3",
+    "run_id": 1,
+    "sample": {"linkedin": 1, "indeed": 1, "glassdoor": 1, "max_results": 1},
+    "run_status": "partial",
+    "begin_run_persisted": true,
+    "three_primary_workers": {
+      "overlap": true,
+      "max_primary_workers": 3,
+      "task_started_at": "2026-09-20T04:31:09+00:00",
+      "window_created_at": "2026-09-20T04:31:10+00:00",
+      "workers": [
+        {"platform": "linkedin", "worker_id": "extension-run-1-linkedin", "generation": 1, "started_at": "2026-09-20T04:31:09+00:00", "heartbeat_at": "2026-09-20T04:31:19+00:00", "status": "terminal"},
+        {"platform": "indeed", "worker_id": "extension-run-1-indeed", "generation": 1, "started_at": "2026-09-20T04:31:09+00:00", "heartbeat_at": "2026-09-20T04:31:11+00:00", "status": "challenged"},
+        {"platform": "glassdoor", "worker_id": "extension-run-1-glassdoor", "generation": 1, "started_at": "2026-09-20T04:31:09+00:00", "heartbeat_at": "2026-09-20T04:31:28+00:00", "status": "terminal"}
+      ]
+    },
+    "window_tab_invariant": {
+      "linkedin": {"window_id": 137909854, "search_tab_id": 137909855, "tab_count": 1},
+      "indeed": {"window_id": 137909856, "search_tab_id": 137909857, "tab_count": 1},
+      "glassdoor": {"window_id": 137909858, "search_tab_id": 137909859, "tab_count": 1},
+      "standalone_detail_tabs": 0,
+      "detail_page_navigations": 0
+    },
+    "challenge_isolation": {
+      "platform": "indeed",
+      "reason": "security check",
+      "state": "challenged_cooldown",
+      "window_state": "human_inspectable",
+      "preserved_window_id": 137909856,
+      "preserved_search_tab_id": 137909857,
+      "other_workers_continued": true,
+      "recheck_unchanged_challenge": false,
+      "credentials_or_bypass_used": false
+    }
+  },
+  "pane_first_proof": [
+    {
+      "platform": "linkedin",
+      "run_id": 1,
+      "build": "3.2.2-prod-ready.672cf88.19",
+      "source_job_id": "4469558672",
+      "selected_source_job_id": "4469558672",
+      "identity_proven": true,
+      "detail_acquisition_mode": "search_pane",
+      "description_length": 3557,
+      "content_state": "COMPLETE",
+      "canonical_result_linked": true,
+      "fresh_live_data": true,
+      "cards_before_detail": true
+    },
+    {
+      "platform": "glassdoor",
+      "run_id": 1,
+      "isolated_ledger": "/tmp/jobbot-chg146-r5-glassdoor21-ledger.sqlite3",
+      "isolated_observation_cache": "/tmp/jobbot-chg146-r5-glassdoor21-crawl_observations.sqlite3",
+      "build": "3.2.2-prod-ready.672cf88.21",
+      "source_job_id": "1010215774942",
+      "selected_source_job_id": "1010215774942",
+      "identity_proven": true,
+      "detail_acquisition_mode": "search_pane",
+      "description_length": 4880,
+      "content_state": "COMPLETE",
+      "canonical_result_linked": true,
+      "fresh_live_data": true,
+      "cards_before_detail": true,
+      "window_id": 137909900,
+      "search_tab_id": 137909901
+    }
+  ],
+  "durability": {
+    "ledger_integrity_check": "ok",
+    "cache_integrity_check": "ok",
+    "ledger_schema_migrations_applied": 16,
+    "cache_schema_migrations_applied": 1,
+    "authoritative_ledger_is_source_of_truth": true,
+    "fresh_pane_proof_bypassed_cache_reuse": true,
+    "cache_rows": [
+      {"platform": "linkedin", "source_job_id": "4469558672", "completeness": "COMPLETE", "source_build": "3.2.2-prod-ready.672cf88.19"},
+      {"platform": "glassdoor", "source_job_id": "1010215774942", "completeness": "COMPLETE", "source_build": "3.2.2-prod-ready.672cf88.21"}
+    ],
+    "cache_safe_key_audit": {"forbidden_credential_or_profile_terms": [], "credentials_cookies_tokens_profile_data": false},
+    "duplicate_occurrence_keys": 0,
+    "reconciliation_failures": 0,
+    "card_before_detail_ordering": true
+  },
+  "dashboard": {
+    "live_server": "http://127.0.0.1:8876/",
+    "live_identity": {"database_identity": "cf4f0026013fd403", "database_path": "/private/tmp/jobbot-chg146-r5-live-ledger.sqlite3", "run_status": "partial", "jobs_recorded": 1, "discoveries": 11, "details_complete": 1},
+    "screenshots": [
+      "verification/CHG-146-r5/dashboard-desktop-1440x900.png",
+      "verification/CHG-146-r5/dashboard-short-1280x720.png",
+      "verification/CHG-146-r5/dashboard-narrow-390x844.png",
+      "verification/CHG-146-r5/dashboard-populated-full.png"
+    ],
+    "capture_method": "bundled Playwright Chromium; isolated from bound Default profile",
+    "geometry_and_accessibility": {
+      "page_horizontal_overflow_390px": false,
+      "document_scroll_width_390px": 390,
+      "named_buttons": true,
+      "global_controls_named": true,
+      "reduced_motion_observed": true,
+      "drawer_aria_modal": "true",
+      "drawer_focus_trap": true,
+      "drawer_escape_close": true,
+      "drawer_return_focus": true
+    },
+    "controls": ["stop_all", "resume_ready_platforms", "emergency_stop", "focus_window", "stop_after_current", "resume_platform", "recheck"]
+  },
+  "deterministic_floor": {
+    "python_unittest_discovery": {"tests": 107, "result": "OK"},
+    "extension_js_regression_files": 9,
+    "extension_js_regressions": "passed",
+    "javascript_syntax": "passed",
+    "python_compileall": "passed",
+    "git_diff_check": "passed",
+    "bootstrap_compatibility": "passed",
+    "bridge_readiness_auth_scope_target_lifecycle_dashboard_ledger_validator": "passed"
+  },
+  "go_oracle": {
+    "go_candidate": true,
+    "candidate_owned_defects_remaining": [],
+    "external_blockers": [{"platform": "indeed", "condition": "security check", "isolated_fail_closed": true}],
+    "runtime_secrets_or_data_committed": false,
+    "verification_only_commit": "this verification publication commit"
+  }
+}
