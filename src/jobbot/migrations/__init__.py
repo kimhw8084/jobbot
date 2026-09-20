@@ -20,6 +20,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0014_extension_runtime_binding",
     "jobbot.migrations.m0015_production_integrity_states",
     "jobbot.migrations.m0016_chg146_workers_controls",
+    "jobbot.migrations.m0017_chg159_human_wait",
 )
 
 

@@ -14,3 +14,40 @@
 @media(max-width:1100px){.metric-grid{grid-template-columns:repeat(3,1fr)}.audit-grid{grid-template-columns:1fr}.platform-grid{grid-template-columns:repeat(3,minmax(250px,1fr));overflow-x:auto}.platform-card{min-width:250px}} @media(max-width:760px){.topbar{padding:0 14px;gap:13px}.topnav{display:none}.shell{padding:22px 14px 52px}.hero{display:block}.identity-card{margin-top:15px;min-width:0}.hero h1{font-size:29px}.runtime-strip{grid-template-columns:repeat(2,1fr)}.runtime-strip>div:nth-child(2n){border-right:0}.runtime-strip>div:last-child{grid-column:span 2}.panel{padding:16px}.panel-heading{display:block}.global-controls{margin-top:13px}.platform-grid{display:grid;grid-template-columns:1fr;overflow:visible}.metric-grid{grid-template-columns:repeat(2,1fr)}.filter-bar{display:block}.filter-bar>*{display:flex;width:100%;margin-bottom:7px}.filter-bar .search-field{display:flex}.jobs-heading{display:block}.view-switch{margin-top:13px;width:max-content}.detail-section.split{grid-template-columns:1fr;gap:16px}.drawer-card{padding:18px 16px}.detail-score-grid{grid-template-columns:repeat(3,1fr)}} @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
  .platform-status.rechecking { color:var(--blue); background:var(--blue-soft); } .platform-control-state { font-size:11px; color:var(--blue); margin:0 0 12px; }
 .platform-reason { overflow-wrap:anywhere; word-break:break-word; }
+.run-summary-emphasis { border:1px solid #b9c9e9; border-left:4px solid var(--blue); border-radius:8px; background:#f5f8ff; color:#1f3f80; font-size:14px; font-weight:800; padding:10px 12px; margin-bottom:8px; }
+.platform-card { min-height:100%; display:flex; flex-direction:column; }
+.platform-card .platform-actions { margin-top:auto; }
+.platform-card.waiting-human { border-color:#d99a27; background:#fffaf0; }
+.platform-card.system-retryable,.platform-card.system-unverified { border-color:#a7b7d7; background:#f8faff; }
+.platform-card.stale,.platform-card.offline { border-color:#bdc5d2; background:#fafbfc; }
+.platform-card.internal-error { border-color:#d98980; background:#fff8f7; }
+.platform-card.ready { border-color:#b9d7c8; }
+.platform-status.waiting-human { color:#8a4b00; background:#fff0c9; border:1px solid #d99a27; }
+.platform-status.system-retryable { color:#244d9b; background:#eaf0ff; border:1px solid #9cb4ee; }
+.platform-status.system-unverified { color:#5a4a9b; background:#f0edff; border:1px solid #b9aee9; }
+.platform-status.stale,.platform-status.offline { color:#455468; background:#edf0f4; border:1px solid #aeb8c6; }
+.platform-status.internal-error { color:#9f241d; background:#fff0ee; border:1px solid #d98980; }
+.human-wait-panel { border:1px solid #e2b45e; border-left:4px solid #c87500; border-radius:8px; padding:10px 11px; margin:0 0 12px; background:#fff6df; color:#4e3205; }
+.human-wait-panel h4 { margin:0 0 4px; font-size:13px; }
+.human-wait-panel p { margin:4px 0; font-size:11px; }
+.human-wait-panel .wait-proof { color:#684a16; font-weight:650; overflow-wrap:anywhere; }
+.human-wait-panel .reassurance { color:#3d2a09; font-weight:800; }
+.ownership-note { color:#536273; font-size:11px; margin:0 0 12px; padding:8px; border:1px dashed #c4cedc; border-radius:7px; }
+.platform-reason.system-retryable,.platform-reason.system-unverified,.platform-reason.stale,.platform-reason.offline,.platform-reason.internal-error { color:#46566d; background:#f5f7fa; border-color:#d5dce6; }
+.platform-control-state { min-height:1.3em; overflow-wrap:anywhere; }
+.drawer-error { color:var(--red); background:var(--red-soft); border:1px solid #e0a29a; border-radius:7px; padding:10px; font-size:12px; }
+.platform-actions button,.global-controls button,.top-actions button { min-height:38px; }
+@media(max-width:1120px){.platform-grid{grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}.platform-card{min-width:0}}
+@media(max-width:900px){.platform-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.platform-grid{grid-template-columns:1fr}.platform-actions button,.global-controls button,.top-actions button{min-height:44px}.run-summary-emphasis{font-size:13px}}
+@media(forced-colors:active){
+  * { box-shadow:none!important; }
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid CanvasText; outline-offset:3px; }
+  .platform-status,.state-badge,.status-pill,.platform-card,.human-wait-panel,.platform-reason,.ownership-note,.run-summary-emphasis { forced-color-adjust:none; background:Canvas; color:CanvasText; border:2px solid CanvasText; }
+  .platform-status:before { background:CanvasText; border:1px solid CanvasText; }
+  .platform-status.waiting-human,.human-wait-panel { border-color:Highlight; }
+  .platform-status.system-retryable,.platform-status.system-unverified,.run-summary-emphasis { border-color:Highlight; }
+  .platform-status.internal-error,.platform-reason.internal-error { border-color:Mark; }
+  .view-switch button.selected,.quick.active { outline:2px solid Highlight; outline-offset:-2px; border:1px solid Highlight; }
+  .coverage-fill { background:Highlight; }
+}

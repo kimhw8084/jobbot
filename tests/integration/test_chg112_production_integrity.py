@@ -245,7 +245,15 @@ class Chg112ProductionIntegrityTests(unittest.TestCase):
                     self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND status='deferred_by_platform'", (run_id,)).fetchone()[0], 2)
                     dashboard.control_run(conn, "resume", run_id)
                     conn.close()
-                    retry = rpc.handle({"action": "next_task", "run_id": run_id, "worker_id": f"{platform}-auth"})["task"]
+                    blocked = rpc.handle({"action": "next_task", "run_id": run_id, "platform": platform, "worker_id": f"{platform}-auth"})
+                    self.assertTrue(blocked["done"])
+                    conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+                    dashboard.control_platform(conn, {
+                        "run_id": run_id, "platform": platform, "action": "recheck",
+                        "control_request_id": f"{platform}-auth-recheck",
+                    })
+                    conn.close()
+                    retry = rpc.handle({"action": "next_task", "run_id": run_id, "platform": platform, "worker_id": f"{platform}-auth"})["task"]
                     self.assertEqual(retry["platform"], platform)
                     rpc.handle({"action": "platform_auth_result", "run_id": run_id, "task_id": retry["task_id"], "platform": platform, "authenticated": True, "reason": f"{platform} session authenticated"})
                     conn = sqlite3.connect(root / "data" / "jobs.sqlite3")

@@ -285,36 +285,45 @@ def resume_run(base: Path, rid: int | None = None) -> int:
            SET status='queued', completed_at=NULL, lease_owner='', lease_until=NULL,
                last_error='', safety_stop_reason=''
            WHERE browser_run_id=? AND (status IN ('running','stopped') OR
-             (status='incomplete' AND safety_stop_reason NOT LIKE 'Acceptance limit reached%'))""", (rid,)
+             (status='incomplete' AND safety_stop_reason NOT LIKE 'Acceptance limit reached%'))
+             AND platform NOT IN (
+               SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND interaction_state='WAITING_FOR_HUMAN'
+             )""", (rid, rid)
     )
     store.conn.execute(
         """UPDATE search_task_results SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL,
              detail_error=CASE WHEN detail_error='' THEN 'requeued after run interruption' ELSE detail_error END
-           WHERE browser_run_id=? AND detail_status='RUNNING'""", (rid,)
+           WHERE browser_run_id=? AND detail_status='RUNNING'
+             AND task_id IN (
+               SELECT task_id FROM browser_search_tasks
+               WHERE browser_run_id=? AND platform NOT IN (
+                 SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND interaction_state='WAITING_FOR_HUMAN'
+               )
+             )""", (rid, rid, rid)
     )
     store.conn.execute(
         """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
              challenge_reason='',last_error=''
            WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform') AND platform IN (
              SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND auth_status IN ('not_authenticated','unknown','retryable','user_action_required')
-           )""", (rid, rid)
+           ) AND platform NOT IN (
+             SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND interaction_state='WAITING_FOR_HUMAN'
+           )""", (rid, rid, rid)
     )
-    store.conn.execute(
-        """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,
-             challenge_reason='',last_error=''
-           WHERE browser_run_id=? AND status IN ('challenged','deferred_by_platform') AND platform IN (
-             SELECT platform FROM browser_platform_runs
-             WHERE browser_run_id=? AND COALESCE(cooldown_until,'')<=?
-           )""", (rid, rid, now)
-    )
+    # Human-gated lanes are intentionally not released by elapsed cooldowns or
+    # by a global resume.  Only the explicit platform recheck control may
+    # convert this durable checkpoint back into runnable work.
     store.conn.execute(
         """UPDATE search_task_results SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL
            WHERE browser_run_id=? AND detail_status='EXTERNAL_BLOCKED' AND task_id IN (
              SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND status='queued'
-           )""", (rid, rid)
+               AND platform NOT IN (
+                 SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND interaction_state='WAITING_FOR_HUMAN'
+               )
+           )""", (rid, rid, rid)
     )
     store.conn.execute(
-        "UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',readiness_state='unchecked',readiness_reason='',readiness_checked_at=NULL,resumed_at=? WHERE browser_run_id=? AND platform IN (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')",
+        "UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',readiness_state='unchecked',readiness_reason='',readiness_checked_at=NULL,interaction_state='RECHECKING',resumed_at=? WHERE browser_run_id=? AND platform IN (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued') AND interaction_state<>'WAITING_FOR_HUMAN'",
         (now, rid, rid),
     )
     store.conn.execute(

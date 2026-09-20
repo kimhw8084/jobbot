@@ -184,7 +184,7 @@ async function reattachPlatformTarget(runId,platform){
   let state=null;
   try{state=await nativeRequest('run_status',{run_id:runId},10000);}catch(_){return{target:null,blocked:false,state:null};}
   const row=(state?.platforms||[]).find(item=>String(item.platform||'')===platform)||null;
-  const blocked=!!row&&(['challenged','paused','sign_in_required'].includes(String(row.worker_status||''))||['challenged_cooldown','sign_in_required','retryable','unverified','user_action_required'].includes(String(row.readiness_state||'')));
+  const blocked=!!row&&(['challenged','paused','sign_in_required'].includes(String(row.worker_status||''))||String(row.interaction_state||'').toUpperCase()==='WAITING_FOR_HUMAN'||['challenged_cooldown','sign_in_required','user_action_required'].includes(String(row.readiness_state||'')));
   if(row?.window_id!=null&&row?.search_tab_id!=null){
     const target=await validatePlatformTarget(platform,{tab:{id:Number(row.search_tab_id),windowId:Number(row.window_id),url:String(row.search_tab_url||'')},window_id:Number(row.window_id),owned_window:!!row.owned_window,mode:'reattached',creation:'reattached'});
     if(target)return{target,blocked,state:row};
@@ -665,12 +665,12 @@ async function processTask(runId,task,workerTarget=null,workerId=''){
 }
 
 const SUPERVISOR_POLL_MS=2000;
-async function reportWorkerRuntime(runId,platform,workerId,status,target,message){
+async function reportWorkerRuntime(runId,platform,workerId,status,target,message,workerGeneration=0){
   const runtime=target?await tabLifecycleSnapshot(target.tab?.id,target.window_id):{};
-  await nativeRequest('worker_runtime',{run_id:runId,platform,worker_id:workerId,worker_status:status,owned_window:target?.owned_window===true,window_id:target?.window_id??null,window_state:status==='terminal'?'closed':status==='challenged'||status==='paused'?'human_inspectable':runtime.window_state||'',window_focused:runtime.window_focused===true,search_tab_id:target?.tab?.id??null,search_tab_url:runtime.url||target?.tab?.url||'',chrome_available:!!target,message}).catch(()=>{});
+  await nativeRequest('worker_runtime',{run_id:runId,platform,worker_id:workerId,worker_generation:workerGeneration,worker_status:status,owned_window:target?.owned_window===true,window_id:target?.window_id??null,window_state:status==='terminal'?'closed':status==='challenged'||status==='paused'?'human_inspectable':runtime.window_state||'',window_focused:runtime.window_focused===true,search_tab_id:target?.tab?.id??null,search_tab_url:runtime.url||target?.tab?.url||'',chrome_available:!!target,message}).catch(()=>{});
 }
-async function applyWorkerControl(runId,platform,target,workerId,paused=false){
-  const delivery=await nativeRequest('consume_control',{run_id:runId,platform,worker_id:workerId},10000);
+async function applyWorkerControl(runId,platform,target,workerId,paused=false,workerGeneration=0){
+  const delivery=await nativeRequest('consume_control',{run_id:runId,platform,worker_id:workerId,worker_generation:workerGeneration},10000);
   const control=delivery?.control;if(!control)return{stop:false,recheck:false};
   const action=String(control.action||'');let result={action};
   if(action==='focus_window'){
@@ -680,59 +680,60 @@ async function applyWorkerControl(runId,platform,target,workerId,paused=false){
   }else if(action==='emergency_stop'){result.stopped=true;}
   else if(action==='stop_after_current'||action==='stop_all'){result.stop_after_current=true;}
   else if(action==='resume_platform'||action==='recheck'){result.recheck=true;}
-  else if(action==='resume_ready_platforms'){result.ready_only=true;}
-  await nativeRequest('ack_control',{run_id:runId,platform,worker_id:workerId,request_id:control.request_id,status:'ACKNOWLEDGED',result},10000);
+  else if(action==='resume_ready_platforms'){result.ready_only=true;result.skipped_human_wait=paused;}
+  await nativeRequest('ack_control',{run_id:runId,platform,worker_id:workerId,worker_generation:workerGeneration,request_id:control.request_id,status:'ACKNOWLEDGED',result},10000);
   return{stop:action==='emergency_stop'||(paused&&(action==='stop_after_current'||action==='stop_all')),recheck:result.recheck===true,action};
 }
 
 async function runPlatformWorker(runId,platform,expectedBuild,refreshId){
-  const workerId=`extension-run-${runId}-${platform}`;let target=null,authReady=false,keepTarget=false,paused=false;
+  const workerId=`extension-run-${runId}-${platform}`;let workerGeneration=0,target=null,authReady=false,keepTarget=false,paused=false,finalStatus='terminal';
   try{
-    const attached=await reattachPlatformTarget(runId,platform);target=attached.target;paused=attached.blocked;
+    const attached=await reattachPlatformTarget(runId,platform);target=attached.target;paused=attached.blocked;workerGeneration=Number(attached.state?.worker_generation||0);const priorReadiness=String(attached.state?.readiness_state||'');if(!paused&&priorReadiness==='retryable')finalStatus='retryable';if(!paused&&priorReadiness==='unverified')finalStatus='unverified';
     activeTasks.set(platform,{worker_id:workerId,task_id:0,status:paused?'challenged':'running'});
-    if(paused){keepTarget=true;await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform supervisor paused; waiting for explicit human recovery control');}
+    if(paused){keepTarget=true;await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform supervisor paused; waiting for explicit human recovery control',workerGeneration);}
     while(true){
       if(target)target=await validatePlatformTarget(platform,target);
-      const control=await applyWorkerControl(runId,platform,target,workerId,paused).catch(()=>({stop:false,recheck:false}));
+    const control=await applyWorkerControl(runId,platform,target,workerId,paused,workerGeneration).catch(()=>({stop:false,recheck:false}));
       if(control.stop){keepTarget=false;break;}
       if(paused){
         if(control.recheck){
-          paused=false;authReady=false;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'rechecking'});
+          paused=false;authReady=false;finalStatus='terminal';activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'rechecking'});
           if(!target){
             const n=await requiredRequest('next_task',{run_id:runId,platform,worker_id:workerId});
             if(n.stop){keepTarget=false;break;}
             if(n.task){
               target=await createBackgroundTarget(n.task.search_url||n.task.requested_search_url||'');
-              await reportWorkerRuntime(runId,platform,workerId,'rechecking',target,'replacement owned target created for explicit recovery');
+              await reportWorkerRuntime(runId,platform,workerId,'rechecking',target,'replacement owned target created for explicit recovery',workerGeneration);
             }else{paused=true;await sleep(SUPERVISOR_POLL_MS);continue;}
           }
         }else{await sleep(SUPERVISOR_POLL_MS);continue;}
       }
-      if(control.recheck)authReady=false;
+      if(control.recheck){authReady=false;finalStatus='terminal';}
       const n=await requiredRequest('next_task',{run_id:runId,platform,worker_id:workerId});
       if(n.stop||n.done||!n.task){keepTarget=false;break;}
       const task=n.task;
+      workerGeneration=Number(task.worker_generation||workerGeneration);
       if(!target){
         target=await createBackgroundTarget(task.search_url||task.requested_search_url||'');
         const runtime=await tabLifecycleSnapshot(target.tab?.id,target.window_id);
-        await reportWorkerRuntime(runId,platform,workerId,'running',target,'owned Chrome window and one search tab ready');
+        await reportWorkerRuntime(runId,platform,workerId,'running',target,'owned Chrome window and one search tab ready',workerGeneration);
         await nativeRequest('browser_event',{run_id:runId,task_id:task.task_id,event_type:'worker_window_created',message:`${platform} owned Chrome window ready`,payload:{platform,worker_id:workerId,window_id:target.window_id,search_tab_id:target.tab?.id,owned_window:target.owned_window===true,tab_count:1}}).catch(()=>{});
       }
       if(!authReady){
-          try{const a=await checkAuth(platform,runId,task.task_id,target.tab.id,task.search_url||'',target);authReady=!!a.ready;if(!authReady){paused=true;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform readiness blocked; window preserved for human inspection');continue;}}
-        catch(e){authReady=false;paused=true;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await requiredRequest('platform_readiness',{run_id:runId,task_id:task.task_id,platform,status:'retryable',auth_state:'unknown',reason:`auth/readiness probe failed: ${e?.message||e}`,search_url:task.search_url||''}).catch(()=>{});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'readiness probe failed; waiting for explicit recovery control');continue;}
+          try{const a=await checkAuth(platform,runId,task.task_id,target.tab.id,task.search_url||'',target);authReady=!!a.ready;if(!authReady){const humanGate=['challenged_cooldown','sign_in_required','user_action_required'].includes(String(a.auth_state||''));if(humanGate){paused=true;keepTarget=true;finalStatus='challenged';activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform readiness blocked; window preserved for human inspection',workerGeneration);continue;}finalStatus=String(a.auth_state||'retryable')==='unverified'?'unverified':'retryable';activeTasks.set(platform,{worker_id:workerId,task_id:0,status:finalStatus});await reportWorkerRuntime(runId,platform,workerId,finalStatus,target,'platform readiness is system-owned; waiting for explicit system retry',workerGeneration);keepTarget=false;break;}}
+        catch(e){authReady=false;keepTarget=false;finalStatus='retryable';activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'retryable'});await requiredRequest('platform_readiness',{run_id:runId,task_id:task.task_id,platform,status:'retryable',auth_state:'unknown',reason:`auth/readiness probe failed: ${e?.message||e}`,search_url:task.search_url||''}).catch(()=>{});await reportWorkerRuntime(runId,platform,workerId,'retryable',target,'readiness probe failed; system retry is required',workerGeneration);break;}
       }
       const outcome=await processTask(runId,task,target,workerId);
       activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'running'});
-      if(outcome?.blocked){paused=true;authReady=false;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform challenge preserved; waiting for explicit human recovery control');}
+      if(outcome?.blocked){paused=true;authReady=false;keepTarget=true;finalStatus='challenged';activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform challenge preserved; waiting for explicit human recovery control',workerGeneration);}
     }
   }catch(error){
-    keepTarget=true;paused=true;
+    keepTarget=true;paused=true;finalStatus='challenged';
     await nativeRequest('run_error',{run_id:runId,platform,worker_id:workerId,message:String(error?.message||error).slice(0,700)}).catch(()=>{});
   }finally{
     const state=activeTasks.get(platform);if(state)activeTasks.delete(platform);
     if(target&&!keepTarget)await closeBackgroundTarget(target);
-    await reportWorkerRuntime(runId,platform,workerId,keepTarget?'challenged':'terminal',keepTarget?target:null,keepTarget?'platform supervisor paused; window preserved for human inspection':'worker terminal');
+    await reportWorkerRuntime(runId,platform,workerId,finalStatus,keepTarget?target:null,keepTarget?'platform supervisor paused; window preserved for human inspection':finalStatus==='terminal'?'worker terminal':'system state preserved for explicit retry',workerGeneration);
     await nativeRequest('browser_event',{run_id:runId,event_type:'worker_terminal',message:`${platform} worker terminal`,payload:{platform,worker_id:workerId,window_id:target?.window_id??null,search_tab_id:target?.tab?.id??null,kept_for_human:keepTarget}}).catch(()=>{});
   }
 }

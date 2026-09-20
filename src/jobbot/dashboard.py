@@ -20,6 +20,7 @@ from .config import ConfigBundle
 from .db import Database
 from .diagnostics import instrumentation
 from .exports import export_selected
+from .platform_state import human_waiting, interaction_state, state_owner
 
 
 TABLE_COLUMNS = (
@@ -33,6 +34,45 @@ TABLE_COLUMNS = (
 
 def _dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
     return None if row is None else {key: row[key] for key in row.keys()}
+
+
+def _json_object(value: Any) -> dict[str, Any]:
+    if not value:
+        return {}
+    try:
+        parsed = json.loads(str(value))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _platform_checkpoint(conn: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
+    task_id = row["current_task_id"]
+    task = conn.execute(
+        """SELECT task_id,query_text,status,current_search_url,requested_search_url,
+                  observed_page_url,page_number,scroll_generation,checkpoint_json,
+                  last_progress_at,last_error,challenge_reason
+           FROM browser_search_tasks
+           WHERE browser_run_id=? AND platform=?
+             AND (task_id=? OR status IN ('challenged','deferred_by_platform','incomplete'))
+           ORDER BY CASE WHEN task_id=? THEN 0 ELSE 1 END, task_id DESC LIMIT 1""",
+        (row["browser_run_id"], row["platform"], task_id or 0, task_id or 0),
+    ).fetchone()
+    if task is None:
+        return {"preserved": False}
+    return {
+        "preserved": True,
+        "task_id": int(task["task_id"]),
+        "query": task["query_text"],
+        "status": task["status"],
+        "search_url": task["current_search_url"] or task["requested_search_url"],
+        "observed_page_url": task["observed_page_url"],
+        "page_number": int(task["page_number"] or 0),
+        "scroll_generation": int(task["scroll_generation"] or 0),
+        "checkpoint": _json_object(task["checkpoint_json"]),
+        "last_progress_at": task["last_progress_at"],
+        "reason": task["challenge_reason"] or task["last_error"],
+    }
 
 
 def database_identity(conn: sqlite3.Connection, bundle: ConfigBundle) -> str:
@@ -166,19 +206,47 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
         (run["current_task_id"],),
     ).fetchone() if run["current_task_id"] else None
     attention = []
+    state_counts = {"continuing": 0, "waiting_for_human": 0, "complete": 0, "action_required": 0}
     for row in platforms:
-        readiness = str(row["readiness_state"] or "")
-        if readiness in {"challenged_cooldown", "sign_in_required", "user_action_required", "retryable", "unverified"} or str(row["worker_status"] or "") in {"stale", "failed", "challenged", "sign_in_required"}:
-            attention_state = readiness if readiness in {"challenged_cooldown", "sign_in_required", "user_action_required", "retryable", "unverified"} else row["worker_status"]
+        value = _dict(row) or {}
+        state = interaction_state(value)
+        value["interaction_state"] = state
+        value["state_owner"] = state_owner(state)
+        value["checkpoint"] = _platform_checkpoint(conn, row)
+        value["checkpoint_preserved"] = bool(value["checkpoint"].get("preserved"))
+        value["last_checked_at"] = value.get("last_checked_at") or value.get("readiness_checked_at") or value.get("worker_heartbeat_at")
+        if state == "WAITING_FOR_HUMAN":
+            value["human_wait_reason"] = value.get("human_wait_reason") or value.get("challenge_reason") or value.get("readiness_reason") or value.get("auth_reason") or value.get("last_error") or "Human action is required on this platform."
+        else:
+            value["human_wait_reason"] = value.get("human_wait_reason") or ""
+        if state in {"RUNNING", "READY", "RECHECKING", "IDLE"} and not human_waiting(value):
+            state_counts["continuing"] += 1
+        elif state == "WAITING_FOR_HUMAN":
+            state_counts["waiting_for_human"] += 1
+        elif state == "COMPLETE":
+            state_counts["complete"] += 1
+        elif state not in {"STOPPED"}:
+            state_counts["action_required"] += 1
+        if state == "WAITING_FOR_HUMAN" or state in {"SYSTEM_RETRYABLE", "SYSTEM_UNVERIFIED", "STALE", "OFFLINE", "INTERNAL_ERROR"}:
             attention.append({
-                "platform": row["platform"], "state": attention_state or readiness,
-                "reason": row["challenge_reason"] or row["readiness_reason"] or row["auth_reason"] or row["last_error"],
-                "checkpoint_preserved": True,
-                "next_action": "recheck" if readiness == "challenged_cooldown" else "focus_window" if row["window_id"] else "recheck",
+                "platform": row["platform"], "state": state,
+                "reason": value["human_wait_reason"] if state == "WAITING_FOR_HUMAN" else row["last_error"] or row["readiness_reason"],
+                "checkpoint_preserved": value["checkpoint_preserved"],
+                "next_action": "recheck" if state == "WAITING_FOR_HUMAN" else "system_retry",
+                "owner": state_owner(state),
             })
     platform_values = []
     for row in platforms:
         value = _dict(row) or {}
+        value["interaction_state"] = interaction_state(value)
+        value["state_owner"] = state_owner(value["interaction_state"])
+        value["checkpoint"] = _platform_checkpoint(conn, row)
+        value["checkpoint_preserved"] = bool(value["checkpoint"].get("preserved"))
+        value["last_checked_at"] = value.get("last_checked_at") or value.get("readiness_checked_at") or value.get("worker_heartbeat_at")
+        if value["interaction_state"] == "WAITING_FOR_HUMAN":
+            value["human_wait_reason"] = value.get("human_wait_reason") or value.get("challenge_reason") or value.get("readiness_reason") or value.get("auth_reason") or value.get("last_error") or "Human action is required on this platform."
+        else:
+            value["human_wait_reason"] = value.get("human_wait_reason") or ""
         control = conn.execute(
             """SELECT request_id,action,status,requested_at,acknowledged_at,result_json
                FROM control_requests WHERE browser_run_id=? AND platform=?
@@ -199,6 +267,14 @@ def active_run(conn: sqlite3.Connection) -> dict[str, Any]:
     return {
         "run": _dict(run), "current_task": _dict(current), "platforms": platform_values,
         "watch": _dict(watch), "attention": attention, "global_control": _dict(global_control),
+        "run_state_summary": {
+            **state_counts,
+            "label": (
+                f"{state_counts['continuing']} continuing · {state_counts['waiting_for_human']} waiting for you"
+                if state_counts["waiting_for_human"]
+                else f"{state_counts['continuing']} continuing"
+            ),
+        },
     }
 
 
@@ -235,6 +311,8 @@ def _insert_control_request(
     platform: str,
     action: str,
     now: str,
+    target_worker_id: str = "",
+    target_worker_generation: int = 0,
 ) -> tuple[sqlite3.Row | None, bool]:
     """Insert one control instance, rejecting reuse for another command tuple."""
     existing = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
@@ -248,9 +326,10 @@ def _insert_control_request(
         return existing, True
     conn.execute(
         """INSERT INTO control_requests(
-          request_id,browser_run_id,platform,action,status,requested_at,requested_by
-        ) VALUES(?,?,?,?,?,?,?)""",
-        (request_id, run_id, platform, action, "PENDING", now, "dashboard"),
+          request_id,browser_run_id,platform,action,status,requested_at,requested_by,
+          target_worker_id,target_worker_generation
+        ) VALUES(?,?,?,?,?,?,?,?,?)""",
+        (request_id, run_id, platform, action, "PENDING", now, "dashboard", target_worker_id, target_worker_generation),
     )
     return None, False
 
@@ -339,7 +418,7 @@ def control_run(
     elif action == "resume_ready_platforms":
         blocked = """platform NOT IN (
           SELECT platform FROM browser_platform_runs
-          WHERE browser_run_id=? AND (readiness_state IN
+          WHERE browser_run_id=? AND (interaction_state='WAITING_FOR_HUMAN' OR readiness_state IN
             ('challenged_cooldown','sign_in_required','user_action_required','retryable','unverified')
             OR worker_status IN ('challenged','sign_in_required','paused'))
         )"""
@@ -351,10 +430,11 @@ def control_run(
             (run_id, run_id),
         )
         conn.execute(
-            """UPDATE search_task_results
+            f"""UPDATE search_task_results
                SET detail_status='RETRYABLE',detail_lease_owner='',detail_lease_until=NULL,
                    detail_error=CASE WHEN detail_error='' THEN 'requeued after dashboard resume' ELSE detail_error END
-               WHERE browser_run_id=? AND detail_status='RUNNING'""", (run_id,),
+               WHERE browser_run_id=? AND detail_status='RUNNING'
+                 AND task_id IN (SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? AND {blocked})""", (run_id, run_id, run_id),
         )
         conn.execute(
             f"""UPDATE browser_platform_runs
@@ -366,20 +446,22 @@ def control_run(
             # the browser/API contract uses resume_ready_platforms above.
             conn.execute(
                 """UPDATE browser_search_tasks SET status='queued',completed_at=NULL,lease_owner='',lease_until=NULL,last_error=''
-                   WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform')""", (run_id,),
+                   WHERE browser_run_id=? AND status IN ('auth_required','deferred_by_platform')
+                     AND platform NOT IN (SELECT platform FROM browser_platform_runs WHERE browser_run_id=? AND interaction_state='WAITING_FOR_HUMAN')""", (run_id, run_id),
             )
             conn.execute(
                 """UPDATE browser_platform_runs SET auth_status='unchecked',auth_reason='',readiness_state='unchecked',
                    readiness_reason='',readiness_checked_at=NULL,worker_status='rechecking',resumed_at=?
                    WHERE browser_run_id=? AND platform IN
-                     (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')""",
+                     (SELECT DISTINCT platform FROM browser_search_tasks WHERE browser_run_id=? AND status='queued')
+                     AND interaction_state<>'WAITING_FOR_HUMAN'""",
                 (now, run_id, run_id),
             )
         conn.execute(
             """UPDATE browser_runs SET status='queued',completed_at=NULL,stop_requested=0,
                    stop_after_current=0,last_error='',last_progress_at=? WHERE browser_run_id=?""", (now, run_id),
         )
-        message = "Ready platform work re-queued from durable checkpoints; completed details and challenge truth remain intact."
+        message = "Runnable platform work re-queued from durable checkpoints; human-gated lanes remain waiting for you."
     else:  # pragma: no cover - guarded by _normalize_run_control_action
         raise ValueError(f"unsupported run control: {action}")
     conn.execute(
@@ -413,9 +495,33 @@ def control_platform(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[
     if action not in {"focus_window", "stop_after_current", "resume_platform", "recheck", "emergency_stop"}:
         raise ValueError(f"unsupported platform control: {action}")
     request_id = str(payload.get("control_request_id") or _new_control_request_id())
+    existing_request = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
+    if existing_request is not None:
+        if int(existing_request["browser_run_id"]) != run_id or str(existing_request["platform"] or "") != platform or str(existing_request["action"]) != action:
+            raise ValueError(f"control request id conflicts with an existing command: {request_id}")
+        return {
+            "ok": True, "run_id": run_id, "platform": platform, "action": action,
+            "request_id": request_id, "status": str(existing_request["status"]), "deduplicated": True,
+            "message": f"{platform.title()} control {action} was already recorded for this control instance.",
+        }
+    platform_cursor = conn.execute(
+        "SELECT * FROM browser_platform_runs WHERE browser_run_id=? AND platform=?", (run_id, platform),
+    )
+    platform_row = platform_cursor.fetchone()
+    if platform_row is None:
+        raise ValueError(f"platform lane not found: {platform}")
+    if not hasattr(platform_row, "keys"):
+        columns = [column[0] for column in platform_cursor.description or ()]
+        platform_row = dict(zip(columns, platform_row))
+    if action == "resume_platform" and human_waiting(platform_row):
+        raise ValueError("human-gated platform requires explicit recheck after the issue is resolved")
+    if action == "recheck" and not human_waiting(platform_row) and str(platform_row["interaction_state"] or "").upper() != "RECHECKING":
+        raise ValueError("recheck is available only for a human-gated platform")
     now = _utc_now()
     existing, deduplicated = _insert_control_request(
         conn, request_id=request_id, run_id=run_id, platform=platform, action=action, now=now,
+        target_worker_id=str(platform_row["worker_id"] or ""),
+        target_worker_generation=int(platform_row["worker_generation"] or 0),
     )
     if deduplicated:
         return {
@@ -430,7 +536,7 @@ def control_platform(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[
           WHERE browser_run_id=? AND platform=? AND status='running'""", (now, now, run_id, platform))
         conn.execute("UPDATE browser_platform_runs SET emergency_stop=1,worker_status='stopped',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?", (now, action, run_id, platform))
     elif action in {"resume_platform", "recheck"}:
-        conn.execute("""UPDATE browser_platform_runs SET stop_after_current=0,emergency_stop=0,worker_status='rechecking',readiness_state='unchecked',readiness_reason='',last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?""", (now, action, run_id, platform))
+        conn.execute("""UPDATE browser_platform_runs SET stop_after_current=0,emergency_stop=0,worker_status='rechecking',interaction_state='RECHECKING',readiness_state='unchecked',readiness_reason='',last_checked_at=?,last_control_at=?,last_control_action=? WHERE browser_run_id=? AND platform=?""", (now, now, action, run_id, platform))
         conn.execute("""UPDATE browser_search_tasks SET status='queued',completed_at=NULL,last_error='',lease_owner='',worker_id='',lease_until=NULL
           WHERE browser_run_id=? AND platform=? AND status IN ('challenged','deferred_by_platform','auth_required')""", (run_id, platform))
         conn.execute("UPDATE browser_runs SET status='running',completed_at=NULL,stop_requested=0,last_progress_at=? WHERE browser_run_id=?", (now, run_id))
@@ -439,7 +545,8 @@ def control_platform(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[
     conn.execute("INSERT INTO browser_events(browser_run_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?)", (run_id, now, "control_requested", f"{platform}: {action}", json.dumps({"request_id": request_id, "platform": platform, "action": action})))
     conn.commit()
     row = conn.execute("SELECT * FROM control_requests WHERE request_id=?", (request_id,)).fetchone()
-    return {"ok": True, "run_id": run_id, "platform": platform, "action": action, "request_id": request_id, "status": row["status"] if row else "PENDING", "deduplicated": False, "message": f"{platform.title()} control {action} recorded; worker acknowledgement will appear from SQLite."}
+    status = row["status"] if row is not None and hasattr(row, "keys") else (row[5] if row is not None else "PENDING")
+    return {"ok": True, "run_id": run_id, "platform": platform, "action": action, "request_id": request_id, "status": status, "deduplicated": False, "message": f"{platform.title()} control {action} recorded; worker acknowledgement will appear from SQLite."}
 
 
 def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "") -> dict[str, Any]:
