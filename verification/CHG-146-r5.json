@@ -56,11 +56,17 @@
       "profile_directory": "Default",
       "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb"
     },
+    "pre_upgrade_resident_confirmation": {
+      "build": "3.2.2-prod-ready.672cf88.18",
+      "source_identity": "sha256:632bd760111da8496ce3b41fd465c9af7aef8f70c934d492497f050ac694e26e",
+      "reload_count": 1,
+      "identity_confirmed": true
+    },
     "steps": [
       {
         "from": "3.2.2-prod-ready.672cf88.18",
         "to": "3.2.2-prod-ready.672cf88.19",
-        "source_identity": "sha256:632bd760111da8496ce3b41fd465c9af7aef8f70c934d492497f050ac694e26e",
+        "source_identity": "sha256:682f2626378a05f8dface21861d715e45a46007d0772a60ca24eca000d5f348e",
         "observed_build": "3.2.2-prod-ready.672cf88.19",
         "reload_count": 1,
         "identity_confirmed": true
