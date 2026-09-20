@@ -4,7 +4,7 @@ const assert = require('assert');
 const fs = require('fs');
 const vm = require('vm');
 
-const BUILD = '3.2.2-prod-ready.672cf88.19';
+const BUILD = '3.2.2-prod-ready.672cf88.20';
 const WORKER = fs.readFileSync('extension/service_worker.js', 'utf8');
 const plain = (value) => JSON.parse(JSON.stringify(value));
 

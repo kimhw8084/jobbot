@@ -62,7 +62,7 @@
     if(!entry)return{selected:false,selection_attempted:false,identity_status:'MISSING_CARD',page_type:'search',selected_source_job_id:'',search_pane_diagnostics:{reason:'selected card disappeared'}};
     const expectedTitle=C.normalizeTitle(C.clean(entry.node.getAttribute('aria-label')||entry.node.innerText||'').replace(/\s+with verification$/i,''));let clicked=false;
     if(select)try{entry.node.click();clicked=true;}catch(_){}
-    return{selected:clicked||!select,selection_attempted:select,selected_source_job_id:target,selected_title:expectedTitle,card_metadata:entry.card.innerText?.slice(0,500)||''};
+    return{selected:clicked||!select,selection_attempted:select,selected_source_job_id:target,selected_source_url:C.absoluteUrl(entry.node.getAttribute('href')||entry.node.href||''),selected_title:expectedTitle,card_metadata:entry.card.innerText?.slice(0,500)||''};
   }
   async function inspectSearchPane(sourceId,select=true){
     const searchPath=/\/Job\//i.test(new URL(location.href).pathname);
@@ -72,10 +72,11 @@
       const wall=C.authWallInfo(S.authSignIn,/\/profile\/login|\/member\/login|signin|sign-in/i);if(wall.required)return{...selection,page_type:'login',login_required:true,surface_reason:wall.reason};
       if(!searchPath||!/\/Job\//i.test(new URL(location.href).pathname))return{...selection,page_type:'error',navigation_context_lost:true,surface_reason:'search context lost after card selection',page_url:location.href};
       const root=paneRoot(),title=C.normalizeTitle(firstIn(root,S.paneTitle||S.title)),company=firstIn(root,S.company),locationText=firstIn(root,S.location),description=firstIn(root,S.paneDescription||S.description);
-      const paneId=sid(C.absoluteUrl(root?.querySelector?.('a[href*="job-listing"]')?.href||''));
+      const paneHref=C.absoluteUrl(root?.querySelector?.('a[href*="job-listing"]')?.href||'');
+      const paneId=/\/job-listing\//i.test(paneHref)?sid(paneHref):'';
       const identityProven=!!title&&title===selection.selected_title&&(!paneId||paneId===String(sourceId));
       if(root&&title&&description){
-        return{...selection,platform:'glassdoor',page_type:'job',surface:'embedded_search_pane',search_pane:true,page_url:location.href,selected_source_job_id:paneId||String(sourceId),identity_status:identityProven?'PROVEN':'MISMATCH',identity_proven:identityProven,acquisition_mode:'search_pane',detail_acquisition:{mode:'search_pane',surface:'embedded_search_pane',url:location.href},job:{source_job_id:paneId||String(sourceId),canonical_url:canon(root?.querySelector?.('a[href*="job-listing"]')?.href||location.href),title,company,location:locationText,remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:'',salary_text:'',posted_at:'',description:C.clip(description)}};
+        return{...selection,platform:'glassdoor',page_type:'job',surface:'embedded_search_pane',search_pane:true,page_url:location.href,selected_source_job_id:paneId||String(sourceId),identity_status:identityProven?'PROVEN':'MISMATCH',identity_proven:identityProven,acquisition_mode:'search_pane',detail_acquisition:{mode:'search_pane',surface:'embedded_search_pane',url:location.href},job:{source_job_id:paneId||String(sourceId),canonical_url:paneHref?canon(paneHref):selection.selected_source_url||'',title,company,location:locationText,remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:'',salary_text:'',posted_at:'',description:C.clip(description)}};
       }
       await new Promise(r=>setTimeout(r,300));
     }
