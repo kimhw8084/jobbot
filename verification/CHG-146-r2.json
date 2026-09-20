@@ -42,7 +42,7 @@
     {"case": "local stop-after-current and emergency-stop do not stop other workers", "test": "tests/integration/test_chg146_r2_controls.py", "result": "passed"}
   ],
   "verification": {
-    "focused_python": "14 tests OK across CHG-146 controls/workers/cache, CHG-112 production integrity, and dashboard exports",
+    "focused_python": "20 tests OK across CHG-146 controls/workers/cache, CHG-112 production integrity, and dashboard exports",
     "full_unittest_discovery": "107 tests OK, 1 skipped",
     "javascript_regression_files": [
       "tests/extension_chg146_pane_test.js",
