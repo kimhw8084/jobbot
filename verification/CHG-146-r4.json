@@ -1,0 +1,146 @@
+{
+  "verification": "CHG-146-r4",
+  "decision": "NO_GO_BLOCKED",
+  "decision_reason": "The requested predecessor-compatible refresh repair passed, but live architecture qualification exposed a separate candidate-owned service-worker startup defect. Qualification stopped without an unrelated fix.",
+  "product_integration_target": {
+    "commit": "9147762b40ec155cbe15642103cae948d114cf8b",
+    "tree": "5ccae6c31e613d6e6aec1893cb45244dca1a3ce9",
+    "version_name": "3.2.2-prod-ready.672cf88.18",
+    "target_main": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "carry_forward_commit": "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+    "carry_forward_merge": "62873b34a0d4cfe87007ebfc22c304a849661096",
+    "r1_r2_ancestry_preserved": true,
+    "stable_extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+  },
+  "repair": {
+    "scope": "bootstrap upgrade compatibility only",
+    "legacy_sequence": [
+      "JOBBOT_CONFIGURE_BRIDGE",
+      "JOBBOT_REFRESH_EXTENSION",
+      "chrome.storage.local handoff",
+      "chrome.runtime.reload"
+    ],
+    "post_reload_run_path": "JOBBOT_START_RUN or existing ensureResume path after exact build/deployment confirmation",
+    "persistent_dashboard_reintroduced": false,
+    "profile_file_access": false
+  },
+  "live_upgrade": {
+    "command": "python -m jobbot refresh-extension --timeout 90",
+    "result": "confirmed",
+    "expected_build": "3.2.2-prod-ready.672cf88.18",
+    "observed_loaded_build": "3.2.2-prod-ready.672cf88.18",
+    "reload_count": 1,
+    "classification": "intended_extension_reachable_and_current",
+    "source_identity": "sha256:632bd760111da8496ce3b41fd465c9af7aef8f70c934d492497f050ac694e26e",
+    "source_head": "9147762b40ec155cbe15642103cae948d114cf8b",
+    "deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "canonical_extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "profile_directory": "Default",
+    "bridge_unauthorized_rejection": true,
+    "maintenance_refresh_confirmed": true,
+    "manual_chrome_reload": false,
+    "chrome_internal_pages_required": false,
+    "chrome_profile_files_read_or_modified": false,
+    "predecessor_boundary": "The requested machine state was the integrated .15 worker; the supported refresh recorded one reload and exact .18 identity after reload. No profile-file shortcut was used."
+  },
+  "deterministic_verification": {
+    "full_unittest_discovery": {
+      "command": "PYTHONPATH=src python -m unittest discover -s tests -p 'test*.py'",
+      "tests": 107,
+      "result": "OK",
+      "duration_seconds": 34.049
+    },
+    "focused_extension_refresh_bridge_runtime": {
+      "command": "PYTHONPATH=src python -m unittest tests.integration.test_extension_refresh tests.integration.test_extension_bridge tests.integration.test_runtime_binding -v",
+      "tests": 19,
+      "result": "OK"
+    },
+    "bootstrap_compatibility_regression": {
+      "command": "node tests/extension_bootstrap_compatibility_test.js",
+      "result": "passed",
+      "cases": 9
+    },
+    "compileall": "passed",
+    "extension_and_dashboard_js_syntax": "passed",
+    "git_diff_check": "passed"
+  },
+  "live_architecture_qualification": {
+    "isolation": {
+      "ledger": "temporary isolated live.sqlite3",
+      "observation_cache": "temporary isolated crawl_observations.sqlite3",
+      "production_data_used": false,
+      "sample": {
+        "platforms": ["linkedin", "indeed", "glassdoor"],
+        "tasks_per_platform": 1,
+        "max_results": 1,
+        "run_ids": [1, 2]
+      }
+    },
+    "run_results": [
+      {
+        "run_id": 1,
+        "status": "queued",
+        "jobs_recorded": 0,
+        "platforms": {
+          "linkedin": "idle/unchecked/queued",
+          "indeed": "idle/unchecked/queued",
+          "glassdoor": "idle/unchecked/queued"
+        },
+        "events": ["extension_refresh_requested", "extension_build"]
+      },
+      {
+        "run_id": 2,
+        "status": "queued",
+        "jobs_recorded": 0,
+        "platforms": {
+          "linkedin": "idle/unchecked/queued",
+          "indeed": "idle/unchecked/queued",
+          "glassdoor": "idle/unchecked/queued"
+        },
+        "events": ["extension_refresh_requested", "extension_build"]
+      }
+    ],
+    "workers_started": 0,
+    "three_worker_overlap_proven": false,
+    "window_tab_proof": "not reached; all platform window_id/search_tab_id values remained null",
+    "routine_detail_page_navigations": 0,
+    "pane_proof": "not reached; no fresh live card or detail was acquired",
+    "challenge_isolation": "not reached; no platform challenge was observed",
+    "dashboard": {
+      "served": true,
+      "port": 8785,
+      "rendered_evidence": "not captured because the real run failed before meaningful state; no fixture screenshots were substituted",
+      "screenshots": []
+    },
+    "ledger_integrity": "ok",
+    "ledger_migrations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    "observation_cache": {
+      "file_integrity": "ok",
+      "schema_created": false,
+      "entries": 0,
+      "reason": "The live run stopped before card/detail work; no cache evidence was created or used."
+    },
+    "blocker": {
+      "classification": "candidate_owned_service_worker_startup_defect",
+      "source": "extension/service_worker.js",
+      "lines": "648-668, 692-703",
+      "cause": "ensureResume sets resumeStarting=true, then returns at line 653 when no active run exists without clearing the guard. A later JOBBOT_START_RUN is answered with {started:true,resumed:true} at lines 696-700 while no runProduction/begin_run occurs.",
+      "evidence": "Both isolated runs had confirmed .18 identity and refresh rows, but remained queued with zero worker/window/tab creation and no begin_run event. A fresh run ID reproduced the same result.",
+      "action": "qualification stopped; no service-worker lifecycle change was made in this fix"
+    }
+  },
+  "remaining_blockers": [
+    "Fix and separately qualify the candidate-owned ensureResume/resumeStarting lifecycle defect before CHG-146 can be GO."
+  ],
+  "evidence_policy": {
+    "no_manual_chrome_reload": true,
+    "no_manual_extension_ui_reload": true,
+    "no_chrome_profile_file_access": true,
+    "no_runtime_secrets_or_production_data_committed": true,
+    "fabric_evidence_refs_manipulated": false
+  },
+  "supporting_artifacts": [
+    "verification/CHG-146-r4/live-upgrade.json",
+    "verification/CHG-146-r4/live-qualification.json"
+  ]
+}

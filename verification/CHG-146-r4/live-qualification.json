@@ -1,0 +1,36 @@
+{
+  "result": "BLOCKED_BEFORE_WORKER_START",
+  "isolation": {
+    "database": "temporary isolated live.sqlite3",
+    "observation_cache": "temporary isolated crawl_observations.sqlite3",
+    "production_database_used": false,
+    "platforms": ["linkedin", "indeed", "glassdoor"],
+    "tasks_per_platform": 1,
+    "max_results": 1
+  },
+  "runs": [
+    {"run_id": 1, "status": "queued", "jobs_recorded": 0, "worker_count": 0},
+    {"run_id": 2, "status": "queued", "jobs_recorded": 0, "worker_count": 0}
+  ],
+  "observed": {
+    "identity_confirmation": "exact .18 confirmed for both run refresh requests",
+    "begin_run_events": 0,
+    "window_creation": 0,
+    "search_tab_creation": 0,
+    "pane_acquisition": 0,
+    "routine_detail_page_navigations": 0,
+    "challenge_observed": false,
+    "dashboard_screenshots": 0,
+    "ledger_integrity": "ok",
+    "cache_integrity": "ok",
+    "cache_entries": 0
+  },
+  "blocker": {
+    "file": "extension/service_worker.js",
+    "lines": "648-668, 692-703",
+    "summary": "The no-active-run early return leaves resumeStarting true; JOBBOT_START_RUN then returns started/resumed without beginning the queued run.",
+    "reproduced": true,
+    "qualification_stopped": true
+  },
+  "screenshots": []
+}
