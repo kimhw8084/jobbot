@@ -1,5 +1,6 @@
 [runtime]
 database_path = "data/jobs.sqlite3"
+crawl_observations_path = "data/crawl_observations.sqlite3"
 output_dir = "out"
 cache_dir = "cache"
 cache_minutes = 0
