@@ -1,6 +1,6 @@
 'use strict';
 
-let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTasks=new Map(), workerPromises=new Map(), heartbeatTimer=null, resumeStarting=false;
+let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTasks=new Map(), workerPromises=new Map(), heartbeatTimer=null, startupRunId=null, startupPromise=null;
 const targetDiagnosticKeys=new Set();
 const JOBBOT_EXTENSION_BUILD=String(chrome.runtime?.getManifest?.().version_name||'unknown');
 let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
@@ -645,26 +645,42 @@ async function runProduction(runId,expectedBuild='',refreshId=''){
   }
 }
 
+function startupOwnerId(){return Number(activeRunId||startupRunId||0);}
+function clearStartupOwnership(runId,promise){if(Number(startupRunId||0)===Number(runId||0)&&startupPromise===promise){startupRunId=null;startupPromise=null;}}
+async function resumeStartup(runId,expectedBuild,refreshId){
+  if(expectedBuild!==JOBBOT_EXTENSION_BUILD){
+    const refresh=await requestExtensionRefresh(runId,expectedBuild,refreshId);
+    if(refresh?.ok&&refresh.reload_required&&typeof chrome.runtime.reload==='function')chrome.runtime.reload();
+    return{ok:true,refresh};
+  }
+  const st=await nativeRequest('run_status',{run_id:runId});
+  const status=String(st?.run?.status||'missing');
+  if(st?.ok&&!['completed','stopped','failed','missing','terminal'].includes(status))return runProduction(runId,expectedBuild,refreshId);
+  return{ok:true,resumed:false,status};
+}
+function beginStartup(runId,expectedBuild,refreshId,resume=false){
+  const rid=Number(runId||0); if(!rid)return{ok:false,error:'missing run_id'};
+  const owner=startupOwnerId();
+  if(owner||workerPromises.size){
+    if(owner===rid)return{ok:true,started:true,resumed:true,run_id:rid};
+    return{ok:false,error:'another browser run is still active',active_run_id:Number(activeRunId||0),startup_run_id:Number(startupRunId||0),run_id:rid};
+  }
+  startupRunId=rid;
+  let promise;
+  try{promise=Promise.resolve(resume?resumeStartup(rid,expectedBuild,refreshId):runProduction(rid,expectedBuild,refreshId));}
+  catch(error){startupRunId=null;return{ok:false,error:String(error?.message||error)};}
+  startupPromise=promise;
+  promise.then(()=>clearStartupOwnership(rid,promise),()=>clearStartupOwnership(rid,promise));
+  return{ok:true,started:true,run_id:rid};
+}
 async function ensureResume(){
-  if(activeRunId||workerPromises.size||resumeStarting)return;
-  resumeStarting=true;
+  if(activeRunId||workerPromises.size||startupRunId)return;
   try{
     const x=await chrome.storage.local.get(['jobbot_active_run_id','jobbot_expected_extension_build','jobbot_refresh_id']);
     const rid=Number(x.jobbot_active_run_id||0); if(!rid)return;
     const expected=String(x.jobbot_expected_extension_build||JOBBOT_EXTENSION_BUILD), refreshId=String(x.jobbot_refresh_id||'');
-    if(expected!==JOBBOT_EXTENSION_BUILD){
-      const refresh=await requestExtensionRefresh(rid,expected,refreshId);
-      if(refresh?.ok&&refresh.reload_required&&typeof chrome.runtime.reload==='function')chrome.runtime.reload();
-      return;
-    }
-    const st=await nativeRequest('run_status',{run_id:rid}); const status=st?.run?.status;
-    if(st?.ok&&!['completed','stopped','failed'].includes(status)){
-      const resumed=runProduction(rid,expected,refreshId).catch(()=>{});
-      resumed.finally(()=>{resumeStarting=false;}).catch(()=>{});
-      return;
-    }
+    beginStartup(rid,expected,refreshId,true);
   }catch(_){}
-  resumeStarting=false;
 }
 
 chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
@@ -674,7 +690,10 @@ chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
         await configureBridge(Number(msg.bridge_port||0),String(msg.bridge_token||''));
         const refresh=await requestExtensionRefresh(Number(msg.run_id||0),String(msg.expected_build||JOBBOT_EXTENSION_BUILD),String(msg.refresh_id||''));
         if(refresh?.reload_required){await chrome.storage.local.set({jobbot_expected_extension_build:String(msg.expected_build||''),jobbot_refresh_id:String(refresh.refresh_id||msg.refresh_id||''),...(Number(msg.run_id||0)?{jobbot_active_run_id:Number(msg.run_id)}:{})});if(typeof chrome.runtime.reload==='function')chrome.runtime.reload();return{ok:true,reload_required:true};}
-        if(!msg.maintenance&&Number(msg.run_id||0)&&!activeRunId&&!workerPromises.size){runProduction(Number(msg.run_id),String(msg.expected_build||JOBBOT_EXTENSION_BUILD),String(msg.refresh_id||'')).catch(()=>{});}
+        if(!msg.maintenance&&Number(msg.run_id||0)){
+          const started=beginStartup(Number(msg.run_id),String(msg.expected_build||JOBBOT_EXTENSION_BUILD),String(msg.refresh_id||''));
+          if(!started.ok)return started;
+        }
         return{ok:true,refresh};
       }catch(error){return{ok:false,error:String(error?.message||error)};}
     })().then((value)=>{sendResponse(value);if(_sender?.tab?.id!=null)setTimeout(()=>chrome.tabs.remove(_sender.tab.id).catch(()=>{}),80);});
@@ -693,14 +712,8 @@ chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
     const rid=Number(msg.run_id||0); if(!rid){sendResponse({ok:false,error:'missing run_id'});return false;}
     const expected=String(msg.expected_build||JOBBOT_EXTENSION_BUILD),refreshId=String(msg.refresh_id||'');
     if(expected!==JOBBOT_EXTENSION_BUILD){sendResponse({ok:false,error:'extension_build_mismatch',loaded_build:JOBBOT_EXTENSION_BUILD,expected_build:expected});return false;}
-    if(activeRunId||workerPromises.size||resumeStarting){
-      const active=Number(activeRunId||0);
-      if(active===rid||resumeStarting){sendResponse({ok:true,started:true,resumed:true,run_id:rid});}
-      else{sendResponse({ok:false,error:'another browser run is still active',active_run_id:active,run_id:rid});}
-      return false;
-    }
-    runProduction(rid,expected,refreshId).catch(()=>{});
-    sendResponse({ok:true,started:true,run_id:rid}); return false;
+    const started=beginStartup(rid,expected,refreshId);
+    sendResponse(started.ok?started:{ok:false,error:started.error,active_run_id:started.active_run_id,startup_run_id:started.startup_run_id,run_id:rid}); return false;
   }
   if(msg?.type==='JOBBOT_STOP_AFTER_CURRENT'||msg?.type==='JOBBOT_EMERGENCY_STOP'){
     const rid=Number(msg.run_id||activeRunId||0); if(!rid){sendResponse({ok:false,error:'no_run_id'});return false;}

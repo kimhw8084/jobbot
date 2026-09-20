@@ -52,6 +52,8 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertEqual(auth_return.returncode, 0, auth_return.stderr or auth_return.stdout)
         bootstrap_compatibility = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_bootstrap_compatibility_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(bootstrap_compatibility.returncode, 0, bootstrap_compatibility.stderr or bootstrap_compatibility.stdout)
+        startup_lifecycle = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_startup_lifecycle_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(startup_lifecycle.returncode, 0, startup_lifecycle.stderr or startup_lifecycle.stdout)
         worker_scope = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_scope_recovery_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(worker_scope.returncode, 0, worker_scope.stderr or worker_scope.stdout)
         target_lifecycle = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_target_lifecycle_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
