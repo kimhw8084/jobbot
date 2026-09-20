@@ -76,7 +76,7 @@
       const paneId=/\/job-listing\//i.test(paneHref)?sid(paneHref):'';
       const identityProven=!!title&&title===selection.selected_title&&(!paneId||paneId===String(sourceId));
       if(root&&title&&description){
-        return{...selection,platform:'glassdoor',page_type:'job',surface:'embedded_search_pane',search_pane:true,page_url:location.href,selected_source_job_id:paneId||String(sourceId),identity_status:identityProven?'PROVEN':'MISMATCH',identity_proven:identityProven,acquisition_mode:'search_pane',detail_acquisition:{mode:'search_pane',surface:'embedded_search_pane',url:location.href},job:{source_job_id:paneId||String(sourceId),canonical_url:paneHref?canon(paneHref):selection.selected_source_url||'',title,company,location:locationText,remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:'',salary_text:'',posted_at:'',description:C.clip(description)}};
+        return{...selection,platform:'glassdoor',page_type:'job',surface:'embedded_search_pane',search_pane:true,page_url:location.href,selected_source_job_id:paneId||String(sourceId),identity_status:identityProven?'PROVEN':'MISMATCH',identity_proven:identityProven,acquisition_mode:'search_pane',detail_acquisition:{mode:'search_pane',surface:'embedded_search_pane',url:location.href},job:{source_job_id:paneId||String(sourceId),canonical_url:paneId?canon(paneHref):selection.selected_source_url||'',title,company,location:locationText,remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:'',salary_text:'',posted_at:'',description:C.clip(description)}};
       }
       await new Promise(r=>setTimeout(r,300));
     }

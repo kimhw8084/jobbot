@@ -97,6 +97,9 @@ global.setTimeout = (fn) => { fn(); return 0; };
     assert.strictEqual(success.identity_status, 'PROVEN', `${spec.platform}: identity proof`);
     assert.strictEqual(success.search_pane, true, `${spec.platform}: embedded pane provenance`);
     assert.ok(String(success.job?.description || '').length > 40, `${spec.platform}: substantive description`);
+    assert.strictEqual(success.job?.source_job_id, spec.id, `${spec.platform}: source/result identity linkage`);
+    assert.ok(String(success.job?.canonical_url || '').length > 0, `${spec.platform}: canonical/result linkage`);
+    if (spec.platform === 'glassdoor') assert.ok(String(success.job.canonical_url).includes('/job-listing/'), 'glassdoor: canonical/result linkage');
     assert.strictEqual(success.detail_acquisition.mode, 'search_pane');
 
     const delayed = await inspect(spec, 'success', { delayed: true });
