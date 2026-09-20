@@ -23,6 +23,19 @@ extension receives heartbeat, lease, and watchdog values from `config/runtime.to
 Persistent leases reclaim stale running tasks after crashes. Restart with
 `python -m jobbot resume`; a small overlap is expected and is absorbed by dedupe.
 
+The durable Python dashboard at `http://127.0.0.1:8765/` is the sole persistent
+operator UI. Run/resume/watch/refresh uses an inactive extension bootstrap page
+only for the authenticated handshake; it closes automatically and is never a
+status console. Each active platform has its own worker lane and checkpoint.
+Focus window foregrounds the already-owned Chrome window. It never opens a new
+tab or steals the user's current window during normal operation.
+
+For a remote iPhone or browser, forward the dashboard through a user-created
+SSH tunnel, such as `ssh -N -L 8765:127.0.0.1:8765 mac-host`, and open the
+forwarded localhost URL. The tunnel does not move browser control or visual
+challenge handling off the Mac, and JobBot does not expose the dashboard on a
+LAN/public interface.
+
 For conservative local automation use `./RUN_CONTINUOUS.command`. Its durable
 watch state reports `RUNNING`, `WAITING`, or `STOPPED` in the dashboard and
 uses six-hour recent and daily deep cadences by default. Use `python -m jobbot
@@ -34,6 +47,11 @@ queued work remains durable. Emergency stop marks an active task incomplete and
 resumable. Challenges and auth requirements are platform-local. Do not
 repeatedly revisit a challenge page or attempt to bypass it; clear it normally,
 then use Resume checkpoint to trigger a positive readiness recheck.
+
+The observation cache at `data/crawl_observations.sqlite3` is optional and
+safe to delete. It never supplies application/funnel state and never contains
+cookies, credentials, profile data, challenge material, or tokens. Fresh
+acceptance samples intentionally bypass the cache.
 
 Readiness is fail-closed without false-negative sign-out. A missing sign-in
 selector is not authentication evidence; the requested search surface is

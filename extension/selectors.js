@@ -29,6 +29,9 @@
       description: ['#jobDescriptionText','[data-testid="jobsearch-JobComponent-description"]','.jobsearch-JobComponent-description','main'],
       salary: ['#salaryInfoAndJobType','[data-testid="attribute_snippet_testid"]','[data-testid="salary-snippet-container"]'],
       posted: ['[data-testid="jobsearch-JobMetadataFooter"]','.jobsearch-JobMetadataFooter'],
+      paneRoots: ['#jobsearch-ViewjobPaneWrapper','[data-testid="jobsearch-JobComponent"]','[data-testid="jobsearch-JobComponent-description"]','[class*="jobsearch-ViewjobPane"]'],
+      paneTitle: ['h1[data-testid="jobsearch-JobInfoHeader-title"]','h1.jobsearch-JobInfoHeader-title','[data-testid="jobsearch-JobInfoHeader-title"]'],
+      paneDescription: ['#jobDescriptionText','[data-testid="jobsearch-JobComponent-description"]','.jobsearch-JobComponent-description'],
     }),
     glassdoor: Object.freeze({
       searchContainers: ['[data-test="job-listings"]','[class*="JobsList_jobList"]','[class*="JobsList_jobsList"]','main[role="main"]'],
@@ -45,6 +48,9 @@
       description: ['[data-test="jobDescriptionContent"]','[class*="JobDetails_jobDescription"]','[class*="jobDescription"]','main'],
       salary: ['[data-test="detailSalary"]','[class*="salary"]'],
       posted: ['[data-test="job-age"]','[class*="listing-age"]','time'],
+      paneRoots: ['[data-test="JobDetails"]','[data-test="jobDetails"]','[class*="JobDetails"]','[class*="jobDetails"]'],
+      paneTitle: ['h1[data-test="job-title"]','h1[class*="heading"]','h1'],
+      paneDescription: ['[data-test="jobDescriptionContent"]','[class*="JobDetails_jobDescription"]','[class*="jobDescription"]'],
     }),
   });
 })();

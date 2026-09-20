@@ -75,8 +75,10 @@ tasks checkpointed:
 ./RUN_NOW.command --platform linkedin
 ```
 
-RUN NOW opens the local dashboard and crawler tabs in the background on macOS,
-so Chrome does not take focus from the application you are using. The local
+RUN NOW opens the localhost Python dashboard and crawler windows in the
+background on macOS, so Chrome does not take focus from the application you are
+using. A short-lived extension bootstrap page handles the authenticated
+handshake and closes automatically. The local
 dashboard is normally `http://127.0.0.1:8765/`; it reads SQLite while the
 crawler writes, so new cards, completed details, scores, and application
 status changes appear during the run. Use **Actionable** for the decision
@@ -85,10 +87,10 @@ The **Live discoveries** panel is the durable intake receipt: it can contain a
 card whose detail is still pending, while the Jobs table contains the
 deduplicated, enriched canonical record.
 
-The crawl intentionally reads details serially in a reused background detail
-tab and commits each observation immediately. This is slower than opening
-many tabs, but preserves normal-Chrome behavior, challenge safety, and
-write-through durability. Stop with `./STOP_SEARCH.command`; resume with
+The crawl uses one serial worker and one reused search tab per active Big-3
+platform. It selects each card into that platform's embedded detail pane and
+commits the observation immediately. Standalone per-job tabs are not routine
+crawl behavior. Stop with `./STOP_SEARCH.command`; resume with
 `./RESUME_SEARCH.command` or the dashboard’s **Resume checkpoint** button.
 
 ## Canonical cross-platform CLI
