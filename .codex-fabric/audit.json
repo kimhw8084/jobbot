@@ -1,0 +1,465 @@
+{
+  "accepted_at": "2026-09-20T15:51:35Z",
+  "changed_files": [
+    {
+      "additions": 21,
+      "deletions": 20,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 64,
+      "deletions": 12,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 22,
+      "deletions": 13,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 125,
+      "deletions": 18,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 66,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0017_chg159_human_wait.py",
+      "status": "A"
+    },
+    {
+      "additions": 90,
+      "deletions": 0,
+      "path": "src/jobbot/platform_state.py",
+      "status": "A"
+    },
+    {
+      "additions": 37,
+      "deletions": 0,
+      "path": "src/jobbot/web/dashboard.css",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 5,
+      "path": "src/jobbot/web/dashboard.html",
+      "status": "M"
+    },
+    {
+      "additions": 117,
+      "deletions": 41,
+      "path": "src/jobbot/web/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 1,
+      "path": "tests/integration/test_chg112_production_integrity.py",
+      "status": "M"
+    },
+    {
+      "additions": 228,
+      "deletions": 0,
+      "path": "tests/integration/test_chg159_dashboard.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'for file in extension/*.js; do node --check \\\"\"'$file\" || exit 1; done; for file in src/jobbot/web/*.js; do node --check \"$file\" || exit 1; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_startup_lifecycle_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk python -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m compileall -q src && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js && rtk node --check extension/service_worker.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk python -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_target_lifecycle_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_bootstrap_compatibility_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_chg146_supervisor_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_receiver_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_chg146_pane_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_startup_lifecycle_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python --version; rtk node --version; rtk command -v python3.11; rtk command -v python3.12; rtk command -v python3.13; rtk uname -srm; rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk /opt/anaconda3/bin/python3.11 -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk /Users/haewonkim/.local/bin/python3.13 -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk /opt/homebrew/bin/python3.12 -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git log -1 --oneline && rtk git diff --check && rtk git status --short && rtk git diff --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=.:src rtk python /private/tmp/chg159_server.py'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '270,325p' src/jobbot/browser_tasks.py && rtk sed -n '675,742p' extension/service_worker.js && rtk sed -n '900,930p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '280,318p' src/jobbot/browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m compileall -q src && rtk node --check extension/service_worker.js && rtk node --check src/jobbot/web/dashboard.js && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_browser_tasks tests.integration.test_chg159_dashboard tests.integration.test_chg146_r2_controls -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m compileall -q src && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sh -c 'for file in extension/*.js; do node --check \\\"\"'$file\" || exit 1; done; for file in src/jobbot/web/*.js; do node --check \"$file\" || exit 1; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk /opt/anaconda3/bin/python3.11 -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk /Users/haewonkim/.local/bin/python3.13 -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk /opt/homebrew/bin/python3.12 -m unittest discover -s tests -p 'test*.py'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"action=='run_status'|run_status\\\" src/jobbot/bridge/rpc.py | head -20 && rtk sed -n '480,555p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '985,1035p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk tail -100 src/jobbot/web/dashboard.css'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/service_worker.js && rtk node --check src/jobbot/web/dashboard.js && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_chg159_dashboard -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python /private/tmp/chg159_render.py http://127.0.0.1:56722/ /private/tmp/chg159-evidence'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import json; d=json.load(open('/private/tmp/chg159-evidence/ui-evidence.json')); print({k:{'overflow':v['horizontal_overflow'],'lanes':v['platform_lanes'],'waiting':v['waiting_labels'],'no_auto':v['no_auto_retry_copy']} for k,v in d['viewports'].items()}); print(d['accessibility']['drawer']); print(d['console_errors'])\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import sqlite3; p='/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/com.apple.shortcuts.mac-helper/jobbot-chg159-j3_ntqye/data/jobs.sqlite3'; c=sqlite3.connect(p); c.execute(\\\\\\\"UPDATE browser_platform_runs SET interaction_state='SYSTEM_RETRYABLE', readiness_state='retryable', readiness_reason='Search surface unavailable', worker_status='running' WHERE browser_run_id=1 AND platform='linkedin'\\\\\\\"); c.execute(\\\\\\\"UPDATE browser_platform_runs SET interaction_state='SYSTEM_UNVERIFIED', readiness_state='unverified', readiness_reason='Surface state could not be verified' WHERE browser_run_id=1 AND platform='glassdoor'\\\\\\\"); c.commit(); c.close()\\\" && rtk python /private/tmp/chg159_render.py http://127.0.0.1:56722/ /private/tmp/chg159-system-evidence\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import json; d=json.load(open('/private/tmp/chg159-system-evidence/ui-evidence.json')); print([x['name'] for x in d['viewports']['desktop-1440x900']['visible_actions'] if 'Recheck' in x['name'] or 'Retry' in x['name']]); print(d['accessibility']['drawer']); print(d['console_errors'])\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=.:src rtk python /private/tmp/chg159_server.py'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check && rtk git status --short && rtk git log -1 --format='%H %s' && rtk git diff --stat\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check src/jobbot/web/dashboard.js && PYTHONPATH=src rtk python -m unittest tests.integration.test_chg159_dashboard -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python /private/tmp/chg159_render.py http://127.0.0.1:59952/ /private/tmp/chg159-evidence'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import sqlite3; p='/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/com.apple.shortcuts.mac-helper/jobbot-chg159-raorty0j/data/jobs.sqlite3'; c=sqlite3.connect(p); c.execute(\\\\\\\"UPDATE browser_platform_runs SET interaction_state='RECHECKING', readiness_state='unchecked', readiness_reason='', worker_status='rechecking', last_control_action='recheck' WHERE browser_run_id=1 AND platform='indeed'\\\\\\\"); c.commit(); c.close()\\\" && rtk python /private/tmp/chg159_render.py http://127.0.0.1:59952/ /private/tmp/chg159-rechecking-evidence\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import json; d=json.load(open('/private/tmp/chg159-rechecking-evidence/ui-evidence.json')); print([x for x in d['accessibility']['focus_order'] if 'Indeed' in x or 'RECHECK' in x or 'Reason:' in x][:6]); print(d['accessibility']['drawer']); print(d['console_errors'])\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=.:src rtk python /private/tmp/chg159_server.py'",
+      "exit_code": 1,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 534,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.27,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 31984512,
+      "fresh_input_tokens": 561768,
+      "input_tokens": 32546280,
+      "non_reasoning_output_tokens": 82439,
+      "output_tokens": 119414,
+      "reasoning_output_tokens": 36975,
+      "total_processed_tokens": 32665694
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "6ae3a2405e24842ed762d02bcbabb67ca4f67a6c",
+      "subject": "fabric: capture completed model changes [CF-8360c3eb8a0fa53c1338e62f]"
+    }
+  ],
+  "diff": {
+    "additions": 787,
+    "changed_files": 13,
+    "commit_count": 1,
+    "deletions": 111
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 11192,
+        "path": "src/jobbot/web/dashboard.html",
+        "sha256": "ea2f3125766ee566e8d9a8e2ba899ef466fa0e29e0e6857e064839bc53ec562f"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": true,
+    "commit_message": "fabric: capture completed model changes [CF-8360c3eb8a0fa53c1338e62f]",
+    "commit_sha": "6ae3a2405e24842ed762d02bcbabb67ca4f67a6c",
+    "paths_before": 13,
+    "status_before": [
+      " M extension/service_worker.js",
+      " M src/jobbot/bridge/rpc.py",
+      " M src/jobbot/browser_tasks.py",
+      " M src/jobbot/dashboard.py",
+      " M src/jobbot/migrations/__init__.py",
+      " M src/jobbot/web/dashboard.css",
+      " M src/jobbot/web/dashboard.html",
+      " M src/jobbot/web/dashboard.js",
+      " M tests/integration/test_chg112_production_integrity.py",
+      " M tests/integration/test_database_ledger.py",
+      "?? src/jobbot/migrations/m0017_chg159_human_wait.py",
+      "?? src/jobbot/platform_state.py",
+      "?? tests/integration/test_chg159_dashboard.py"
+    ],
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-20T16:50:34Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "branch": "codex/jobbot-CHG-159-r1",
+    "detached_verify": false,
+    "head_sha": "6ae3a2405e24842ed762d02bcbabb67ca4f67a6c",
+    "remote_exact_head": true,
+    "remote_head_sha": "6ae3a2405e24842ed762d02bcbabb67ca4f67a6c",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "work_branch": "codex/jobbot-CHG-159-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-8360c3eb8a0fa53c1338e62f",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-159-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-159-r1"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-159-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-20T15:51:36Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 3538,
+    "queue_seconds": 1,
+    "total_seconds": 3539
+  },
+  "transport": {
+    "bytes": 12993,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 12711,
+    "prompt_sha256": "810ce5c8b14179df7fa975eb453c62ed2710b012153a227cd2e2543b2299a05d",
+    "sha256": "8360c3eb8a0fa53c1338e62fcc28a18eb2a05cfc19e9a7e804b8b46f694dabda"
+  }
+}
