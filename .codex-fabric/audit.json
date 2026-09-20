@@ -1,0 +1,418 @@
+{
+  "accepted_at": "2026-09-20T13:59:07Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 136,
+      "deletions": 23,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_bootstrap_compatibility_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 3,
+      "deletions": 3,
+      "path": "tests/extension_chg146_supervisor_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 187,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_receiver_recovery_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_startup_lifecycle_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 0,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import sys,unittest; sys.path.insert(0,'src'); suite=unittest.defaultTestLoader.discover('tests'); result=unittest.TextTestRunner(verbosity=2).run(suite); raise SystemExit(0 if result.wasSuccessful() else 1)\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' src/jobbot/cli.py && rtk rg -n \\\"resource|ResourceWarning|warning|deep\\\" tests src scripts -g '*.py' | sed -n '1,220p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import os,sys,tempfile; os.environ['JOBBOT_OUTPUT_DIR']=tempfile.mkdtemp(prefix='jobbot-chg154-plan-'); sys.path.insert(0,'src'); from jobbot.cli import main; sys.argv=['jobbot','search-plan','--mode','deep']; raise SystemExit(main())\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files extension tests -g '*.js' | sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/dashboard.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/common.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/bootstrap.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/glassdoor.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/indeed.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/selectors.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/linkedin.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/service_worker.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_bootstrap_compatibility_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_chg146_pane_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_chg146_supervisor_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_service_worker_auth_return_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_service_worker_receiver_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_service_worker_target_lifecycle_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_startup_lifecycle_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -W error::ResourceWarning -c \\\"import sys,unittest; sys.path.insert(0,'src'); suite=unittest.defaultTestLoader.discover('tests'); result=unittest.TextTestRunner(verbosity=1).run(suite); raise SystemExit(0 if result.wasSuccessful() else 1)\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' scripts/build_release.py && rtk rg -n \\\"build_release|release\\\" tests -g '*.py' | sed -n '1,160p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,220p' SYNC_EXTENSION.command && rtk sed -n '1,320p' src/jobbot/runtime_binding.py && rtk sed -n '1,200p' REFRESH_EXTENSION.command && rtk sed -n '1,240p' INSTALL_MAC.command\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_receiver_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check && rtk git diff -- extension/manifest.json tests/extension_bootstrap_compatibility_test.js tests/extension_chg146_supervisor_test.js tests/extension_startup_lifecycle_test.js tests/integration/test_extension_refresh.py tests/integration/test_extension_bridge.py && rtk git diff -- extension/service_worker.js | sed -n '1,360p' && printf '%s\\\\n' '--- new receiver test ---' && rtk sed -n '1,280p' tests/extension_service_worker_receiver_recovery_test.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '540,610p' src/jobbot/bridge/rpc.py && rtk sed -n '610,690p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_receiver_recovery_test.js && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short && rtk git diff --numstat && rtk rg -n \\\"672cf88\\\\.21|3\\\\.2\\\\.2-prod-ready\\\\.672cf88\\\\.21\\\" . -g '\"'!logs/**'\"' -g '\"'!out/**'\"' -g '\"'!dist/**'\"' -g '\"'!__pycache__/**'\"' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python scripts/build_release.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add extension/manifest.json extension/service_worker.js tests/extension_bootstrap_compatibility_test.js tests/extension_chg146_supervisor_test.js tests/extension_startup_lifecycle_test.js tests/integration/test_extension_bridge.py tests/integration/test_extension_refresh.py tests/extension_service_worker_receiver_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --check && rtk git diff --cached --stat && rtk git diff --cached --name-only'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"Fix bounded same-target receiver recovery\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import sys,json; from pathlib import Path; sys.path.insert(0,'src'); from jobbot.runtime_binding import sync_extension, deployment_diagnostics, chrome_target_diagnostics; root=Path.cwd(); info=sync_extension(root); print(json.dumps({'deployment':info.as_dict(),'diagnostics':deployment_diagnostics(root),'chrome_target':chrome_target_diagnostics()},indent=2))\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"def command_refresh|refresh-extension|sync-extension|bootstrap-extension\\\" src/jobbot/cli.py src/jobbot/orchestrator.py src/jobbot/runtime_binding.py | sed -n '1,180p' && rtk sed -n '250,360p' src/jobbot/cli.py && rtk sed -n '360,500p' src/jobbot/orchestrator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"import sys; sys.path.insert(0,'src'); from jobbot.cli import main; sys.argv=['jobbot','refresh-extension','--timeout','45']; raise SystemExit(main())\\\"\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' out/logs/extension_refresh_bridge.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c \\\"from jobbot.cli import main; import sys; sys.argv=['jobbot','refresh-extension','--timeout','45']; raise SystemExit(main())\\\"\"",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la \\\"/Users/haewonkim/Library/Application Support/Google/Chrome/Default/Extensions/jfdlmelgonjhgnabpbipjefgamedpgfb\\\" 2>/dev/null || true && rtk find \\\"/Users/haewonkim/Library/Application Support/Google/Chrome/Default/Extensions\\\" -maxdepth 3 -name manifest.json -print 2>/dev/null | sed -n '1,80p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^{tree} && rtk sed -n '\"'1,18p' extension/manifest.json && rtk git show --stat --oneline --decorate HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push -u origin codex/jobbot-CHG-154-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la .github/workflows && rtk rg -n \\\"matrix|python-version|ubuntu|macos|windows|workflow_dispatch|on:\\\" .github/workflows -g '*.yml' -g '*.yaml' | sed -n '1,260p' && rtk which gh || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk gh run list --repo kimhw8084/jobbot --workflow ci.yml --branch codex/jobbot-CHG-154-r1 --limit 5 --json databaseId,status,conclusion,headSha,url,createdAt,updatedAt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk gh run watch 35516481049 --repo kimhw8084/jobbot --exit-status'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^{tree} && rtk git ls-remote origin refs/heads/codex/jobbot-CHG-154-r1 && rtk python -c \"import sys,json; from pathlib import Path; sys.path.insert(0,'\"'src'); from jobbot.runtime_binding import deployment_diagnostics, chrome_target_diagnostics, extension_source_identity; root=Path.cwd(); print(json.dumps({'build':json.loads((root/'extension/manifest.json').read_text())['version_name'],'source_identity':extension_source_identity(root),'deployment':deployment_diagnostics(root),'chrome_target':chrome_target_diagnostics()},indent=2))\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk gh run view 35516481049 --repo kimhw8084/jobbot --json databaseId,status,conclusion,headSha,jobs,url'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 238,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.25,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 16553472,
+      "fresh_input_tokens": 295581,
+      "input_tokens": 16849053,
+      "non_reasoning_output_tokens": 25314,
+      "output_tokens": 53466,
+      "reasoning_output_tokens": 28152,
+      "total_processed_tokens": 16902519
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+      "subject": "Fix bounded same-target receiver recovery"
+    }
+  ],
+  "diff": {
+    "additions": 336,
+    "changed_files": 8,
+    "commit_count": 1,
+    "deletions": 30
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 1942,
+        "path": "extension/manifest.json",
+        "sha256": "d067506fda4781a0ecda3fe7adc5ffde7e3a56282e29ecaa86d46eff5d3c5314"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.3-resume-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.3-resume-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-20T14:29:10Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "branch": "codex/jobbot-CHG-154-r1",
+    "detached_verify": false,
+    "head_sha": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+    "remote_exact_head": true,
+    "remote_head_sha": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+    "work_branch": "codex/jobbot-CHG-154-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-da182b4ef9fd26ce7a865b49",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-154-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-154-r1"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.3-resume-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-154-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-20T13:59:07Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1803,
+    "queue_seconds": 0,
+    "total_seconds": 1803
+  },
+  "transport": {
+    "bytes": 10673,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 10393,
+    "prompt_sha256": "b617988778f82ba256fdff42de2dbe3947b644042ae4ec937d1c7c80cd44d055",
+    "sha256": "da182b4ef9fd26ce7a865b49d19cbb49d3cd0ccaf47056cf9e9c3d8b2b7cc907"
+  }
+}
