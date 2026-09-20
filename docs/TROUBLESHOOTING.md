@@ -9,7 +9,8 @@ Chrome profile. Use `./SYNC_EXTENSION.command` after integrated source changes.
 Start through `python -m jobbot run-now`, `python -m jobbot resume`, or a
 `.command` launcher. Those commands use the machine-local profile binding,
 generate the per-run port/token, request the freshness gate, and open
-`dashboard.html` in ordinary Chrome. For a maintenance-only check use
+an inactive, short-lived bootstrap page in ordinary Chrome. The persistent
+operator console is the Python dashboard at `http://127.0.0.1:8765/`. For a maintenance-only check use
 `./REFRESH_EXTENSION.command`; it confirms the loaded `manifest.json`
 `version_name` and deployment identity before reporting success. Confirm the ID
 matches `config/EXTENSION_ID.txt`.
@@ -26,10 +27,10 @@ run was protected from interruption. Do not click Reload in
 rerun the supported command.
 
 The bridge is intentionally an ephemeral `127.0.0.1` process. When a run
-finishes or is stopped, the launcher tears it down; an extension dashboard
-that continues polling the old port can briefly show `Failed to fetch`. The
-updated extension records the last terminal run and renders that state instead
-of treating normal shutdown as an active-run failure. If the error appears
+finishes or is stopped, the launcher tears it down; the localhost dashboard
+may briefly show `Failed to fetch` while the old bridge is closing. The
+dashboard preserves its last durable content and renders that state instead of
+treating normal shutdown as an active-run failure. If the error appears
 while the run is active, the message includes the port and RPC action; inspect
 the matching `out/logs/run_<id>_bridge.log`, then use the local dashboard and
 `python -m jobbot audit`. The orchestrator retries a dead bridge with the same
@@ -49,7 +50,7 @@ operation; it preserves sightings, versions, and prior evidence.
 
 ## Search marked incomplete
 
-Inspect `out/logs/run_<id>.log`, the extension dashboard, and `python -m jobbot audit`. `SAFETY_STOP` means the crawler could not prove platform exhaustion (for example, stable fingerprints without an explicit end). Resume later; do not relabel it exhausted.
+Inspect `out/logs/run_<id>.log`, the localhost dashboard, and `python -m jobbot audit`. `SAFETY_STOP` means the crawler could not prove platform exhaustion (for example, stable fingerprints without an explicit end). Resume later; do not relabel it exhausted.
 
 ## Database migration failure
 

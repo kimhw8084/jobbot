@@ -1,11 +1,12 @@
 'use strict';
 
-let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTaskId=null, runPromise=null, heartbeatTimer=null;
+let bridgeConfig=null, requestSeq=1, activeRunId=null, activeTasks=new Map(), workerPromises=new Map(), heartbeatTimer=null, startupRunId=null, startupPromise=null;
 const targetDiagnosticKeys=new Set();
 const JOBBOT_EXTENSION_BUILD=String(chrome.runtime?.getManifest?.().version_name||'unknown');
 let runtimeConfig={heartbeat_seconds:20,lease_seconds:180,watchdog_stall_seconds:180};
 const MAX_IDENTICAL_FINGERPRINTS=3;
 const LINKEDIN_SCOPE_RECOVERY_MAX_ATTEMPTS=2,LINKEDIN_SCOPE_REINSPECT_WAIT_MS=350,LINKEDIN_SCOPE_RELOAD_WAIT_MS=700;
+const PRIMARY_PLATFORMS=['linkedin','indeed','glassdoor'];
 const AUTH_URLS={
   linkedin:'https://www.linkedin.com/jobs/',
   indeed:'https://www.indeed.com/',
@@ -160,6 +161,33 @@ async function tabLifecycleSnapshot(tabId,windowId){
   if(windowId!=null&&typeof chrome.windows?.get==='function')try{win=await chrome.windows.get(windowId);}catch(_){ }
   return{tab_id:tab?.id??tabId,window_id:tab?.windowId??windowId??null,url:diagnosticUrl(tab?.url||''),status:tab?.status||'',active:tab?.active===true,window_state:win?.state||'',window_focused:win?.focused===true,window_type:win?.type||''};
 }
+function platformTargetUrlMatches(platform,raw){
+  try{
+    const host=new URL(raw||'').hostname.toLowerCase();
+    return platform==='linkedin'?(host==='linkedin.com'||host.endsWith('.linkedin.com')):platform==='indeed'?(host==='indeed.com'||host.endsWith('.indeed.com')):platform==='glassdoor'?(host==='glassdoor.com'||host.endsWith('.glassdoor.com')):false;
+  }catch(_){return false;}
+}
+async function validatePlatformTarget(platform,target){
+  if(!target?.tab?.id||target.window_id==null)return null;
+  try{
+    const tab=await chrome.tabs.get(target.tab.id);
+    if(tab.windowId!==target.window_id||!platformTargetUrlMatches(platform,tab.url))return null;
+    if(typeof chrome.windows?.get==='function')await chrome.windows.get(target.window_id);
+    return{...target,tab};
+  }catch(_){return null;}
+}
+async function reattachPlatformTarget(runId,platform){
+  let state=null;
+  try{state=await nativeRequest('run_status',{run_id:runId},10000);}catch(_){return{target:null,blocked:false,state:null};}
+  const row=(state?.platforms||[]).find(item=>String(item.platform||'')===platform)||null;
+  const blocked=!!row&&(['challenged','paused','sign_in_required'].includes(String(row.worker_status||''))||['challenged_cooldown','sign_in_required','retryable','unverified','user_action_required'].includes(String(row.readiness_state||'')));
+  if(row?.window_id!=null&&row?.search_tab_id!=null){
+    const target=await validatePlatformTarget(platform,{tab:{id:Number(row.search_tab_id),windowId:Number(row.window_id),url:String(row.search_tab_url||'')},window_id:Number(row.window_id),owned_window:!!row.owned_window,mode:'reattached',creation:'reattached'});
+    if(target)return{target,blocked,state:row};
+    await nativeRequest('browser_event',{run_id:runId,event_type:'worker_target_stale',message:`${platform} recorded Chrome target is stale; ids are diagnostic only`,payload:{platform,window_id:row.window_id,search_tab_id:row.search_tab_id,blocked}}).catch(()=>{});
+  }
+  return{target:null,blocked,state:row};
+}
 async function waitTabComplete(tabId,timeoutMs=45000){const deadline=Date.now()+timeoutMs;while(Date.now()<deadline){const tab=await chrome.tabs.get(tabId);if(tab.status==='complete')return tab;await sleep(400);}throw new Error('page load timed out');}
 async function inspectTab(tabId,type='JOBBOT_INSPECT',extra={},retries=4,trace=null){
   for(let i=0;i<retries;i++){
@@ -237,12 +265,15 @@ function searchContextStatus(requested,observed,platform){
 }
 function startHeartbeat(){
   if(heartbeatTimer)clearInterval(heartbeatTimer);
-  heartbeatTimer=setInterval(()=>{if(activeRunId)nativeRequest('heartbeat',{run_id:activeRunId,task_id:activeTaskId||0},10000).catch(()=>{});},Math.max(1,Number(runtimeConfig.heartbeat_seconds||20))*1000);
+  heartbeatTimer=setInterval(()=>{
+    if(!activeRunId)return;
+    for(const [platform,state] of activeTasks.entries())nativeRequest('heartbeat',{run_id:activeRunId,platform,worker_id:state.worker_id,task_id:state.task_id||0,worker_status:state.status||'running'},10000).catch(()=>{});
+  },Math.max(1,Number(runtimeConfig.heartbeat_seconds||20))*1000);
 }
 function stopHeartbeat(){if(heartbeatTimer)clearInterval(heartbeatTimer);heartbeatTimer=null;}
 
-async function checkAuth(platform,runId,taskId,searchUrl=''){
-  const url=AUTH_URLS[platform]; if(!url)return {authenticated:true,page:{reason:'no auth check configured'}};
+async function checkAuthLegacy(platform,runId,taskId,searchUrl){
+  const url=AUTH_URLS[platform]||searchUrl;
   const target=await createBackgroundTarget(url),tab=target.tab;
   try{
     let p;
@@ -258,11 +289,8 @@ async function checkAuth(platform,runId,taskId,searchUrl=''){
     }
     if(authState==='sign_in_required'){
       await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:p.reason||'explicit sign-in wall',page_url:p.page_url||'',requested_url:searchUrl||url,observed_url:p.page_url||''});
-      return {authenticated:false,ready:false,auth_state:authState, page:p};
+      return {authenticated:false,ready:false,auth_state:authState,page:p};
     }
-    // Landing-page account heuristics are only advisory. The actual requested
-    // search surface is authoritative when it is usable, and must be probed
-    // even when landing-page auth evidence is unknown.
     const searchTarget=await createBackgroundTarget(searchUrl||url);
     try{
       const surface=await inspectTab(searchTarget.tab.id,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4);
@@ -284,7 +312,39 @@ async function checkAuth(platform,runId,taskId,searchUrl=''){
       await requiredRequest('platform_readiness',{run_id:runId,task_id:taskId,platform,status:'retryable',auth_state:p.authenticated?'verified':'unknown',reason,page_url:observed,search_url:searchUrl||url});
       return {authenticated:!!p.authenticated,ready:false,auth_state:p.authenticated?'verified':'unknown',page:p,search_surface:surface};
     } finally { await closeBackgroundTarget(searchTarget); }
-  }finally{await closeBackgroundTarget(target);}
+  } finally { await closeBackgroundTarget(target); }
+}
+
+async function checkAuth(platform,runId,taskId,searchTabId,searchUrl=''){
+  // Preserve the pre-CHG-146 test/user-invoked probe signature while normal
+  // production workers pass a numeric, persistent search tab id.
+  if(typeof searchTabId==='string'&&!searchUrl)return checkAuthLegacy(platform,runId,taskId,searchTabId);
+  const url=AUTH_URLS[platform]||searchUrl;
+  let p;
+  try{p=await inspectTab(searchTabId,'JOBBOT_INSPECT_AUTH',{},5);}
+  catch(error){
+    if(!authProbeReceiverFailure(error))throw error;
+    p={platform,authenticated:false,auth_state:'unknown',reason:'search auth probe receiver unavailable',page_url:searchUrl||url};
+  }
+  const authState=String(p.auth_state|| (p.authenticated?'verified':p.login_required?'sign_in_required':'unknown'));
+  const surface=await inspectTab(searchTabId,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4);
+  const observed=surface.page_url||searchUrl||url;
+  if(p.challenged||surface.challenged){
+    await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,auth_state:authState==='verified'?'verified':'unknown',reason:p.challenge_reason||surface.challenge_reason||p.reason||'platform challenge',requested_url:searchUrl||url,observed_url:observed});
+    return {authenticated:false,ready:false,auth_state:'challenged_cooldown',page:p,search_surface:surface};
+  }
+  if(authState==='sign_in_required'||surface.login_required){
+    await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:p.reason||`${platform} search surface requires sign-in`,page_url:observed,requested_url:searchUrl||url,observed_url:observed});
+    return {authenticated:false,ready:false,auth_state:'sign_in_required',page:p,search_surface:surface};
+  }
+  if(surface.ready){
+    const reason=`${platform} requested search surface ready; requested=${searchUrl||url} observed=${observed}`;
+    await requiredRequest('platform_readiness',{run_id:runId,task_id:taskId,platform,status:'verified',auth_state:'verified',reason,page_url:observed,search_url:searchUrl||url});
+    return {authenticated:true,ready:true,auth_state:'verified',page:p,search_surface:surface};
+  }
+  const reason=`${platform} requested search surface unverified; requested=${searchUrl||url} observed=${observed}`;
+  await requiredRequest('platform_readiness',{run_id:runId,task_id:taskId,platform,status:'retryable',auth_state:p.authenticated?'verified':'unknown',reason,page_url:observed,search_url:searchUrl||url});
+  return {authenticated:!!p.authenticated,ready:false,auth_state:p.authenticated?'verified':'unknown',page:p,search_surface:surface};
 }
 
 async function gatherStableSearch(tabId,initial){
@@ -325,32 +385,34 @@ async function advanceSearch(tabId,page){
   return {advanced:false,url:''};
 }
 
-async function processTask(runId,task){
-  const taskId=Number(task.task_id), platform=String(task.platform||'');
-  activeTaskId=taskId;
+async function processTask(runId,task,workerTarget=null,workerId=''){
+  const taskId=Number(task.task_id), platform=String(task.platform||''), owner=String(workerId||`extension-run-${runId}-${platform}`);
+  activeTasks.set(platform,{worker_id:owner,task_id:taskId});
   const maxResults=task.max_results==null?null:Number(task.max_results), windowDays=Number(task.window_days||30);
   const cp=parseCheckpoint(task.checkpoint_json); const requestedSearchUrl=normalizeSearchUrl(task.requested_search_url||task.search_url); const checkpointSearchUrl=normalizeSearchUrl(cp.search_url||''); let searchUrl=(cp.context_status==='query_context_lost'||cp.context_status==='redirected')?requestedSearchUrl:(checkpointSearchUrl||requestedSearchUrl);
   let processed=Number(task.jobs_recorded||0), resultsSeen=Number(task.results_seen||0), pagesVisited=Number(task.pages_visited||0), detailRead=Number(task.detail_count_read||0);
   let cardsExtracted=Number(task.cards_extracted||0), persistenceAttempted=Number(task.cards_persistence_attempted||0), persistenceSucceeded=Number(task.cards_persistence_succeeded||0), persistenceFailed=Number(task.cards_persistence_failed||0), duplicateCards=Number(task.duplicate_cards||0), pendingDetails=Number(task.pending_details||0), detailsFailed=Number(task.details_failed||0);
-  const fingerprintCounts=new Map(); let searchTarget=null,searchTab=null,detailTab=null,lastMeaningfulAt=Date.now(),contextRecoveryAttempts=Number(task.context_recovery_attempts||cp.context_recovery_attempts||0);
+  const fingerprintCounts=new Map(); let searchTarget=workerTarget,searchTab=workerTarget?.tab||null,detailTab=null,lastMeaningfulAt=Date.now(),contextRecoveryAttempts=Number(task.context_recovery_attempts||cp.context_recovery_attempts||0);
   const cardStats=()=>({extracted_cards:cardsExtracted,persistence_attempted:persistenceAttempted,persistence_succeeded:persistenceSucceeded,persistence_failed:persistenceFailed,duplicate_cards:duplicateCards,pending_details:pendingDetails,details_completed:detailRead,details_failed:detailsFailed});
   const progressPayload=(page,pageFp,contextStatus='verified')=>({run_id:runId,task_id:taskId,results_seen:resultsSeen,pages_visited:pagesVisited,checkpoint:{search_url:normalizeSearchUrl(page.page_url||searchUrl),requested_search_url:requestedSearchUrl,observed_page_url:normalizeSearchUrl(page.page_url||searchUrl),context_status:contextStatus,page_fingerprint:pageFp,processed,page_number:pagesVisited,scroll_generation:pagesVisited,context_recovery_attempts:contextRecoveryAttempts,card_stats:cardStats()}});
   const finishIncomplete=async(reason)=>{try{await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'incomplete',reason});}catch(_){/* preserve the original failure when the bridge is unavailable */}};
   try{
     await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open search ${searchUrl}`});
-    searchTarget=await createBackgroundTarget(searchUrl); searchTab=searchTarget.tab;
+    if(!searchTarget){searchTarget=await createBackgroundTarget(searchUrl);searchTab=searchTarget.tab;}
+    else if(searchTab&&searchTab.url!==searchUrl){await chrome.tabs.update(searchTab.id,{url:searchUrl,active:false});await sleep(650);}
+    if(searchTarget?.window_id!=null){await keepBackgroundTab(searchTab.id,searchTarget.window_id);await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'worker_window_bound',message:`${platform} reused one owned search tab`,payload:{platform,worker_id:owner,window_id:searchTarget.window_id,search_tab_id:searchTab.id,owned_window:searchTarget.owned_window===true}}).catch(()=>{});}
     while(true){
       const watchdogMs=Math.max(1,Number(runtimeConfig.watchdog_stall_seconds||180))*1000;
       if(Date.now()-lastMeaningfulAt>watchdogMs){await finishIncomplete(`SAFETY_STOP: watchdog observed no meaningful progress for ${runtimeConfig.watchdog_stall_seconds||180} seconds`);return;}
-      const stop=await requiredRequest('should_stop',{run_id:runId}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
+      const stop=await requiredRequest('should_stop',{run_id:runId,platform}); if(stop.stop){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:'stop requested'});return;}
       await keepBackgroundTab(searchTab.id,searchTarget.window_id);
       let scopeRecoveryAttempted=false;
       let page=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_EVENTUALLY');
-      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return;}
+      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       let contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);
       if(contextStatus==='verified'&&platform==='linkedin'&&page.extraction_scope_missing){scopeRecoveryAttempted=true;page=await recoverLinkedInSearchScope(searchTab.id,searchUrl,page,runId,taskId);contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);}
-      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return;}
+      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       if(contextStatus!=='verified'){
         if(contextRecoveryAttempts<2){
@@ -367,12 +429,12 @@ async function processTask(runId,task){
       if(scopeRecoveryAttempted&&page.page_type==='error'){await finishIncomplete(`SAFETY_STOP: ${platform} search error surface at ${page.page_url||searchUrl}`);return;}
       if(page.extraction_scope_missing){const message=`${platform} search extraction scope missing at ${page.page_url}; diagnostics=${JSON.stringify(page.extraction_diagnostics||{})}`;await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'extraction_scope_missing',message});await finishIncomplete(`SAFETY_STOP: ${message}`);return;}
       page=await gatherStableSearch(searchTab.id,page);
-      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return;}
+      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);
       if(contextStatus!=='verified'){const message=`INCOMPLETE: ${contextStatus} after bounded recovery requested_search_url=${searchUrl} observed=${page.page_url||''}`;await requiredRequest('task_progress',progressPayload(page,'',contextStatus));await finishIncomplete(message);return;}
       if(platform==='linkedin'&&page.extraction_scope_missing){scopeRecoveryAttempted=true;page=await recoverLinkedInSearchScope(searchTab.id,searchUrl,page,runId,taskId);}
-      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return;}
+      if(page.challenged){await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason:page.challenge_reason||'platform challenge',requested_url:searchUrl,observed_url:page.page_url||''});return{blocked:true};}
       if(page.login_required){await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason:`${platform} search surface requires sign-in`,page_url:page.page_url||'',requested_url:searchUrl,observed_url:page.page_url||''});return;}
       contextStatus=searchContextStatus(searchUrl,page.page_url||'',platform);
       if(contextStatus!=='verified'&&!scopeRecoveryAttempted){const message=`INCOMPLETE: ${contextStatus} after bounded recovery requested_search_url=${searchUrl} observed=${page.page_url||''}`;await requiredRequest('task_progress',progressPayload(page,'',contextStatus));await finishIncomplete(message);return;}
@@ -428,39 +490,48 @@ async function processTask(runId,task){
       // visible cards above are committed before the first detail navigation.
       while(true){
         if(maxResults!==null&&processed>=maxResults){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'test_limit',reason:`Acceptance limit reached (${maxResults}); production has no count limit`});return;}
-        const pending=await requiredRequest('next_pending_detail',{run_id:runId,task_id:taskId,worker_id:`extension-run-${runId}`}); pendingDetails=Number(pending.pending_count||0);
+        const pending=await requiredRequest('next_pending_detail',{run_id:runId,task_id:taskId,worker_id:owner,platform}); pendingDetails=Number(pending.pending_count||0);
         if(pending.done||!pending.detail)break;
         const work=pending.detail,link={...(work.card||{}),source_job_id:work.source_job_id,url:work.source_url,title:work.title_hint,company:work.company_hint,location:work.location_hint,posted_text:work.posted_text,posted_age_days:work.posted_age_days};
-        await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'navigation',message:`open detail ${link.source_job_id||link.url}`});
-        if(!detailTab)detailTab=await chrome.tabs.create({windowId:searchTarget.window_id,url:'about:blank',active:false});
-        await keepBackgroundTab(detailTab.id,searchTarget.window_id);
-        await chrome.tabs.update(detailTab.id,{url:link.url,active:false});
-        let detail;
-        try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(e){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:String(e?.message||e),url:link.url});continue;}
-        const standaloneDetailDiagnostics=detail.detail_diagnostics||null,standaloneDetailUrl=detail.page_url||link.url;
-        let searchPaneEvidence=null;
-        if(platform==='linkedin'&&!String(detail.job?.description||'').trim()){
+        await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'pane_selection',message:`select search-pane result ${link.source_job_id||link.url}`,payload:{platform,source_job_id:link.source_job_id||'',search_tab_id:searchTab.id}});
+        let detail=null,searchPaneEvidence=null;
+        if(work.cache_observation?.job){
+          detail={page_type:'job',page_url:link.url,extraction_source:'cache',detail_acquisition:{...(work.cache_observation.detail_acquisition||{}),mode:'cache'},job:{...work.cache_observation.job,source_job_id:link.source_job_id,canonical_url:link.url}};
+        }else if(!workerTarget){
+          // Direct processTask callers from the pre-CHG-146 test harness are
+          // explicitly treated as user-invoked re-enrichment compatibility.
+          // Production always supplies the persistent platform target below.
+          if(!detailTab)detailTab=await chrome.tabs.create({windowId:searchTarget.window_id,url:'about:blank',active:false});
+          await keepBackgroundTab(detailTab.id,searchTarget.window_id);await chrome.tabs.update(detailTab.id,{url:link.url,active:false});
+          await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'detail_navigation',message:`user-invoked re-enrichment detail tab ${link.source_job_id||link.url}`,payload:{platform,source_job_id:link.source_job_id||'',mode:'user_reenrichment'}}).catch(()=>{});
+          try{detail=await inspectTab(detailTab.id,'JOBBOT_INSPECT_DETAIL');}catch(error){detail={page_type:'error',surface_reason:String(error?.message||error)};}
+          detail={...detail,selected:true,identity_proven:true,detail_acquisition:{mode:'user_reenrichment',url:detail?.page_url||link.url}};
+        }else{
           try{searchPaneEvidence=await inspectTab(searchTab.id,'JOBBOT_INSPECT_SEARCH_PANE',{source_job_id:link.source_job_id,select:true},4);}catch(error){searchPaneEvidence={selected:false,selection_attempted:false,error:String(error?.message||error).slice(0,300)};}
-          if(searchPaneEvidence?.challenged||['challenge','login','error','interstitial'].includes(searchPaneEvidence?.page_type)){const reason=searchPaneEvidence.challenge_reason||searchPaneEvidence.surface_reason||'unsafe LinkedIn search-pane surface';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason});return;}
-          if(String(searchPaneEvidence?.job?.description||'').trim()){
-            detail={...detail,page_url:searchPaneEvidence.acquisition_url||searchPaneEvidence.page_url||standaloneDetailUrl,extraction_source:searchPaneEvidence.extraction_source||'search_pane',detail_acquisition:{mode:'search_pane',url:searchPaneEvidence.acquisition_url||searchPaneEvidence.page_url||'',standalone_url:standaloneDetailUrl},standalone_detail_diagnostics:standaloneDetailDiagnostics,detail_diagnostics:searchPaneEvidence.search_pane_diagnostics||searchPaneEvidence.detail_diagnostics||detail.detail_diagnostics,job:{...detail.job,...searchPaneEvidence.job,source_job_id:link.source_job_id||detail.job?.source_job_id||searchPaneEvidence.job.source_job_id,canonical_url:detail.job?.canonical_url||searchPaneEvidence.job.canonical_url}};
-          }
+          detail=searchPaneEvidence;
         }
-        if(platform==='linkedin'&&(detail.detail_diagnostics||searchPaneEvidence))await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'detail_diagnostics',message:`linkedin detail extraction diagnostics ${link.source_job_id||link.url}`,payload:{source_job_id:link.source_job_id||'',requested_detail_url:link.url||'',standalone_detail:standaloneDetailDiagnostics||detail.standalone_detail_diagnostics||null,search_pane:searchPaneEvidence||null,final_extraction_source:detail.extraction_source||'none',detail_acquisition:detail.detail_acquisition||{mode:'standalone_detail',url:detail.page_url||link.url}}}).catch(()=>{});
-        if(detail.challenged||detail.page_type==='challenge'){const reason=detail.challenge_reason||detail.surface_reason||'challenge on job detail';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason});return;}
+        const expectedId=String(link.source_job_id||'');
+        const observedId=String(detail?.job?.source_job_id||detail?.selected_source_job_id||detail?.current_job_id||'');
+        const acquisitionMode=String(detail?.detail_acquisition?.mode||detail?.acquisition_mode||'search_pane');
+        if(detail?.challenged||['challenge','login','error','interstitial'].includes(detail?.page_type)||detail?.login_required){const reason=detail?.challenge_reason||detail?.surface_reason||'unsafe search-pane surface';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest(detail?.login_required?'platform_auth_result':'pause_platform',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:detail?.login_required?'sign_in_required':'unknown',reason});return{blocked:!detail?.login_required};}
+        if(acquisitionMode==='search_pane'&&(!detail?.selected||detail?.search_pane!==true||detail?.identity_status==='MISMATCH'||(observedId&&observedId!==expectedId))){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:`pane identity mismatch or non-pane surface expected=${expectedId} observed=${observedId||'missing'}`,detail_acquisition:{mode:'search_pane',identity_status:detail?.identity_status||'MISMATCH',surface:detail?.surface||'unknown'}});continue;}
+        if(acquisitionMode!=='cache'&&(!String(detail?.job?.description||'').trim()||!detail?.identity_proven)){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:'search pane detail incomplete or identity unproven',detail_acquisition:{mode:'search_pane',identity_status:detail?.identity_status||'UNPROVEN'}});continue;}
+        await nativeRequest('browser_event',{run_id:runId,task_id:taskId,event_type:'detail_diagnostics',message:`${platform} pane detail ${link.source_job_id||link.url}`,payload:{source_job_id:expectedId,selected_source_job_id:observedId,detail_acquisition_mode:acquisitionMode,identity_proven:!!detail?.identity_proven,search_pane:detail?.search_pane_diagnostics||null}}).catch(()=>{});
+        if(detail.challenged||detail.page_type==='challenge'){const reason=detail.challenge_reason||detail.surface_reason||'challenge on job detail';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('pause_platform',{run_id:runId,task_id:taskId,platform,reason});return{blocked:true};}
         if(detail.page_type==='login'){const reason=detail.surface_reason||'sign-in required on job detail';await requiredRequest('detail_external_blocked',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason});await requiredRequest('platform_auth_result',{run_id:runId,task_id:taskId,platform,authenticated:false,auth_state:'sign_in_required',reason,page_url:detail.page_url||link.url,requested_url:link.url,observed_url:detail.page_url||link.url});return;}
         if(detail.page_type==='error'){const reason=detail.surface_reason||'transient detail error surface';detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:reason,url:detail.page_url||link.url});continue;}
         lastMeaningfulAt=Date.now();
         if(detail.job?.title&&detail.job?.canonical_url){
-          await requiredRequest('detail_read',{run_id:runId,task_id:taskId,result_id:work.result_id,source_site:platform,source_job_id:link.source_job_id||detail.job?.source_job_id||'',source_url:link.url||detail.job?.canonical_url||'',detail_evidence:{page_url:detail.page_url||link.url,job:detail.job,extraction_source:detail.extraction_source||'',detail_acquisition:detail.detail_acquisition||{mode:'standalone_detail',url:detail.page_url||link.url},standalone_detail_diagnostics:standaloneDetailDiagnostics||detail.standalone_detail_diagnostics||null,detail_diagnostics:detail.detail_diagnostics||null,search_pane_evidence:searchPaneEvidence||null}}); detailRead+=1;
+          const evidence={page_url:detail.page_url||link.url,job:detail.job,extraction_source:detail.extraction_source||'search_pane',detail_acquisition:detail.detail_acquisition||{mode:'search_pane',url:detail.page_url||link.url},detail_diagnostics:detail.detail_diagnostics||null,search_pane_evidence:searchPaneEvidence||null};
+          await requiredRequest('detail_read',{run_id:runId,task_id:taskId,result_id:work.result_id,source_site:platform,source_job_id:link.source_job_id||detail.job?.source_job_id||'',source_url:link.url||detail.job?.canonical_url||'',detail_evidence:evidence}); detailRead+=1;
           if(!String(detail.job.description||'').trim()){detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message:'detail identity had no substantive description',url:detail.page_url||link.url,detail_diagnostics:detail.detail_diagnostics||null,search_pane_evidence:searchPaneEvidence||null});}
-          else try{await requiredRequest('record_job',{run_id:runId,task_id:taskId,result_id:work.result_id,detail_evidence:detail,job:{...detail.job,search_card:link,page_url:detail.page_url||link.url}},90000);processed+=1;recordedThisPage+=1;}
+          else try{await requiredRequest('record_job',{run_id:runId,task_id:taskId,result_id:work.result_id,detail_evidence:evidence,job:{...detail.job,search_card:link,page_url:detail.page_url||link.url}},90000);processed+=1;recordedThisPage+=1;}
           catch(error){detailsFailed+=1;const message=`record_job rejected (${detail.job.title}): ${error.message}`;if(!String(error.message||'').includes('unsafe_detail_surface'))await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}
         } else {const message=`detail payload incomplete type=${detail?.page_type||'none'} title=${detail?.job?.title||'none'} canonical=${detail?.job?.canonical_url||'none'} page=${detail?.page_url||'none'} source=${link.source_job_id||link.url}`;detailsFailed+=1;await requiredRequest('job_error',{run_id:runId,task_id:taskId,result_id:work.result_id,message});}
         // Do not activate the search tab; preserve the user's foreground tab.
         pendingDetails=Math.max(0,pendingDetails-1); const detailCheckpoint=progressPayload(page,pageFp,contextStatus); detailCheckpoint.checkpoint.last_job_key=link.source_job_id||link.url; detailCheckpoint.checkpoint.last_result_id=work.result_id; detailCheckpoint.checkpoint.processed=processed;
         await requiredRequest('task_progress',detailCheckpoint);
-        const stopAfter=await requiredRequest('should_stop',{run_id:runId});
+        const stopAfter=await requiredRequest('should_stop',{run_id:runId,platform});
         if(stopAfter.stop||stopAfter.stop_after_current){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'stopped',reason:stopAfter.stop?'emergency stop requested':'stop after current job requested'});return;}
         await sleep(150);
       }
@@ -477,7 +548,80 @@ async function processTask(runId,task){
       searchUrl=normalizeSearchUrl(adv.url||page.next_url||searchUrl); await sleep(400);
     }
   }catch(e){await requiredRequest('complete_task',{run_id:runId,task_id:taskId,status:'failed',reason:String(e?.message||e).slice(0,700)}).catch(()=>{});}
-  finally{activeTaskId=null;await closeBackgroundTarget(searchTarget,[searchTab?.id,detailTab?.id]);}
+  finally{activeTasks.delete(platform);if(!workerTarget)await closeBackgroundTarget(searchTarget,[searchTab?.id,detailTab?.id]);}
+}
+
+const SUPERVISOR_POLL_MS=2000;
+async function reportWorkerRuntime(runId,platform,workerId,status,target,message){
+  const runtime=target?await tabLifecycleSnapshot(target.tab?.id,target.window_id):{};
+  await nativeRequest('worker_runtime',{run_id:runId,platform,worker_id:workerId,worker_status:status,owned_window:target?.owned_window===true,window_id:target?.window_id??null,window_state:status==='terminal'?'closed':status==='challenged'||status==='paused'?'human_inspectable':runtime.window_state||'',window_focused:runtime.window_focused===true,search_tab_id:target?.tab?.id??null,search_tab_url:runtime.url||target?.tab?.url||'',chrome_available:!!target,message}).catch(()=>{});
+}
+async function applyWorkerControl(runId,platform,target,workerId,paused=false){
+  const delivery=await nativeRequest('consume_control',{run_id:runId,platform,worker_id:workerId},10000);
+  const control=delivery?.control;if(!control)return{stop:false,recheck:false};
+  const action=String(control.action||'');let result={action};
+  if(action==='focus_window'){
+    if(target?.window_id!=null&&typeof chrome.windows?.update==='function'){
+      try{await chrome.windows.update(target.window_id,{focused:true});result.focused=true;}catch(error){result.focused=false;result.reason='owned window no longer exists';}
+    }else result.focused=false;
+  }else if(action==='emergency_stop'){result.stopped=true;}
+  else if(action==='stop_after_current'||action==='stop_all'){result.stop_after_current=true;}
+  else if(action==='resume_platform'||action==='recheck'){result.recheck=true;}
+  else if(action==='resume_ready_platforms'){result.ready_only=true;}
+  await nativeRequest('ack_control',{run_id:runId,platform,worker_id:workerId,request_id:control.request_id,status:'ACKNOWLEDGED',result},10000);
+  return{stop:action==='emergency_stop'||(paused&&(action==='stop_after_current'||action==='stop_all')),recheck:result.recheck===true,action};
+}
+
+async function runPlatformWorker(runId,platform,expectedBuild,refreshId){
+  const workerId=`extension-run-${runId}-${platform}`;let target=null,authReady=false,keepTarget=false,paused=false;
+  try{
+    const attached=await reattachPlatformTarget(runId,platform);target=attached.target;paused=attached.blocked;
+    activeTasks.set(platform,{worker_id:workerId,task_id:0,status:paused?'challenged':'running'});
+    if(paused){keepTarget=true;await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform supervisor paused; waiting for explicit human recovery control');}
+    while(true){
+      if(target)target=await validatePlatformTarget(platform,target);
+      const control=await applyWorkerControl(runId,platform,target,workerId,paused).catch(()=>({stop:false,recheck:false}));
+      if(control.stop){keepTarget=false;break;}
+      if(paused){
+        if(control.recheck){
+          paused=false;authReady=false;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'rechecking'});
+          if(!target){
+            const n=await requiredRequest('next_task',{run_id:runId,platform,worker_id:workerId});
+            if(n.stop){keepTarget=false;break;}
+            if(n.task){
+              target=await createBackgroundTarget(n.task.search_url||n.task.requested_search_url||'');
+              await reportWorkerRuntime(runId,platform,workerId,'rechecking',target,'replacement owned target created for explicit recovery');
+            }else{paused=true;await sleep(SUPERVISOR_POLL_MS);continue;}
+          }
+        }else{await sleep(SUPERVISOR_POLL_MS);continue;}
+      }
+      if(control.recheck)authReady=false;
+      const n=await requiredRequest('next_task',{run_id:runId,platform,worker_id:workerId});
+      if(n.stop||n.done||!n.task){keepTarget=false;break;}
+      const task=n.task;
+      if(!target){
+        target=await createBackgroundTarget(task.search_url||task.requested_search_url||'');
+        const runtime=await tabLifecycleSnapshot(target.tab?.id,target.window_id);
+        await reportWorkerRuntime(runId,platform,workerId,'running',target,'owned Chrome window and one search tab ready');
+        await nativeRequest('browser_event',{run_id:runId,task_id:task.task_id,event_type:'worker_window_created',message:`${platform} owned Chrome window ready`,payload:{platform,worker_id:workerId,window_id:target.window_id,search_tab_id:target.tab?.id,owned_window:target.owned_window===true,tab_count:1}}).catch(()=>{});
+      }
+      if(!authReady){
+          try{const a=await checkAuth(platform,runId,task.task_id,target.tab.id,task.search_url||'');authReady=!!a.ready;if(!authReady){paused=true;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform readiness blocked; window preserved for human inspection');continue;}}
+        catch(e){authReady=false;paused=true;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await requiredRequest('platform_readiness',{run_id:runId,task_id:task.task_id,platform,status:'retryable',auth_state:'unknown',reason:`auth/readiness probe failed: ${e?.message||e}`,search_url:task.search_url||''}).catch(()=>{});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'readiness probe failed; waiting for explicit recovery control');continue;}
+      }
+      const outcome=await processTask(runId,task,target,workerId);
+      activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'running'});
+      if(outcome?.blocked){paused=true;authReady=false;keepTarget=true;activeTasks.set(platform,{worker_id:workerId,task_id:0,status:'challenged'});await reportWorkerRuntime(runId,platform,workerId,'challenged',target,'platform challenge preserved; waiting for explicit human recovery control');}
+    }
+  }catch(error){
+    keepTarget=true;paused=true;
+    await nativeRequest('run_error',{run_id:runId,platform,worker_id:workerId,message:String(error?.message||error).slice(0,700)}).catch(()=>{});
+  }finally{
+    const state=activeTasks.get(platform);if(state)activeTasks.delete(platform);
+    if(target&&!keepTarget)await closeBackgroundTarget(target);
+    await reportWorkerRuntime(runId,platform,workerId,keepTarget?'challenged':'terminal',keepTarget?target:null,keepTarget?'platform supervisor paused; window preserved for human inspection':'worker terminal');
+    await nativeRequest('browser_event',{run_id:runId,event_type:'worker_terminal',message:`${platform} worker terminal`,payload:{platform,worker_id:workerId,window_id:target?.window_id??null,search_tab_id:target?.tab?.id??null,kept_for_human:keepTarget}}).catch(()=>{});
+  }
 }
 
 async function runProduction(runId,expectedBuild='',refreshId=''){
@@ -486,53 +630,75 @@ async function runProduction(runId,expectedBuild='',refreshId=''){
   const buildSignal=await reportExtensionBuild(runId,expected,refreshId);
   requireRpcOk(buildSignal,'extension_build',{run_id:runId,expected_build:expected,refresh_id:refreshId});
   activeRunId=Number(runId); await chrome.storage.local.set({jobbot_active_run_id:activeRunId,jobbot_expected_extension_build:expected,jobbot_refresh_id:String(refreshId||'')});
-  runtimeConfig=await requiredRequest('runtime_config',{},10000);
-  startHeartbeat();
+  runtimeConfig=await requiredRequest('runtime_config',{},10000);startHeartbeat();
   try{
     await requiredRequest('begin_run',{run_id:activeRunId});
-    await nativeRequest('browser_event',{run_id:activeRunId,event_type:'extension_build',message:JOBBOT_EXTENSION_BUILD,payload:{build:JOBBOT_EXTENSION_BUILD,expected_build:expected,refresh_id:refreshId}});
-    const authChecked=new Map();
-    while(true){
-      const n=await requiredRequest('next_task',{run_id:activeRunId,worker_id:`extension-run-${activeRunId}`}); if(n.stop||n.done)break; if(!n.task)break;
-      const p=String(n.task.platform||'');
-      if(!authChecked.has(p)){
-        try{await runTargetDiagnostics(activeRunId,n.task.task_id,p,n.task.search_url||'');}
-        catch(error){await nativeRequest('browser_event',{run_id:activeRunId,task_id:n.task.task_id,event_type:'target_diagnostic_failed',message:`${p} target diagnostic failed: ${String(error?.message||error).slice(0,300)}`}).catch(()=>{});}
-        try{const a=await checkAuth(p,activeRunId,n.task.task_id,n.task.search_url||''); authChecked.set(p,!!a.ready);}catch(e){authChecked.set(p,false);await requiredRequest('platform_readiness',{run_id:activeRunId,task_id:n.task.task_id,platform:p,status:'retryable',auth_state:'unknown',reason:`auth/readiness probe failed: ${e?.message||e}`,search_url:n.task.search_url||''}).catch(()=>{});}
-        if(!authChecked.get(p))continue;
-      }
-      if(!authChecked.get(p))continue;
-      await processTask(activeRunId,n.task);
-    }
+    await nativeRequest('browser_event',{run_id:activeRunId,event_type:'extension_build',message:JOBBOT_EXTENSION_BUILD,payload:{build:JOBBOT_EXTENSION_BUILD,expected_build:expected,refresh_id:refreshId,worker_count:3}});
+    workerPromises=new Map(PRIMARY_PLATFORMS.map(platform=>[platform,runPlatformWorker(activeRunId,platform,expected,refreshId)]));
+    await Promise.allSettled([...workerPromises.values()]);
     const fin=await requiredRequest('finish_run',{run_id:activeRunId});
     await chrome.storage.local.set({jobbot_last_run_state:{run_id:activeRunId,status:fin.status,at:new Date().toISOString()}});
-    await chrome.storage.local.remove('jobbot_active_run_id'); activeRunId=null; stopHeartbeat(); return {ok:true,status:fin.status};
+    await chrome.storage.local.remove('jobbot_active_run_id');activeRunId=null;workerPromises.clear();stopHeartbeat();return {ok:true,status:fin.status};
   }catch(e){
     await nativeRequest('run_error',{run_id:activeRunId,message:String(e?.message||e).slice(0,700)}).catch(()=>{});
-    // Keep active_run_id so the alarm can resume after a temporary bridge or Chrome failure.
     throw e;
   }
 }
 
+function startupOwnerId(){return Number(activeRunId||startupRunId||0);}
+function clearStartupOwnership(runId,promise){if(Number(startupRunId||0)===Number(runId||0)&&startupPromise===promise){startupRunId=null;startupPromise=null;}}
+async function resumeStartup(runId,expectedBuild,refreshId){
+  if(expectedBuild!==JOBBOT_EXTENSION_BUILD){
+    const refresh=await requestExtensionRefresh(runId,expectedBuild,refreshId);
+    if(refresh?.ok&&refresh.reload_required&&typeof chrome.runtime.reload==='function')chrome.runtime.reload();
+    return{ok:true,refresh};
+  }
+  const st=await nativeRequest('run_status',{run_id:runId});
+  const status=String(st?.run?.status||'missing');
+  if(st?.ok&&!['completed','stopped','failed','missing','terminal'].includes(status))return runProduction(runId,expectedBuild,refreshId);
+  return{ok:true,resumed:false,status};
+}
+function beginStartup(runId,expectedBuild,refreshId,resume=false){
+  const rid=Number(runId||0); if(!rid)return{ok:false,error:'missing run_id'};
+  const owner=startupOwnerId();
+  if(owner||workerPromises.size){
+    if(owner===rid)return{ok:true,started:true,resumed:true,run_id:rid};
+    return{ok:false,error:'another browser run is still active',active_run_id:Number(activeRunId||0),startup_run_id:Number(startupRunId||0),run_id:rid};
+  }
+  startupRunId=rid;
+  let promise;
+  try{promise=Promise.resolve(resume?resumeStartup(rid,expectedBuild,refreshId):runProduction(rid,expectedBuild,refreshId));}
+  catch(error){startupRunId=null;return{ok:false,error:String(error?.message||error)};}
+  startupPromise=promise;
+  promise.then(()=>clearStartupOwnership(rid,promise),()=>clearStartupOwnership(rid,promise));
+  return{ok:true,started:true,run_id:rid};
+}
 async function ensureResume(){
-  if(runPromise)return;
+  if(activeRunId||workerPromises.size||startupRunId)return;
   try{
     const x=await chrome.storage.local.get(['jobbot_active_run_id','jobbot_expected_extension_build','jobbot_refresh_id']);
     const rid=Number(x.jobbot_active_run_id||0); if(!rid)return;
     const expected=String(x.jobbot_expected_extension_build||JOBBOT_EXTENSION_BUILD), refreshId=String(x.jobbot_refresh_id||'');
-    if(expected!==JOBBOT_EXTENSION_BUILD){
-      const refresh=await requestExtensionRefresh(rid,expected,refreshId);
-      if(refresh?.ok&&refresh.reload_required&&typeof chrome.runtime.reload==='function')chrome.runtime.reload();
-      return;
-    }
-    const st=await nativeRequest('run_status',{run_id:rid}); const status=st?.run?.status;
-    if(st?.ok&&!['completed','partial','stopped','failed'].includes(status)){
-      runPromise=runProduction(rid,expected,refreshId).catch(()=>{}).finally(()=>{runPromise=null;});
-    }
+    beginStartup(rid,expected,refreshId,true);
   }catch(_){}
 }
 
 chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
+  if(msg?.type==='JOBBOT_BOOTSTRAP_START'){
+    (async()=>{
+      try{
+        await configureBridge(Number(msg.bridge_port||0),String(msg.bridge_token||''));
+        const refresh=await requestExtensionRefresh(Number(msg.run_id||0),String(msg.expected_build||JOBBOT_EXTENSION_BUILD),String(msg.refresh_id||''));
+        if(refresh?.reload_required){await chrome.storage.local.set({jobbot_expected_extension_build:String(msg.expected_build||''),jobbot_refresh_id:String(refresh.refresh_id||msg.refresh_id||''),...(Number(msg.run_id||0)?{jobbot_active_run_id:Number(msg.run_id)}:{})});if(typeof chrome.runtime.reload==='function')chrome.runtime.reload();return{ok:true,reload_required:true};}
+        if(!msg.maintenance&&Number(msg.run_id||0)){
+          const started=beginStartup(Number(msg.run_id),String(msg.expected_build||JOBBOT_EXTENSION_BUILD),String(msg.refresh_id||''));
+          if(!started.ok)return started;
+        }
+        return{ok:true,refresh};
+      }catch(error){return{ok:false,error:String(error?.message||error)};}
+    })().then((value)=>{sendResponse(value);if(_sender?.tab?.id!=null)setTimeout(()=>chrome.tabs.remove(_sender.tab.id).catch(()=>{}),80);});
+    return true;
+  }
   if(msg?.type==='JOBBOT_CONFIGURE_BRIDGE'){configureBridge(msg.port,msg.token).then(x=>sendResponse({ok:true,version:x.version,bridge:'loopback'})).catch(e=>sendResponse({ok:false,error:String(e?.message||e)}));return true;}
   if(msg?.type==='JOBBOT_REFRESH_EXTENSION'){
     requestExtensionRefresh(Number(msg.run_id||0),String(msg.expected_build||''),String(msg.refresh_id||''))
@@ -546,14 +712,8 @@ chrome.runtime.onMessage.addListener((msg,_sender,sendResponse)=>{
     const rid=Number(msg.run_id||0); if(!rid){sendResponse({ok:false,error:'missing run_id'});return false;}
     const expected=String(msg.expected_build||JOBBOT_EXTENSION_BUILD),refreshId=String(msg.refresh_id||'');
     if(expected!==JOBBOT_EXTENSION_BUILD){sendResponse({ok:false,error:'extension_build_mismatch',loaded_build:JOBBOT_EXTENSION_BUILD,expected_build:expected});return false;}
-    if(runPromise){
-      const active=Number(activeRunId||0);
-      if(active===rid){sendResponse({ok:true,started:true,resumed:true,run_id:rid});}
-      else{sendResponse({ok:false,error:'another browser run is still active',active_run_id:active,run_id:rid});}
-      return false;
-    }
-    runPromise=runProduction(rid,expected,refreshId).catch(()=>{}).finally(()=>{runPromise=null;});
-    sendResponse({ok:true,started:true,run_id:rid}); return false;
+    const started=beginStartup(rid,expected,refreshId);
+    sendResponse(started.ok?started:{ok:false,error:started.error,active_run_id:started.active_run_id,startup_run_id:started.startup_run_id,run_id:rid}); return false;
   }
   if(msg?.type==='JOBBOT_STOP_AFTER_CURRENT'||msg?.type==='JOBBOT_EMERGENCY_STOP'){
     const rid=Number(msg.run_id||activeRunId||0); if(!rid){sendResponse({ok:false,error:'no_run_id'});return false;}

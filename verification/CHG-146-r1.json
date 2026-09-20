@@ -1,0 +1,55 @@
+{
+  "change": "CHG-146",
+  "candidate": {
+    "target_main_commit": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "branch": "codex/jobbot-CHG-146-r1",
+    "extension_version_name": "3.2.2-prod-ready.672cf88.16",
+    "migration": 16,
+    "dashboard": "127.0.0.1-only Python dashboard; bootstrap.html is transient and closes after handshake"
+  },
+  "architecture": {
+    "workers": ["linkedin", "indeed", "glassdoor"],
+    "parallelism": "one serial worker per primary platform; maximum three concurrently",
+    "browser_targets": "one owned ordinary Chrome Default-profile window and one reused search tab per active platform",
+    "detail_acquisition": "cards first, bounded embedded search-pane selection, proven identity, substantive detail, durable provenance",
+    "controls": "durable replay-safe control_requests with run/platform/action identity and acknowledgement",
+    "cache": "optional separate safe crawl_observations SQLite store; cache failure falls back to fresh crawling",
+    "ledger": "authoritative jobs.sqlite3, source occurrences, versions, diffs, funnel/application history and checkpoints preserved",
+    "rec_102": "supersession candidate: the new pane-first one-search-tab architecture replaces historical reusable-detail-tab routine"
+  },
+  "deterministic_verification": {
+    "python_unittest_discovery": {"tests": 105, "result": "OK"},
+    "javascript_regression_files": 6,
+    "javascript_regression_result": "all passed",
+    "pane_oracle": {"platforms": 3, "cases_per_platform": 8, "result": "all passed"},
+    "extension_syntax": {"files": 8, "failed": 0},
+    "compileall": "passed",
+    "git_diff_check": "passed",
+    "isolation": "tests and validation use disposable databases; no unattended validation points at production jobs.sqlite3",
+    "migration_integrity": {"versions": "1..16", "mode": "sequential additive idempotent migration", "preserved": ["jobs", "source_occurrences", "job_versions", "job_diffs", "search_task_results", "application_events", "funnel state", "checkpoints"]},
+    "concurrency_controls": ["one lease per platform", "same-platform duplicate claim returns busy", "replay-safe control request", "stale run/platform acknowledgement rejected"]
+  },
+  "instrumentation": {
+    "source": "diagnostics.instrumentation plus /api/metrics",
+    "candidate_metrics": ["top_level_navigations", "detail_page_navigations", "detail_pane_selections", "windows_created", "tabs_created", "cards_persisted", "details_persisted", "jobs_persisted", "duplicate_card_persistence", "elapsed_seconds"],
+    "current_main_baseline": "explicit semantic model of one standalone detail navigation per claimed detail work item; not a second live crawl",
+    "deterministic_three_platform_fixture": {"windows_created": 3, "tabs_created": 3, "search_tabs_per_platform_max": 1, "detail_page_navigations": 0, "detail_pane_selections": 3, "legacy_model_detail_page_navigations": 3, "duplicate_card_persistence": 0},
+    "render_fixture_metrics": {"detail_page_navigations": 0, "detail_pane_selections": 0, "windows_created": 0, "cards_persisted": 1, "details_persisted": 1, "jobs_persisted": 1, "duplicate_card_persistence": 0}
+  },
+  "ui_evidence": {
+    "screenshots": ["desktop-mixed.png", "short-mixed.png", "narrow-mixed.png", "desktop-populated.png", "desktop-partial-error.png", "desktop-drawer-open.png", "desktop-guide-drawer-closed.png"],
+    "dom_keyboard_geometry": "ui-evidence.json",
+    "viewports": ["1440x900", "1280x720", "390x844"],
+    "verified": ["no page-level horizontal overflow", "three stable lanes", "mixed running/challenged/complete state", "partial/error state", "populated ledger", "drawer focus/Escape/restore", "reduced-motion transition", "named native controls"],
+    "state_matrix": ["normal", "running", "challenged", "complete", "partial", "retryable", "populated", "empty/no-results contract", "drawer open"],
+    "render_mechanism": "repository Playwright headless render against disposable fixture dashboard",
+    "not_claimed": ["live production-site challenge clearance", "physical-device findings", "CUA screenshot capture; browser surface was unavailable"]
+  },
+  "safety_invariants": [
+    "read-only platform interactions only",
+    "challenge/sign-in/error/interstitial states fail closed and preserve checkpoint",
+    "no cookies, credentials, tokens, CAPTCHA material, or Chrome profile data in observation cache",
+    "cache is never canonical application/funnel truth",
+    "Fabric-owned .codex-fabric/audit.json was not modified"
+  ]
+}

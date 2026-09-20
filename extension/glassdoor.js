@@ -54,8 +54,36 @@
     const x=C.parseJsonLdJob()||{},title=x.title||C.firstText(S.title),company=x.company||C.firstText(S.company),locationText=x.location||C.firstText(S.location),description=x.description||C.firstText(S.description)||C.headingSectionText(['job description','about the job']),salary=x.salary_text||C.firstText(S.salary),posted=C.clean(x.posted_at||C.firstText(S.posted)),id=sid(location.href),url=canon(location.href);
     return{platform:'glassdoor',page_type:'job',surface:'job',challenged:ch.challenged,challenge_reason:ch.reason,page_url:location.href,job:{source_job_id:id,canonical_url:url,apply_url:x.apply_url||'',title:C.normalizeTitle(title),company:C.clean(company),location:C.clean(locationText),remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:C.clean(x.employment_type),salary_text:C.clean(salary),posted_at:posted,posted_age_days:C.parseAgeDays(posted),valid_through:C.clean(x.valid_through),description:C.clip(description)}};
   }
+  const firstIn=(root,selectors)=>{for(const selector of selectors||[]){const node=root?.querySelector?.(selector);const value=C.clean(node?.innerText||node?.textContent||'');if(value)return value;}return '';};
+  function paneRoot(){for(const selector of S.paneRoots||[])try{const root=document.querySelector(selector);if(root)return root;}catch(_){}return null;}
+  function paneSelection(sourceId,select=true){
+    const scope=locateSearchResults(),target=String(sourceId||'');
+    const entry=[...scope.cards].flatMap(card=>[...card.querySelectorAll((S.searchLinks||[]).join(','))].map(node=>({card,node}))).find(x=>sid(C.absoluteUrl(x.node.getAttribute('href')||x.node.href||''))===target);
+    if(!entry)return{selected:false,selection_attempted:false,identity_status:'MISSING_CARD',page_type:'search',selected_source_job_id:'',search_pane_diagnostics:{reason:'selected card disappeared'}};
+    const expectedTitle=C.normalizeTitle(C.clean(entry.node.getAttribute('aria-label')||entry.node.innerText||'').replace(/\s+with verification$/i,''));let clicked=false;
+    if(select)try{entry.node.click();clicked=true;}catch(_){}
+    return{selected:clicked||!select,selection_attempted:select,selected_source_job_id:target,selected_source_url:C.absoluteUrl(entry.node.getAttribute('href')||entry.node.href||''),selected_title:expectedTitle,card_metadata:entry.card.innerText?.slice(0,500)||''};
+  }
+  async function inspectSearchPane(sourceId,select=true){
+    const searchPath=/\/Job\//i.test(new URL(location.href).pathname);
+    const selection=paneSelection(sourceId,select);if(!selection.selected)return selection;
+    for(let i=0;i<14;i++){
+      const ch=C.challengeInfo();if(ch.challenged)return{...selection,page_type:'challenge',challenged:true,challenge_reason:ch.reason};
+      const wall=C.authWallInfo(S.authSignIn,/\/profile\/login|\/member\/login|signin|sign-in/i);if(wall.required)return{...selection,page_type:'login',login_required:true,surface_reason:wall.reason};
+      if(!searchPath||!/\/Job\//i.test(new URL(location.href).pathname))return{...selection,page_type:'error',navigation_context_lost:true,surface_reason:'search context lost after card selection',page_url:location.href};
+      const root=paneRoot(),title=C.normalizeTitle(firstIn(root,S.paneTitle||S.title)),company=firstIn(root,S.company),locationText=firstIn(root,S.location),description=firstIn(root,S.paneDescription||S.description);
+      const paneHref=C.absoluteUrl(root?.querySelector?.('a[href*="job-listing"]')?.href||'');
+      const paneId=/\/job-listing\//i.test(paneHref)?sid(paneHref):'';
+      const identityProven=!!title&&title===selection.selected_title&&(!paneId||paneId===String(sourceId));
+      if(root&&title&&description){
+        return{...selection,platform:'glassdoor',page_type:'job',surface:'embedded_search_pane',search_pane:true,page_url:location.href,selected_source_job_id:paneId||String(sourceId),identity_status:identityProven?'PROVEN':'MISMATCH',identity_proven:identityProven,acquisition_mode:'search_pane',detail_acquisition:{mode:'search_pane',surface:'embedded_search_pane',url:location.href},job:{source_job_id:paneId||String(sourceId),canonical_url:paneId?canon(paneHref):selection.selected_source_url||'',title,company,location:locationText,remote_status:/remote|work from home|wfh/i.test(`${locationText} ${description.slice(0,2500)}`)?'remote':'unknown',employment_type:'',salary_text:'',posted_at:'',description:C.clip(description)}};
+      }
+      await new Promise(r=>setTimeout(r,300));
+    }
+    return{...selection,platform:'glassdoor',page_type:'search',identity_status:'INCOMPLETE',identity_proven:false,acquisition_mode:'search_pane',search_pane_diagnostics:{reason:'pane hydration timeout'}};
+  }
   function inspect(){const p=location.pathname.toLowerCase();if(p.includes('/member/')||p.includes('/profile/login'))return inspectAuth();if(p.includes('/job-listing/'))return inspectJob();return inspectSearch();}
   function advance(){const button=[...document.querySelectorAll('button')].find(b=>!b.disabled&&/show more|next/i.test(C.clean(b.getAttribute('aria-label')||b.innerText||'')));if(button){button.click();return{advanced:true,method:'click'};}return{advanced:false};}
   async function inspectJobEventually(){let last=inspectJob();for(let i=0;i<12&&last.page_type==='job'&&(!last.job?.title||!last.job?.description);i++){await new Promise(r=>setTimeout(r,600));last=inspectJob();}return last;}
-  chrome.runtime.onMessage.addListener((m,_s,send)=>{if(m?.type==='JOBBOT_INSPECT_AUTH'){send(inspectAuth());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH'||m?.type==='JOBBOT_INSPECT_SEARCH_EVENTUALLY'){send(inspectSearch());return true;}if(m?.type==='JOBBOT_INSPECT_DETAIL'){inspectJobEventually().then(send);return true;}if(m?.type==='JOBBOT_INSPECT'){send(inspect());return true;}if(m?.type==='JOBBOT_SCROLL_AND_INSPECT'){C.scrollResults();setTimeout(()=>send(inspectSearch()),Math.max(700,Math.min(3500,Number(m.wait_ms||1500))));return true;}if(m?.type==='JOBBOT_ADVANCE_SEARCH'){const r=advance();setTimeout(()=>send({...r,page_url:location.href}),r.advanced?1600:0);return true;}return false;});
+  chrome.runtime.onMessage.addListener((m,_s,send)=>{if(m?.type==='JOBBOT_INSPECT_AUTH'){send(inspectAuth());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH'||m?.type==='JOBBOT_INSPECT_SEARCH_EVENTUALLY'){send(inspectSearch());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH_PANE'){inspectSearchPane(m.source_job_id,m.select!==false).then(send);return true;}if(m?.type==='JOBBOT_INSPECT_DETAIL'){inspectJobEventually().then(send);return true;}if(m?.type==='JOBBOT_INSPECT'){send(inspect());return true;}if(m?.type==='JOBBOT_SCROLL_AND_INSPECT'){C.scrollResults();setTimeout(()=>send(inspectSearch()),Math.max(700,Math.min(3500,Number(m.wait_ms||1500))));return true;}if(m?.type==='JOBBOT_ADVANCE_SEARCH'){const r=advance();setTimeout(()=>send({...r,page_url:location.href}),r.advanced?1600:0);return true;}return false;});
 })();

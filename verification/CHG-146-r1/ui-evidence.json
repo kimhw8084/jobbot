@@ -1,0 +1,60 @@
+{
+  "candidate_url": "http://127.0.0.1:8876/",
+  "viewports": {
+    "desktop": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "body_scroll_width": 1440,
+      "viewport_width": 1440,
+      "horizontal_overflow": false,
+      "platform_lanes": 3,
+      "attention_visible": true,
+      "critical_controls_visible": true
+    },
+    "short": {
+      "viewport": [
+        1280,
+        720
+      ],
+      "body_scroll_width": 1280,
+      "viewport_width": 1280,
+      "horizontal_overflow": false,
+      "platform_lanes": 3,
+      "attention_visible": true,
+      "critical_controls_visible": true
+    },
+    "mobile": {
+      "viewport": [
+        390,
+        844
+      ],
+      "body_scroll_width": 390,
+      "viewport_width": 390,
+      "horizontal_overflow": false,
+      "platform_lanes": 3,
+      "attention_visible": true,
+      "critical_controls_visible": true
+    }
+  },
+  "keyboard": {
+    "guide_expanded": true,
+    "drawer_open_after_enter": true,
+    "drawer_focus_id": "detailClose",
+    "drawer_closed_after_escape": true,
+    "focus_restored": "Patient Access Operations Lead",
+    "reduced_motion_transition": "0s"
+  },
+  "semantic": {
+    "large_text_horizontal_overflow": false,
+    "buttons_without_name": [],
+    "focus_visible_outline": true,
+    "dom_contracts": [
+      "semantic main/header/nav/section/article/table/dialog",
+      "native buttons/selects/inputs",
+      "status text paired with non-color marker",
+      "localhost-only dashboard"
+    ]
+  }
+}

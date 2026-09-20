@@ -44,6 +44,10 @@ class ConfigBundle:
     def output_dir(self) -> Path:
         return resolve_path(self.runtime["runtime"]["output_dir"], root=self.root)
 
+    @property
+    def crawl_observations_path(self) -> Path:
+        return resolve_path(self.runtime["runtime"].get("crawl_observations_path", "data/crawl_observations.sqlite3"), root=self.root)
+
     def legacy_runtime(self) -> dict[str, Any]:
         """Compatibility shape for the retained, tested v3.1 ledger/fetch engine."""
         cfg = copy.deepcopy(self.runtime)
@@ -101,6 +105,8 @@ def load_bundle(root: Path | None = None) -> ConfigBundle:
         runtime["runtime"]["database_path"] = os.environ["JOBBOT_DATABASE_PATH"]
     if os.environ.get("JOBBOT_OUTPUT_DIR"):
         runtime["runtime"]["output_dir"] = os.environ["JOBBOT_OUTPUT_DIR"]
+    if os.environ.get("JOBBOT_CRAWL_OBSERVATIONS_PATH"):
+        runtime["runtime"]["crawl_observations_path"] = os.environ["JOBBOT_CRAWL_OBSERVATIONS_PATH"]
     if os.environ.get("JOBBOT_DASHBOARD_PORT"):
         runtime["runtime"]["dashboard_port"] = int(os.environ["JOBBOT_DASHBOARD_PORT"])
     validate_strategy(strategy)
