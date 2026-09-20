@@ -21,7 +21,7 @@ from ..discoveries import block_detail, claim_next_detail, fail_detail, finish_d
 from ..extension_identity import extension_build as expected_extension_build
 from ..runtime_binding import deployment_diagnostics
 from ..strategy_runtime import fallback_activation_enabled, with_fallback_activation
-from ..platform_state import human_waiting
+from ..platform_state import human_waiting, runnable_resume
 
 BASE = PROJECT_ROOT
 j.VERSION=v3.V3_VERSION; j.c.VERSION=v3.V3_VERSION
@@ -127,13 +127,22 @@ def _consume_controls(conn, msg: dict[str, Any], out: Path) -> dict[str, Any]:
     rid = int(msg.get("run_id") or 0)
     platform = j.clean_text(msg.get("platform") or "")
     worker_id = j.clean_text(msg.get("worker_id") or "")
-    row = conn.execute("""SELECT c.* FROM control_requests c
+    candidates = conn.execute("""SELECT c.* FROM control_requests c
       WHERE browser_run_id=? AND status='PENDING' AND (platform=? OR platform='')
-      ORDER BY control_id LIMIT 1""", (rid, platform)).fetchone()
-    if row is None:
-        return {"ok": True, "control": None}
+      ORDER BY control_id""", (rid, platform)).fetchall()
+    row = None
     current = conn.execute("SELECT worker_generation FROM browser_platform_runs WHERE browser_run_id=? AND platform=?", (rid, platform)).fetchone()
     generation = int(current["worker_generation"] or 0) if current is not None else 0
+    supplied_generation = int(msg.get("worker_generation") or 0)
+    runnable_platforms = set(runnable_resume(conn, rid)["runnable_platforms"])
+    for candidate in candidates:
+        if str(candidate["action"]) == "resume_ready_platforms":
+            if platform not in runnable_platforms or (supplied_generation and supplied_generation != generation):
+                continue
+        row = candidate
+        break
+    if row is None:
+        return {"ok": True, "control": None}
     now = j.now_iso()
     conn.execute("""UPDATE control_requests SET delivered_at=?,target_worker_id=?,target_worker_generation=?
        WHERE control_id=? AND status='PENDING'""", (now, worker_id, generation, int(row["control_id"])))
@@ -154,6 +163,10 @@ def _ack_control(conn, msg: dict[str, Any], out: Path) -> dict[str, Any]:
         return {"ok": False, "error": "stale_control_response"}
     if str(row["status"]) != "PENDING":
         return {"ok": True, "deduplicated": True, "control": _control_row(row)}
+    if str(row["action"]) == "resume_ready_platforms":
+        eligible = set(runnable_resume(conn, rid)["runnable_platforms"])
+        if platform not in eligible:
+            return {"ok": False, "error": "inapplicable_global_resume"}
     current = conn.execute("SELECT worker_id,worker_generation FROM browser_platform_runs WHERE browser_run_id=? AND platform=?", (rid, platform)).fetchone() if platform else None
     expected_worker = str(row["target_worker_id"] or "")
     expected_generation = int(row["target_worker_generation"] or 0)

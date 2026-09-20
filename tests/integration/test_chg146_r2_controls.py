@@ -162,8 +162,7 @@ class Chg146R2ControlIntegrationTests(unittest.TestCase):
                     self.assertEqual(launch_kwargs["cwd"], root)
                     self.assertTrue(launch_kwargs["stdout"].closed)
                     global_delivery = rpc.handle({"action": "consume_control", "run_id": run_id, "platform": "indeed", "worker_id": "r2-indeed"})
-                    self.assertEqual(global_delivery["control"]["request_id"], "r2-global-resume")
-                    rpc.handle({"action": "ack_control", "run_id": run_id, "platform": "indeed", "worker_id": "r2-indeed", "request_id": "r2-global-resume"})
+                    self.assertIsNone(global_delivery["control"])
                     conn = Database(self.bundle(root)).connect()
                     try:
                         challenge = conn.execute("SELECT readiness_state,challenge_reason FROM browser_platform_runs WHERE browser_run_id=? AND platform='indeed'", (run_id,)).fetchone()
@@ -182,6 +181,9 @@ class Chg146R2ControlIntegrationTests(unittest.TestCase):
                     second_status, second = self.post(base, "/api/platform/control", {"run_id": run_id, "platform": "indeed", "action": "recheck", "control_request_id": "r2-recheck-b"})
                     self.assertEqual((first_status, second_status), (200, 200))
                     self.assertNotEqual(first["request_id"], second["request_id"])
+                    pending_global = rpc.handle({"action": "consume_control", "run_id": run_id, "platform": "indeed", "worker_id": "r2-indeed"})
+                    self.assertEqual(pending_global["control"]["request_id"], "r2-global-resume")
+                    rpc.handle({"action": "ack_control", "run_id": run_id, "platform": "indeed", "worker_id": "r2-indeed", "request_id": "r2-global-resume"})
                     for request_id in (first["request_id"], second["request_id"]):
                         delivered = rpc.handle({"action": "consume_control", "run_id": run_id, "platform": "indeed", "worker_id": "r2-indeed"})
                         self.assertEqual(delivered["control"]["request_id"], request_id)

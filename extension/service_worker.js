@@ -681,6 +681,7 @@ async function applyWorkerControl(runId,platform,target,workerId,paused=false,wo
   else if(action==='stop_after_current'||action==='stop_all'){result.stop_after_current=true;}
   else if(action==='resume_platform'||action==='recheck'){result.recheck=true;}
   else if(action==='resume_ready_platforms'){result.ready_only=true;result.skipped_human_wait=paused;}
+  else if(action==='retry_system_state'){result.system_retry=true;result.recheck=true;}
   await nativeRequest('ack_control',{run_id:runId,platform,worker_id:workerId,worker_generation:workerGeneration,request_id:control.request_id,status:'ACKNOWLEDGED',result},10000);
   return{stop:action==='emergency_stop'||(paused&&(action==='stop_after_current'||action==='stop_all')),recheck:result.recheck===true,action};
 }

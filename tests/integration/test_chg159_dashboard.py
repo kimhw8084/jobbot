@@ -99,7 +99,7 @@ class Chg159DashboardTests(unittest.TestCase):
                     self.assertEqual(by_platform["indeed"]["checkpoint"]["task_id"], tasks["indeed"])
                     self.assertEqual(by_platform["indeed"]["window_id"], 21)
                     self.assertEqual(by_platform["indeed"]["search_tab_id"], 22)
-                    self.assertEqual(value["run_state_summary"]["label"], "1 continuing · 1 waiting for you")
+                    self.assertEqual(value["run_state_summary"]["label"], "1 continuing · 1 waiting for you · 1 complete")
                     self.assertEqual(by_platform["glassdoor"]["interaction_state"], "COMPLETE")
                     self.assertNotEqual(by_platform["linkedin"]["interaction_state"], "WAITING_FOR_HUMAN")
                 finally:
@@ -134,12 +134,49 @@ class Chg159DashboardTests(unittest.TestCase):
                 with mock.patch("jobbot.dashboard.subprocess.Popen"):
                     result = control_run(conn := Database(self.bundle(root)).connect(), "resume_ready_platforms", run_id, "chg159-global-resume")
                     conn.close()
+                self.assertTrue(result["launcher_required"])
+                self.assertEqual(result["runnable_platforms"], ["linkedin"])
+                self.assertEqual(result["runnable_task_count"], 1)
                 self.assertIn("human-gated lanes remain waiting", result["message"])
                 conn = Database(self.bundle(root)).connect()
                 try:
+                    self.assertEqual(conn.execute("SELECT status FROM browser_search_tasks WHERE task_id=?", (tasks["linkedin"],)).fetchone()[0], "queued")
                     row = conn.execute("SELECT interaction_state,readiness_state,challenge_reason FROM browser_platform_runs WHERE browser_run_id=? AND platform='indeed'", (run_id,)).fetchone()
                     self.assertEqual(tuple(row), ("WAITING_FOR_HUMAN", "challenged_cooldown", "CAPTCHA verification is required"))
                     self.assertEqual(conn.execute("SELECT status FROM browser_search_tasks WHERE task_id=?", (tasks["indeed"],)).fetchone()[0], "challenged")
+                finally:
+                    conn.close()
+            finally:
+                rpc.BASE = previous
+
+    def test_all_human_global_resume_is_a_durable_noop_without_launcher(self) -> None:
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            try:
+                run_id, tasks = self.fixture_run(root)
+                rpc.BASE = root
+                for platform in ("linkedin", "glassdoor"):
+                    rpc.handle({"action": "pause_platform", "run_id": run_id, "platform": platform, "task_id": tasks[platform], "reason": f"{platform} human gate"})
+                conn = Database(self.bundle(root)).connect()
+                before = {
+                    "run": tuple(conn.execute("SELECT status,stop_requested,last_error FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()),
+                    "tasks": [tuple(row) for row in conn.execute("SELECT platform,status,challenge_reason FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id", (run_id,))],
+                }
+                conn.close()
+                with self.server(root) as server, mock.patch("jobbot.dashboard.subprocess.Popen") as popen:
+                    status, result = self.post(f"http://127.0.0.1:{server.server_port}", "/api/run/control", {"action": "resume_ready_platforms", "run_id": run_id, "control_request_id": "chg159-all-human"})
+                self.assertEqual(status, 200)
+                self.assertFalse(result["launcher_required"])
+                self.assertEqual(result["runnable_platforms"], [])
+                self.assertEqual(result["runnable_task_count"], 0)
+                popen.assert_not_called()
+                conn = Database(self.bundle(root)).connect()
+                try:
+                    self.assertEqual(before["run"], tuple(conn.execute("SELECT status,stop_requested,last_error FROM browser_runs WHERE browser_run_id=?", (run_id,)).fetchone()))
+                    self.assertEqual(before["tasks"], [tuple(row) for row in conn.execute("SELECT platform,status,challenge_reason FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id", (run_id,))])
+                    self.assertEqual(conn.execute("SELECT status FROM control_requests WHERE request_id='chg159-all-human'").fetchone()[0], "ACKNOWLEDGED")
+                    self.assertIsNone(rpc.handle({"action": "consume_control", "run_id": run_id, "platform": "indeed", "worker_id": "chg159-indeed"})["control"])
                 finally:
                     conn.close()
             finally:
@@ -168,8 +205,68 @@ class Chg159DashboardTests(unittest.TestCase):
                     self.assertEqual(states["linkedin"]["human_wait_reason"], "")
                     self.assertEqual(states["glassdoor"]["interaction_state"], "SYSTEM_UNVERIFIED")
                     self.assertEqual(states["glassdoor"]["state_owner"], "JobBot")
+                    self.assertTrue(states["linkedin"]["recovery_available"])
+                    self.assertEqual(states["glassdoor"]["recovery_action"], "retry_system_state")
                 finally:
                     conn.close()
+                conn = Database(self.bundle(root)).connect()
+                try:
+                    retry = control_platform(conn, {"run_id": run_id, "platform": "linkedin", "action": "retry_system_state", "control_request_id": "chg159-system-retry"})
+                    self.assertEqual(retry["action"], "retry_system_state")
+                    self.assertEqual(conn.execute("SELECT status FROM browser_search_tasks WHERE task_id=?", (tasks["linkedin"],)).fetchone()[0], "queued")
+                    self.assertEqual(conn.execute("SELECT interaction_state FROM browser_platform_runs WHERE browser_run_id=? AND platform='linkedin'", (run_id,)).fetchone()[0], "RECHECKING")
+                finally:
+                    conn.close()
+            finally:
+                rpc.BASE = previous
+
+    def test_stopped_resume_requeues_only_safe_incomplete_work(self) -> None:
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            try:
+                run_id, tasks = self.fixture_run(root)
+                rpc.BASE = root
+                conn = Database(self.bundle(root)).connect()
+                try:
+                    conn.execute("UPDATE browser_platform_runs SET worker_status='stopped',interaction_state='STOPPED',emergency_stop=1 WHERE browser_run_id=? AND platform='linkedin'", (run_id,))
+                    conn.execute("UPDATE browser_search_tasks SET status='incomplete',safety_stop_reason='manual emergency stop',last_error='stopped fixture' WHERE task_id=?", (tasks["linkedin"],))
+                    terminal_id = conn.execute("""INSERT INTO browser_search_tasks(
+                        browser_run_id,platform,query_text,window_days,search_url,status,created_at,
+                        safety_stop_reason,exhausted
+                    ) VALUES(?,?,?,?,?,?,?,?,?)""", (run_id, "linkedin", "terminal fixture", 7, "https://www.linkedin.com/jobs/search/", "incomplete", "2026-09-20T00:00:00+00:00", "test-limit reached", 0)).lastrowid
+                    conn.commit()
+                    result = control_platform(conn, {"run_id": run_id, "platform": "linkedin", "action": "resume_platform", "control_request_id": "chg159-stopped-resume"})
+                    self.assertEqual(result["action"], "resume_platform")
+                    self.assertEqual(conn.execute("SELECT status FROM browser_search_tasks WHERE task_id=?", (tasks["linkedin"],)).fetchone()[0], "queued")
+                    self.assertEqual(conn.execute("SELECT status FROM browser_search_tasks WHERE task_id=?", (terminal_id,)).fetchone()[0], "incomplete")
+                    self.assertEqual(conn.execute("SELECT interaction_state,emergency_stop FROM browser_platform_runs WHERE browser_run_id=? AND platform='linkedin'", (run_id,)).fetchone()[0:2], ("RECHECKING", 0))
+                finally:
+                    conn.close()
+            finally:
+                rpc.BASE = previous
+
+    def test_states_without_recovery_contract_do_not_render_retry_button(self) -> None:
+        previous = rpc.BASE
+        with tempfile.TemporaryDirectory() as td:
+            root = self.make_root(td)
+            try:
+                run_id, _ = self.fixture_run(root)
+                rpc.BASE = root
+                conn = Database(self.bundle(root)).connect()
+                try:
+                    conn.execute("UPDATE browser_platform_runs SET worker_status='stale',interaction_state='STALE' WHERE browser_run_id=? AND platform='linkedin'", (run_id,))
+                    conn.commit()
+                    stale = next(item for item in active_run(conn)["platforms"] if item["platform"] == "linkedin")
+                    self.assertFalse(stale["recovery_available"])
+                    self.assertEqual(stale["state_owner"], "JobBot")
+                finally:
+                    conn.close()
+                with self.server(root) as server:
+                    with urllib.request.urlopen(f"http://127.0.0.1:{server.server_port}/static/dashboard.js", timeout=5) as response:
+                        script = response.read().decode()
+                self.assertIn("Re-evaluate system state", script)
+                self.assertNotIn("Retry system state", script)
             finally:
                 rpc.BASE = previous
 
