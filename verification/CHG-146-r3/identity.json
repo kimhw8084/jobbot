@@ -1,0 +1,35 @@
+{
+  "verification": "CHG-146-r3",
+  "target_main_commit": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+  "target_main_remote": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+  "candidate_commit": "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+  "candidate_tree": "fed1da23c36b4aca63cca56dd14782141e6eb4da",
+  "r2_code_candidate": "6f76e8305b07976b84c9068a578c226956932a81",
+  "r1_candidate": "248a90d8757a60df0dcff59075407627bbc425c2",
+  "work_branch_before_artifacts": "codex/jobbot-CHG-146-r3",
+  "worktree_clean_before_artifacts": true,
+  "ancestry": {
+    "target_main_is_ancestor_of_candidate": true,
+    "r1_is_ancestor_of_candidate": true,
+    "r2_code_candidate_is_ancestor_of_candidate": true
+  },
+  "manifest": {
+    "version": "3.2.1",
+    "version_name": "3.2.2-prod-ready.672cf88.17",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+  },
+  "deployment": {
+    "browser_executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "profile_path": "/Users/haewonkim/Library/Application Support/Google/Chrome/Default",
+    "profile_directory": "Default",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "source_head": "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+    "source_identity": "sha256:9aa68f6872c1ab66fb86e9e771414d428e10edbc2bd0e13f3945f987da7f533a",
+    "marker_version_name": "3.2.2-prod-ready.672cf88.17",
+    "marker_extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "binding_browser": "Google Chrome",
+    "binding_profile_directory": "Default"
+  },
+  "product_source_changes_during_verify": false,
+  "fabric_audit_or_evidence_refs_modified": false
+}

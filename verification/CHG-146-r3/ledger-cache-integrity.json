@@ -1,0 +1,46 @@
+{
+  "authoritative_validation_database": "data/validation_20260920T032950Z.sqlite3",
+  "authoritative_database_isolation": true,
+  "authoritative_database_integrity_check": "ok",
+  "migration_versions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+  "browser_run": {
+    "browser_run_id": 1,
+    "mode": "validation_micro",
+    "status": "stopped",
+    "tasks": [
+      {"platform": "linkedin", "status": "queued", "query": "patient enrollment specialist", "cards": 0, "details": 0},
+      {"platform": "indeed", "status": "queued", "query": "patient enrollment specialist", "cards": 0, "details": 0},
+      {"platform": "glassdoor", "status": "queued", "query": "patient enrollment specialist", "cards": 0, "details": 0}
+    ],
+    "worker_started_at": null,
+    "active_worker_count": 0,
+    "windows_created": 0,
+    "tabs_created": 0,
+    "detail_page_navigations": 0,
+    "pane_selections": 0,
+    "card_before_detail_evidence": "not_applicable_no_live_worker_started",
+    "terminal_event": "extension_unresponsive_then_manual_emergency_stop"
+  },
+  "observation_cache": {
+    "path": "data/crawl_observations.sqlite3",
+    "separate_from_authoritative_ledger": true,
+    "published_rows": 0,
+    "integrity_check": "not_created_because_no_live_observation_was produced",
+    "primary_fresh_live_cache_reuse": false
+  },
+  "reconciliation": {
+    "ok": true,
+    "duplicate_cards": 0,
+    "duplicate_details": 0,
+    "duplicate_jobs": 0,
+    "unexplained": 0,
+    "no_source_result_lost_to_challenge": "not_tested_no_source_worker_started"
+  },
+  "production_guardrail": {
+    "data/jobs.sqlite3_final_exists": false,
+    "operator_created_empty_migration_file_during_initial_doctor_check": true,
+    "operator_created_file_counts": {"jobs": 0, "source_occurrences": 0, "browser_runs": 0, "browser_search_tasks": 0},
+    "operator_created_file_integrity": "ok",
+    "operator_created_file_removed_before_final_artifacts": true
+  }
+}

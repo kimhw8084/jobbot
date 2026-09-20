@@ -1,0 +1,27 @@
+{
+  "stable_sync": {
+    "ok": true,
+    "classification": "deployment_source_current",
+    "source_head": "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+    "version_name": "3.2.2-prod-ready.672cf88.17",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "source_identity": "sha256:9aa68f6872c1ab66fb86e9e771414d428e10edbc2bd0e13f3945f987da7f533a"
+  },
+  "refresh": {
+    "supported_path_attempted": true,
+    "cli_result": "extension_unavailable_or_unreachable",
+    "validator_result": "extension_unresponsive",
+    "loaded_build_required": "3.2.2-prod-ready.672cf88.17",
+    "loaded_build_observed_in_ordinary_chrome_ui": "3.2.2-prod-ready.672cf88.15",
+    "loaded_service_worker_manifest_version_observed": "3.2.1",
+    "extension_enabled": true,
+    "canonical_id_observed": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "profile_observed": "Default",
+    "chrome_ui_classification": "extension_absent_disabled_or_unavailable",
+    "safety": "no click-through, challenge bypass, credential, cookie, proxy, stealth, or fake-human input was used"
+  },
+  "hard_gate": {
+    "exact_loaded_dot17_build_proven": false,
+    "result": "STOP_BEFORE_LIVE_ACCEPTANCE"
+  }
+}

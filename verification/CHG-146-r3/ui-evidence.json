@@ -1,0 +1,22 @@
+{
+  "dashboard_identity": {
+    "url": "http://127.0.0.1:56290/",
+    "workspace_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-a4a8ab7459d2046f19733599",
+    "database": "data/validation_20260920T032950Z.sqlite3",
+    "identity_ok": true,
+    "live_refresh_ok": true
+  },
+  "screenshots": {
+    "desktop_1440x900": "not captured: no meaningful live state existed",
+    "short_1280x720": "not captured: no meaningful live state existed",
+    "narrow_390x844": "not captured: no meaningful live state existed",
+    "populated_jobs_discoveries": "not captured: authoritative live ledger remained empty"
+  },
+  "semantic_geometry": {
+    "page_overflow": "not live-proven",
+    "accessible_controls": "deterministic dashboard tests passed; live UI not accepted",
+    "keyboard_focus_drawer_escape_refresh": "not live-proven",
+    "reduced_motion": "not live-proven"
+  },
+  "truthfulness": "screenshots were not manufactured from fixtures to stand in for the missing live proof"
+}

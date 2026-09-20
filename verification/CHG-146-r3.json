@@ -1,0 +1,48 @@
+{
+  "change": "CHG-146",
+  "verification": "CHG-146-r3",
+  "go_candidate": false,
+  "verdict": "NO_GO_EXTERNAL_RUNTIME_IDENTITY_BLOCKER",
+  "stop_reason": "The supported stable ordinary-Chrome refresh path could not prove the required loaded extension build .17; Chrome UI remained on .15 and the bounded validator reported extension_unresponsive.",
+  "candidate": {
+    "target_main_commit": "c9b413ecfa18fc9e830b58b374c3b0dc0e07deb8",
+    "candidate_commit": "bd8b42db882dcb3bed9d9acdaa27a90f2607137e",
+    "candidate_tree": "fed1da23c36b4aca63cca56dd14782141e6eb4da",
+    "r1_candidate": "248a90d8757a60df0dcff59075407627bbc425c2",
+    "r2_code_candidate": "6f76e8305b07976b84c9068a578c226956932a81",
+    "extension_version_name": "3.2.2-prod-ready.672cf88.17",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+  },
+  "identity_proof": "verification/CHG-146-r3/identity.json",
+  "deployment_refresh": "verification/CHG-146-r3/deployment-refresh.json",
+  "live_validator_report": "verification/CHG-146-r3/validator-micro-latest.json",
+  "ledger_cache_integrity": "verification/CHG-146-r3/ledger-cache-integrity.json",
+  "deterministic_floor": "verification/CHG-146-r3/deterministic.json",
+  "dashboard_ui": "verification/CHG-146-r3/ui-evidence.json",
+  "defect_status": "verification/CHG-146-r3/defect-status.json",
+  "live_proof": {
+    "fresh_isolated_database": "data/validation_20260920T032950Z.sqlite3",
+    "three_platform_run_created": true,
+    "three_platform_workers_started": false,
+    "cross_platform_concurrency_proven": false,
+    "owned_windows_and_search_tabs_proven": false,
+    "routine_detail_tabs_or_navigations": 0,
+    "pane_first_live_acquisition": false,
+    "primary_source_cache_reuse": false,
+    "authoritative_ledger_integrity": "ok",
+    "dashboard_identity": true,
+    "dashboard_populated_ui": false
+  },
+  "safety_boundaries": {
+    "production_database_used_by_validator": false,
+    "production_ledger_finally_present": false,
+    "credentials_cookies_tokens_challenge_material_exported": false,
+    "challenge_bypassed": false,
+    "codex_fabric_audit_or_evidence_refs_modified": false,
+    "product_source_or_tests_edited": false
+  },
+  "repository_defect": {
+    "established": false,
+    "action": "stop on external runtime blocker; do not fix under VERIFY"
+  }
+}

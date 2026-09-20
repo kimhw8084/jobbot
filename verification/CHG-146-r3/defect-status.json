@@ -1,0 +1,10 @@
+{
+  "candidate_owned_defect_established": false,
+  "external_blocker": {
+    "classification": "ordinary_chrome_loaded_stale_dot15_build",
+    "required": "3.2.2-prod-ready.672cf88.17",
+    "observed": "3.2.2-prod-ready.672cf88.15",
+    "effect": "supported refresh handshake could not reach the exact candidate runtime; bounded live run never started"
+  },
+  "stop_rule": "GO is false and verification stops without source, test, config, selector, runtime, migration, documentation, or architecture edits"
+}

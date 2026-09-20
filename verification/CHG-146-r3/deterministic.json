@@ -1,0 +1,22 @@
+{
+  "full_unittest_discovery": {"command": "python -m unittest discover -s tests -v", "tests": 107, "result": "OK"},
+  "javascript_regression_files": {
+    "count": 7,
+    "result": "all passed",
+    "files": [
+      "tests/extension_chg146_pane_test.js",
+      "tests/extension_chg146_supervisor_test.js",
+      "tests/extension_linkedin_scope_test.js",
+      "tests/extension_primary_scope_test.js",
+      "tests/extension_service_worker_auth_return_test.js",
+      "tests/extension_service_worker_scope_recovery_test.js",
+      "tests/extension_service_worker_target_lifecycle_test.js"
+    ]
+  },
+  "javascript_syntax": "all extension JS and dashboard JS passed node --check",
+  "python_compileall": "passed",
+  "changed_python_syntax": "58 files passed py_compile",
+  "git_diff_check_before_artifacts": "passed",
+  "focused_retry": "the isolated CHG-146 global-control test passed after one temporary-directory cleanup race in a larger focused batch",
+  "candidate_tests_modified": false
+}
