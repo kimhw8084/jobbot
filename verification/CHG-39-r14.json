@@ -1,0 +1,322 @@
+{
+  "verification": "CHG-39-r14",
+  "mode": "VERIFY",
+  "started_at": "2026-09-20T15:17:00Z",
+  "finished_at": "2026-09-20T15:25:00Z",
+  "final": {
+    "classification": "FIX",
+    "status": "VERIFY",
+    "PROD_READY": false,
+    "proven": false,
+    "reason": "Repository-owned safety defect: the supported refresh path materialized data/jobs.sqlite3 and wrote refresh evidence to the production ledger path. An external Indeed challenge also blocked the Big-3 gate. No source fix was made.",
+    "internal_failures": [
+      "supported refresh path changed the initially absent production ledger path"
+    ],
+    "external_blockers": [
+      {
+        "platform": "indeed",
+        "state": "challenged_cooldown",
+        "reason": "security check",
+        "checkpoint_preserved": true
+      }
+    ]
+  },
+  "git_identity": {
+    "head": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "origin_main": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "base_merge_base_head_origin_main": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "local_main_ref": "f4f2df75fbc011f1d81738140f21b663359ffbce",
+    "local_main_ref_note": "stale local ref; origin/main and the checked-out candidate HEAD are exact",
+    "accepted_head": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+    "accepted_head_in_main_ancestry": true,
+    "merge_parents": [
+      "7ef31a01a9bc64db24fb627e1e513122f841aa5e",
+      "47325aa3c048637aee15dc7bf3cb1ca97fee034a"
+    ],
+    "head_tree": "8f270e892dad0dba60c8c134e09fd39c67106a9b",
+    "accepted_head_tree": "8f270e892dad0dba60c8c134e09fd39c67106a9b",
+    "integrated_tree_equals_accepted_product_tree": true,
+    "head_diff_accepted_head_empty": true,
+    "initial_worktree_clean": true
+  },
+  "build_runtime_identity": {
+    "manifest_version": "3.2.1",
+    "manifest_version_name": "3.2.2-prod-ready.672cf88.22",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "extension_source_identity": "sha256:14a0017405676830b5e042fb999c83b51b0fd343eb6a01171e83e4d684c74e5b",
+    "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "stable_deployment_content_identity_matches_integrated_main": true,
+    "stable_deployment_expected_source_head": "7b3ef12ebf1382998bf83eb9fd80e4002eba8e1e",
+    "stable_marker_source_head": "47325aa3c048637aee15dc7bf3cb1ca97fee034a",
+    "stable_marker_note": "marker metadata predates the merge, but deployed content identity equals integrated main and accepted product tree",
+    "chrome": {
+      "installed": true,
+      "browser": "Google Chrome",
+      "profile_directory": "Default",
+      "binding_classification": "chrome_profile_targeted",
+      "deployment_classification": "deployed_source_current"
+    },
+    "refresh_command": {
+      "command": "./REFRESH_EXTENSION.command",
+      "exit_code": 0,
+      "status": "confirmed",
+      "observed_build": "3.2.2-prod-ready.672cf88.22",
+      "observed_source_identity": "sha256:14a0017405676830b5e042fb999c83b51b0fd343eb6a01171e83e4d684c74e5b",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "identity_confirmed": true,
+      "manual_extensions_reload_required": false
+    },
+    "loopback_bridge": {
+      "host": "127.0.0.1",
+      "token_authenticated": true,
+      "unauthorized_rejection_http_status": 403,
+      "doctor_self_test": "passed"
+    },
+    "dashboard": {
+      "identity_ok": true,
+      "live_refresh_ok": true,
+      "jobbot_version": "3.2.1",
+      "resolved_database_path": "data/validation_20260920T151747Z.sqlite3",
+      "dashboard_url": "http://127.0.0.1:64343/"
+    }
+  },
+  "deterministic_gates": {
+    "doctor": {
+      "command": "JOBBOT_DATABASE_PATH=/tmp/jobbot-chg39-r14-doctor.sqlite3 JOBBOT_CRAWL_OBSERVATIONS_PATH=/tmp/jobbot-chg39-r14-doctor-observations.sqlite3 .venv/bin/python -m jobbot doctor",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    "isolated_preflight": {
+      "command": "preflight(require_runtime_binding=true, platforms=[linkedin, indeed, glassdoor])",
+      "exit_code": 0,
+      "task_count": 864,
+      "result": "passed"
+    },
+    "full_python_unittest_discovery": {
+      "command": ".venv/bin/python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "tests_run": 107,
+      "skipped": 1,
+      "result": "passed"
+    },
+    "chg154_receiver_recovery": {
+      "command": "node tests/extension_service_worker_receiver_recovery_test.js",
+      "exit_code": 0,
+      "result": "passed: bounded same-target reload, retryable exhaustion, challenge/login/context routing, target-loss gates, one-window/one-tab evidence"
+    },
+    "chg146": {
+      "startup": "passed",
+      "bootstrap": "passed",
+      "controls": "passed",
+      "supervisor": "passed",
+      "workers_cache": "passed",
+      "pane_oracle": "passed"
+    },
+    "chg141_receiver_readiness": "passed via receiver-recovery, primary-scope, auth/readiness fixtures, and Python integration coverage",
+    "chg132_auth_return": "passed",
+    "chg127_linkedin_scope_recovery": "passed",
+    "target_lifecycle": "passed",
+    "bridge_refresh_runtime_binding": "passed",
+    "database_validator_tests": "passed",
+    "extension_javascript": {
+      "syntax_files": 8,
+      "regression_files": 10,
+      "exit_code": 0,
+      "result": "passed"
+    },
+    "compileall": {
+      "command": ".venv/bin/python -m compileall -q src tests",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    "deep_search_plan": {
+      "command": ".venv/bin/python -m jobbot search-plan --mode deep",
+      "exit_code": 0,
+      "task_count": 417,
+      "platforms": {
+        "linkedin": 139,
+        "indeed": 139,
+        "glassdoor": 139
+      },
+      "production_caps": "none"
+    },
+    "git_diff_check_before_artifact": {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "passed"
+    },
+    "resource_warning_scan": {
+      "sqlite_or_subprocess_warning_matches": 0,
+      "result": "passed"
+    }
+  },
+  "big3_live_sample": {
+    "run_id": 1,
+    "mode": "validation_micro",
+    "first_live_detail_bypassed_cache": true,
+    "task_started_overlap": {
+      "timestamp": "2026-09-20T15:18:18+00:00",
+      "platforms": ["linkedin", "indeed", "glassdoor"],
+      "maximum_primary_workers": 3,
+      "worker_generation": 1,
+      "one_serial_task_per_platform": true
+    },
+    "windows_and_tabs": {
+      "linkedin": {
+        "window_id": 137910299,
+        "search_tab_id": 137910300,
+        "owned_window": true,
+        "one_search_tab": true,
+        "worker_id": "extension-run-1-linkedin"
+      },
+      "indeed": {
+        "window_id": 137910301,
+        "search_tab_id": 137910302,
+        "owned_window": true,
+        "one_search_tab": true,
+        "worker_id": "extension-run-1-indeed",
+        "preserved_for_human_inspection": true
+      },
+      "glassdoor": {
+        "window_id": 137910303,
+        "search_tab_id": 137910304,
+        "owned_window": true,
+        "one_search_tab": true,
+        "worker_id": "extension-run-1-glassdoor"
+      },
+      "routine_standalone_detail_tabs": 0,
+      "detail_page_navigations": 0,
+      "foreground_focus_requests": 0,
+      "normal_execution_stole_foreground_focus": false
+    },
+    "platforms": {
+      "linkedin": {
+        "auth_status": "verified",
+        "readiness_state": "verified",
+        "worker_status": "terminal",
+        "worker_generation": 1,
+        "requested_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD",
+        "observed_url": "https://www.linkedin.com/jobs/search/?f_TPR=r604800&f_WT=2&keywords=patient+enrollment+specialist&location=United+States&sortBy=DD&start=50",
+        "page_context_status": "verified",
+        "cards_persisted": 24,
+        "details_complete": 5,
+        "receiver_state": "connected",
+        "last_error": ""
+      },
+      "indeed": {
+        "auth_status": "unknown",
+        "readiness_state": "challenged_cooldown",
+        "worker_status": "challenged",
+        "worker_generation": 1,
+        "challenge_reason": "security check",
+        "requested_url": null,
+        "observed_url": "https://www.indeed.com/jobs?q=patient+enrollment+specialist&l=Remote&fromage=7&sort=date",
+        "page_context_status": "UNVERIFIED",
+        "cards_persisted": 0,
+        "receiver_state": "connected",
+        "last_error": "",
+        "checkpoint_preserved": true
+      },
+      "glassdoor": {
+        "auth_status": "verified",
+        "readiness_state": "verified",
+        "worker_status": "terminal",
+        "worker_generation": 1,
+        "requested_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+        "observed_url": "https://www.glassdoor.com/Job/remote-patient-enrollment-specialist-jobs-SRCH_IL.0,6_IS11047_KO7,36.htm",
+        "page_context_status": "verified",
+        "cards_persisted": 4,
+        "duplicate_cards": 2,
+        "terminal_state": "incomplete",
+        "fail_closed_stable_result_fingerprint": "/partner/jobListing.htm|1010225378683",
+        "no_false_exhaustion_claim": true,
+        "positive_pane_details": 0,
+        "receiver_state": "connected",
+        "last_error": ""
+      }
+    },
+    "pane_first_oracle": {
+      "first_card_event_id": 20,
+      "first_pane_event_id": 33,
+      "cards_before_detail_work": true,
+      "linkedin_pane_selections": 10,
+      "linkedin_detail_diagnostics": 5,
+      "selected_source_identity_proofs": 5,
+      "substantive_pane_content_proofs": 5,
+      "indeed_positive_pane_details": 0,
+      "glassdoor_positive_pane_details": 0
+    },
+    "linkedin_substantive_detail": {
+      "records_complete_enriched": 5,
+      "minimum_description_length": 3562,
+      "all_acquisition_modes": ["search_pane"],
+      "all_identity_proven": true,
+      "selected_source_job_ids_match_source_job_ids": true,
+      "canonical_linkage_present": true,
+      "records": [
+        {"source_job_id": "4466937848", "canonical_job_id": "J6BC53FE1FF0D66", "description_length": 4133, "mode": "search_pane"},
+        {"source_job_id": "4441338317", "canonical_job_id": "J5090633521BD51", "description_length": 4616, "mode": "search_pane"},
+        {"source_job_id": "4411197640", "canonical_job_id": "J82C828D1A80F4D", "description_length": 9300, "mode": "search_pane"},
+        {"source_job_id": "4469541698", "canonical_job_id": "J3ED7671A6D2707", "description_length": 3562, "mode": "search_pane"},
+        {"source_job_id": "4469537724", "canonical_job_id": "J00AED5205CAD63", "description_length": 7069, "mode": "search_pane"}
+      ]
+    },
+    "receiver_lifecycle": {
+      "natural_receiver_loss_observed": false,
+      "unhandled_terminal_connection_errors": 0,
+      "content_script_no_response_errors": 0,
+      "deterministic_recovery_regression": "passed",
+      "deliberate_sabotage": false
+    }
+  },
+  "isolated_data_and_reconciliation": {
+    "authoritative_validation_database": "data/validation_20260920T151747Z.sqlite3",
+    "authoritative_validation_integrity": "ok",
+    "validation_run_status": "stopped",
+    "validation_reconciliation": {"ok": true, "persistence_failures": 0, "unexplained": 1},
+    "observation_cache_database": "data/validation_observations_20260920T1518Z.sqlite3",
+    "observation_cache_integrity": "ok",
+    "observation_cache_rows": 5,
+    "observation_cache_content": {"COMPLETE": 5},
+    "observation_cache_source_build": "3.2.2-prod-ready.672cf88.22",
+    "soak_database": "data/validation_soak_20260920T151747Z.sqlite3",
+    "semi_production_database": "data/validation_semiprod_20260920T151747Z.sqlite3",
+    "soak_and_semi_stages": "not run after external blocker and failed primary bounded gate"
+  },
+  "validator": {
+    "command": "JOBBOT_CRAWL_OBSERVATIONS_PATH=data/validation_observations_20260920T1518Z.sqlite3 ./VALIDATE_PRODUCTION.command --semi-minutes 30",
+    "exit_code": 1,
+    "PROD_READY": false,
+    "internal_failures": ["primary live micro-validation failed"],
+    "external_blockers": [
+      {"stage": "primary_live", "platform": "indeed", "states": {"challenged": 1, "deferred_by_platform": 0, "auth_required": 0}}
+    ],
+    "preflight": "passed",
+    "primary_live": "failed closed as not ready; external challenge plus Glassdoor incomplete",
+    "soak": "not run",
+    "semi_production": "not run"
+  },
+  "production_ledger_safety": {
+    "initial_jobs_sqlite3_present": false,
+    "final_jobs_sqlite3_present": true,
+    "path": "data/jobs.sqlite3",
+    "integrity": "ok",
+    "schema_versions": 16,
+    "row_counts": {
+      "jobs": 0,
+      "browser_runs": 0,
+      "browser_search_tasks": 0,
+      "search_task_results": 0,
+      "browser_events": 2,
+      "extension_refresh_requests": 1
+    },
+    "evidence": "schema-only production DB was materialized by the supported refresh/bridge path; production ledger was not untouched",
+    "repository_owned_defect": true
+  },
+  "final_git_invariants": {
+    "source_edits": false,
+    "test_config_documentation_selector_migration_scheduler_browser_architecture_concurrency_edits": false,
+    "allowed_artifact_only": "verification/CHG-39-r14.json",
+    "final_diff_check_required": true
+  }
+}
