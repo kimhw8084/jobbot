@@ -23,6 +23,19 @@ for absent/unreachable, wrong-profile, wrong-source, or wrong-build extensions
 and are rejected while any browser run is active, so refresh cannot interrupt a
 checkpointed crawl.
 
+The transient bootstrap has a backward-compatibility contract: build N+1 must
+be able to upgrade a resident build N without any N+1-only message handler.
+It sends `JOBBOT_CONFIGURE_BRIDGE`, then `JOBBOT_REFRESH_EXTENSION`, which are
+the stable predecessor messages. When the response requires a reload it first
+persists `jobbot_bridge_config`, `jobbot_expected_extension_build`,
+`jobbot_refresh_id`, and (for a queued run) `jobbot_active_run_id`, then invokes
+the supported extension `chrome.runtime.reload()`. After reload, the new
+service worker confirms its exact build/deployment identity; it resumes the
+queued run through the existing idempotent startup path or completes
+maintenance without starting a run. `JOBBOT_BOOTSTRAP_START` is not a required
+upgrade path. A durable `jobbot_bootstrap_handoff` marker makes replayed
+transient pages close without issuing a second reload or start.
+
 Each active Big-3 platform owns one serial worker, one ordinary Chrome window,
 and one reused search tab. Cards are committed to `search_task_results` before
 detail work. Detail acquisition selects the card in that search page and waits
