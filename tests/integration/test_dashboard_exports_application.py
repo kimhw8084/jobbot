@@ -135,6 +135,7 @@ class DashboardExportApplicationTests(unittest.TestCase):
             conn = Database(bundle).connect(); now = "2026-09-07T12:00:00+00:00"
             run_id = conn.execute("INSERT INTO browser_runs(version,mode,platform,status,created_at) VALUES('3.2.1','test','linkedin','running',?)", (now,)).lastrowid
             task_id = conn.execute("INSERT INTO browser_search_tasks(browser_run_id,platform,query_text,window_days,search_url,status,created_at) VALUES(?,?,?,?,?,'running',?)", (run_id, "linkedin", "patient access specialist", 7, "https://www.linkedin.com/jobs/search/", now)).lastrowid
+            conn.execute("INSERT INTO browser_platform_runs(browser_run_id,platform,worker_status,interaction_state) VALUES(?,?,?,?)", (run_id, "linkedin", "running", "RUNNING"))
             conn.execute("INSERT INTO search_task_results(task_id,browser_run_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,detail_status,detail_lease_owner) VALUES(?,?,?,?,?,?,?,?,?)", (task_id, run_id, "linkedin", "abc", "https://www.linkedin.com/jobs/view/abc", now, now, "RUNNING", "worker"))
             conn.commit(); conn.close()
             server = create_server(bundle, port=0); thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()

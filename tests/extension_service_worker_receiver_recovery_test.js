@@ -30,7 +30,7 @@ function makeWorker({mode='direct',failure='none',responseAfterReload='safe'}={}
     return safePage(mode==='persistence'?[CARD1,CARD2]:[CARD1]);
   };
   const chrome={
-    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.22'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
+    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.23'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
     storage:{local:{get:async()=>({jobbot_bridge_config:{port:43123,token:'x'.repeat(24)}}),set:async()=>{},remove:async()=>{}}},
     windows:{
       get:async id=>windows.get(id)||(()=>{throw new Error(`window ${id} missing`);})(),
