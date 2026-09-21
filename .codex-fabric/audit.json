@@ -1,0 +1,358 @@
+{
+  "accepted_at": "2026-09-21T22:31:55Z",
+  "changed_files": [],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'rtk node --version; rtk node --check extension/bootstrap.js; rtk node --check extension/common.js; rtk node --check extension/dashboard.js; rtk node --check extension/glassdoor.js; rtk node --check extension/indeed.js; rtk node --check extension/linkedin.js; rtk node --check extension/selectors.js; rtk node --check extension/service_worker.js; for f in tests/*_test.js; do rtk node \"$f\"; done'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT JOBBOT_DATABASE_PATH=/tmp/jobbot-chg164-r1.eJSIPC/plan.sqlite3 JOBBOT_CRAWL_OBSERVATIONS_PATH=/tmp/jobbot-chg164-r1.eJSIPC/plan-observations.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg164-r1.eJSIPC/plan-out JOBBOT_DASHBOARD_PORT=18766 PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m jobbot search-plan --mode deep'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT JOBBOT_DATABASE_PATH=/tmp/jobbot-chg164-r1.eJSIPC/preflight.sqlite3 JOBBOT_CRAWL_OBSERVATIONS_PATH=/tmp/jobbot-chg164-r1.eJSIPC/preflight-observations.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg164-r1.eJSIPC/preflight-out JOBBOT_DASHBOARD_PORT=18767 PYTHONPATH=src /opt/anaconda3/bin/python3.11 -c 'from jobbot.config import load_bundle; from jobbot.run_now import preflight; print(preflight(load_bundle()))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT JOBBOT_DATABASE_PATH=/tmp/jobbot-chg164-r1.eJSIPC/doctor.sqlite3 JOBBOT_CRAWL_OBSERVATIONS_PATH=/tmp/jobbot-chg164-r1.eJSIPC/doctor-observations.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg164-r1.eJSIPC/doctor-out JOBBOT_DASHBOARD_PORT=18768 PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- migration 15 ---'; rtk sed -n '1,260p' src/jobbot/migrations/m0015_production_integrity_states.py; printf '%s\\\\n' '--- migrations 4/5/10/16/17 ---'; rtk sed -n '1,220p' src/jobbot/migrations/m0004_source_occurrences.py; rtk sed -n '1,260p' src/jobbot/migrations/m0005_structured_evidence.py; rtk sed -n '1,180p' src/jobbot/migrations/m0010_description_state.py; rtk sed -n '1,240p' src/jobbot/migrations/m0016_chg146_workers_controls.py; rtk sed -n '1,220p' src/jobbot/migrations/m0017_chg159_human_wait.py; printf '%s\\\\n' '--- migration registry ---'; rtk sed -n '1,140p' src/jobbot/migrations/__init__.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- linkedin implementation markers ---'; rtk rg -n 'pageSurface|collect|scope|inspectSearch|pane|selected_source_job_id|identity_proven|acquisition_mode|description|standalone|JOBBOT_INSPECT_DETAIL' extension/linkedin.js; printf '%s\\\\n' '--- linkedin source ---'; rtk sed -n '1,360p' extension/linkedin.js; printf '%s\\\\n' '--- receiver/recovery markers ---'; rtk rg -n 'CHG-127|scope_recovery|auth|landing|readiness|receiver|recoverReceiver|same.target|reload|retryable|target|card-before|record_result|record_job|pane' extension/service_worker.js | head -320\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- service worker recovery core ---'; rtk sed -n '1,330p' extension/service_worker.js; printf '%s\\\\n' '--- LinkedIn scope recovery/process ---'; rtk sed -n '455,665p' extension/service_worker.js; printf '%s\\\\n' '--- worker lifecycle/control ---'; rtk sed -n '665,755p' extension/service_worker.js; printf '%s\\\\n' '--- bridge receiver/provenance persistence ---'; rtk rg -n 'def _record_result|def _record_job|record_result|record_job|source_occurrences|occurrence|remote_evidence|apply_destination|selected_source_job_id|identity_proven|acquisition_mode|content_incomplete|detail_status' src/jobbot/bridge/rpc.py src/jobbot/legacy_engine.py src/jobbot/migrations/m0001_ledger.py src/jobbot/migrations/m0007_durable_discoveries.py src/jobbot/migrations/m0008_page_reconciliation.py | head -420\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '700,900p' src/jobbot/bridge/rpc.py; printf '%s\\\\n' '--- structured job/source schema ---'; rtk sed -n '1,150p' src/jobbot/migrations/m0001_ledger.py; rtk sed -n '1,140p' src/jobbot/migrations/m0007_durable_discoveries.py; rtk sed -n '1,150p' src/jobbot/migrations/m0008_page_reconciliation.py; printf '%s\\\\n' '--- CHG-154 and CHG-127 commits/files ---'; rtk git show --stat --oneline 7b3ef12; rtk git show --format=fuller --no-ext-diff 7b3ef12 -- extension/service_worker.js tests/extension_service_worker_receiver_recovery_test.js | head -420; rtk git show --format=fuller --no-ext-diff 7ef31a0 -- extension/linkedin.js extension/service_worker.js src/jobbot/migrations/m0016_chg146_workers_controls.py | head -360\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- relevant history by change ---'; rtk git log --all --oneline --decorate --grep='CHG-127\\\\|CHG-132\\\\|CHG-141\\\\|CHG-154\\\\|CHG-159\\\\|CHG-112\\\\|CHG-146' -i | head -80; printf '%s\\\\n' '--- commit stats ---'; for c in \"'$(rtk git log --all --format='\"'%H' --grep='CHG-127\\\\|CHG-132\\\\|CHG-141\\\\|CHG-154\\\\|CHG-159\\\\|CHG-112\\\\|CHG-146' -i | head -30); do rtk git show --stat --oneline \\\"\"'$c\" | head -30; done; printf '\"'%s\\\\n' '--- service worker change markers with line numbers ---'; rtk rg -n 'LINKEDIN_SCOPE_RECOVERY|recoverLinkedInSearchScope|platform_auth_result|platform_readiness|extension_build|receiver_recovery|recoverReceiverInspection|same_target|detail_acquisition|record_result|record_job|WAITING_FOR_HUMAN|resume_ready_platforms|stop_after_current' extension/service_worker.js src/jobbot/bridge/rpc.py src/jobbot/dashboard.py src/jobbot/platform_state.py | head -420\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git log --all --oneline --decorate -- extension/service_worker.js extension/linkedin.js | head -60; printf '%s\\\\n' '--- relevant pre-merge integrated ranges ---'; rtk git log --oneline --decorate c9bcbe7\"'^1..c9bcbe7''^2 --max-count=40; printf '\"'%s\\\\n' '--- source changed at each feature ---'; for c in b84223c 88fd162 7b3ef12 7ef31a0 264e00d; do rtk git show --format='%h %s' --name-only \\\"\"'$c\" | head -80; done'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --format=fuller --stat 2d31df2; rtk git show --format= --no-ext-diff 2d31df2 -- extension/service_worker.js extension/linkedin.js tests/extension_service_worker_scope_recovery_test.js | head -520; printf '%s\\\\n' '--- older scope hardening ---'; rtk git show --format='%h %s' --stat 8e3a566; rtk git show --format= --no-ext-diff 8e3a566 -- extension/linkedin.js extension/service_worker.js tests/extension_linkedin_scope_test.js | head -520\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- installed stable extension tree ---'; rtk ls -la '/Users/haewonkim/Library/Application Support/JobBot' '/Users/haewonkim/Library/Application Support/JobBot/extension' 2>/dev/null || true; printf '%s\\\\n' '--- installed marker/manifest/profile binding ---'; for p in '/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json' '/Users/haewonkim/Library/Application Support/JobBot/extension/manifest.json' '/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json'; do if test -f \\\"\"'$p\"; then rtk sed -n '\"'1,220p' \\\"\"'$p\"; else rtk printf '\"'missing %s\\\\n' \\\"\"'$p\"; fi; done; printf '\"'%s\\\\n' '--- runtime diagnostics from exact source ---'; rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg164-r1.eJSIPC/runtime-diagnostics.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg164-r1.eJSIPC/runtime-diagnostics-out /opt/anaconda3/bin/python3.11 -c 'import json; from pathlib import Path; from jobbot.runtime_binding import runtime_binding_diagnostics, deployment_diagnostics, chrome_target_diagnostics, stable_extension_root; from jobbot.extension_identity import extension_build; print(json.dumps({\\\"expected_build\\\":extension_build(Path.cwd()),\\\"stable_extension_root\\\":str(stable_extension_root()),\\\"deployment\\\":deployment_diagnostics(Path.cwd()),\\\"chrome_target\\\":chrome_target_diagnostics()},indent=2))' ; printf '%s\\\\n' '--- active processes/ports recheck ---'; rtk ps -axo pid=,ppid=,state=,command= | rtk rg -i 'jobbot|chrome|chromium|linkedin|bridge' | head -160 || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 scripts/build_release.py; rtk shasum -a 256 dist/jobbot-3.2.0.zip; rtk unzip -p dist/jobbot-3.2.0.zip jobbot-3.2.0/extension/manifest.json | rtk sed -n '1,30p'; rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m jobbot sync-extension\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"printf '%s\\\\n' '--- post-sync runtime identity ---'; rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -c 'import json; from pathlib import Path; from jobbot.runtime_binding import runtime_binding_diagnostics, stable_extension_root; from jobbot.extension_identity import extension_build; print(json.dumps({\\\"expected_build\\\":extension_build(Path.cwd()),\\\"stable_extension_root\\\":str(stable_extension_root()),\\\"diagnostics\\\":runtime_binding_diagnostics(Path.cwd())},indent=2))'; printf '%s\\\\n' '--- production DB immutable read-only guard ---'; rtk /opt/anaconda3/bin/python3.11 -c 'import sqlite3,json,os; p=\\\"/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3\\\"; uri=\\\"file:\\\"+p+\\\"?mode=ro&immutable=1\\\"; c=sqlite3.connect(uri,uri=True); rows=c.execute(\\\"SELECT browser_run_id,status,platform FROM browser_runs WHERE status IN (\\\\\\\"running\\\\\\\",\\\\\\\"queued\\\\\\\") ORDER BY browser_run_id DESC LIMIT 20\\\").fetchall(); print(json.dumps({\\\"path\\\":p,\\\"mode\\\":\\\"ro+immutable\\\",\\\"active_or_queued\\\":rows},default=str)); c.close()'; printf '%s\\\\n' '--- production DB fingerprint before smoke ---'; rtk stat -f 'path=%N size=%z mtime_epoch=%m inode=%i' /Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3; rtk shasum -a 256 /Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3; printf '%s\\\\n' '--- stable marker/manifest build ---'; rtk rg -n 'version_name|source_identity|source_head|extension_id|profile_directory' '/Users/haewonkim/Library/Application Support/JobBot/extension/manifest.json' '/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json' '/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' RUN_NOW.command; rtk sed -n '1,180p' RUN_PLATFORM_LINKEDIN.command; rtk sed -n '1,180p' src/jobbot/cli.py; printf '%s\\\\n' '--- run_now command path ---'; rtk rg -n 'def command_run_now|def command_run|launch_browser_run|enqueue' src/jobbot/cli.py src/jobbot/orchestrator.py; rtk sed -n '1,430p' src/jobbot/orchestrator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -c 'from jobbot.orchestrator import _open_chrome; import json; print(json.dumps(_open_chrome(\\\"https://www.linkedin.com/jobs/search/\\\")))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk open -n -a 'Google Chrome' --args --profile-directory=Default 'https://www.linkedin.com/jobs/search/'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk pgrep -alf 'Google Chrome|Chrome Helper|chromium' || true; rtk /bin/ps -ax | rtk rg -i 'Google Chrome|Chrome Helper|chromium' | head -80 || true; rtk open -a 'Google Chrome' --args --profile-directory=Default 'https://www.linkedin.com/jobs/search/'; rtk sleep 2; rtk pgrep -alf 'Google Chrome|Chrome Helper|chromium' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'cache_dir|JOBBOT_CACHE|crawl_observations_path|observation_path|_cache_bundle' src/jobbot | head -180; rtk sed -n '1,280p' src/jobbot/crawl_observations.py; rtk sed -n '1,180p' config/runtime.toml | rtk rg -n 'cache|observation|database|output'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sleep 5; rtk /opt/anaconda3/bin/python3.11 -c 'import sqlite3,json; p=\\\"/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; run=dict(c.execute(\\\"select browser_run_id,status,platform,created_at,started_at,last_progress_at,stop_requested,stop_after_current from browser_runs order by browser_run_id desc limit 1\\\").fetchone()); lanes=[dict(x) for x in c.execute(\\\"select platform,worker_status,interaction_state,readiness_state,auth_status,readiness_reason,auth_reason,current_task_id,worker_id,receiver_state,owned_window,window_id,search_tab_id from browser_platform_runs where browser_run_id=?\\\",(run[\\\"browser_run_id\\\"],))]; print(json.dumps({\\\"run\\\":run,\\\"platforms\\\":lanes},default=str)); c.close()'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python3.11 - <<'PY'\nimport datetime\nimport os\nimport sqlite3\nimport subprocess\nimport sys\nimport time\n\nworktree = \\\"/Users/haewonkim/.codex-fabric/worktrees/CF-44bcdea355d7e1e6fa8bf193\\\"\ndatabase = \\\"/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3\\\"\nenv = os.environ.copy()\nfor name in (\\\"JOBBOT_DATABASE_PATH\\\", \\\"JOBBOT_OUTPUT_DIR\\\", \\\"JOBBOT_CRAWL_OBSERVATIONS_PATH\\\", \\\"JOBBOT_DASHBOARD_PORT\\\"):\n    env.pop(name, None)\nenv.update({\n    \\\"JOBBOT_DATABASE_PATH\\\": database,\n    \\\"JOBBOT_CRAWL_OBSERVATIONS_PATH\\\": \\\"/private/tmp/jobbot-chg164-r1.eJSIPC/live/observations.sqlite3\\\",\n    \\\"JOBBOT_OUTPUT_DIR\\\": \\\"/private/tmp/jobbot-chg164-r1.eJSIPC/live/out\\\",\n    \\\"JOBBOT_DASHBOARD_PORT\\\": \\\"18769\\\",\n    \\\"PYTHONPATH\\\": \\\"src\\\",\n})\nstart = time.monotonic()\nprint(\\\"SMOKE_TIMER_START_UTC\\\", datetime.datetime.now(datetime.timezone.utc).isoformat(), flush=True)\nearly = False\nfor index in range(30):\n    with sqlite3.connect(database) as conn:\n        row = conn.execute(\\\"SELECT r.status,p.worker_status,p.interaction_state,p.readiness_state,p.auth_status,p.receiver_state,r.stop_requested,r.stop_after_current,(SELECT COUNT(*) FROM search_task_results x WHERE x.browser_run_id=r.browser_run_id) FROM browser_runs r JOIN browser_platform_runs p ON p.browser_run_id=r.browser_run_id WHERE r.browser_run_id=1\\\").fetchone()\n    print(\\\"ACTIVE\\\", index + 1, row, \\\"elapsed=%.1f\\\" % (time.monotonic() - start), flush=True)\n    if row and (row[0] in {\\\"failed\\\", \\\"partial\\\", \\\"stopped\\\", \\\"completed\\\", \\\"missing\\\"} or row[2] == \\\"WAITING_FOR_HUMAN\\\" or row[3] in {\\\"sign_in_required\\\", \\\"challenged_cooldown\\\", \\\"user_action_required\\\"} or row[4] == \\\"not_authenticated\\\"):\n        early = True\n        print(\\\"EARLY_SAFETY_OR_TERMINAL_STATE\\\", row, flush=True)\n        break\n    if index < 29:\n        time.sleep(10)\nif not early:\n    print(\\\"SMOKE_TIMER_300S_REACHED_UTC\\\", datetime.datetime.now(datetime.timezone.utc).isoformat(), flush=True)\nstop = subprocess.run([sys.executable, \\\"-m\\\", \\\"jobbot\\\", \\\"stop\\\"], cwd=worktree, env=env, text=True, capture_output=True)\nprint(\\\"ORDERLY_STOP_REQUEST_RC\\\", stop.returncode, flush=True)\nprint(stop.stdout, end=\\\"\\\", flush=True)\nprint(stop.stderr, end=\\\"\\\", flush=True)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mkdir -p /tmp/jobbot-chg164-r1.eJSIPC/live/cache /tmp/jobbot-chg164-r1.eJSIPC/live/out /tmp/jobbot-chg164-r1.eJSIPC/live/logs; rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT JOBBOT_DATABASE_PATH=/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3 JOBBOT_CRAWL_OBSERVATIONS_PATH=/tmp/jobbot-chg164-r1.eJSIPC/live/observations.sqlite3 JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg164-r1.eJSIPC/live/out JOBBOT_DASHBOARD_PORT=18769 PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m jobbot run-now --platform linkedin'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3, json, os, pathlib\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3')\nprint('exists', p.exists(), 'size', p.stat().st_size if p.exists() else None)\ncon=sqlite3.connect(f'file:{p}?mode=ro', uri=True)\nprint('tables')\nfor (name,) in con.execute(\\\"select name from sqlite_master where type='table' order by name\\\"):\n    print(name)\nfor name in ('browser_runs','browser_platform_runs','browser_search_tasks','search_task_results','browser_events','jobs','source_occurrences','job_versions'):\n    print('\\\\nSCHEMA',name)\n    try:\n        for row in con.execute(f'pragma table_info({name})'):\n            print(row[1], row[2])\n    except Exception as e: print('ERR',e)\nprint('\\\\nRUNS')\nfor row in con.execute('select * from browser_runs order by run_id'):\n    print(row)\nprint('\\\\nPLATFORM RUNS')\nfor row in con.execute('select * from browser_platform_runs order by run_id, platform_run_id'):\n    print(row)\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3, json, pathlib, collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3')\ncon=sqlite3.connect(f'file:{p}?mode=ro', uri=True)\ncon.row_factory=sqlite3.Row\nfor table, cols in {\n 'browser_runs':['browser_run_id','version','mode','platform','status','created_at','started_at','completed_at','stop_requested','auth_status','jobs_new','jobs_updated','jobs_unchanged','jobs_recorded','tasks_completed','tasks_challenged','tasks_incomplete','current_task_id','last_progress_at','last_error','stop_after_current','notes','active_worker_count'],\n 'browser_platform_runs':['browser_run_id','platform','auth_status','auth_reason','tasks_total','tasks_completed','tasks_challenged','tasks_failed','tasks_incomplete','jobs_recorded','readiness_state','readiness_reason','worker_status','worker_id','worker_started_at','worker_completed_at','current_task_id','current_query','current_search_url','last_error','challenge_reason','stop_after_current','emergency_stop','receiver_state','chrome_available','owned_window','window_id','window_state','window_focused','search_tab_id','search_tab_url','interaction_state','human_wait_reason','last_control_action'],\n}.items():\n print('\\\\n'+table)\n for row in con.execute(f\\\"select {','.join(cols)} from {table} order by browser_run_id\\\"):\n  print(dict(row))\nprint('\\\\nTASK SUMMARY')\nfor row in con.execute(\\\"select task_id, browser_run_id, platform, query_text, status, results_seen, jobs_recorded, jobs_new, jobs_updated, jobs_unchanged, pages_visited, challenge_reason, attempts, last_error, safety_stop_reason, cards_extracted, cards_persistence_attempted, cards_persistence_succeeded, cards_persistence_failed, duplicate_cards, pending_details, details_failed, phase, requested_search_url, observed_page_url, page_context_status, context_recovery_attempts, detail_acquisition_mode from browser_search_tasks order by task_id\\\"):\n print(dict(row))\nprint('\\\\nEVENT TYPES')\nfor row in con.execute(\\\"select event_type,count(*) n from browser_events group by event_type order by n desc,event_type\\\"):\n print(tuple(row))\nprint('\\\\nEVENTS')\nfor row in con.execute(\\\"select event_id,event_at,event_type,message,substr(payload_json,1,1000) payload from browser_events order by event_id\\\"):\n print(dict(row))\nprint('\\\\nRESULT SUMMARY')\nfor row in con.execute(\\\"select detail_status,content_state,identity_status,card_metadata_status,count(*) n from search_task_results group by detail_status,content_state,identity_status,card_metadata_status order by n desc\\\"):\n print(tuple(row))\nprint('\\\\nRESULTS')\nfor row in con.execute(\\\"select result_id,task_id,source_site,source_job_id,canonical_job_id,detail_read,detail_status,detail_attempts,detail_error,identity_status,card_metadata_status,content_state,title_hint,company_hint,location_hint,posted_text,source_url from search_task_results order by result_id limit 100\\\"):\n print(dict(row))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3, pathlib, json, collections, os\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3')\ncon=sqlite3.connect(f'file:{p}?mode=ro', uri=True)\ncon.row_factory=sqlite3.Row\nfor table in ('runs','application_events','coverage_events','coverage_segments','funnel_events','watch_state'):\n print('\\\\nTABLE',table)\n try:\n  print([r['name'] for r in con.execute(f'pragma table_info({table})')])\n  rows=con.execute(f'select * from {table} limit 20').fetchall()\n  for row in rows: print(dict(row))\n except Exception as e: print('ERR',e)\nprint('\\\\nsource occurrence sites')\nfor row in con.execute('select source_site,count(*) n from source_occurrences group by source_site order by n desc'):\n print(tuple(row))\nprint('\\\\nsource result sites')\nfor row in con.execute('select source_site,count(*) n from search_task_results group by source_site'):\n print(tuple(row))\nprint('\\\\njob urls sites')\nfor row in con.execute(\\\"select case when canonical_url like 'https://www.linkedin.com/%' then 'linkedin' when canonical_url like 'https://www.indeed.com/%' then 'indeed' when canonical_url like 'https://www.glassdoor.com/%' then 'glassdoor' when canonical_url like 'https://www.remotive.com/%' then 'remotive' else substr(canonical_url,1,50) end site,count(*) from jobs group by site order by count(*) desc\\\"):\n print(tuple(row))\nprint('\\\\nEVENTS concise')\nfor row in con.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events order by event_id\\\"):\n payload=row['payload_json']\n try:\n  obj=json.loads(payload) if payload else None\n  if isinstance(obj,dict):\n   # redact long values, tokens, html, descriptions\n   clean={k:(str(v)[:300]+'...' if len(str(v))>300 else v) for k,v in obj.items() if all(x not in k.lower() for x in ('token','secret','cookie','html','description'))}\n   payload=json.dumps(clean,sort_keys=True)\n  else: payload=str(payload)[:500]\n except Exception: payload=str(payload)[:500]\n print(row['event_id'],row['event_at'],row['event_type'],row['message'],'|',payload)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"supplemental_stage|platform|run-now|run_now|supplemental|legacy\" src/jobbot scripts tests | head -240'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,135p' src/jobbot/cli.py && rtk sed -n '150,190p' src/jobbot/cli.py && rtk sed -n '1,130p' tests/integration/test_run_now.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '200,285p' src/jobbot/cli.py && rtk sed -n '1,220p' src/jobbot/audit.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT JOBBOT_DATABASE_PATH=/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3 JOBBOT_CRAWL_OBSERVATIONS_PATH=/private/tmp/jobbot-chg164-r1.eJSIPC/live/observations.sqlite3 JOBBOT_OUTPUT_DIR=/private/tmp/jobbot-chg164-r1.eJSIPC/live/out JOBBOT_DASHBOARD_PORT=18769 PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m jobbot audit'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3, json, pathlib, pprint\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3')\ncon=sqlite3.connect(f'file:{p}?mode=ro', uri=True); con.row_factory=sqlite3.Row\nfor r in con.execute(\\\"select r.result_id,r.source_job_id,r.canonical_job_id,r.detail_status,r.detail_attempts,r.detail_error,r.identity_status,r.card_metadata_status,r.content_state,j.content_state job_content,j.enrichment_status,j.description_state,length(j.description) desc_len,j.title,j.company,j.location_raw,j.posted_at,j.remote_evidence_state,j.location_evidence_state,j.apply_destination_state,j.apply_url,j.canonical_url,j.evidence_provenance_json from search_task_results r left join jobs j on j.job_id=r.canonical_job_id where r.browser_run_id=1 and r.detail_status='COMPLETE' order by r.result_id\\\"):\n print('ROW',r['result_id'],r['source_job_id'],r['canonical_job_id'],'status',r['detail_status'],'identity',r['identity_status'],'content',r['content_state'],'desc',r['desc_len'])\n print({k:r[k] for k in ('title','company','location_raw','posted_at','remote_evidence_state','location_evidence_state','apply_destination_state','apply_url','canonical_url')})\n print('prov',r['evidence_provenance_json'][:1000] if r['evidence_provenance_json'] else None)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,json,ast,collections, pathlib\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3')\nc=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nprint('EVENT COUNTS')\nfor r in c.execute('select event_type,count(*) n from browser_events where browser_run_id=1 group by event_type order by n desc,event_type'): print(r['event_type'],r['n'])\nprint('\\\\nJOB ERROR REASONS')\nfor r in c.execute(\\\"select message,count(*) n from browser_events where browser_run_id=1 and event_type in ('job_error','detail_external_blocked','receiver_recovery','task_incomplete') group by message order by n desc\\\"): print(r['n'],r['message'])\nprint('\\\\nERROR EVENT SAMPLES')\nfor r in c.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events where browser_run_id=1 and event_type in ('job_error','detail_external_blocked','receiver_recovery','task_incomplete') order by event_id\\\"): print(r['event_id'],r['event_type'],r['message'],r['payload_json'][:700])\nprint('\\\\nDETAIL DIAGNOSTICS SAMPLES')\nfor r in c.execute(\\\"select event_id,event_type,message,payload_json from browser_events where browser_run_id=1 and event_type='detail_diagnostics' limit 3\\\"):\n print(r['event_id'],r['message']); print(r['payload_json'][:2200])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3, pathlib\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nfor r in c.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events where browser_run_id=1 and event_type in ('extension_build','extension_refresh_requested','extension_refresh_reloading','run_started','task_started','worker_window_created','worker_window_bound','platform_readiness') order by event_id\\\"):\n print(r['event_id'],r['event_at'],r['event_type'],r['message']); print(r['payload_json'][:3000])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /private/tmp/jobbot-chg164-r1.eJSIPC/live/out -maxdepth 2 -type f -print | sort | sed -n '1,160p' && rtk find /private/tmp/jobbot-chg164-r1.eJSIPC/live/out -maxdepth 2 -type f -name '*.log' -print -exec sh -c 'echo --- \\\"\"'$1\"; tail -40 \"$1\"'\"' sh {} \\\\;\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk tail -80 /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/logs/run_1.log && rtk tail -80 /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/logs/run_1_bridge.log && rtk tail -80 /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/logs/dashboard.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,json,pathlib\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nfor r in c.execute(\\\"select event_id,event_type,message,payload_json from browser_events where browser_run_id=1 and event_type='receiver_recovery'\\\"):\n print(r['payload_json'])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3, json, pathlib, statistics, collections, datetime, re\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3')\nc=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nrun=1\nR=c.execute('select * from search_task_results where browser_run_id=? order by result_id',(run,)).fetchall()\nT=c.execute('select * from browser_search_tasks where browser_run_id=?',(run,)).fetchall()\nJ={r['job_id']:r for r in c.execute('select * from jobs')}\nE=c.execute('select * from browser_events where browser_run_id=? order by event_id',(run,)).fetchall()\nprint('RESULTS',len(R),'UNIQUE_SOURCE',len({r['source_job_id'] for r in R if r['source_job_id']}),'CANONICAL_DISTINCT',len({r['canonical_job_id'] for r in R if r['canonical_job_id']}))\nprint('RESULT_STATUS',dict(collections.Counter(r['detail_status'] for r in R)))\nprint('CONTENT_STATE',dict(collections.Counter(r['content_state'] for r in R)))\nprint('IDENTITY',dict(collections.Counter(r['identity_status'] for r in R)))\nprint('CARD_METADATA_STATUS',dict(collections.Counter(r['card_metadata_status'] for r in R)))\nprint('DETAIL_ATTEMPTS_SUM',sum(int(r['detail_attempts'] or 0) for r in R))\nprint('DETAIL_READ',sum(int(r['detail_read'] or 0) for r in R))\nprint('ERRORS',dict(collections.Counter(r['detail_error'] for r in R if r['detail_error'])))\n# card metadata completeness\nfor field,fn in {\n 'title':lambda r: bool(str(r['title_hint'] or '').strip()),\n 'company':lambda r: bool(str(r['company_hint'] or '').strip()),\n 'location':lambda r: bool(str(r['location_hint'] or '').strip()),\n 'posted':lambda r: bool(str(r['posted_text'] or '').strip()) or r['posted_age_days'] is not None,\n}.items():\n print('CARD_META',field,sum(fn(r) for r in R),len(R),round(sum(fn(r) for r in R)/len(R)*100,2))\ncomplete=[r for r in R if r['detail_status']=='COMPLETE' and r['canonical_job_id']]\nlengths=[len(str(J[r['canonical_job_id']]['description'] or '')) for r in complete]\nprint('COMPLETE_ROWS',len(complete),'LENGTHS',min(lengths),statistics.median(lengths),max(lengths),sorted(lengths))\n# detail provenance validity based on event payload\nD=[]\nfor e in E:\n if e['event_type']\"'!='\"'detail_diagnostics': continue\n try: obj=json.loads(e['payload_json']); payload=obj.get('payload',{})\n except Exception: continue\n if isinstance(payload,str):\n  try: payload=json.loads(payload)\n  except Exception: continue\n D.append(payload)\nprint('DIAG',len(D),'acq',collections.Counter(x.get('detail_acquisition_mode') for x in D),'identity_proven',sum(x.get('identity_proven') is True for x in D),'selectedmatch',sum(x.get('selected_source_job_id')==x.get('source_job_id') for x in D))\nprint('SUBSTANTIVE',sum(x.get('detail_acquisition_mode')=='search_pane' and x.get('identity_proven') is True and x.get('selected_source_job_id')==x.get('source_job_id') and len(str(J.get(next((r['canonical_job_id'] for r in R if r['source_job_id']==x.get('source_job_id')),''),{}).get('description','') or ''))>=250 for x in D))\n# canonical metadata completeness on complete rows\nfor field,fn in {\n 'title':lambda j: bool(str(j['title'] or '').strip()),\n 'company':lambda j: bool(str(j['company'] or '').strip()),\n 'location':lambda j: bool(str(j['location_raw'] or '').strip()),\n 'posted':lambda j: bool(str(j['posted_at'] or '').strip()),\n}.items():\n print('DETAIL_META',field,sum(fn(J[r['canonical_job_id']]) for r in complete),len(complete),round(sum(fn(J[r['canonical_job_id']]) for r in complete)/len(complete)*100,2))\nprint('JOB_STATE',dict(collections.Counter((J[r['canonical_job_id']]['content_state'],J[r['canonical_job_id']]['description_state'],J[r['canonical_job_id']]['enrichment_status']) for r in complete)))\nprint('REMOTE',dict(collections.Counter(J[r['canonical_job_id']]['remote_evidence_state'] for r in complete)))\nprint('LOCATION',dict(collections.Counter(J[r['canonical_job_id']]['location_evidence_state'] for r in complete)))\nprint('APPLY',dict(collections.Counter(J[r['canonical_job_id']]['apply_destination_state'] for r in complete)))\nprint('APPLY_URL_NONEMPTY',sum(bool(str(J[r['canonical_job_id']]['apply_url'] or '').strip()) for r in complete))\n# duplicate and invalid mappings\nby_src=collections.defaultdict(set)\nfor r in R:\n if r['canonical_job_id']: by_src[r['source_job_id']].add(r['canonical_job_id'])\nprint('INVALID_SRC_MULTI_CANONICAL',sum(len(v)>1 for v in by_src.values()),[k for k,v in by_src.items() if len(v)>1])\nprint('CANONICAL_DUP_SOURCE_COUNTS',sorted(collections.Counter(r['canonical_job_id'] for r in R if r['canonical_job_id']).values()))\nprint('SOURCE_OCCURRENCES',c.execute(\\\"select count(*) from source_occurrences where source_site='linkedin'\\\").fetchone()[0], 'JOB_VERSIONS',c.execute(\\\"select count(*) from job_versions where source_site='linkedin'\\\").fetchone()[0])\nprint('CANONICAL_OCCURRENCE_MULTI_JOBS',c.execute(\\\"select count(*) from (select canonical_occurrence_key from jobs where canonical_occurrence_key is not null group by canonical_occurrence_key having count(distinct job_id)>1)\\\").fetchone()[0])\n# order checks\nfirst=collections.defaultdict(dict)\nfor e in E:\n payload={}\n try:\n  o=json.loads(e['payload_json']); payload=o.get('payload',{})\n  if isinstance(payload,str):\n   try: payload=json.loads(payload)\n   except: pass\n except: pass\n sid=payload.get('source_job_id') if isinstance(payload,dict) else e['message'].split()[-1]\n if sid:\n  first.setdefault(sid,{}).setdefault(e['event_type'],e['event_id'])\norders=[]\nfor sid in {r['source_job_id'] for r in complete}:\n f=first.get(sid,{})\n orders.append(f.get('result_discovered',10**9)<f.get('pane_selection',-1)<f.get('detail_read',-1)<f.get('job_recorded',-1))\nprint('CARD_BEFORE_DETAIL_ALL_COMPLETE',sum(orders),len(orders))\n# event counts requested\nprint('EVENTS',dict(collections.Counter(e['event_type'] for e in E)))\n# source occurrence sites and rows from supplemental\nprint('SOURCE_SITES',dict(c.execute('select source_site,count(*) from source_occurrences group by source_site').fetchall()))\nprint('RUNS', [dict(x) for x in c.execute('select * from runs')])\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,json,pathlib,collections,statistics\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nR=c.execute('select * from search_task_results where browser_run_id=1 order by result_id').fetchall(); J={r['job_id']:r for r in c.execute('select * from jobs')}; E=c.execute('select * from browser_events where browser_run_id=1 order by event_id').fetchall(); complete=[r for r in R if r['detail_status']=='COMPLETE' and r['canonical_job_id']]\nfor field,fn in {'title':lambda j: bool(str(j['title'] or '').strip()),'company':lambda j: bool(str(j['company'] or '').strip()),'location':lambda j: bool(str(j['location_raw'] or '').strip()),'posted':lambda j: bool(str(j['posted_at'] or '').strip())}.items():\n print('DETAIL_META',field,sum(fn(J[r['canonical_job_id']]) for r in complete),len(complete),round(sum(fn(J[r['canonical_job_id']]) for r in complete)/len(complete)*100,2))\nprint('JOB_CONTENT',collections.Counter(J[r['canonical_job_id']]['content_state'] for r in complete))\nprint('JOB_DESCRIPTION',collections.Counter(J[r['canonical_job_id']]['description_state'] for r in complete))\nprint('JOB_ENRICHMENT',collections.Counter(J[r['canonical_job_id']]['enrichment_status'] for r in complete))\nprint('REMOTE',collections.Counter(J[r['canonical_job_id']]['remote_evidence_state'] for r in complete))\nprint('LOCATION',collections.Counter(J[r['canonical_job_id']]['location_evidence_state'] for r in complete))\nprint('APPLY',collections.Counter(J[r['canonical_job_id']]['apply_destination_state'] for r in complete),'APPLY_URL_NONEMPTY',sum(bool(str(J[r['canonical_job_id']]['apply_url'] or '').strip()) for r in complete))\nby_src=collections.defaultdict(set)\nfor r in R:\n if r['canonical_job_id']: by_src[r['source_job_id']].add(r['canonical_job_id'])\nprint('INVALID_SRC_MULTI_CANONICAL',sum(len(v)>1 for v in by_src.values()))\nprint('CANONICAL_OCCURRENCE_MULTI_JOBS',c.execute(\\\"select count(*) from (select canonical_occurrence_key from jobs where canonical_occurrence_key is not null group by canonical_occurrence_key having count(distinct job_id)>1)\\\").fetchone()[0])\nprint('SOURCE_OCCURRENCES_LINKEDIN',c.execute(\\\"select count(*) from source_occurrences where source_site='linkedin'\\\").fetchone()[0],'JOB_VERSIONS_LINKEDIN',c.execute(\\\"select count(*) from job_versions where source_site='linkedin'\\\").fetchone()[0])\nprint('SOURCE_SITE_COUNTS',dict(c.execute('select source_site,count(*) from source_occurrences group by source_site').fetchall()))\n# card-before-detail by source id, comparing all event ids\nfirst=collections.defaultdict(dict)\nfor e in E:\n try:\n  o=json.loads(e['payload_json']); pay=o.get('payload',{})\n  if isinstance(pay,str):\n   try: pay=json.loads(pay)\n   except: pay={}\n except: pay={}\n sid=pay.get('source_job_id') if isinstance(pay,dict) else None\n if not sid and e['event_type'] in ('detail_read','job_recorded'): sid=e['message'].split()[-1]\n if sid: first[sid].setdefault(e['event_type'],e['event_id'])\nchecks=[]\nfor sid in {r['source_job_id'] for r in complete}:\n f=first[sid]; checks.append(f.get('result_discovered',999999)<f.get('pane_selection',-1)<f.get('detail_read',-1)<f.get('job_recorded',-1))\nprint('ORDER_PASS',sum(checks),len(checks))\nprint('INTEGRITY',c.execute('pragma integrity_check').fetchone()[0], 'FK',len(c.execute('pragma foreign_key_check').fetchall()))\nprint('UNIQUE_CANONICAL_URL_DUPES',c.execute(\\\"select count(*) from (select canonical_url from jobs where canonical_url is not null and canonical_url\"'!='\"'' group by canonical_url having count(*)>1)\\\").fetchone()[0])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,json,pathlib,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nE=c.execute('select * from browser_events where browser_run_id=1 order by event_id').fetchall(); R=c.execute(\\\"select source_job_id from search_task_results where browser_run_id=1 and detail_status='COMPLETE'\\\").fetchall(); target={r['source_job_id'] for r in R}; first=collections.defaultdict(dict)\nfor e in E:\n try:\n  o=json.loads(e['payload_json']); pay=o.get('payload',{})\n  if isinstance(pay,str):\n   try: pay=json.loads(pay)\n   except: pay={}\n except: pay={}\n sid=pay.get('source_job_id') if isinstance(pay,dict) else None\n if sid in target: first[sid].setdefault(e['event_type'],e['event_id'])\nprint('sid result pane detail')\nfor sid in sorted(target): print(sid,first[sid].get('result_discovered'),first[sid].get('pane_selection'),first[sid].get('detail_read'))\nprint('discovered_before_first_pane',sum(first[s]['result_discovered']<first[s]['pane_selection'] for s in target))\nprint('discovered_before_detail',sum(first[s]['result_discovered']<first[s]['detail_read'] for s in target))\nprint('pane_before_detail',sum(first[s]['pane_selection']<first[s]['detail_read'] for s in target))\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,json,pathlib,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nE=c.execute('select * from browser_events where browser_run_id=1 order by event_id').fetchall(); target={r['source_job_id'] for r in c.execute(\\\"select source_job_id from search_task_results where browser_run_id=1 and detail_status='COMPLETE'\\\")}; first=collections.defaultdict(dict)\nfor e in E:\n try: o=json.loads(e['payload_json'])\n except: o={}\n candidates=[o]\n if isinstance(o,dict):\n  pay=o.get('payload')\n  if isinstance(pay,dict): candidates.append(pay)\n  elif isinstance(pay,str):\n   try: candidates.append(json.loads(pay))\n   except: pass\n sid=None\n for d in candidates:\n  if isinstance(d,dict) and d.get('source_job_id') in target: sid=d['source_job_id']; break\n if sid: first[sid].setdefault(e['event_type'],e['event_id'])\nprint('discovered_before_first_pane',sum(first[s]['result_discovered']<first[s]['pane_selection'] for s in target))\nprint('discovered_before_detail',sum(first[s]['result_discovered']<first[s]['detail_read'] for s in target))\nprint('pane_before_detail',sum(first[s]['pane_selection']<first[s]['detail_read'] for s in target))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk stat -f 'prod_db path=%N size=%z mtime_epoch=%m inode=%i' /Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3 && rtk shasum -a 256 /Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3 && rtk stat -f 'prod_obs path=%N size=%z mtime_epoch=%m inode=%i' /Users/haewonkim/.codex-fabric/repos/jobbot/data/crawl_observations.sqlite3 2>&1 || true && rtk stat -f 'prod_cache path=%N size=%z mtime_epoch=%m inode=%i' /Users/haewonkim/.codex-fabric/repos/jobbot/cache 2>&1 || true && rtk stat -f 'prod_out path=%N size=%z mtime_epoch=%m inode=%i' /Users/haewonkim/.codex-fabric/repos/jobbot/out 2>&1 || true && rtk stat -f 'prod_logs path=%N size=%z mtime_epoch=%m inode=%i' /Users/haewonkim/.codex-fabric/repos/jobbot/logs 2>&1 || true && rtk ps ax | rtk rg -i 'jobbot|jobbot-bridge|run_now|browser_worker' | rtk rg -v 'rg -i|ripgrep' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport os,sqlite3,hashlib,json,pathlib\np=pathlib.Path('/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3')\ns=p.stat(); print(json.dumps({'path':str(p),'exists':p.exists(),'size':s.st_size,'mtime_epoch':s.st_mtime_ns//1_000_000_000,'inode':s.st_ino,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}))\ncon=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True)\nprint('immutable_read_only_integrity',con.execute('pragma integrity_check').fetchone()[0])\nprint('active_rows',con.execute(\\\"select count(*) from browser_runs where status in ('running','queued')\\\").fetchone()[0])\nprint('browser_runs',con.execute('select count(*) from browser_runs').fetchone()[0])\ncon.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport pathlib,os,json,sqlite3\nroot=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live')\nfor p in [root/'ledger.sqlite3',root/'observations.sqlite3',root/'cache',root/'out',root/'out/logs']:\n if p.exists():\n  s=p.stat(); d={'path':str(p),'exists':True,'is_dir':p.is_dir(),'size':s.st_size,'mtime_epoch':s.st_mtime_ns//1_000_000_000}\n  if p.suffix=='.sqlite3':\n   con=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); d['integrity']=con.execute('pragma integrity_check').fetchone()[0]; con.close()\n else: d={'path':str(p),'exists':False}\n print(json.dumps(d))\nPY\nrtk git status --short\nrtk git branch --show-current\nrtk git rev-parse HEAD\nrtk git rev-parse HEAD\"'^{tree}'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl status CF-44bcdea355d7e1e6fa8bf193'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /Users/haewonkim/.codex-fabric/bin/fabricctl --help | head -160'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env -u JOBBOT_DATABASE_PATH -u JOBBOT_OUTPUT_DIR -u JOBBOT_CRAWL_OBSERVATIONS_PATH -u JOBBOT_DASHBOARD_PORT JOBBOT_DATABASE_PATH=/private/tmp/jobbot-chg164-r1.eJSIPC/fresh17.sqlite3 JOBBOT_OUTPUT_DIR=/private/tmp/jobbot-chg164-r1.eJSIPC/fresh17-out JOBBOT_CRAWL_OBSERVATIONS_PATH=/private/tmp/jobbot-chg164-r1.eJSIPC/fresh17-observations.sqlite3 JOBBOT_DASHBOARD_PORT=18770 PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nfrom pathlib import Path\nfrom jobbot.config import load_bundle, PROJECT_ROOT\nfrom jobbot.db import Database\nb=load_bundle(PROJECT_ROOT)\ndb=Database(b); db.migrate(); c=db.connect()\nversions=[r[0] for r in c.execute('select version from schema_migrations order by version')]\nprint('fresh_migration_versions',versions)\nprint('current_version',versions[-1] if versions else None)\nprint('integrity_check',c.execute('pragma integrity_check').fetchone()[0])\nprint('foreign_key_violations',len(c.execute('pragma foreign_key_check').fetchall()))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot ls-remote --exit-code origin refs/heads/main && rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot rev-parse main && rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot status --porcelain && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^{tree} && rtk git merge-base --is-ancestor c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD && printf '\"'ancestry=ok\\\\n'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,json,pathlib\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro',uri=True); c.row_factory=sqlite3.Row\nids=[r[0] for r in c.execute(\\\"select distinct canonical_job_id from search_task_results where browser_run_id=1 and canonical_job_id is not null\\\")]\nq=','.join('?'*len(ids)); rows=c.execute(f'select * from jobs where job_id in ({q})',ids).fetchall()\nremote_bad=[]; loc_bad=[]; apply_bad=[]; complete_bad=[]\nfor r in rows:\n try: prov=json.loads(r['evidence_provenance_json'] or '{}')\n except: prov={}\n if r['remote_evidence_state']=='OBSERVED' and prov.get('remote') not in ('observed_detail_text','observed_source_text','observed'):\n  remote_bad.append(r['job_id'])\n if r['remote_evidence_state']=='OBSERVED' and (r['location_evidence_state']=='UNKNOWN' or not str(r['location_raw'] or '').strip()): loc_bad.append(r['job_id'])\n if r['apply_destination_state']=='OBSERVED' or str(r['apply_url'] or '').strip(): apply_bad.append((r['job_id'],r['apply_destination_state'],r['apply_url']))\n if r['content_state']=='COMPLETE' and len(str(r['description'] or ''))<250: complete_bad.append(r['job_id'])\nprint('remote_observed_rows',sum(r['remote_evidence_state']=='OBSERVED' for r in rows),'remote_evidence_violations',len(remote_bad),remote_bad)\nprint('remote_location_violations',len(loc_bad),loc_bad)\nprint('apply_positive_or_nonempty',len(apply_bad),apply_bad)\nprint('complete_nonsubstantive',len(complete_bad),complete_bad)\nprint('source_board_equal_apply',c.execute(\\\"select count(*) from source_occurrences so join jobs j on j.job_id=so.job_id where so.source_site='linkedin' and j.apply_url=so.source_url and j.apply_url\"'!='\"''\\\").fetchone()[0])\nprint('remote_missing_location_unknown',c.execute(\\\"select count(*) from jobs where job_id in (\\\"+q+\\\") and location_evidence_state='UNKNOWN'\\\",ids).fetchone()[0])\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"durable verification|verification/CHG-|verification artifact|Fabric.*audit|VERIFY\\\" -g '\"'!data/**'\"' -g '\"'!dist/**'\"' . | head -160\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la verification && rtk sed -n '1,120p' verification/CHG-146-r1.json && rtk git log --oneline -- verification | head -20\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 176,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.6,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 11301632,
+      "fresh_input_tokens": 398056,
+      "input_tokens": 11699688,
+      "non_reasoning_output_tokens": 25758,
+      "output_tokens": 51946,
+      "reasoning_output_tokens": 26188,
+      "total_processed_tokens": 11751634
+    },
+    "warnings": []
+  },
+  "commits": [],
+  "diff": {
+    "additions": 0,
+    "changed_files": 0,
+    "commit_count": 0,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.4-quota-recovery-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.4-quota-recovery-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-21T23:02:43Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "branch": "codex/jobbot-CHG-164-r1",
+    "detached_verify": false,
+    "head_sha": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "remote_exact_head": true,
+    "remote_head_sha": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "work_branch": "codex/jobbot-CHG-164-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-44bcdea355d7e1e6fa8bf193",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-164-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-164-r1"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.4-quota-recovery-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-164-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-21T22:31:55Z",
+  "status": "EXECUTED_NO_CHANGE",
+  "timing": {
+    "execution_seconds": 1848,
+    "queue_seconds": 0,
+    "total_seconds": 1848
+  },
+  "transport": {
+    "bytes": 14808,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 14525,
+    "prompt_sha256": "036ae47220c5bd3fc7d563f81c74dec5f2835e9355abf8495933e9f3a2cbb966",
+    "sha256": "44bcdea355d7e1e6fa8bf1936ed41f947a8197d499ec66b9bfa05aaf31058c31"
+  }
+}
