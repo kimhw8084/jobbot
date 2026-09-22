@@ -740,6 +740,20 @@ def _qualification_gates(job:Job,profile:dict[str,Any],analysis:dict[str,Any],ca
     gates:dict[str,dict[str,str]]={}
     gates["home_remote"]=_gate("pass" if home_only else "review", "explicit home-only remote language and remote gate pass" if home_only else "home-only remote evidence is missing")
 
+    if job.work_auth_gate=="pass":
+        work_auth_status="pass"
+        work_auth_evidence="configured candidate authorization is compatible with the posting's explicit requirement"
+    elif job.work_auth_gate=="reject":
+        work_auth_status="fail"
+        work_auth_evidence="posting's explicit authorization requirement conflicts with configured sponsorship needs"
+    elif job.work_auth_gate=="review":
+        work_auth_status="review"
+        work_auth_evidence="posting has an explicit authorization requirement but candidate status is unknown"
+    else:
+        work_auth_status="pass"
+        work_auth_evidence="posting contains no explicit work-authorization restriction"
+    gates["work_authorization"]=_gate(work_auth_status,work_auth_evidence)
+
     state=clean_text(candidate.get("state") or "TX").upper()
     state_restricted=bool(re.search(r"\b(?:eligible states?|must (?:live|reside|be located)|residents? of|remote (?:only )?(?:in|from)|open to candidates in|currently hiring in)\b",text,re.I))
     state_names={"TX":"Texas","CA":"California","NY":"New York","FL":"Florida","WA":"Washington","IL":"Illinois","MA":"Massachusetts","CO":"Colorado","AZ":"Arizona","OR":"Oregon","PA":"Pennsylvania","OH":"Ohio","NC":"North Carolina","GA":"Georgia","VA":"Virginia","TN":"Tennessee","MI":"Michigan","MN":"Minnesota","WI":"Wisconsin","MO":"Missouri","MD":"Maryland","NJ":"New Jersey","CT":"Connecticut","IN":"Indiana","SC":"South Carolina","AL":"Alabama","KY":"Kentucky","LA":"Louisiana","OK":"Oklahoma","UT":"Utah","IA":"Iowa","KS":"Kansas","AR":"Arkansas","MS":"Mississippi","NE":"Nebraska","NV":"Nevada","NM":"New Mexico","ID":"Idaho","NH":"New Hampshire","ME":"Maine","RI":"Rhode Island","DE":"Delaware","WV":"West Virginia","HI":"Hawaii","AK":"Alaska","VT":"Vermont","MT":"Montana","WY":"Wyoming","ND":"North Dakota","SD":"South Dakota"}

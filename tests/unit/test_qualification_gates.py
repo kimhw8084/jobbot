@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import copy
 import json
 import tempfile
 import unittest
 from pathlib import Path
 
 from jobbot.config import PROJECT_ROOT, load_bundle
-from jobbot.legacy_engine import PrecisionStore, score_job, select_daily_plan
+from jobbot.legacy_engine import PrecisionStore, candidate_readiness, score_job, select_daily_plan
 from jobbot.scoring import Job
 
 
@@ -55,13 +56,52 @@ class QualificationGateTests(unittest.TestCase):
         setattr(job, "_mode", "deep")
         return job
 
-    def score(self, job: Job) -> Job:
-        return score_job(job, self.strategy, self.candidate)
+    def score(self, job: Job, candidate: dict | None = None) -> Job:
+        return score_job(job, self.strategy, candidate or self.candidate)
 
     def test_complete_direct_posting_passes_every_gate(self) -> None:
         job = self.score(self.job())
         self.assertIn(job.recommendation, ACTIONABLE, job.qualification_gates)
         self.assertTrue(all(gate["status"] == "pass" for gate in job.qualification_gates.values()), job.qualification_gates)
+
+    def test_work_authorization_gate_covers_explicit_compatible_requirement(self) -> None:
+        job = self.score(self.job(description=self.job().description + " The employer is unable to sponsor work visas."))
+        self.assertEqual(job.work_auth_gate, "pass")
+        self.assertTrue(job.work_authorization_requirement)
+        self.assertEqual(job.qualification_gates["work_authorization"]["status"], "pass")
+
+    def test_work_authorization_gate_fails_when_posting_forbids_needed_sponsorship(self) -> None:
+        candidate = copy.deepcopy(self.candidate)
+        candidate["work_authorization"] = "needs_sponsorship"
+        job = self.score(self.job(description=self.job().description + " The employer cannot sponsor work visas."), candidate)
+        self.assertEqual(job.work_auth_gate, "reject")
+        self.assertEqual(job.qualification_gates["work_authorization"]["status"], "fail")
+        self.assertNotIn(job.recommendation, ACTIONABLE)
+
+    def test_work_authorization_gate_reviews_unknown_status_for_explicit_requirement(self) -> None:
+        candidate = copy.deepcopy(self.candidate)
+        candidate["work_authorization"] = "unknown"
+        job = self.score(self.job(description=self.job().description + " Candidates must be authorized to work for any employer."), candidate)
+        self.assertEqual(job.work_auth_gate, "review")
+        self.assertEqual(job.qualification_gates["work_authorization"]["status"], "review")
+        self.assertNotIn(job.recommendation, ACTIONABLE)
+
+    def test_work_authorization_gate_does_not_review_when_posting_has_no_restriction(self) -> None:
+        job = self.score(self.job())
+        self.assertEqual(job.work_auth_gate, "unknown")
+        self.assertEqual(job.work_authorization_requirement, "")
+        self.assertEqual(job.qualification_gates["work_authorization"]["status"], "pass")
+        self.assertIn(job.recommendation, ACTIONABLE)
+
+    def test_compatible_no_sponsorship_text_preserves_positive_actionable_fixture(self) -> None:
+        job = self.score(self.job(description=self.job().description + " No sponsorship is available for this role."))
+        self.assertIn(job.recommendation, ACTIONABLE, job.qualification_gates)
+        self.assertTrue(all(gate["status"] == "pass" for gate in job.qualification_gates.values()), job.qualification_gates)
+
+    def test_candidate_readiness_reports_configured_authorization(self) -> None:
+        warnings, confirmations = candidate_readiness(self.bundle.legacy_runtime())
+        self.assertTrue(any("work authorization configured" in item for item in confirmations), confirmations)
+        self.assertFalse(any("work_authorization" in item for item in warnings), warnings)
 
     def test_unknown_remote_and_texas_facts_are_non_actionable(self) -> None:
         remote_unknown = self.job(description=self.job().description.replace("fully remote", "remote"))
