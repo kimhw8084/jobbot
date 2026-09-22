@@ -281,11 +281,19 @@ function platformTargetUrlMatches(platform,raw){
     return platform==='linkedin'?(host==='linkedin.com'||host.endsWith('.linkedin.com')):platform==='indeed'?(host==='indeed.com'||host.endsWith('.indeed.com')):platform==='glassdoor'?(host==='glassdoor.com'||host.endsWith('.glassdoor.com')):false;
   }catch(_){return false;}
 }
+function effectiveTargetUrl(tab){
+  // Chrome can expose a newly-created tab with an empty/about:blank committed
+  // URL while the requested navigation is still pending. Treat that pending
+  // URL as the target for lifecycle validation, but only while the tab is
+  // loading; once committed, the real URL remains authoritative.
+  if(tab?.status==='loading'&&tab?.pendingUrl)return String(tab.pendingUrl);
+  return String(tab?.url||'');
+}
 async function validatePlatformTarget(platform,target){
   if(!target?.tab?.id||target.window_id==null)return null;
   try{
     const tab=await chrome.tabs.get(target.tab.id);
-    if(tab.windowId!==target.window_id||!platformTargetUrlMatches(platform,tab.url))return null;
+    if(tab.windowId!==target.window_id||!platformTargetUrlMatches(platform,effectiveTargetUrl(tab)))return null;
     if(typeof chrome.windows?.get==='function')await chrome.windows.get(target.window_id);
     return{...target,tab};
   }catch(_){return null;}
@@ -348,7 +356,7 @@ async function recoveryTargetState(platform,target,tabId){
   let tab;
   try{tab=await chrome.tabs.get(tabId);}catch(error){return{valid:false,reason:'target_missing',error:String(error?.message||error)};}
   if(tab?.id!==tabId||tab.windowId!==target.window_id)return{valid:false,reason:'target_replaced',tab};
-  if(!platformTargetUrlMatches(platform,tab.url))return{valid:false,reason:'wrong_platform_origin',tab};
+  if(!platformTargetUrlMatches(platform,effectiveTargetUrl(tab)))return{valid:false,reason:'wrong_platform_origin',tab};
   if(typeof chrome.windows?.get==='function')try{await chrome.windows.get(target.window_id);}catch(error){return{valid:false,reason:'window_missing',tab,error:String(error?.message||error)};}
   return{valid:true,tab};
 }
@@ -363,7 +371,7 @@ function receiverUrlSurface(raw){
 function recoveryRequestedContext(context,tab){
   const requested=String(context?.requested_url||'');
   if(!requested)return{status:'not_checked',valid:true};
-  const status=searchContextStatus(requested,String(tab?.url||''),context?.platform);
+  const status=searchContextStatus(requested,effectiveTargetUrl(tab),context?.platform);
   return{status,valid:status==='verified'};
 }
 function recoveryDetails(base,trace,extra={}){
@@ -428,7 +436,7 @@ async function waitForReceiverReady(tabId,trace,context,base){
   while(Math.max(0,monotonicNow()-started)<timeoutMs){
     const before=await recoveryTargetState(context?.platform,context?.target,tabId);
     if(!before.valid)return{abort:recoveryDetails(base,trace,{outcome:'target_unavailable',same_target:false,target_state:before.reason,readiness_timeout_ms:timeoutMs,readiness_attempts:attempts,readiness_elapsed_ms:Math.max(0,Math.round(monotonicNow()-started)),tab_state:await tabLifecycleSnapshot(tabId,context?.target?.window_id)})};
-    const urlSurface=receiverUrlSurface(before.tab?.url);
+    const urlSurface=receiverUrlSurface(effectiveTargetUrl(before.tab));
     if(urlSurface)return{abort:recoveryDetails(base,trace,{outcome:`${urlSurface}_abort`,same_target:true,target_state:urlSurface,observed_url:diagnosticUrl(before.tab.url||''),readiness_timeout_ms:timeoutMs,readiness_attempts:attempts,readiness_elapsed_ms:Math.max(0,Math.round(monotonicNow()-started)),tab_state:await tabLifecycleSnapshot(tabId,context?.target?.window_id)})};
     attempts+=1;
     let probe=null;
@@ -454,7 +462,7 @@ async function waitForReceiverReady(tabId,trace,context,base){
       if(!receiverUnavailableError(error))throw error;
       const afterFailure=await recoveryTargetState(context?.platform,context?.target,tabId);
       if(!afterFailure.valid)return{abort:recoveryDetails(base,trace,{outcome:'target_unavailable',same_target:false,target_state:afterFailure.reason,readiness_timeout_ms:timeoutMs,readiness_attempts:attempts,readiness_elapsed_ms:elapsed,tab_state:tabState})};
-      const failureSurface=receiverUrlSurface(afterFailure.tab?.url);
+      const failureSurface=receiverUrlSurface(effectiveTargetUrl(afterFailure.tab));
       if(failureSurface)return{abort:recoveryDetails(base,trace,{outcome:`${failureSurface}_abort`,same_target:true,target_state:failureSurface,observed_url:diagnosticUrl(afterFailure.tab?.url||''),readiness_timeout_ms:timeoutMs,readiness_attempts:attempts,readiness_elapsed_ms:elapsed,tab_state:tabState})};
       const contextState=recoveryRequestedContext(context,afterFailure.tab);
       if(!contextState.valid)return{abort:recoveryDetails(base,trace,{outcome:'context_abort',same_target:true,target_state:contextState.status,context_status:contextState.status,readiness_timeout_ms:timeoutMs,readiness_attempts:attempts,readiness_elapsed_ms:elapsed,tab_state:tabState})};

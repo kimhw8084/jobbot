@@ -53,8 +53,8 @@ function makeWorker({mode='replacement_restores',platform='linkedin',searchUrl=S
   };
   const rpc=async(action,payload)=>{calls.push({action,payload});if(action==='browser_event'){events.push({type:payload.event_type,payload:payload.payload||{}});return{ok:true};}if(action==='task_progress'){state.checkpoints.push(payload.checkpoint);return{ok:true};}if(action==='should_stop')return{ok:true,stop:false};if(action==='record_result'){const key=`${payload.source_site}|${payload.source_job_id}|${payload.source_url}`,duplicate=state.records.has(key);state.records.add(key);return{ok:true,duplicate,pending_count:2-state.detailIndex};}if(action==='next_pending_detail'){if(state.detailIndex>=2)return{ok:true,done:true,pending_count:0};state.detailIndex+=1;const card=state.detailIndex===1?CARD1:CARD2;return{ok:true,done:false,pending_count:2-state.detailIndex,detail:{result_id:state.detailIndex,source_job_id:card.source_job_id,source_url:card.url,title_hint:card.title,company_hint:card.company,location_hint:card.location,posted_text:card.posted_text,posted_age_days:card.posted_age_days,card}};}if(action==='record_job'){state.jobs.add(payload.job.source_job_id);return{ok:true};}return{ok:true};};
   const sandbox={chrome,console,URL,URLSearchParams,AbortController,Date,Error,JSON,Map,Set,Promise,String,Number,Math,Array,Object,RegExp,TypeError,setTimeout,clearTimeout,fetch:async(_url,options)=>{const body=JSON.parse(options.body);return{ok:true,status:200,json:async()=>rpc(body.action,body)};}};
-  vm.runInNewContext(`${WORKER}\nglobalThis.__inspectTab=inspectTab;globalThis.__processTask=processTask;globalThis.__tabLifecycleSnapshot=tabLifecycleSnapshot;globalThis.__ensureTargetDurability=ensureTargetDurability;`,sandbox,{filename:'extension/service_worker.js'});
-  return{inspectTab:sandbox.__inspectTab,processTask:sandbox.__processTask,tabLifecycleSnapshot:sandbox.__tabLifecycleSnapshot,ensureTargetDurability:sandbox.__ensureTargetDurability,calls,events,state,tabs,windows,target:{tab:searchTab,window_id:7,owned_window:true}};
+  vm.runInNewContext(`${WORKER}\nglobalThis.__inspectTab=inspectTab;globalThis.__processTask=processTask;globalThis.__tabLifecycleSnapshot=tabLifecycleSnapshot;globalThis.__ensureTargetDurability=ensureTargetDurability;globalThis.__recoveryTargetState=recoveryTargetState;`,sandbox,{filename:'extension/service_worker.js'});
+  return{inspectTab:sandbox.__inspectTab,processTask:sandbox.__processTask,tabLifecycleSnapshot:sandbox.__tabLifecycleSnapshot,ensureTargetDurability:sandbox.__ensureTargetDurability,recoveryTargetState:sandbox.__recoveryTargetState,calls,events,state,tabs,windows,target:{tab:searchTab,window_id:7,owned_window:true}};
 }
 
 function recoveryContext(worker,overrides={}){return{platform:'linkedin',run_id:166,task_id:1,target:worker.target,requested_url:SEARCH_URL,receiver_ready_timeout_ms:30,idle_wait_ms:0,require_attachment_evidence:true,checkpoint:{requested_search_url:SEARCH_URL,search_url:SEARCH_URL,observed_page_url:SEARCH_URL,context_status:'verified',page_number:9,processed:4,page_fingerprint:'L0'},context_check:(_response,observed)=>new URL(observed).searchParams.get('start')===new URL(SEARCH_URL).searchParams.get('start')?'verified':'query_context_lost',...overrides};}
@@ -68,6 +68,15 @@ function outcomes(worker){return worker.events.filter(event=>event.type==='recei
   assert.strictEqual(restored.state.createdWindows,1);
   assert.deepStrictEqual(outcomes(restored).filter(x=>x.includes('regeneration')||x==='target_regenerated'),['target_regeneration_requested','target_regeneration_created','target_regenerated']);
   assert.strictEqual(restored.windows.size,1,'old target is retired after replacement readiness');
+
+  const pendingTarget=makeWorker({mode:'healthy'});
+  const pendingTab=pendingTarget.tabs.get(11);
+  pendingTab.status='loading'; pendingTab.url=''; pendingTab.pendingUrl=SEARCH_URL;
+  const pendingState=await pendingTarget.recoveryTargetState('linkedin',pendingTarget.target,11);
+  assert.strictEqual(pendingState.valid,true,'loading replacement may validate its exact pending search URL');
+  pendingTab.pendingUrl='https://example.example/jobs/search';
+  const wrongPendingState=await pendingTarget.recoveryTargetState('linkedin',pendingTarget.target,11);
+  assert.strictEqual(wrongPendingState.valid,false,'wrong-origin pending replacement is rejected');
 
   const durable=makeWorker({mode:'replacement_restores'});
   const durableTask={task_id:1,platform:'linkedin',requested_search_url:SEARCH_URL,search_url:SEARCH_URL,receiver_ready_timeout_ms:30,checkpoint_json:JSON.stringify({search_url:SEARCH_URL,page_number:9,processed:4,page_fingerprint:'L0'})};
