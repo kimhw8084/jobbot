@@ -1,0 +1,474 @@
+{
+  "accepted_at": "2026-09-22T03:39:42Z",
+  "changed_files": [
+    {
+      "additions": 5,
+      "deletions": 1,
+      "path": "extension/common.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/glassdoor.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/indeed.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 31,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 31,
+      "deletions": 0,
+      "path": "extension/receiver_bootstrap.js",
+      "status": "A"
+    },
+    {
+      "additions": 344,
+      "deletions": 33,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_bootstrap_compatibility_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 4,
+      "path": "tests/extension_chg146_supervisor_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 42,
+      "deletions": 0,
+      "path": "tests/extension_receiver_bootstrap_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 121,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_chg166_delayed_receiver_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 25,
+      "deletions": 22,
+      "path": "tests/extension_service_worker_receiver_recovery_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 121,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_receiver_regeneration_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_startup_lifecycle_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -json 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT event_id,event_at,event_type,message,\n json_extract(payload_json,'\"'$.request_id'\"') request_id,\n json_extract(payload_json,'\"'$.payload.sequence'\"') sequence,\n json_extract(payload_json,'\"'$.payload.phase'\"') phase,\n json_extract(payload_json,'\"'$.payload.platform'\"') platform,\n json_extract(payload_json,'\"'$.payload.tab_id'\"') tab_id,\n json_extract(payload_json,'\"'$.payload.window_id'\"') window_id,\n json_extract(payload_json,'\"'$.payload.frame_id'\"') frame_id,\n json_extract(payload_json,'\"'$.payload.document_id'\"') document_id,\n json_extract(payload_json,'\"'$.payload.document_generation'\"') document_generation,\n json_extract(payload_json,'\"'$.payload.attachment_generation'\"') attachment_generation,\n json_extract(payload_json,'\"'$.payload.ready_state'\"') ready_state,\n json_extract(payload_json,'\"'$.payload.at'\"') at,\n json_extract(payload_json,'\"'$.payload.at_ms'\"') at_ms,\n json_extract(payload_json,'\"'$.payload.tab_state.url'\"') tab_url,\n json_extract(payload_json,'\"'$.payload.tab_state.status'\"') tab_status,\n json_extract(payload_json,'\"'$.payload.tab_state.active'\"') tab_active,\n json_extract(payload_json,'\"'$.payload.tab_state.discarded'\"') tab_discarded,\n json_extract(payload_json,'\"'$.payload.tab_state.auto_discardable'\"') tab_auto_discardable,\n json_extract(payload_json,'\"'$.payload.tab_state.frozen'\"') tab_frozen,\n json_extract(payload_json,'\"'$.payload.tab_state.pending_url'\"') tab_pending_url,\n json_extract(payload_json,'\"'$.payload.tab_state.window_focused'\"') tab_window_focused,\n json_extract(payload_json,'\"'$.payload.tab_state.window_type'\"') tab_window_type,\n json_extract(payload_json,'\"'$.payload.tab_state.attachment_phase'\"') tab_attachment_phase,\n json_extract(payload_json,'\"'$.payload.tab_state.last_successful_inspection_type'\"') last_successful_inspection_type\n FROM browser_events WHERE event_type='receiver_attachment' ORDER BY event_id;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT * FROM extension_refresh_requests;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT event_id,event_at,event_type,message,payload_json FROM browser_events WHERE event_type IN ('extension_refresh_requested','extension_build','worker_terminal','platform_readiness','detail_external_blocked','platform_paused') ORDER BY event_id;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT event_type,COUNT(*) n FROM browser_events WHERE event_type LIKE '%recovery%' OR event_type LIKE '%reload%' OR event_type LIKE '%regener%' OR event_type LIKE '%target%' ORDER BY event_type;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import hashlib,json,os,stat; p=\\\"/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3\\\"; s=os.stat(p); print(json.dumps({\\\"path\\\":os.path.realpath(p),\\\"exists\\\":True,\\\"size\\\":s.st_size,\\\"mtime_ns\\\":s.st_mtime_ns,\\\"inode\\\":s.st_ino,\\\"sha256\\\":hashlib.sha256(open(p,\\\"rb\\\").read()).hexdigest()},sort_keys=True))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab:extension/manifest.json | rtk rg -n 'version|name|manifest_version'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git merge-base --is-ancestor c9bcbe7bf63431601597cbf55eef452489c0b141 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab; rtk git rev-parse 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab''^{tree}; rtk git show -s --format='\"'%P' 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1 && rtk git diff --exit-code c9bcbe7bf63431601597cbf55eef452489c0b141 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab -- extension tests >/dev/null; rtk git diff --stat c9bcbe7bf63431601597cbf55eef452489c0b141 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-166-r4 refs/heads/project-os-artifacts/jobbot/CHG-166-r4 refs/heads/codex/jobbot-CHG-166-r3 refs/heads/codex-fabric/evidence/jobbot/CHG-166-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import sqlite3,json,statistics,collections; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(\\\"file:\\\"+p+\\\"?mode=ro&immutable=1\\\",uri=True); c.row_factory=sqlite3.Row; lens=[r[0] for r in c.execute(\\\"select length(description) from jobs order by length(description)\\\")]; urls=[r[0] for r in c.execute(\\\"select canonical_url from jobs where canonical_url is not null and canonical_url<>\\\"\\\"\\\")]; occ=[r[0] for r in c.execute(\\\"select canonical_occurrence_key from jobs where canonical_occurrence_key is not null and canonical_occurrence_key<>\\\"\\\"\\\")]; print(json.dumps({\\\"description_lengths\\\":lens,\\\"min\\\":min(lens),\\\"median\\\":statistics.median(lens),\\\"max\\\":max(lens),\\\"duplicate_canonical_urls\\\":sum(n-1 for n in collections.Counter(urls).values() if n>1),\\\"duplicate_selected_occurrences\\\":sum(n-1 for n in collections.Counter(occ).values() if n>1)},sort_keys=True))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT length(description) AS description_length FROM jobs ORDER BY length(description);\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT COUNT(*) AS duplicate_canonical_url_groups FROM (SELECT canonical_url FROM jobs WHERE canonical_url IS NOT NULL AND canonical_url<>'' GROUP BY canonical_url HAVING COUNT(*)>1);\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT COUNT(*) AS duplicate_selected_occurrence_groups FROM (SELECT canonical_occurrence_key FROM jobs WHERE canonical_occurrence_key IS NOT NULL AND canonical_occurrence_key<>'' GROUP BY canonical_occurrence_key HAVING COUNT(*)>1);\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT source_job_id,COUNT(DISTINCT canonical_job_id) n FROM search_task_results WHERE canonical_job_id IS NOT NULL GROUP BY source_job_id HAVING n>1;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT group_concat(source_job_id,',') AS source_ids_in_result_order FROM search_task_results WHERE task_id=1 ORDER BY result_id;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT group_concat(json_extract(payload_json,'\"'$.payload.source_job_id'\"'),',') AS detail_source_ids_in_event_order FROM browser_events WHERE event_type='detail_read' ORDER BY event_id;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sqlite3 -header -tabs 'file:/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3?mode=ro&immutable=1' \\\"SELECT event_id,event_at,event_type,message,payload_json FROM browser_events WHERE event_type IN ('scope_diagnostics','result_batch','job_recorded') ORDER BY event_id;\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git reset --hard 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push --set-upstream origin codex/jobbot-CHG-166-r4'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import os,json; ps=[\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\",\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/crawl.sqlite3\\\",\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/out/logs/run_1.log\\\",\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/out/logs/run_1_bridge.log\\\",\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/out/search_plan.csv\\\",\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/out/search_plan.json\\\",\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/out/search_plan.html\\\"]; print(json.dumps([{ \\\"path\\\":x, \\\"size\\\":os.stat(x).st_size, \\\"mtime_ns\\\":os.stat(x).st_mtime_ns, \\\"inode\\\":os.stat(x).st_ino } for x in ps],sort_keys=True))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mkdir -p r4-receipt-staging/verification'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy python -m json.tool r4-receipt-staging/verification/CHG-166-r4.json >/dev/null && rtk sha256sum r4-receipt-staging/verification/CHG-166-r4.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk wc -c r4-receipt-staging/verification/CHG-166-r4.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git hash-object -w r4-receipt-staging/verification/CHG-166-r4.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git hash-object -w r4-receipt-staging/verification/manifest.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git mktree <<'EOF'\n100644 blob 382fa03a7c57e19d27dab8a21a970b0503dbf004 CHG-166-r4.json\n100644 blob aef58165778cd28f6eb83712629e1010be08d21d manifest.json\nEOF\"",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git mktree <<'EOF'\n100644 blob 382fa03a7c57e19d27dab8a21a970b0503dbf004\tCHG-166-r4.json\n100644 blob aef58165778cd28f6eb83712629e1010be08d21d\tmanifest.json\nEOF\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git mktree <<'EOF'\n040000 tree 8f801fc07a2395fefd9ffbb28f55fe48e264c0ea\tverification\nEOF\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git commit-tree a704a85b9727cd289fde95c17cc51dbee8474031 -m 'verify: recover CHG-166-r4 smoke evidence'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git update-ref refs/heads/project-os-artifacts/jobbot/CHG-166-r4 0b7a17e9a1a0a9d335ef36e1c7aa3cba8ca9a113'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push --set-upstream origin refs/heads/project-os-artifacts/jobbot/CHG-166-r4:refs/heads/project-os-artifacts/jobbot/CHG-166-r4'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rm -r r4-receipt-staging'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show project-os-artifacts/jobbot/CHG-166-r4:verification/CHG-166-r4.json | rtk rg -n 'candidate_sha|candidate_tree|build|capture_applied|final_classification|active_seconds_after_readiness|same_tab_reload_count|target_regeneration_count|authorization_for_RUN_NOW|exact_equality|receiver_recovery_events|readiness_attempts_recorded|readiness_elapsed_ms'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git ls-tree -r --name-only project-os-artifacts/jobbot/CHG-166-r4 && rtk git show -s --format='%H%n%P%n%T%n%s' project-os-artifacts/jobbot/CHG-166-r4\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='%H%n%P%n%T' origin/codex-fabric/evidence/jobbot/CHG-166-r3 && rtk git show origin/codex-fabric/evidence/jobbot/CHG-166-r3:.codex-fabric/audit.json | rtk rg -n 'job_id|fabric_capture|head_sha|remote_exact_head|operation|production_ledger|before|after|exact_equality' | rtk sed -n '1,100p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show project-os-artifacts/jobbot/CHG-166-r4:verification/CHG-166-r4.json | rtk proxy python -m json.tool >/dev/null && rtk git show project-os-artifacts/jobbot/CHG-166-r4:verification/manifest.json | rtk proxy python -m json.tool >/dev/null && rtk git show project-os-artifacts/jobbot/CHG-166-r4:verification/CHG-166-r4.json | rtk sha256sum && rtk git show project-os-artifacts/jobbot/CHG-166-r4:verification/manifest.json | rtk sha256sum'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD HEAD''^{tree} --abbrev-ref HEAD && rtk git show-ref --verify refs/heads/codex/jobbot-CHG-166-r4 && rtk git show-ref --verify refs/heads/project-os-artifacts/jobbot/CHG-166-r4 && rtk git show-ref --verify refs/heads/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-166-r4 refs/heads/project-os-artifacts/jobbot/CHG-166-r4 refs/heads/main refs/heads/codex-fabric/evidence/jobbot/CHG-166-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git branch -f main c9bcbe7bf63431601597cbf55eef452489c0b141'",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git worktree list --porcelain'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot rev-parse HEAD --abbrev-ref HEAD && rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot log -1 --oneline'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show-ref --heads main origin/main && rtk git ls-remote origin refs/heads/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot reset --hard c9bcbe7bf63431601597cbf55eef452489c0b141'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show project-os-artifacts/jobbot/CHG-166-r4:verification/manifest.json && rtk git show project-os-artifacts/jobbot/CHG-166-r4:verification/CHG-166-r4.json | rtk rg -n '\\\"final_classification\\\"|\\\"capture_applied\\\"|\\\"candidate_sha\\\"|\\\"candidate_tree\\\"|\\\"build\\\"|\\\"active_seconds_after_readiness\\\"|\\\"same_tab_reload_count\\\"|\\\"target_regeneration_count\\\"|\\\"exact_equality\\\"|\\\"authorization_for_RUN_NOW\\\"|\\\"clean_completion\\\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='%H %P %T %s' 34d93239c581ad3600a2641b23a33aad91623c7d && rtk git merge-base --is-ancestor c9bcbe7bf63431601597cbf55eef452489c0b141 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab; rtk git merge-base --is-ancestor 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab 34d93239c581ad3600a2641b23a33aad91623c7d\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot status --short --branch && rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot rev-parse HEAD --abbrev-ref HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD HEAD''^{tree} --abbrev-ref HEAD && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show-ref --verify refs/heads/main refs/heads/codex/jobbot-CHG-166-r4 refs/heads/project-os-artifacts/jobbot/CHG-166-r4 && rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-CHG-166-r4 refs/heads/project-os-artifacts/jobbot/CHG-166-r4'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 303,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.36,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 5771264,
+      "fresh_input_tokens": 217721,
+      "input_tokens": 5988985,
+      "non_reasoning_output_tokens": 27753,
+      "output_tokens": 51337,
+      "reasoning_output_tokens": 23584,
+      "total_processed_tokens": 6040322
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+      "subject": "Fix pending target lifecycle validation"
+    },
+    {
+      "sha": "644542a66e9ca179ecc6577e7bc878a217593665",
+      "subject": "Fix CHG-166 receiver lifecycle recovery"
+    },
+    {
+      "sha": "7b08666f7b169a78ec28653556d94db5437e8031",
+      "subject": "Fix bounded post-reload receiver readiness"
+    }
+  ],
+  "diff": {
+    "additions": 740,
+    "changed_files": 16,
+    "commit_count": 3,
+    "deletions": 65
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 2534,
+        "path": "extension/manifest.json",
+        "sha256": "5260285767a84ac4bad1eeba5ef46e067eb03701cfaa0b353207f5368c15fed6"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.4-quota-recovery-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.4-quota-recovery-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-22T03:58:20Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "branch": "codex/jobbot-CHG-166-r4",
+    "detached_verify": false,
+    "head_sha": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+    "remote_exact_head": true,
+    "remote_head_sha": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "work_branch": "codex/jobbot-CHG-166-r4",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-975f8fd08f24fc7679cd812d",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-166-r4",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-166-r4"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.4-quota-recovery-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-166-r4",
+  "schema_version": 1,
+  "started_at": "2026-09-22T03:39:42Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1118,
+    "queue_seconds": 0,
+    "total_seconds": 1118
+  },
+  "transport": {
+    "bytes": 6742,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 6460,
+    "prompt_sha256": "34ca5f8d57e4d4ace74a04e82cf5fe7c940cbb28b8b861afa6b8cefe2d55e4e5",
+    "sha256": "975f8fd08f24fc7679cd812d1366b38f9954075a4748dd33f8212afa6b635621"
+  }
+}
