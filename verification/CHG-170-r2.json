@@ -69,17 +69,22 @@
   ],
   "tests": [
     {
-      "command": "rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_database_ledger tests.integration.test_browser_tasks -v",
+      "command": "rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_database_ledger tests.integration.test_browser_tasks -v",
       "result": "PASS — 44 passed, 1 skipped (45 total); the optional local historical-ledger test was skipped because no local historical ledger exists."
     },
     {
-      "command": "rtk env PYTHONPATH=src python -m unittest discover -s tests",
+      "command": "rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest discover -s tests",
       "result": "PASS — 132 passed, 1 skipped (133 total); the optional local historical-ledger test was skipped because no local historical ledger exists."
     }
   ],
   "candidate_readiness_check": {
     "result": "PASS — authorized_no_sponsorship reported as configured; 0 decision-quality warnings.",
     "isolated_from_database": true
+  },
+  "test_isolation": {
+    "focused_suite_worktree": "/tmp/jobbot-chg170-r2-isolated",
+    "full_suite_worktree": "/tmp/jobbot-chg170-r2-full",
+    "primary_worktree_cleanup": "A first full-suite invocation created a new data/jobs.sqlite3 at the project's default path, which was absent before testing. The file was removed after discovery. No preexisting ledger existed or was read; the final focused and full suite runs used disposable worktrees."
   },
   "search_plan_evidence": {
     "mode": "staged",
@@ -110,7 +115,7 @@
     "generated_in": "/tmp/jobbot-chg170-r2-plan",
     "search_families_or_order_retuned": false
   },
-  "production_ledger_validation": "NOT_USED — no read, write or mutation of production data/jobs.sqlite3; database and browser-task tests use temporary fixtures.",
+  "production_ledger_validation": "NOT_USED — no preexisting production ledger existed or was read. The first non-isolated full-suite attempt created a fresh scratch database at the project default path; it was removed. Final focused and full suite runs were isolated in disposable worktrees, and database/browser-task fixtures use temporary data.",
   "live_big_three_validation": "NOT_RUN — no LinkedIn, Indeed or Glassdoor live-site acceptance or production browsing was attempted.",
   "request_binding": "Project OS FIX for JobBot CHG-170-r2: carry forward exact R1 candidate 0afb92845e5138cf5d172733693624701797fa86 from codex/jobbot-CHG-170-r1 onto codex/jobbot-CHG-170-r2 with target/main base c9bcbe7bf63431601597cbf55eef452489c0b141, preserving candidate ancestry and applying only the bounded work-authorization correction. Never merge or move main.",
   "evidence_commit_note": "This artifact follows the R1 evidence pattern: it records the exact tested R2 code head above and is committed after that code commit because a commit cannot contain its own final SHA. The final remote branch head is the verification-artifact commit and is reported from Git after push."
