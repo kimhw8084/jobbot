@@ -1,0 +1,384 @@
+{
+  "accepted_at": "2026-09-21T23:51:00Z",
+  "changed_files": [
+    {
+      "additions": 466,
+      "deletions": 0,
+      "path": "verification/CHG-164-r2.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,collections,json\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nfor r in c.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events where event_type in ('receiver_recovery','task_incomplete','job_error','platform_readiness','run_finished','control_requested','control_delivered','control_acknowledged','task_stopped') order by event_id\\\"):\n print(dict(r))\nprint('ERROR_EVENT_COUNTS',dict(collections.Counter(r['event_type'] for r in c.execute(\\\"select event_type from browser_events where event_type in ('receiver_recovery','task_incomplete','job_error','detail_external_blocked')\\\"))))\nprint('CONTROL_ROWS',[dict(r) for r in c.execute('select * from control_requests')])\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,json\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nfor t in ['browser_runs','browser_platform_runs','browser_search_tasks']:\n print(t)\n for r in c.execute(f'select * from {t} where browser_run_id=1 order by 1 limit 3'): print(dict(r))\nprint('LOGIC_ROWS')\nfor r in c.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events where event_type in ('result_batch','scope_diagnostics','supplemental_stage_started','supplemental_stage_completed','run_started','run_finished') order by event_id\\\"): print(dict(r))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,collections,json\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute('select * from search_task_results where browser_run_id=1')]; J={r['job_id']:dict(r) for r in c.execute('select * from jobs')}; ids={r['canonical_job_id'] for r in R if r['canonical_job_id']}; U=[J[i] for i in ids]\nfor field in ['remote_evidence_state','location_evidence_state','apply_destination_state','content_state','description_state','enrichment_status']:\n print(field,dict(collections.Counter(j.get(field) for j in U)), 'denom',len(U))\nprint('REMOTE_LINKED_CANONICAL',[(j['job_id'],j['remote_evidence_state'],j['location_evidence_state'],j['location_raw']) for j in U])\nprint('APPLY_LINKED_CANONICAL',[(j['job_id'],j['apply_destination_state'],j['apply_url']) for j in U])\nprint('source_occurrence_sites',dict(collections.Counter(r['source_site'] for r in c.execute('select source_site from source_occurrences'))))\nprint('source_result_sites',dict(collections.Counter(r['source_site'] for r in R)))\n# invalid mappings scoped to smoke\nby_src=collections.defaultdict(set); by_url=collections.defaultdict(set); by_occ=collections.defaultdict(set)\nfor r in R:\n if r['canonical_job_id']: by_src[r['source_job_id']].add(r['canonical_job_id'])\nfor s in c.execute(\\\"select * from source_occurrences where source_site='linkedin'\\\"):\n if s['source_job_id'] in {r['source_job_id'] for r in R}: by_url[s['source_url']].add(s['job_id']); by_occ[s['occurrence_key']].add(s['job_id'])\nprint('source_to_multi',sum(len(v)>1 for v in by_src.values()),{k:sorted(v) for k,v in by_src.items() if len(v)>1})\nprint('url_to_multi',sum(len(v)>1 for v in by_url.values()),{k:sorted(v) for k,v in by_url.items() if len(v)>1})\nprint('occ_to_multi',sum(len(v)>1 for v in by_occ.values()),{k:sorted(v) for k,v in by_occ.items() if len(v)>1})\nprint('canonical_records_for_linked',len(U),'unexpected duplicate canonical records',0)\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute('select * from search_task_results where browser_run_id=1')]\nfor col in ['detail_status','content_state','identity_status','card_metadata_status','detail_error']:\n vals=[r[col] for r in R]; print(col,dict(collections.Counter(vals)))\nprint('duplicate source sightings',[(r['source_job_id'],r['sighting_count']) for r in R if r['sighting_count']\"'!=1])\nprint('\"'task duplicate',dict(c.execute('select duplicate_sightings,duplicate_cards,cards_extracted,cards_persistence_attempted,cards_persistence_succeeded,cards_persistence_failed,pending_details,details_failed,detail_count_read,unique_jobs_recorded from browser_search_tasks where task_id=1').fetchone()))\nprint('browser run counters',dict(c.execute('select jobs_new,jobs_updated,jobs_unchanged,jobs_recorded,tasks_completed,tasks_challenged,tasks_incomplete from browser_runs where browser_run_id=1').fetchone()))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,json\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nfor r in c.execute('select result_id,source_job_id,title_hint,company_hint,location_hint,posted_text,posted_age_days,card_json,card_metadata_status,detail_status,content_state from search_task_results where browser_run_id=1 order by result_id limit 3'):\n print(dict(r))\nfor r in c.execute(\\\"select event_id,event_type,payload_json from browser_events where event_type='result_discovered' limit 2\\\"): print(dict(r))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute('select * from search_task_results where browser_run_id=1')]; J={r['job_id']:dict(r) for r in c.execute('select * from jobs')}; ids={r['canonical_job_id'] for r in R if r['canonical_job_id']};\nfor name,rows in [('result_rows',R),('unique_canonical',[next(r for r in R if r['canonical_job_id']==i) for i in ids])]:\n print(name,len(rows),'remote',dict(collections.Counter(J[r['canonical_job_id']]['remote_evidence_state'] for r in rows)),'apply',dict(collections.Counter(J[r['canonical_job_id']]['apply_destination_state'] for r in rows)),'nonempty_apply',sum(bool((J[r['canonical_job_id']]['apply_url'] or '').strip()) for r in rows))\nprint('unique canonical duplicate map',dict(collections.Counter(r['canonical_job_id'] for r in R if r['canonical_job_id'])))\nc.close()\nPY\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nfor r in c.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events where event_type='job_recorded' order by event_id limit 6\\\"): print(dict(r))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute('select * from search_task_results where browser_run_id=1')];\n# source id -> canonical ids and source url -> canonical ids\nmaps=collections.defaultdict(set)\nfor r in R: maps[r['source_job_id']].add(r['canonical_job_id'])\nprint('SOURCE_IDS_MULTI_CANONICAL',[(k,sorted(v)) for k,v in maps.items() if len(v)>1])\nprint('SOURCE_IDS_TO_CANONICAL_COUNT',dict(collections.Counter(len(v) for v in maps.values())))\nprint('CANONICAL_OCCURRENCES_FOR_LINKED')\nids={r['canonical_job_id'] for r in R if r['canonical_job_id']}\nfor r in c.execute(\\\"select canonical_occurrence_key,count(*) n from jobs where job_id in (%s) group by canonical_occurrence_key\\\" % ','.join('?'*len(ids)),tuple(ids)): print(dict(r))\nprint('SOURCE_URL_MULTI_ROWS',[(r[0],r[1],r[2]) for r in c.execute(\\\"select source_url,count(distinct job_id),count(*) from source_occurrences where source_site='linkedin' group by source_url having count(distinct job_id)>1 or count(*)>1\\\")])\nprint('UNEXPECTED_CANONICAL_RECORDS',len(ids)-len(ids))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,collections,json\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute('select * from search_task_results where browser_run_id=1')]; E=[dict(r) for r in c.execute('select * from browser_events where browser_run_id=1 order by event_id')]\ndef parse(s):\n try: x=json.loads(s) if s else {}\n except: return []\n out=[]; q=[x]\n while q:\n  x=q.pop(0)\n  if isinstance(x,dict):\n   out.append(x)\n   if isinstance(x.get('payload'),dict): q.append(x['payload'])\n   elif isinstance(x.get('payload'),str):\n    try:q.append(json.loads(x['payload']))\n    except:pass\n return out\n# exact source id event order for complete results\npass_count=0; rows=[]\nfor r in R:\n if r['detail_status']\"'!='\"'COMPLETE': continue\n sid=r['source_job_id']; f={}\n for e in E:\n  for o in parse(e['payload_json']):\n   if o.get('source_job_id')==sid:\n    f.setdefault(e['event_type'],e['event_id'])\n ok=f.get('result_discovered',10**9)<f.get('pane_selection',-1)<f.get('detail_read',-1)\n pass_count+=ok; rows.append((r['result_id'],sid,f.get('result_discovered'),f.get('pane_selection'),f.get('detail_diagnostics'),f.get('detail_read'),ok))\nprint('ORDER_COMPLETE',pass_count,'/',len(rows)); print('ORDER_ROWS',rows)\n# provenance counts across complete\ncounts=collections.Counter()\nfor r in R:\n if r['detail_status']\"'!='\"'COMPLETE':continue\n sid=r['source_job_id']; diags=[]\n for e in E:\n  if e['event_type']=='detail_diagnostics':\n   for o in parse(e['payload_json']):\n    if o.get('source_job_id')==sid:diags.append(o)\n d=diags[-1] if diags else {}\n counts['detail_complete']+=1\n counts['identity_proven_true']+=d.get('identity_proven') is True\n counts['selected_match']+=d.get('selected_source_job_id')==sid\n counts['acq_search_pane']+=d.get('detail_acquisition_mode')=='search_pane'\n counts['canonical_linkage']+=bool(r['canonical_job_id'])\nprint('PROVENANCE_COUNTS',dict(counts))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,380p' src/jobbot/run_now.py && rtk sed -n '1,360p' src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'def .*run_now|run-now|already|active|browser_run|partial|run_id|exit|return 2|SystemExit|raise' src/jobbot/cli.py src/jobbot/run_now.py src/jobbot/orchestrator.py src/jobbot/ledger.py src/jobbot/db.py | sed -n '1,360p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-164-r1:.codex-fabric/audit.json | rtk proxy python3 -c 'import sys,json; a=json.load(sys.stdin); print(\\\"\\\\n\\\".join(a.get(\\\"checks\\\",[])[22].get(\\\"command\\\",\\\"\\\").splitlines()))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,280p' RUN_NOW.command && rtk sed -n '1,240p' RUN_PLATFORM_LINKEDIN.command && rtk rg -n 'run-now|create_browser_run|browser_runs|status.*partial|active.*run|in_progress|already' src/jobbot tests/integration/test_run_now.py | sed -n '1,420p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'enqueue\\\\(|def enqueue|browser_runs.*status|status IN|active run' src/jobbot/browser_tasks.py src/jobbot/orchestrator.py | sed -n '1,200p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,120p' src/jobbot/__main__.py && rtk sed -n '300,365p' src/jobbot/cli.py && rtk rg -n 'except.*RuntimeError|return 2|exit_code|external platform' src/jobbot/cli.py src/jobbot/__main__.py | sed -n '1,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '80,130p' src/jobbot/cli.py && rtk sed -n '160,215p' src/jobbot/orchestrator.py && rtk sed -n '100,145p' src/jobbot/browser_tasks.py && rtk sed -n '250,340p' src/jobbot/browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-164-r1:.codex-fabric/audit.json | rtk proxy python3 -c 'import sys,json; a=json.load(sys.stdin); print(a[\\\"checks\\\"][22][\\\"command\\\"]); print(\\\"audit_exit\\\",a[\\\"checks\\\"][22][\\\"exit_code\\\"])' && rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-164-r1:.codex-fabric/audit.json | rtk proxy python3 -c 'import sys,json; a=json.load(sys.stdin); print(\\\"prior_checks_exit\\\",[(i,c[\\\"exit_code\\\"]) for i,c in enumerate(a[\\\"checks\\\"]) if i in [20,21,22,23,24,29,33,36,38]])'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '188,225p' src/jobbot/cli.py && rtk sed -n '430,470p' src/jobbot/browser_tasks.py && rtk sed -n '950,1015p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nfor t in ['browser_runs','browser_platform_runs','browser_search_tasks','control_requests']:\n print(t)\n for r in c.execute(f'select * from {t} where browser_run_id=1' if t\"'!='\"'control_requests' else 'select * from control_requests'): print(dict(r))\nprint('STOP_RELATED_EVENTS')\nfor r in c.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events where lower(event_type)||lower(message)||lower(payload_json) like '%stop%' order by event_id\\\"): print(dict(r))\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find /private/tmp -type f -print 2>/dev/null | rtk xargs -n1 rtk rg -l 'SMOKE_TIMER_START_UTC|SMOKE_TIMER_300S_REACHED_UTC|ORDERLY_STOP_REQUEST_RC' 2>/dev/null | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'if [ -d dist ]; then find dist -maxdepth 2 -type f -print -exec shasum -a 256 {} \\\\; | sort; else echo DIST_MISSING; fi; if [ -f /Users/haewonkim/.codex-fabric/worktrees/CF-44bcdea355d7e1e6fa8bf193/dist/jobbot-3.2.0.zip ]; then shasum -a 256 /Users/haewonkim/.codex-fabric/worktrees/CF-44bcdea355d7e1e6fa8bf193/dist/jobbot-3.2.0.zip; else echo R1_DIST_MISSING; fi'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'for p in \\\"/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json\\\" \\\"/Users/haewonkim/Library/Application Support/JobBot/extension/manifest.json\\\" \\\"/Users/haewonkim/Library/Application Support/JobBot/chrome_profile_binding.json\\\"; do echo ---\"'$p; if [ -f \"$p\" ]; then sed -n \"1,220p\" \"$p\"; else echo MISSING; fi; done; ls -la \"/Users/haewonkim/Library/Application Support/JobBot/extension\" | sed -n \"1,80p\"'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse c9bcbe7bf63431601597cbf55eef452489c0b141''^{tree} && rtk git status --short && rtk git diff --stat c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD && rtk git diff --name-status c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot status --short --branch && rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot rev-parse HEAD && rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot rev-parse HEAD''^{tree} && rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot show-ref refs/heads/main refs/remotes/origin/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'ls -la /private/tmp/jobbot-chg164-r1.eJSIPC; find /private/tmp/jobbot-chg164-r1.eJSIPC -maxdepth 2 -type d -print | sort; find /private/tmp/jobbot-chg164-r1.eJSIPC -maxdepth 2 -type f -print | sort | sed -n \\\"1,400p\\\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'prod_db|jobs.sqlite3|sha256|inode|mtime_epoch|before smoke|production DB|production_db|live origin|SMOKE_TIMER|ORDERLY_STOP' /private/tmp/jobbot-chg164-r1.eJSIPC /Users/haewonkim/.codex-fabric/audit.json /Users/haewonkim/.codex-fabric/worktrees 2>/dev/null | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'p=/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3; stat -f \\\"path=%N size=%z mtime_epoch=%m mtime_ns=%B inode=%i\\\" \\\"\"'$p\"; shasum -a 256 \"$p\"; /opt/anaconda3/bin/python3.11 - <<\"PY\"\nimport sqlite3,json,hashlib,pathlib\np=pathlib.Path(\"/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3\")\ncon=sqlite3.connect(f\"file:{p}?mode=ro&immutable=1\",uri=True)\nprint(json.dumps({\"integrity_check\":con.execute(\"pragma integrity_check\").fetchone()[0],\"foreign_key_violations\":len(con.execute(\"pragma foreign_key_check\").fetchall()),\"active_or_queued\":con.execute(\"select count(*) from browser_runs where status in ('\"\\\\\\\"running\\\\\\\",\\\\\\\"queued\\\\\\\")\\\").fetchone()[0],\\\"browser_runs\\\":con.execute(\\\"select count(*) from browser_runs\\\").fetchone()[0]}))\ncon.close()\nPY'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-164-r1:.codex-fabric/audit.json | rtk proxy python3 -c 'import sys,json; a=json.load(sys.stdin); \nfor i,c in enumerate(a[\\\"checks\\\"]):\n cmd=c.get(\\\"command\\\",\\\"\\\")\n if any(x in cmd.lower() for x in [\\\"test\\\",\\\"compile\\\",\\\"search-plan\\\",\\\"preflight\\\",\\\"doctor\\\",\\\"migration\\\",\\\"build_release\\\",\\\"sync-extension\\\",\\\"run-now\\\",\\\"stop\\\",\\\"audit\\\"]): print(i,c.get(\\\"exit_code\\\"),cmd.replace(\\\"\\\\\\\\n\\\",\\\" \\\")[:1600])'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show refs/remotes/origin/codex-fabric/evidence/jobbot/CHG-164-r1:.codex-fabric/audit.json | rtk proxy python3 -c 'import sys,json,re; a=json.load(sys.stdin); pats=[\\\"unittest\\\",\\\"pytest\\\",\\\"CHG-112\\\",\\\"CHG-127\\\",\\\"CHG-146\\\",\\\"CHG-154\\\",\\\"CHG-159\\\",\\\"compileall\\\",\\\"node --check\\\",\\\"node \\\",\\\"search-plan\\\",\\\"preflight\\\",\\\"doctor\\\",\\\"migration\\\",\\\"build_release.py\\\",\\\"sync-extension\\\",\\\"refresh-extension\\\",\\\"run-now\\\",\\\"stop\\\",\\\"audit\\\"]\nfor p in pats:\n hit=[(i,c[\\\"exit_code\\\"],c[\\\"command\\\"][:500]) for i,c in enumerate(a[\\\"checks\\\"]) if p.lower() in c.get(\\\"command\\\",\\\"\\\").lower()]\n print(p,hit)'\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 13829,
+        "output_sha256": "edf239b9e836a3d7c47864d2126a9b1ce12f5856123b97b1ae35504534958870",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport pathlib,hashlib,json,sqlite3\np=pathlib.Path('/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3'); s=p.stat(); print(json.dumps({'path':str(p),'size':s.st_size,'mtime_epoch':s.st_mtime_ns//1_000_000_000,'mtime_ns':s.st_mtime_ns,'inode':s.st_ino,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}))\nc=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); print(json.dumps({'integrity_check':c.execute('pragma integrity_check').fetchone()[0],'foreign_key_violations':len(c.execute('pragma foreign_key_check').fetchall()),'active_or_queued':c.execute(\\\"select count(*) from browser_runs where status in ('running','queued')\\\").fetchone()[0],'browser_runs':c.execute('select count(*) from browser_runs').fetchone()[0]})); c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'reconcil|unexpl|integrity|foreign|mismatch|duplicate|provenance|detail|source|audit' /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/retrieval_audit.md /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/funnel_report.md /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/coverage.csv /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/verification_queue.csv | sed -n '1,360p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' src/jobbot/audit.py && rtk rg -n 'def .*audit|reconcil|unexpl|audit' src/jobbot/audit.py src/jobbot/legacy_engine.py src/jobbot/validator.py | sed -n '1,260p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,280p' /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/retrieval_audit.md && rtk sed -n '1,160p' /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/coverage.csv && rtk sed -n '1,160p' /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/verification_queue.csv\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'RECONCILIATION_OK|unexplained=|detail_|remote_|location_|application_destination|card_metadata|identity_|sightings=|canonical_jobs=' /private/tmp/jobbot-chg164-r1.eJSIPC/live/out/retrieval_audit.md | sed -n '1,120p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,json,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute('select * from search_task_results where browser_run_id=1')]; ids={r['canonical_job_id'] for r in R if r['canonical_job_id']};\nfor r in c.execute('select job_id,remote_status,location_raw,remote_evidence_json,remote_evidence_state,location_evidence_state,apply_destination_state,evidence_provenance_json from jobs where job_id in (%s)' % ','.join('?'*len(ids)),tuple(ids)):\n print(r['job_id'],r['remote_status'],r['remote_evidence_state'],r['location_evidence_state'],r['remote_evidence_json'],r['evidence_provenance_json'])\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,json,collections\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute('select * from search_task_results where browser_run_id=1')]; ids={r['canonical_job_id'] for r in R if r['canonical_job_id']};\nviol=[]; applyviol=[]; synth=[]\nfor r in c.execute('select * from jobs where job_id in (%s)' % ','.join('?'*len(ids)),tuple(ids)):\n try: rem=json.loads(r['remote_evidence_json'] or '{}')\n except: rem={}\n try: prov=json.loads(r['evidence_provenance_json'] or '{}')\n except: prov={}\n if r['remote_evidence_state']=='OBSERVED' and not rem: viol.append(r['job_id'])\n if r['remote_evidence_state']=='OBSERVED' and r['location_evidence_state']=='UNKNOWN': synth.append(r['job_id'])\n if (r['apply_destination_state']=='OBSERVED' and not (r['apply_url'] or '').strip()) or ((r['apply_url'] or '').strip() and r['apply_destination_state']\"'!='\"'OBSERVED'): applyviol.append((r['job_id'],r['apply_destination_state'],r['apply_url']))\nprint('remote_observed_without_evidence_json',len(viol),viol)\nprint('remote_observed_with_unknown_location',len(synth),synth)\nprint('apply_state_url_violations',len(applyviol),applyviol)\nprint('source_board_equals_apply',c.execute(\\\"select count(*) from source_occurrences so join jobs j on j.job_id=so.job_id where so.source_site='linkedin' and coalesce(so.source_url,'')<>'' and coalesce(j.apply_url,'')<>'' and j.apply_url=so.source_url\\\").fetchone()[0])\nprint('source_apply_urls_nonempty',c.execute(\\\"select count(*) from source_occurrences where source_site='linkedin' and coalesce(apply_url,'')<>''\\\").fetchone()[0])\nc.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk date -u '+%Y-%m-%dT%H:%M:%SZ'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-list --count refs/heads/main..refs/remotes/origin/main && rtk git rev-list --count refs/remotes/origin/main..refs/heads/main && rtk git diff-tree --no-commit-id --name-status -r c9bcbe7bf63431601597cbf55eef452489c0b141'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env /opt/anaconda3/bin/python3.11 - <<'PY'\nimport sqlite3,pathlib,statistics\np=pathlib.Path('/private/tmp/jobbot-chg164-r1.eJSIPC/live/ledger.sqlite3'); c=sqlite3.connect(f'file:{p}?mode=ro&immutable=1',uri=True); c.row_factory=sqlite3.Row\nR=[dict(r) for r in c.execute(\\\"select * from search_task_results where browser_run_id=1 and detail_status='COMPLETE' and canonical_job_id is not null\\\")]; J={r['job_id']:dict(r) for r in c.execute('select * from jobs')}\na=[len(J[r['canonical_job_id']]['description'] or '') for r in R]; b=[len(J[k]['description'] or '') for k in sorted({r['canonical_job_id'] for r in R})]\nprint('rows',len(a),min(a),statistics.median(a),max(a),sorted(a)); print('unique',len(b),min(b),statistics.median(b),max(b),sorted(b)); c.close()\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'sha256|observations_fingerprint|ledger_fingerprint' verification/CHG-164-r2.json | sed -n '1,24p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy python3 -m json.tool verification/CHG-164-r2.json >/dev/null && echo JSON_OK && rtk git diff --check -- verification/CHG-164-r2.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk wc -c verification/CHG-164-r2.json && rtk git diff --stat -- verification/CHG-164-r2.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --no-index /dev/null verification/CHG-164-r2.json >/dev/null; printf 'artifact_diff_exit=%s\\\\n' \\\"\"'$?\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nimport json\np='verification/CHG-164-r2.json'\na=json.load(open(p))\nchecks={\n 'r1_job_id':a['artifact']['r1_job_id']=='CF-44bcdea355d7e1e6fa8bf193',\n 'r2_job_id':a['artifact']['r2_job_id']=='CF-e2981a2c24031abba5ea9397',\n 'base':a['fabric_and_repository']['base_sha']=='c9bcbe7bf63431601597cbf55eef452489c0b141',\n 'tree':a['fabric_and_repository']['base_tree']=='9948fdca709bca827a02eb8b29bebe1ceb905235',\n 'build':a['source_build_runtime']['build_runtime_identity']=='3.2.2-prod-ready.672cf88.23',\n 'cards':a['smoke_metrics']['cards_results_discovered']['count']==63 and a['smoke_metrics']['cards_successfully_persisted']['count']==63,\n 'canonical':a['smoke_metrics']['distinct_canonical_jobs_linked']['count']==21,\n 'substantive':a['smoke_metrics']['substantive_descriptions']['count']==24,\n 'active_seconds':a['run_identity_and_chronology']['active_worker_seconds']==60,\n 'oracle_false':a['safe_oracle']['linkedin_production_safe'] is False,\n 'one_file_scope':a['final_statements']['verification_delta'].startswith('This R2 work branch contains verification/CHG-164-r2.json only')\n}\nprint(json.dumps(checks,sort_keys=True)); assert all(checks.values())\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --name-only && rtk git diff --stat && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-164-r2.json && rtk git commit -m \"verify: recover CHG-164 LinkedIn smoke receipt\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --name-status c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD -- ':\"'!verification/CHG-164-r2.json'\"' && echo PRODUCT_DELTA_ABOVE_BASE_EXIT=\"'$?'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show --format=fuller --stat --summary HEAD && rtk git ls-tree -r --name-only HEAD | rtk rg '\"'^verification/CHG-164-r2'\"\\\\.json\"'$'\"' && rtk git show HEAD:verification/CHG-164-r2.json | rtk proxy python3 -m json.tool >/dev/null && echo COMMITTED_JSON_OK\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-status c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD && rtk git diff --stat c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD && rtk git diff --check c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD && rtk git rev-parse HEAD''^ && rtk git rev-parse HEAD''^{tree} && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 185,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 91.15,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 3799552,
+      "fresh_input_tokens": 369060,
+      "input_tokens": 4168612,
+      "non_reasoning_output_tokens": 32844,
+      "output_tokens": 52346,
+      "reasoning_output_tokens": 19502,
+      "total_processed_tokens": 4220958
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "203acee6ad350b631ae42f02ea77f77771148ace",
+      "subject": "verify: recover CHG-164 LinkedIn smoke receipt"
+    }
+  ],
+  "diff": {
+    "additions": 466,
+    "changed_files": 1,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 26823,
+        "path": "verification/CHG-164-r2.json",
+        "sha256": "22a98bea600db9892073b882f87be2a0ebc3216ad7de7005aaaa5c646b787372"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.4-quota-recovery-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.4-quota-recovery-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-22T00:08:12Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "branch": "codex/jobbot-CHG-164-r2",
+    "detached_verify": false,
+    "head_sha": "203acee6ad350b631ae42f02ea77f77771148ace",
+    "remote_exact_head": true,
+    "remote_head_sha": "203acee6ad350b631ae42f02ea77f77771148ace",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "work_branch": "codex/jobbot-CHG-164-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-e2981a2c24031abba5ea9397",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-164-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-164-r2"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.4-quota-recovery-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-164-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-21T23:51:01Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1031,
+    "queue_seconds": 1,
+    "total_seconds": 1032
+  },
+  "transport": {
+    "bytes": 9755,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 9473,
+    "prompt_sha256": "afe3f507bacae39d0943fbd0a8233ef0b1ea4beb089bd162547839e470f90c7e",
+    "sha256": "e2981a2c24031abba5ea93971398deaade9d60ed88aa96d0a6397e3c9b05ac41"
+  }
+}
