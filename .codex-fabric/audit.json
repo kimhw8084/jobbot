@@ -1,0 +1,474 @@
+{
+  "accepted_at": "2026-09-22T02:41:52Z",
+  "changed_files": [
+    {
+      "additions": 5,
+      "deletions": 1,
+      "path": "extension/common.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/glassdoor.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/indeed.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 31,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 31,
+      "deletions": 0,
+      "path": "extension/receiver_bootstrap.js",
+      "status": "A"
+    },
+    {
+      "additions": 344,
+      "deletions": 33,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_bootstrap_compatibility_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 4,
+      "path": "tests/extension_chg146_supervisor_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 42,
+      "deletions": 0,
+      "path": "tests/extension_receiver_bootstrap_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 121,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_chg166_delayed_receiver_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 25,
+      "deletions": 22,
+      "path": "tests/extension_service_worker_receiver_recovery_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 121,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_receiver_regeneration_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_startup_lifecycle_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-smoke.XXXXXX.Ejm1aWBAiZ/smoke.sqlite3 python -c 'import sqlite3,json,os; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-smoke.XXXXXX.Ejm1aWBAiZ/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; run=dict(c.execute(\\\"select * from browser_runs\\\").fetchone()); plats=[dict(x) for x in c.execute(\\\"select * from browser_platform_runs\\\")]; tasks=[dict(x) for x in c.execute(\\\"select task_id,platform,phase,query_text,status,results_seen,unique_jobs_recorded,duplicate_sightings,jobs_recorded,pages_visited,detail_count_read,jobs_new,jobs_updated,jobs_unchanged,cards_extracted,duplicate_cards,pending_details,details_failed,current_search_url,page_number,last_error,challenge_reason,exhaustion_reason,safety_stop_reason from browser_search_tasks order by task_id\\\")]; ev=[dict(x) for x in c.execute(\\\"select event_id,event_at,event_type,message,payload_json from browser_events order by event_id\\\")]; print(json.dumps({\\\"run\\\":run,\\\"platforms\\\":plats,\\\"task_summary\\\":{\\\"n\\\":len(tasks),\\\"status_counts\\\":{s:sum(1 for x in tasks if x[\\\"status\\\"]==s) for s in sorted({x[\\\"status\\\"] for x in tasks})},\\\"cards\\\":sum(x[\\\"results_seen\\\"] or 0 for x in tasks),\\\"unique_ids\\\":sum(x[\\\"unique_jobs_recorded\\\"] or 0 for x in tasks),\\\"pages\\\":sum(x[\\\"pages_visited\\\"] or 0 for x in tasks),\\\"details\\\":sum(x[\\\"detail_count_read\\\"] or 0 for x in tasks),\\\"dup_sightings\\\":sum(x[\\\"duplicate_sightings\\\"] or 0 for x in tasks),\\\"dup_cards\\\":sum(x[\\\"duplicate_cards\\\"] or 0 for x in tasks),\\\"details_failed\\\":sum(x[\\\"details_failed\\\"] or 0 for x in tasks)},\\\"events\\\":ev},ensure_ascii=False))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"wrong_platform_origin|regenerateReceiverTarget|waitForReceiverReady|receiverUrlSurface|pending_url|target invalid\\\" extension/service_worker.js; rtk nl -ba extension/service_worker.js | sed -n '520,880p'; rtk nl -ba extension/service_worker.js | sed -n '1030,1320p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba extension/service_worker.js | sed -n '220,550p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' tests/extension_service_worker_receiver_regeneration_test.js; rtk sed -n '260,560p' tests/extension_service_worker_receiver_regeneration_test.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check extension/service_worker.js && rtk node tests/extension_service_worker_receiver_regeneration_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- extension/service_worker.js tests/extension_service_worker_receiver_regeneration_test.js; rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk node --check extension/service_worker.js && rtk node tests/extension_service_worker_receiver_regeneration_test.js && rtk git add extension/service_worker.js tests/extension_service_worker_receiver_regeneration_test.js && rtk git commit -m \"Fix pending target lifecycle validation\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m compileall -q src tests && rtk node --check extension/service_worker.js && rtk node --check extension/receiver_bootstrap.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -t . -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -W error::ResourceWarning -m unittest discover -s tests -t .'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk find tests -name '*.js' -maxdepth 3 -print | sort\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_chg146_supervisor_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_bootstrap_compatibility_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_receiver_bootstrap_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_linkedin_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_primary_scope_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_chg146_pane_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_target_lifecycle_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_chg166_delayed_receiver_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_receiver_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_startup_lifecycle_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_scope_recovery_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_receiver_regeneration_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_service_worker_auth_return_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m jobbot doctor --help; rtk env PYTHONPATH=src python -m jobbot search-plan --help; rtk env PYTHONPATH=src python -m jobbot run-now --help'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mktemp -d -t jobbot-chg166-gates.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/runtime_binding.py | sed -n '1,120p'; rtk nl -ba src/jobbot/runtime_binding.py | sed -n '190,330p'; rtk rg -n \\\"bind-chrome|bind_chrome_profile|profile-directory\\\" src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m jobbot bootstrap-extension --help; rtk nl -ba src/jobbot/cli.py | sed -n '305,365p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mkdir -p /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/deploy /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/out && rtk env PYTHONPATH=src JOBBOT_EXTENSION_DEPLOY_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/deploy JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/doctor.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/out JOBBOT_CRAWL_OBSERVATIONS_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/crawl.sqlite3 JOBBOT_DASHBOARD_PORT=8896 python -m jobbot bootstrap-extension --profile-directory Default --no-open && rtk env PYTHONPATH=src JOBBOT_EXTENSION_DEPLOY_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/deploy JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/doctor.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/out JOBBOT_CRAWL_OBSERVATIONS_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/crawl.sqlite3 JOBBOT_DASHBOARD_PORT=8896 python -m jobbot doctor'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_EXTENSION_DEPLOY_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/deploy JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/preflight.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/out JOBBOT_CRAWL_OBSERVATIONS_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/crawl.sqlite3 JOBBOT_DASHBOARD_PORT=8896 python -m jobbot search-plan --mode deep --platform linkedin && rtk env PYTHONPATH=src JOBBOT_EXTENSION_DEPLOY_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/deploy JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/preflight.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/out JOBBOT_CRAWL_OBSERVATIONS_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-gates.XXXXXX.c0WY86dU8u/crawl.sqlite3 JOBBOT_DASHBOARD_PORT=8896 python -m jobbot run-now --platform linkedin --enqueue-only --no-open'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python scripts/build_release.py && rtk git diff --check && rtk git status --short --branch && rtk git log -2 --format='%H %T %s'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push -u origin codex/jobbot-CHG-166-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk gh run list --repo kimhw8084/jobbot --branch codex/jobbot-CHG-166-r3 --limit 5 --json databaseId,headSha,status,conclusion,name,createdAt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk gh run watch 35682672089 --repo kimhw8084/jobbot --exit-status'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import hashlib,json;from pathlib import Path;p=Path(\\\"data/jobs.sqlite3\\\").resolve();s=p.stat();print(json.dumps({\\\"path\\\":str(p),\\\"exists\\\":True,\\\"size\\\":s.st_size,\\\"mtime_ns\\\":s.st_mtime_ns,\\\"inode\\\":s.st_ino,\\\"sha256\\\":hashlib.sha256(p.read_bytes()).hexdigest()},sort_keys=True))' && rtk env PYTHONPATH=src python -m jobbot refresh-extension --timeout 60\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mktemp -d -t jobbot-chg166-final.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; r=c.execute(\\\"select status,auth_status,started_at,last_progress_at,last_error,jobs_recorded,tasks_completed,tasks_incomplete,current_task_id from browser_runs\\\").fetchone(); q=c.execute(\\\"select platform,readiness_state,worker_status,receiver_state,window_id,search_tab_id,current_task_id,current_page_number from browser_platform_runs\\\").fetchone(); ev=c.execute(\\\"select event_at,event_type,message,payload_json from browser_events where event_type in ('platform_readiness','receiver_recovery','receiver_attachment','target_lifecycle','worker_window_created','worker_terminal','platform_auth') order by event_id\\\").fetchall(); print(json.dumps({\\\"run\\\":dict(r) if r else None,\\\"platform\\\":dict(q) if q else None,\\\"events\\\":[dict(x) for x in ev]},default=str))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; r=c.execute(\\\"select status,auth_status,started_at,last_progress_at,last_error,jobs_recorded,tasks_completed,tasks_incomplete,current_task_id from browser_runs\\\").fetchone(); q=c.execute(\\\"select platform,readiness_state,worker_status,receiver_state,window_id,search_tab_id,current_task_id,current_page_number from browser_platform_runs\\\").fetchone(); ev=c.execute(\\\"select event_at,event_type,message,payload_json from browser_events where event_type in (\\\\'platform_readiness\\\\',\\\\'receiver_recovery\\\\',\\\\'receiver_attachment\\\\',\\\\'target_lifecycle\\\\',\\\\'worker_window_created\\\\',\\\\'worker_terminal\\\\',\\\\'platform_auth\\\\') order by event_id\\\").fetchall(); print(json.dumps({\\\"run\\\":dict(r) if r else None,\\\"platform\\\":dict(q) if q else None,\\\"events\\\":[dict(x) for x in ev]},default=str))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; r=c.execute(\\\"select status,auth_status,started_at,last_progress_at,last_error,jobs_recorded,tasks_completed,tasks_incomplete,current_task_id from browser_runs\\\").fetchone(); q=c.execute(\\\"select platform,readiness_state,worker_status,receiver_state,window_id,search_tab_id,current_task_id,current_page_number from browser_platform_runs\\\").fetchone(); k=(\\\"platform_readiness\\\",\\\"receiver_recovery\\\",\\\"receiver_attachment\\\",\\\"target_lifecycle\\\",\\\"worker_window_created\\\",\\\"worker_terminal\\\",\\\"platform_auth\\\"); ev=c.execute(\\\"select event_at,event_type,message from browser_events where event_type in (?,?,?,?,?,?,?) order by event_id\\\",k).fetchall(); print(json.dumps({\\\"run\\\":dict(r) if r else None,\\\"platform\\\":dict(q) if q else None,\\\"events\\\":[dict(x) for x in ev]},default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mkdir -p /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/out /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/logs && rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 JOBBOT_OUTPUT_DIR=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/out JOBBOT_CRAWL_OBSERVATIONS_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/crawl.sqlite3 JOBBOT_DASHBOARD_PORT=8898 python -m jobbot run --mode deep --platform linkedin --primary-only'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; r=dict(c.execute(\\\"select status,started_at,completed_at,auth_status,jobs_new,jobs_updated,jobs_unchanged,jobs_recorded,tasks_completed,tasks_incomplete,last_error from browser_runs\\\").fetchone()); q=dict(c.execute(\\\"select platform,readiness_state,worker_status,receiver_state,window_id,search_tab_id,interaction_state,readiness_reason,last_progress_message from browser_platform_runs\\\").fetchone()); k=(\\\"receiver_recovery\\\",\\\"platform_readiness\\\",\\\"receiver_attachment\\\",\\\"target_lifecycle\\\",\\\"worker_window_created\\\",\\\"worker_terminal\\\",\\\"run_finished\\\"); ev=[]\nfor row in c.execute(\\\"select event_at,event_type,message,payload_json from browser_events where event_type in (?,?,?,?,?,?,?) order by event_id\\\",k):\n d=dict(row); pld=json.loads(d[\\\"payload_json\\\"] or \\\"{}\\\");\n if d[\\\"event_type\\\"]==\\\"receiver_recovery\\\":\n  ev.append({\\\"at\\\":d[\\\"event_at\\\"],\\\"type\\\":d[\\\"event_type\\\"],\\\"message\\\":d[\\\"message\\\"],\\\"outcome\\\":pld.get(\\\"outcome\\\"),\\\"old_tab\\\":pld.get(\\\"old_tab_id\\\"),\\\"old_window\\\":pld.get(\\\"old_window_id\\\"),\\\"new_tab\\\":(pld.get(\\\"new_target\\\") or {}).get(\\\"tab_id\\\") or (pld.get(\\\"replacement_target\\\") or {}).get(\\\"tab_id\\\"),\\\"new_window\\\":(pld.get(\\\"new_target\\\") or {}).get(\\\"window_id\\\") or (pld.get(\\\"replacement_target\\\") or {}).get(\\\"window_id\\\"),\\\"target_state\\\":pld.get(\\\"target_state\\\"),\\\"readiness_attempts\\\":pld.get(\\\"readiness_attempts\\\"),\\\"readiness_elapsed_ms\\\":pld.get(\\\"readiness_elapsed_ms\\\"),\\\"reload_attempts\\\":pld.get(\\\"reload_attempts\\\"),\\\"replacement_attempts\\\":pld.get(\\\"replacement_attempts\\\"),\\\"error\\\":pld.get(\\\"replacement_receiver_error\\\") or pld.get(\\\"receiver_error\\\")})\n elif d[\\\"event_type\\\"] in (\\\"platform_readiness\\\",\\\"run_finished\\\",\\\"worker_terminal\\\"):\n  ev.append({\\\"at\\\":d[\\\"event_at\\\"],\\\"type\\\":d[\\\"event_type\\\"],\\\"message\\\":d[\\\"message\\\"]})\nprint(json.dumps({\\\"run\\\":r,\\\"platform\\\":q,\\\"events\\\":ev},default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import hashlib,json;from pathlib import Path;p=Path(\\\"data/jobs.sqlite3\\\").resolve();s=p.stat();print(json.dumps({\\\"path\\\":str(p),\\\"exists\\\":True,\\\"size\\\":s.st_size,\\\"mtime_ns\\\":s.st_mtime_ns,\\\"inode\\\":s.st_ino,\\\"sha256\\\":hashlib.sha256(p.read_bytes()).hexdigest()},sort_keys=True))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ps -axo pid,ppid,command | rtk rg \"jobbot|python|Google Chrome|dashboard|bridge\" | head -120'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -c 'import sqlite3,json; p=\\\"data/jobs.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; print(json.dumps({\\\"runs\\\":[dict(x) for x in c.execute(\\\"select browser_run_id,status,created_at,completed_at,last_error from browser_runs order by browser_run_id desc limit 8\\\")],\\\"events\\\":[dict(x) for x in c.execute(\\\"select event_id,event_at,event_type,message from browser_events order by event_id desc limit 20\\\")]},default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json,datetime; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; run=dict(c.execute(\\\"select * from browser_runs\\\").fetchone()); plat=dict(c.execute(\\\"select * from browser_platform_runs\\\").fetchone()); t=dict(c.execute(\\\"select count(*) task_count,coalesce(sum(results_seen),0) cards,coalesce(sum(unique_jobs_recorded),0) unique_ids,coalesce(sum(pages_visited),0) pages,coalesce(sum(detail_count_read),0) details,coalesce(sum(duplicate_sightings),0) duplicate_sightings,coalesce(sum(duplicate_cards),0) duplicate_cards,coalesce(sum(details_failed),0) details_failed,coalesce(sum(cards_persistence_attempted),0) card_persist_attempts,coalesce(sum(cards_persistence_succeeded),0) card_persist_success,coalesce(sum(cards_persistence_failed),0) card_persist_failed from browser_search_tasks\\\").fetchone()); counts={row[0]:row[1] for row in c.execute(\\\"select event_type,count(*) from browser_events group by event_type\\\")}; ev=[]; desc=[]; provenance=[]; meta=[]\nfor row in c.execute(\\\"select event_at,event_type,message,payload_json from browser_events order by event_id\\\"):\n d=dict(row); pld=json.loads(d[\\\"payload_json\\\"] or \\\"{}\\\"); typ=d[\\\"event_type\\\"]\n if typ in {\\\"receiver_attachment\\\",\\\"receiver_recovery\\\",\\\"target_lifecycle\\\",\\\"worker_window_created\\\",\\\"worker_terminal\\\",\\\"platform_readiness\\\",\\\"navigation\\\",\\\"pane_selection\\\",\\\"detail_read\\\",\\\"job_recorded\\\",\\\"run_finished\\\"}:\n  if typ==\\\"receiver_attachment\\\": ev.append({\\\"at\\\":d[\\\"event_at\\\"],\\\"type\\\":typ,\\\"phase\\\":(pld.get(\\\"payload\\\") or {}).get(\\\"phase\\\"),\\\"tab\\\":(pld.get(\\\"payload\\\") or {}).get(\\\"tab_id\\\"),\\\"window\\\":(pld.get(\\\"payload\\\") or {}).get(\\\"window_id\\\"),\\\"doc\\\":(pld.get(\\\"payload\\\") or {}).get(\\\"document_generation\\\"),\\\"discarded\\\":((pld.get(\\\"payload\\\") or {}).get(\\\"tab_state\\\") or {}).get(\\\"discarded\\\"),\\\"auto_discardable\\\":((pld.get(\\\"payload\\\") or {}).get(\\\"tab_state\\\") or {}).get(\\\"auto_discardable\\\"),\\\"frozen\\\":((pld.get(\\\"payload\\\") or {}).get(\\\"tab_state\\\") or {}).get(\\\"frozen\\\"),\\\"focused\\\":((pld.get(\\\"payload\\\") or {}).get(\\\"tab_state\\\") or {}).get(\\\"window_focused\\\")})\n  elif typ==\\\"receiver_recovery\\\": ev.append({\\\"at\\\":d[\\\"event_at\\\"],\\\"type\\\":typ,\\\"outcome\\\":pld.get(\\\"outcome\\\"),\\\"reloads\\\":pld.get(\\\"reload_attempts\\\"),\\\"replacements\\\":pld.get(\\\"replacement_attempts\\\"),\\\"old_tab\\\":pld.get(\\\"old_tab_id\\\"),\\\"old_window\\\":pld.get(\\\"old_window_id\\\"),\\\"new_tab\\\":(pld.get(\\\"new_target\\\") or {}).get(\\\"tab_id\\\"),\\\"new_window\\\":(pld.get(\\\"new_target\\\") or {}).get(\\\"window_id\\\"),\\\"target_state\\\":pld.get(\\\"target_state\\\"),\\\"elapsed_ms\\\":pld.get(\\\"readiness_elapsed_ms\\\")})\n  elif typ==\\\"target_lifecycle\\\": ev.append({\\\"at\\\":d[\\\"event_at\\\"],\\\"type\\\":typ,\\\"message\\\":d[\\\"message\\\"],\\\"lifecycle\\\":(pld.get(\\\"payload\\\") or {}).get(\\\"lifecycle\\\") or (pld.get(\\\"payload\\\") or {}).get(\\\"durability\\\",{}).get(\\\"lifecycle\\\")})\n  elif typ in {\\\"worker_window_created\\\",\\\"worker_terminal\\\",\\\"platform_readiness\\\",\\\"navigation\\\",\\\"pane_selection\\\",\\\"run_finished\\\"}: ev.append({\\\"at\\\":d[\\\"event_at\\\"],\\\"type\\\":typ,\\\"message\\\":d[\\\"message\\\"]})\n  elif typ==\\\"detail_read\\\":\n   e=pld.get(\\\"detail_evidence\\\") or {}; job=e.get(\\\"job\\\") or {}; diag=e.get(\\\"detail_diagnostics\\\") or {}; desc.append({\\\"source_job_id\\\":pld.get(\\\"source_job_id\\\"),\\\"state\\\":(pld.get(\\\"content_state\\\") or diag.get(\\\"ready_state\\\") or \\\"COMPLETE\\\"),\\\"description_length\\\":len(job.get(\\\"description\\\") or \\\"\\\"),\\\"acquisition\\\":(e.get(\\\"detail_acquisition\\\") or {}).get(\\\"mode\\\"),\\\"classification\\\":(diag.get(\\\"detail_diagnostics\\\") or diag).get(\\\"classification\\\") if isinstance(diag,dict) else \\\"\\\"})\n  elif typ==\\\"job_recorded\\\":\n   provenance.append({\\\"job_id\\\":pld.get(\\\"job_id\\\"),\\\"ledger_status\\\":pld.get(\\\"ledger_status\\\"),\\\"content_state\\\":pld.get(\\\"content_state\\\"),\\\"apply\\\":pld.get(\\\"apply_destination_state\\\"),\\\"cache\\\":pld.get(\\\"cache_published\\\")})\nprint(json.dumps({\\\"run\\\":{\\\"status\\\":run.get(\\\"status\\\"),\\\"started_at\\\":run.get(\\\"started_at\\\"),\\\"completed_at\\\":run.get(\\\"completed_at\\\"),\\\"last_error\\\":run.get(\\\"last_error\\\"),\\\"jobs_new\\\":run.get(\\\"jobs_new\\\"),\\\"jobs_updated\\\":run.get(\\\"jobs_updated\\\"),\\\"jobs_unchanged\\\":run.get(\\\"jobs_unchanged\\\"),\\\"jobs_recorded\\\":run.get(\\\"jobs_recorded\\\"),\\\"tasks_completed\\\":run.get(\\\"tasks_completed\\\"),\\\"tasks_incomplete\\\":run.get(\\\"tasks_incomplete\\\")},\\\"platform\\\":{\\\"readiness_state\\\":plat.get(\\\"readiness_state\\\"),\\\"worker_status\\\":plat.get(\\\"worker_status\\\"),\\\"interaction_state\\\":plat.get(\\\"interaction_state\\\"),\\\"window_id\\\":plat.get(\\\"window_id\\\"),\\\"search_tab_id\\\":plat.get(\\\"search_tab_id\\\"),\\\"readiness_reason\\\":plat.get(\\\"readiness_reason\\\"),\\\"current_page\\\":plat.get(\\\"current_page_number\\\")},\\\"tasks\\\":dict(t),\\\"event_counts\\\":counts,\\\"timeline\\\":ev,\\\"details\\\":desc,\\\"provenance\\\":provenance},default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; tables=[x[0] for x in c.execute(\\\"select name from sqlite_master where type=\\\\\\\"table\\\\\\\" and name not like \\\\\\\"sqlite_%\\\\\\\"\\\")]; out={};\nfor t in tables:\n try: out[t]=c.execute(\\\"select count(*) from \\\\\\\"\\\"+t+\\\"\\\\\\\"\\\").fetchone()[0]\n except Exception: pass\nprint(json.dumps(out,sort_keys=True)); print(json.dumps({\\\"integrity\\\":c.execute(\\\"pragma integrity_check\\\").fetchone()[0],\\\"foreign_keys\\\":c.execute(\\\"pragma foreign_key_check\\\").fetchall()}))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); print(json.dumps(c.execute(\\\"pragma table_info(jobs)\\\").fetchall()))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); c.row_factory=sqlite3.Row; cols=[\\\"title\\\",\\\"company\\\",\\\"location_raw\\\",\\\"canonical_url\\\",\\\"remote_status\\\",\\\"posted_at\\\",\\\"description\\\",\\\"source_verification\\\",\\\"canonical_source_site\\\",\\\"content_state\\\",\\\"description_state\\\",\\\"location_evidence_state\\\",\\\"remote_evidence_state\\\",\\\"apply_destination_state\\\",\\\"evidence_provenance_json\\\"]; rows=[dict(r) for r in c.execute(\\\"select \\\"+\\\",\\\".join(cols)+\\\" from jobs\\\")]; stats={col:{\\\"present\\\":sum(1 for r in rows if r.get(col) not in (None,\\\"\\\",\\\"UNKNOWN\\\",\\\"MISSING\\\",\\\"IDENTITY_ONLY\\\",\\\"{}\\\")),\\\"total\\\":len(rows)} for col in cols}; print(json.dumps({\\\"stats\\\":stats,\\\"content_states\\\":{x[0]:x[1] for x in c.execute(\\\"select content_state,count(*) from jobs group by content_state\\\")},\\\"detail_states\\\":{x[0]:x[1] for x in c.execute(\\\"select enrichment_status,count(*) from jobs group by enrichment_status\\\")},\\\"location_states\\\":{x[0]:x[1] for x in c.execute(\\\"select location_evidence_state,count(*) from jobs group by location_evidence_state\\\")},\\\"remote_states\\\":{x[0]:x[1] for x in c.execute(\\\"select remote_evidence_state,count(*) from jobs group by remote_evidence_state\\\")},\\\"apply_states\\\":{x[0]:x[1] for x in c.execute(\\\"select apply_destination_state,count(*) from jobs group by apply_destination_state\\\")}},default=str))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env JOBBOT_DATABASE_PATH=/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3 python -c 'import sqlite3,json,statistics; p=\\\"/var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/jobbot-chg166-final.XXXXXX.GoTyEUBhpd/smoke.sqlite3\\\"; c=sqlite3.connect(p); vals=[]\nfor (raw,) in c.execute(\\\"select payload_json from browser_events where event_type=\\\\\\\"detail_read\\\\\\\"\\\"):\n d=json.loads(raw); job=(d.get(\\\"detail_evidence\\\") or {}).get(\\\"job\\\") or {}; vals.append((d.get(\\\"source_job_id\\\"),len(job.get(\\\"description\\\") or \\\"\\\")))\nprint(json.dumps({\\\"count\\\":len(vals),\\\"lengths\\\":[x[1] for x in vals],\\\"min\\\":min(x[1] for x in vals),\\\"max\\\":max(x[1] for x in vals),\\\"mean\\\":round(statistics.mean(x[1] for x in vals),1),\\\"all_substantive\\\":all(x[1]>0 for x in vals)}))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch; rtk git log -2 --format='%H%n%T%n%P%n%s'; rtk git ls-remote origin refs/heads/codex/jobbot-CHG-166-r3; rtk env PYTHONPATH=src python -c 'import hashlib,json;from pathlib import Path;p=Path(\\\"data/jobs.sqlite3\\\").resolve();s=p.stat();print(json.dumps({\\\"path\\\":str(p),\\\"exists\\\":True,\\\"size\\\":s.st_size,\\\"mtime_ns\\\":s.st_mtime_ns,\\\"inode\\\":s.st_ino,\\\"sha256\\\":hashlib.sha256(p.read_bytes()).hexdigest()},sort_keys=True))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-5.6-luna",
+    "event_count": 445,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.51,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 20421888,
+      "fresh_input_tokens": 521604,
+      "input_tokens": 20943492,
+      "non_reasoning_output_tokens": 51045,
+      "output_tokens": 98455,
+      "reasoning_output_tokens": 47410,
+      "total_processed_tokens": 21041947
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+      "subject": "Fix pending target lifecycle validation"
+    },
+    {
+      "sha": "644542a66e9ca179ecc6577e7bc878a217593665",
+      "subject": "Fix CHG-166 receiver lifecycle recovery"
+    },
+    {
+      "sha": "7b08666f7b169a78ec28653556d94db5437e8031",
+      "subject": "Fix bounded post-reload receiver readiness"
+    }
+  ],
+  "diff": {
+    "additions": 740,
+    "changed_files": 16,
+    "commit_count": 3,
+    "deletions": 65
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 1,
+    "items": [
+      {
+        "bytes": 2534,
+        "path": "extension/manifest.json",
+        "sha256": "5260285767a84ac4bad1eeba5ef46e067eb03701cfaa0b353207f5368c15fed6"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.4-quota-recovery-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.4-quota-recovery-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-22T03:25:50Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "branch": "codex/jobbot-CHG-166-r3",
+    "detached_verify": false,
+    "head_sha": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+    "remote_exact_head": true,
+    "remote_head_sha": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "work_branch": "codex/jobbot-CHG-166-r3",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-a234f9bb549706c1fb00f79f",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-166-r3",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-166-r3"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.4-quota-recovery-candidate",
+    "policy_sha256": "a642c9f63bab2cb555704bdb0b9d1f28222591f133f934c1d0f93cc5a25ab8a1",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-166-r3",
+  "schema_version": 1,
+  "started_at": "2026-09-22T02:41:52Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 2638,
+    "queue_seconds": 0,
+    "total_seconds": 2638
+  },
+  "transport": {
+    "bytes": 10555,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 10275,
+    "prompt_sha256": "f094eb05b93cae0265c3b934f46a93f10a370821f47ceced2a0e411d8663f31e",
+    "sha256": "a234f9bb549706c1fb00f79f0efcfeadac0c7cde74b8559f1963d9b96c567cdc"
+  }
+}
