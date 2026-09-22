@@ -27,6 +27,7 @@ class BrowserTaskIntegrationTests(unittest.TestCase):
             conn = sqlite3.connect(db); conn.row_factory = sqlite3.Row
             first = conn.execute("SELECT * FROM browser_search_tasks WHERE browser_run_id=? ORDER BY task_id", (run_id,)).fetchall()
             self.assertEqual(len(first), 3)
+            self.assertTrue(all(row["strategy_profile"] == "jobbot-broad-qualified-yield" and row["query_family"] and row["query_kind"] and row["query_pass"] for row in first))
             task_id = int(first[0]["task_id"])
             checkpoint = {"search_url": "https://www.indeed.com/jobs?q=x&start=20", "page_number": 3, "last_job_key": "abc"}
             conn.execute("UPDATE browser_search_tasks SET status='running',checkpoint_json=?,page_number=3,lease_owner='dead',lease_until='2000-01-01T00:00:00+00:00' WHERE task_id=?", (json.dumps(checkpoint), task_id))

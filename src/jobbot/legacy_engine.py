@@ -60,6 +60,9 @@ def phrase_present(phrase: str, text: str) -> bool:
 def phrase_hits(phrases: Iterable[str], text: str) -> list[str]:
     return [p for p in phrases if phrase_present(p,text)]
 
+def _admissions_sales_preference(title:str)->bool:
+    return bool(re.search(r"\badmissions\b",title,re.I) and re.search(r"\bsales\b",title,re.I))
+
 
 def word_tokens(text: str) -> list[str]:
     return re.findall(r"[a-z0-9+#]+", norm(text))
@@ -243,10 +246,11 @@ def recall_prefilter(job:Job,strategy:dict[str,Any])->tuple[bool,str]:
     """High-recall stage used ONLY to decide what deserves description/ATS enrichment."""
     cfg=strategy.get("strategy",{}).get("recall",{}); title=job.title
     if not title: return False,"missing title"
+    admissions_sales=_admissions_sales_preference(title)
     exclusions=cfg.get("recall_exclusion_terms",[])
-    if any(phrase_present(x,title) for x in exclusions): return False,"excluded occupation family"
+    if any(phrase_present(x,title) and not (admissions_sales and norm(x)=="sales") for x in exclusions): return False,"excluded occupation family"
     rules=strategy.get("strategy",{}).get("role_rules",{})
-    if any(phrase_present(x,title) for x in rules.get("out_of_scope_title_terms",[])): return False,"explicit out-of-scope title"
+    if any(phrase_present(x,title) and not (admissions_sales and "sales" in norm(x)) for x in rules.get("out_of_scope_title_terms",[])): return False,"explicit out-of-scope title"
     ht=phrase_hits(cfg.get("healthcare_title_markers",[]),title); rt=phrase_hits(cfg.get("role_markers",[]),title)
     if ht and rt: return True,f"healthcare/access title signals: {ht[0]} + {rt[0]}"
     # Some healthcare workflow nouns are sufficiently specific by themselves.
@@ -416,8 +420,9 @@ def classify_role(job: Job, strategy: dict[str,Any], mode: str) -> tuple[Optiona
     """
     scfg=strategy.get("strategy",{}); rules=scfg.get("role_rules",{}); title=clean_text(job.title); desc=strip_html(job.description or "")
     tnorm=norm(title)
+    admissions_sales=_admissions_sales_preference(title)
     # Fundamental occupations are never rescued by generic words such as quality/operations/support.
-    if any(phrase_present(x,title) for x in rules.get("out_of_scope_title_terms",[])): return None,[],0.0,"",0.0
+    if any(phrase_present(x,title) and not (admissions_sales and "sales" in norm(x)) for x in rules.get("out_of_scope_title_terms",[])): return None,[],0.0,"",0.0
     if any(re.search(rf"\b{re.escape(x)}\b", title, flags=re.I) for x in rules.get("engineering_terms",[])): return None,[],0.0,"",0.0
     if re.search(r"\b(?:director|vice president|vp|chief|cto|cfo|coo|cmo|cio)\b",title,flags=re.I): return None,[],0.0,"",0.0
     # Clinical credentials in a title are occupational identity, not generic keyword evidence.
@@ -425,17 +430,22 @@ def classify_role(job: Job, strategy: dict[str,Any], mode: str) -> tuple[Optiona
     if re.search(r"\b(?:RN|LPN|LVN|NP|MD|DO|CNM|IBCLC|CNA|CMA|LCSW|LPC|LMFT|BCBA|PT|OT|SLP|RDN|RD|RPh)\b|\bPharmD\b",title): return None,[],0.0,"",0.0
     if re.search(r"\b(?:nurse|registered nurse|licensed practical nurse|licensed vocational nurse|nurse practitioner|nurse midwife|certified nurse|physician|physician assistant|psychiatrist|neurologist|surgeon|therapist|clinician|pharmacist|physical therapist|occupational therapist|speech[- ]language pathologist|dietitian)\b",title,flags=re.I): return None,[],0.0,"",0.0
     # The near-term strategy is deliberately non-sales/non-business-development, even inside healthcare.
-    if re.search(r"\b(?:sales|sales executive|sales representative|sales consultant|account executive|territory manager|business development|sales manager)\b",title,flags=re.I): return None,[],0.0,"",0.0
+    if re.search(r"\b(?:sales|sales executive|sales representative|sales consultant|account executive|territory manager|business development|sales manager)\b",title,flags=re.I) and not admissions_sales: return None,[],0.0,"",0.0
     if re.search(r"clinical operations (?:lead|manager)|clinical trial manager", title, flags=re.I) and re.search(r"\b(?:CRA|clinical trial|investigator site|GCP|protocol deviation)\b", desc, flags=re.I): return None,[],0.0,"",0.0
     recall_cfg=scfg.get("recall",{})
     foreign_langs=("mandarin","chinese","french","german","dutch","finnish","danish","swedish","croatian","czech","romanian","greek","thai","vietnamese","ukrainian","turkish","slovak","slovenian","latvian","lithuanian","hebrew","hungarian","estonian","bulgarian","portuguese","italian")
     if any(phrase_present(x,title) for x in foreign_langs) and not phrase_present("Spanish",title) and not phrase_present("English",title):
         return None,[],0.0,"",0.0
     health_in_title=bool(phrase_hits(recall_cfg.get("healthcare_title_markers",[]),title))
-    if not health_in_title and any(phrase_present(x,title) for x in recall_cfg.get("recall_exclusion_terms",[])):
+    if not health_in_title and any(phrase_present(x,title) and not (admissions_sales and norm(x)=="sales") for x in recall_cfg.get("recall_exclusion_terms",[])):
         return None,[],0.0,"",0.0
 
-    fallback_enabled=bool(strategy.get("_fallback_enabled",False))
+    bounded_live_fallback=any(
+        family.get("enabled",True) and family.get("minimum_deep_recall",False)
+        and family.get("career_lane")==FALLBACK_LANE_ID
+        for family in strategy.get("_live_search_profile",{}).get("families",[])
+    )
+    fallback_enabled=bool(strategy.get("_fallback_enabled",False) or bounded_live_fallback)
     profiles=[p for p in strategy.get("searches",[]) if p.get("enabled",True) and (fallback_enabled or p.get("career_lane") != FALLBACK_LANE_ID)]
     allowed=set(scfg.get("run_modes",{}).get(mode,{}).get("profiles",[]))
     if allowed: profiles=[p for p in profiles if p.get("name") in allowed]
@@ -683,6 +693,188 @@ def urgency_score(job:Job)->float:
     return max(0,min(100,v))
 
 
+def posting_status(job:Job)->tuple[str,str]:
+    deadline,status=parse_deadline(job.description)
+    if status!="unknown": return deadline,status
+    raw=job.raw if isinstance(job.raw,dict) else {}
+    valid_through=clean_text(raw.get("valid_through") or "")
+    if valid_through:
+        parsed=parse_dt(valid_through)
+        if parsed:
+            return parsed.date().isoformat(),("closed" if parsed.date()<utcnow().date() else "active")
+    payload=raw.get("source_payload") if isinstance(raw.get("source_payload"),dict) else {}
+    explicit=clean_text(raw.get("posting_status") or payload.get("posting_status") or payload.get("status") or "").lower()
+    if explicit in {"open","active","published"}:
+        return "", "active"
+    if explicit in {"closed","expired","filled","removed","unpublished","inactive"}:
+        return "", "closed"
+    if re.search(r"\b(?:currently accepting applications|accepting applications now|applications? (?:are )?open|currently hiring|open until filled|position is open)\b",job.description,re.I):
+        return "", "active"
+    return deadline,"unknown"
+
+
+def _home_only_remote_evidence(job:Job)->bool:
+    text=" ".join((job.location_raw,job.remote_status,job.description))
+    markers=("fully remote","100% remote","remote-only","remote only","work from home","home-based","home based","remote-first","remote first")
+    return job.remote_gate=="pass" and any(phrase_present(marker,text) for marker in markers)
+
+
+def _annualized_salary_floor(job:Job)->Optional[float]:
+    if job.salary_min is None: return None
+    amount=float(job.salary_min); period=(job.salary_period or "year").lower()
+    if "hour" in period: return amount*2080
+    if "month" in period: return amount*12
+    if "week" in period: return amount*52
+    if "day" in period: return amount*260
+    return amount
+
+
+def _gate(status:str,evidence:str)->dict[str,str]:
+    return {"status":status,"evidence":clean_text(evidence)}
+
+
+def _qualification_gates(job:Job,profile:dict[str,Any],analysis:dict[str,Any],candidate:dict[str,Any],strategy:dict[str,Any])->dict[str,dict[str,str]]:
+    text=" ".join((job.description,job.location_raw,job.remote_status,job.employment_type))
+    low=norm(text)
+    home_only=_home_only_remote_evidence(job)
+    gates:dict[str,dict[str,str]]={}
+    gates["home_remote"]=_gate("pass" if home_only else "review", "explicit home-only remote language and remote gate pass" if home_only else "home-only remote evidence is missing")
+
+    state=clean_text(candidate.get("state") or "TX").upper()
+    state_restricted=bool(re.search(r"\b(?:eligible states?|must (?:live|reside|be located)|residents? of|remote (?:only )?(?:in|from)|open to candidates in|currently hiring in)\b",text,re.I))
+    state_names={"TX":"Texas","CA":"California","NY":"New York","FL":"Florida","WA":"Washington","IL":"Illinois","MA":"Massachusetts","CO":"Colorado","AZ":"Arizona","OR":"Oregon","PA":"Pennsylvania","OH":"Ohio","NC":"North Carolina","GA":"Georgia","VA":"Virginia","TN":"Tennessee","MI":"Michigan","MN":"Minnesota","WI":"Wisconsin","MO":"Missouri","MD":"Maryland","NJ":"New Jersey","CT":"Connecticut","IN":"Indiana","SC":"South Carolina","AL":"Alabama","KY":"Kentucky","LA":"Louisiana","OK":"Oklahoma","UT":"Utah","IA":"Iowa","KS":"Kansas","AR":"Arkansas","MS":"Mississippi","NE":"Nebraska","NV":"Nevada","NM":"New Mexico","ID":"Idaho","NH":"New Hampshire","ME":"Maine","RI":"Rhode Island","DE":"Delaware","WV":"West Virginia","HI":"Hawaii","AK":"Alaska","VT":"Vermont","MT":"Montana","WY":"Wyoming","ND":"North Dakota","SD":"South Dakota"}
+    state_label=state_names.get(state,state)
+    state_excluded=bool(re.search(rf"\b(?:not hiring|not accepting|not considering|excluding|exclude|ineligible for)\b.{{0,100}}\b(?:{re.escape(state)}|{re.escape(state_label)})\b|\b(?:{re.escape(state)}|{re.escape(state_label)})\b.{{0,80}}\b(?:not eligible|excluded|ineligible)\b",text,re.I))
+    if state_restricted:
+        eligible=set(getattr(job,"eligible_states",[]) or extract_eligible_states(job))
+        if state_excluded:
+            gates["texas_eligibility"]=_gate("fail",f"posting explicitly excludes {state_label}")
+        elif state in eligible:
+            gates["texas_eligibility"]=_gate("pass",f"Texas is in the posting's explicit eligible-state set: {', '.join(sorted(eligible))}")
+        elif eligible:
+            gates["texas_eligibility"]=_gate("fail",f"posting's explicit eligible-state set excludes {state}: {', '.join(sorted(eligible))}")
+        else:
+            gates["texas_eligibility"]=_gate("review","posting limits eligible geography but the state list is unresolved")
+    else:
+        gates["texas_eligibility"]=_gate("pass" if home_only else "review", "US/Texas-compatible remote posting without a state restriction" if home_only else "Texas eligibility cannot be inferred from search intent")
+
+    full_time=bool(re.search(r"\bfull[- ]?time\b|\bfulltime\b|\b40\s+hours?(?: per week| weekly)?\b",text,re.I))
+    part_time=job.employment_class=="part_time"
+    gates["full_time"]=_gate("pass" if full_time else "fail" if part_time else "review", "full-time status is stated" if full_time else "posting states part-time work" if part_time else "full-time status is not explicit")
+    permanent=bool(re.search(r"\bpermanent\b",text,re.I)) and job.employment_class not in {"independent_contractor","freelance","temporary","seasonal","fixed_term_employee"}
+    known_nonpermanent=job.employment_class in {"independent_contractor","freelance","temporary","seasonal","fixed_term_employee"}
+    gates["permanent_employee"]=_gate("pass" if permanent else "fail" if known_nonpermanent else "review", "permanent employee status is stated" if permanent else "posting states a contract or temporary arrangement" if known_nonpermanent else "permanent employment is not explicit")
+
+    salary_floor=_annualized_salary_floor(job)
+    job.salary_annual_min=salary_floor
+    salary_source=job.source_verification in {"verified_direct_ats","verified_canonical_ats","verified_jsonld"} and bool(clean_text(job.salary_text))
+    salary_currency=clean_text(job.salary_currency or "USD").upper()
+    estimated=bool(re.search(r"\b(?:estimated|estimate|glassdoor estimate|employee reported)\b",job.salary_text,re.I))
+    salary_required=float(candidate.get("minimum_salary_annual",49920) or 49920)
+    if estimated or salary_currency!="USD" or not salary_source:
+        pay_status="review" if salary_floor is not None else "review"
+        pay_evidence="employer-provided USD base pay is not verified"
+    elif salary_floor is None:
+        pay_status,pay_evidence="review","employer-provided base-pay floor is missing"
+    elif salary_floor<salary_required:
+        pay_status,pay_evidence="fail",f"employer-provided base-pay floor ${salary_floor:,.0f} is below ${salary_required:,.0f}"
+    else:
+        pay_status,pay_evidence="pass",f"verified employer-provided base-pay floor annualizes to ${salary_floor:,.0f}"
+    gates["base_pay_floor"]=_gate(pay_status,pay_evidence)
+
+    presence_positive_text=re.sub(
+        r"\b(?:0\s*%\s*travel|no (?:mandatory )?travel(?: required)?|travel is not required|travel not required|no (?:office attendance|office requirement|onsite attendance|on-site attendance)|office attendance is not required|no required office days|no onsite training|no on-site training|no in-person training|training is remote|training delivered remotely|no field work|no fieldwork|no site visits?|no (?:(?:mandatory|required) )?in-person events?|no onsite events?|no on-site events?)\b",
+        " ", text, flags=re.I,
+    )
+    travel_absent=bool(re.search(r"\b(?:0\s*%\s*travel|no (?:mandatory )?travel(?: required)?|travel is not required|travel not required)\b",text,re.I))
+    # Conflicting statements fail closed: an explicit requirement cannot be
+    # canceled by a separate generic no-travel/no-onsite phrase.
+    travel_required=bool((job.travel_percent is not None and job.travel_percent>0) or re.search(r"\b(?:travel required|travel is required|must travel|mandatory travel|field travel|regular travel)\b",presence_positive_text,re.I))
+    office_required=bool(re.search(r"\b(?:mandatory|required|must|expected to|requires?)\b.{0,60}\b(?:office attendance|in-office|hybrid|office days|onsite work|on-site work)\b|\b(?:office attendance|in-office|hybrid|office days|onsite work|on-site work)\b.{0,60}\b(?:mandatory|required|must|expected)\b",presence_positive_text,re.I))
+    training_required=bool(re.search(r"\b(?:required|mandatory|must attend|onsite|on-site|in-person)\b.{0,60}\btraining\b|\btraining\b.{0,60}\b(?:onsite|on-site|in-person|required|mandatory)\b",presence_positive_text,re.I))
+    field_required=bool(re.search(r"\b(?:field work|fieldwork|site visits?|onsite visits?)\b.{0,50}\b(?:required|mandatory|regular|must)\b|\b(?:required|mandatory|regular|must)\b.{0,50}\b(?:field work|fieldwork|site visits?|onsite visits?)\b",presence_positive_text,re.I))
+    events_required=bool(re.search(r"\b(?:required|mandatory|must attend)\b.{0,60}\b(?:in-person|onsite|on-site)\b.{0,40}\b(?:events?|meetings?|retreats?)\b|\b(?:events?|meetings?|retreats?)\b.{0,60}\b(?:in-person|onsite|on-site)\b.{0,40}\b(?:required|mandatory)\b",presence_positive_text,re.I))
+    no_training=bool(re.search(r"\b(?:no onsite training|no on-site training|no in-person training|training is remote|training delivered remotely)\b",text,re.I))
+    no_field=bool(re.search(r"\b(?:no field work|no fieldwork|no site visits?)\b",text,re.I))
+    no_events=bool(re.search(r"\b(?:no (?:(?:mandatory|required) )?in-person events?|no onsite events?|no on-site events?)\b",text,re.I))
+    presence_known_bad=travel_required or office_required or training_required or field_required or events_required
+    presence_complete=travel_absent and home_only and no_training and no_field and no_events
+    presence_status="fail" if presence_known_bad else "pass" if presence_complete else "review"
+    presence_evidence=("posting states zero travel and home-only work with no mandatory in-person conditions" if presence_status=="pass" else "posting explicitly requires travel or in-person work" if presence_status=="fail" else "zero travel and applicable in-person conditions are not all positively evidenced")
+    gates["mandatory_presence"]=_gate(presence_status,presence_evidence)
+
+    gates["open_current"]=_gate("pass" if job.posting_status=="active" else "fail" if job.posting_status=="closed" else "review", f"posting status is {job.posting_status or 'unknown'}")
+
+    required_skills=list(analysis.get("required_skills",[]))
+    unsupported=[skill for skill in required_skills if capability_for(skill,candidate)[0] not in {"proven","strong_transfer"}]
+    gaps=list(analysis.get("critical_gaps",[]))+list(analysis.get("learnable_gaps",[]))
+    required_text=clean_text(analysis.get("required_text") or "")
+    provider_work_terms=r"(?:provider enrollment|provider credentialing|provider roster|provider data|credentialing operations|CAQH)"
+    provider_experience_required=bool(re.search(
+        rf"\b{provider_work_terms}\b.{{0,100}}\b(?:experience|expertise|proficiency|required|must|prior|minimum)\b|\b(?:experience|expertise|proficiency|required|must|prior|minimum)\b.{{0,100}}\b{provider_work_terms}\b",
+        required_text,re.I,
+    ))
+    candidate_direct_provider=[]
+    for capability in candidate.get("capabilities",[]):
+        if str(capability.get("level", "")) in {"proven","strong_transfer"}:
+            candidate_direct_provider.extend(clean_text(value) for value in [capability.get("name", ""), *capability.get("aliases", [])] if clean_text(value))
+    if provider_experience_required and not phrase_hits(("provider enrollment","provider credentialing","provider roster","provider data","credentialing operations","CAQH")," ".join(candidate_direct_provider)):
+        unsupported.append("direct provider enrollment/credentialing experience")
+    candidate_credentials=[clean_text(value) for value in candidate.get("credentials",[]) if clean_text(value)]
+    credential_contexts=[]
+    for match in re.finditer(r"\b(?:license|licence|certification|certificate|credential|registration)\b",required_text,re.I):
+        context=required_text[max(0,match.start()-100):min(len(required_text),match.end()+70)]
+        if re.search(r"\b(?:required|must|mandatory|active|current|valid|unrestricted)\b",context,re.I):
+            if not any(phrase_present(evidence,context) for evidence in candidate_credentials):
+                credential_contexts.append(clean_text(context))
+    if len(job.description or "")<250:
+        requirement_status,requirement_evidence="review","substantive requirements evidence is incomplete"
+    elif gaps or unsupported or credential_contexts:
+        unsupported_facts=unsupported+gaps+["unverified mandatory credential: "+value for value in credential_contexts]
+        requirement_status,requirement_evidence="review","mandatory requirements are unsupported: "+", ".join(unsupported_facts[:5])
+    else:
+        requirement_status,requirement_evidence="pass","mandatory requirements are supported by candidate evidence"
+    gates["requirements_supported"]=_gate(requirement_status,requirement_evidence)
+
+    description=" ".join((job.description,job.company,job.category," ".join(job.tags)))
+    domain=str(profile.get("domain", ""))
+    domain_markers=list(profile.get("domain_markers",[]))
+    responsibility_markers=list(profile.get("responsibility_markers",[]))
+    if domain=="transferable":
+        domain_markers=["records","data quality","data validation","data integrity","documentation","process operations"]
+    domain_hits=phrase_hits(domain_markers,description)
+    responsibility_heads=strategy.get("strategy",{}).get("requirements",{}).get("required_section_headings",[])+strategy.get("strategy",{}).get("requirements",{}).get("preferred_section_headings",[])
+    responsibility_positions=_heading_positions(job.description,responsibility_heads)
+    responsibility_text=job.description[:min(responsibility_positions)] if responsibility_positions else job.description
+    responsibility_hits=phrase_hits(responsibility_markers,responsibility_text)
+    duty_evidence=bool(re.search(r"\b(?:process|maintain|review|reconcile|coordinate|track|audit|verify|document|analyze|resolve|update|evaluate|implement|support|manage|prepare|validate|monitor)\w*\b",responsibility_text,re.I))
+    provider_title=bool(re.search(r"\b(?:provider enrollment|provider credentialing|credentialing specialist|credentialing coordinator)\b",job.title,re.I))
+    provider_description_evidence=bool(phrase_hits(("provider enrollment","provider credentialing","provider roster","provider directory","credentialing","CAQH"),responsibility_text))
+    responsibility_resolved=bool(domain_hits and responsibility_hits and duty_evidence and (not provider_title or provider_description_evidence))
+    gates["responsibility_domain"]=_gate("pass" if responsibility_resolved else "review", "description contains domain, responsibility, and duty evidence" if responsibility_resolved else "title or generic terms lack substantive domain/responsibility evidence")
+
+    application_status=clean_text(getattr(job,"application_status","NEW")).upper() or "NEW"
+    gates["no_repeat"]=_gate("pass" if application_status=="NEW" else "fail", "not previously handled" if application_status=="NEW" else f"already handled with status {application_status}")
+    return gates
+
+
+def _preference_ranking(job:Job,strategy:dict[str,Any])->tuple[float,list[str]]:
+    active=strategy.get("_live_search_profile",{}).get("profile",{})
+    preferences=active.get("preferences",{})
+    text=" ".join((job.title,job.company,job.description))
+    positives=phrase_hits(preferences.get("positive_terms",[]),text)
+    negatives=phrase_hits(preferences.get("negative_terms",[]),text)
+    established=phrase_hits(preferences.get("established_terms",[]),text)
+    adjustment=1.0*len(positives)+1.5*len(established)
+    if job.career_lane=="HIGHER_ED_EDTECH": adjustment+=2.0
+    adjustment-=1.5*len(negatives)
+    maximum=float(preferences.get("maximum_adjustment",6) or 6)
+    adjustment=max(-maximum,min(maximum,adjustment))
+    signals=[f"preference:+{term}" for term in positives]+[f"preference:+established:{term}" for term in established]+[f"preference:-{term}" for term in negatives]
+    if job.career_lane=="HIGHER_ED_EDTECH": signals.append("preference:+higher-ed")
+    return round(adjustment,1),signals
+
+
 def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Job:
     # Every downstream parser works on normalized visible text, never raw ATS HTML.
     job.description=strip_html(job.description or "")
@@ -691,7 +883,7 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     job.eligible_states=extract_eligible_states(job)
     mode=getattr(job,"_mode","fast"); profile,kws,rel,family,dscore=classify_role(job,strategy,mode)
     job.relevance_score=round(rel,1); job.normalized_title_family=family or ""; job.domain_score=round(dscore,1)
-    job.application_deadline,job.posting_status=parse_deadline(job.description)
+    job.application_deadline,job.posting_status=posting_status(job)
     job.remote_gate,job.remote_gate_reason,job.remote_confidence=remote_gate(job,strategy,candidate)
     job.remote_evidence={"decision":job.remote_gate,"reason":job.remote_gate_reason,"source_metadata_remote":source_remote_declared(job)}
     job.employment_class,job.employment_reason=employment_analysis(job)
@@ -702,12 +894,30 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     job.work_auth_gate,job.work_authorization_requirement=work_auth_analysis(job.description,candidate)
     job.application_friction_score=round(application_friction_score(job),1); job.urgency_score=round(urgency_score(job),1)
     amin=annualized_salary(job.salary_min,job.salary_max,job.salary_period)
+    job.salary_annual_min=_annualized_salary_floor(job)
     if job.salary_min is not None and job.salary_max is not None:
         mn=annualized_salary(job.salary_min,job.salary_min,job.salary_period); mx=annualized_salary(job.salary_max,job.salary_max,job.salary_period); job.salary_annual_mid=((mn+mx)/2 if mn is not None and mx is not None else amin)
     else: job.salary_annual_mid=amin
     job.application_priority_score=0.0; job.eligibility_confidence=0.0
     _,job.recall_reason=recall_prefilter(job,strategy)
     if not profile:
+        raw=job.raw if isinstance(job.raw,dict) else {}
+        live_families={
+            str(family.get("id")) for family in strategy.get("_live_search_profile",{}).get("families",[])
+            if family.get("enabled",True) and family.get("minimum_deep_recall",False)
+        }
+        query_family=clean_text(raw.get("query_family") or "")
+        ambiguous_title=bool(re.search(r"\b(?:registrar|admissions?|enrollment|intake|operations?|coordinator|implementation)\b",job.title,re.I))
+        _,recall_reason=recall_prefilter(job,strategy)
+        if ambiguous_title and recall_reason not in {"excluded occupation family","explicit out-of-scope title"} and (bool(job.recall_reason) and job.recall_reason!="no recall-stage title archetype" or query_family in live_families):
+            job.search_profile=""; job.career_lane=""; job.resume_variant=""; job.matched_keywords=[]; job.qualification_score=0.0
+            job.requirement_matches=[]; job.requirement_gaps=[]; job.required_skills=[]; job.management_required=0
+            job.landing_score=job.career_score=job.door_score=0.0; job.recommendation="REVIEW"; job.hard_reject_reasons=[]
+            job.qualification_gates={"responsibility_domain":_gate("review","ambiguous title lacks a resolved substantive domain/responsibility profile")}
+            job.score_reasons=["title is ambiguous; substantive responsibility evidence is unresolved"]
+            job.score_components={"role_relevance":job.relevance_score,"qualification_fit":0.0,"landing_fit":0.0,"career_value":0.0,"door_score":0.0}
+            job.preference_adjustment,job.preference_signals=_preference_ranking(job,strategy)
+            return job
         job.search_profile=""; job.career_lane=""; job.resume_variant=""; job.matched_keywords=[]; job.qualification_score=0.0
         job.requirement_matches=[]; job.requirement_gaps=[]; job.required_skills=[]; job.management_required=0
         job.landing_score=job.career_score=job.door_score=0.0; job.recommendation="OUT_OF_SCOPE"; job.hard_reject_reasons=[]; job.score_reasons=["role-family relevance below threshold / out of scope"]
@@ -725,7 +935,7 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     max_travel=float(candidate.get("max_travel_percent",-1) or -1)
     if max_travel>=0 and job.travel_percent is not None and job.travel_percent>max_travel: reasons.append(f"travel requirement {job.travel_percent:.0f}% exceeds configured maximum {max_travel:.0f}%")
     floor=float(candidate.get("minimum_salary_annual",0) or 0)
-    if floor>0 and job.salary_annual_mid is not None and job.salary_annual_mid<floor: reasons.append(f"annualized compensation below configured floor ${floor:,.0f}")
+    if floor>0 and job.salary_annual_min is not None and job.salary_annual_min<floor: reasons.append(f"employer-provided base-pay floor below ${floor:,.0f}")
     rules=strategy.get("strategy",{}).get("role_rules",{})
     for term in rules.get("hard_seniority_terms",[]):
         if phrase_present(term,job.title): reasons.append(f"seniority beyond near-term strategy: {term}")
@@ -733,7 +943,6 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
         if detect_required_credential(job.description,cred,strategy): reasons.append(f"required credential not documented in resume: {cred}")
     for x in strategy.get("strategy",{}).get("filters",{}).get("hard_reject_phrases",[]):
         if phrase_present(x,job.title+" "+job.description): reasons.append(f"hard-exclusion phrase: {x}")
-    job.hard_reject_reasons=sorted(set(reasons))
     fresh=job.urgency_score; friction=job.application_friction_score
     soft_hits=phrase_hits(strategy.get("strategy",{}).get("filters",{}).get("soft_penalty_phrases",[]),job.title+" "+job.description+" "+job.employment_type)
     if job.travel_percent is not None and job.travel_percent>=25: soft_hits=sorted(set(soft_hits+[f"travel {job.travel_percent:.0f}%"]))
@@ -742,6 +951,13 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     job.landing_score=round(max(0,min(100,landing)),1); job.career_score=round(max(0,career_score(job,profile,strategy)-min(10,len(soft_hits)*2)),1); job.door_score=round(.70*job.landing_score+.30*job.career_score,1)
     job.application_priority_score=round(.72*job.door_score+.18*job.urgency_score+.10*job.application_friction_score,1)
     job.eligibility_confidence=round((job.relevance_score+job.qualification_score+job.remote_confidence+job.extraction_confidence)/4,1)
+    job.qualification_gates=_qualification_gates(job,profile,a,candidate,strategy)
+    for gate_name,gate_value in job.qualification_gates.items():
+        if gate_value["status"]=="fail" and gate_name in {"texas_eligibility","base_pay_floor","mandatory_presence","open_current"}:
+            reasons.append(f"{gate_name}: {gate_value['evidence']}")
+    job.hard_reject_reasons=sorted(set(reasons))
+    job.preference_adjustment,job.preference_signals=_preference_ranking(job,strategy)
+    job.application_priority_score=round(max(0,min(100,job.application_priority_score+job.preference_adjustment)),1)
     sc=strategy.get("strategy",{}).get("scoring",{}); critical=a["critical_gaps"]
     stable_employment=job.employment_class in {"full_time_employee","full_time_permanent"}
     verified=bool(job.canonical_verified)
@@ -753,7 +969,8 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
         and job.source_verification not in {"identity_mismatch","unverified_discovery"}
     )
     promotable_source=verified or trusted_primary_detail
-    if job.hard_reject_reasons: job.recommendation="SKIP_HARD_GATE"
+    if job.qualification_gates.get("no_repeat",{}).get("status")=="fail": job.recommendation="ALREADY_HANDLED"
+    elif job.hard_reject_reasons: job.recommendation="SKIP_HARD_GATE"
     elif job.source_verification in {"identity_mismatch"}: job.recommendation="SKIP_HARD_GATE"
     elif job.employment_class in {"independent_contractor","freelance","temporary","seasonal"}: job.recommendation="CONTRACT_REVIEW"
     elif job.employment_class=="fixed_term_employee": job.recommendation="FIXED_TERM_REVIEW"
@@ -762,6 +979,7 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     elif not promotable_source: job.recommendation="REVIEW"
     elif job.remote_gate=="review": job.recommendation="REVIEW_REMOTE"
     elif job.work_auth_gate=="review": job.recommendation="REVIEW"
+    elif any(value["status"]!="pass" for value in job.qualification_gates.values()): job.recommendation="REVIEW"
     elif rel>=float(sc.get("minimum_relevance_for_apply",80)) and q>=float(sc.get("minimum_qualification_for_apply",72)) and job.landing_score>=float(sc.get("minimum_landing_for_apply",74)) and job.career_score>=float(sc.get("minimum_career_for_apply",55)) and not critical and not soft_hits and stable_employment: job.recommendation="APPLY_NOW"
     elif rel>=72 and q>=float(sc.get("minimum_landing_for_volume_apply",68)) and job.landing_score>=float(sc.get("minimum_landing_for_volume_apply",68)) and job.career_score>=float(sc.get("minimum_career_for_volume_apply",50)) and not critical and stable_employment: job.recommendation="APPLY_VOLUME"
     elif rel>=76 and job.career_score>=float(sc.get("high_value_stretch_min_career",78)) and job.landing_score>=float(sc.get("high_value_stretch_min_landing",52)) and not critical and stable_employment: job.recommendation="HIGH_VALUE_STRETCH"
@@ -779,7 +997,10 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     if a["learnable_gaps"]: job.score_reasons.append("gaps: "+", ".join(a["learnable_gaps"][:5]))
     if critical: job.score_reasons.append("critical gaps: "+", ".join(critical[:3]))
     if soft_hits: job.score_reasons.append("soft penalties: "+", ".join(soft_hits[:5]))
-    job.score_components={"role_relevance":job.relevance_score,"qualification_fit":job.qualification_score,"landing_fit":job.landing_score,"career_value":job.career_score,"door_score":job.door_score,"freshness":job.urgency_score,"application_friction":job.application_friction_score,"source_confidence":job.source_confidence,"remote_confidence":job.remote_confidence}
+    if job.preference_signals: job.score_reasons.append("preference ranking: "+", ".join(job.preference_signals[:8]))
+    gate_reviews=[name for name,value in job.qualification_gates.items() if value["status"]!="pass"]
+    if gate_reviews: job.score_reasons.append("hard-gate review: "+", ".join(gate_reviews))
+    job.score_components={"role_relevance":job.relevance_score,"qualification_fit":job.qualification_score,"landing_fit":job.landing_score,"career_value":job.career_score,"door_score":job.door_score,"freshness":job.urgency_score,"application_friction":job.application_friction_score,"source_confidence":job.source_confidence,"remote_confidence":job.remote_confidence,"preference_adjustment":job.preference_adjustment}
     return job
 
 # Make browser capture in the core use the new scoring engine.
@@ -934,6 +1155,7 @@ def job_from_row(row:sqlite3.Row)->Job:
         posted_at=clean_text(row["posted_at"]), description=clean_text(row["description"]), category=clean_text(row["category"]),
         tags=arr("tags_json"), raw={"rescore_from_ledger":True,"_ledger_canonical_verified":int(row["canonical_verified"] or 0) if "canonical_verified" in row.keys() else 0,"_ledger_source_verification":clean_text(row["source_verification"]) if "source_verification" in row.keys() else "","_ledger_source_verification_reason":clean_text(row["source_verification_reason"]) if "source_verification_reason" in row.keys() else ""},
     )
+    setattr(j,"application_status",clean_text(row["application_status"] if "application_status" in row.keys() else "NEW").upper() or "NEW")
     return j
 
 
@@ -1026,7 +1248,11 @@ class PrecisionStore(c.Store):
             "application_deadline":clean_text(getattr(job,"application_deadline","")),"last_scored_at":now_iso(),"strategy_version":VERSION,
             "travel_percent":getattr(job,"travel_percent",None),"timezone_requirement":clean_text(getattr(job,"timezone_requirement","")),
             "work_auth_gate":clean_text(getattr(job,"work_auth_gate","unknown")),"work_authorization_requirement":clean_text(getattr(job,"work_authorization_requirement","")),
-            "salary_annual_mid":getattr(job,"salary_annual_mid",None),"application_friction_score":float(getattr(job,"application_friction_score",0)),
+            "salary_annual_mid":getattr(job,"salary_annual_mid",None),"salary_annual_min":getattr(job,"salary_annual_min",None),
+            "qualification_gates_json":json.dumps(getattr(job,"qualification_gates",{}),ensure_ascii=False,sort_keys=True),
+            "preference_signals_json":json.dumps(getattr(job,"preference_signals",[]),ensure_ascii=False),
+            "preference_adjustment":float(getattr(job,"preference_adjustment",0)),
+            "application_friction_score":float(getattr(job,"application_friction_score",0)),
             "urgency_score":float(getattr(job,"urgency_score",0)),"application_priority_score":float(getattr(job,"application_priority_score",0)),
             "eligibility_confidence":float(getattr(job,"eligibility_confidence",0)),
             "employment_class":clean_text(getattr(job,"employment_class","unknown")),
@@ -1058,6 +1284,14 @@ class PrecisionStore(c.Store):
         now=now_iso(); jid=self.resolve_job_id(job); ok=occurrence_key(job); snap=source_snapshot(job); h=snapshot_hash(snap)
         board=clean_text((job.raw or {}).get("_board") or (job.raw or {}).get("board") or "")
         existing=self.conn.execute("SELECT * FROM jobs WHERE job_id=?",(jid,)).fetchone()
+        if existing is not None:
+            application_status=clean_text(existing["application_status"] or "NEW").upper()
+            setattr(job,"application_status",application_status)
+            if application_status!="NEW":
+                gates=dict(getattr(job,"qualification_gates",{}) or {})
+                gates["no_repeat"]={"status":"fail","evidence":f"already handled with status {application_status}"}
+                setattr(job,"qualification_gates",gates)
+                job.recommendation="ALREADY_HANDLED"
         incoming_conf=float(getattr(job,"source_confidence",0) or 0)
         status="new"
         if existing is None:
@@ -1100,13 +1334,26 @@ class PrecisionStore(c.Store):
             else:
                 status="unchanged"
         # Every source encounter is logged independently.
+        provenance={key:clean_text((job.raw or {}).get(key) or "") for key in (
+            "strategy_profile","strategy_profile_version","query_family","query_kind","query_pass")}
+        provenance["initial_order"]=int((job.raw or {}).get("initial_order") or 0)
         occ=self.conn.execute("SELECT * FROM source_occurrences WHERE occurrence_key=?",(ok,)).fetchone()
         if occ:
-            self.conn.execute("UPDATE source_occurrences SET job_id=?,source_url=?,apply_url=?,raw_json=?,last_seen=?,seen_count=seen_count+1,source_board=?,content_hash=?,is_active=1,missed_complete_scans=0,last_seen_run_id=? WHERE occurrence_key=?",
-                (jid,job.canonical_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),now,board,h,run_id,ok))
+            self.conn.execute("""UPDATE source_occurrences SET job_id=?,source_url=?,apply_url=?,raw_json=?,last_seen=?,seen_count=seen_count+1,
+                source_board=?,content_hash=?,is_active=1,missed_complete_scans=0,last_seen_run_id=?,strategy_profile=?,
+                strategy_profile_version=?,query_family=?,query_kind=?,query_pass=?,initial_order=? WHERE occurrence_key=?""",
+                (jid,job.canonical_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),now,board,h,run_id,
+                 provenance["strategy_profile"],provenance["strategy_profile_version"],provenance["query_family"],
+                 provenance["query_kind"],provenance["query_pass"],provenance["initial_order"],ok))
         else:
-            self.conn.execute("INSERT INTO source_occurrences(occurrence_key,job_id,source_site,source_job_id,source_url,apply_url,raw_json,first_seen,last_seen,seen_count,source_board,content_hash,is_active,missed_complete_scans,last_seen_run_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (ok,jid,job.source_site,job.source_job_id,job.canonical_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),now,now,1,board,h,1,0,run_id))
+            self.conn.execute("""INSERT INTO source_occurrences(
+                occurrence_key,job_id,source_site,source_job_id,source_url,apply_url,raw_json,first_seen,last_seen,
+                seen_count,source_board,content_hash,is_active,missed_complete_scans,last_seen_run_id,strategy_profile,
+                strategy_profile_version,query_family,query_kind,query_pass,initial_order
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (ok,jid,job.source_site,job.source_job_id,job.canonical_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),
+                 now,now,1,board,h,1,0,run_id,provenance["strategy_profile"],provenance["strategy_profile_version"],
+                 provenance["query_family"],provenance["query_kind"],provenance["query_pass"],provenance["initial_order"]))
         self.conn.execute("UPDATE jobs SET seen_count=seen_count+? WHERE job_id=?",(0 if existing is None else 1,jid))
         if commit: self.conn.commit()
         return status
@@ -1223,8 +1470,7 @@ def jsoncol(row: sqlite3.Row,key:str)->list[Any]:
 
 def select_daily_plan(rows:list[sqlite3.Row],strategy:dict[str,Any],target:Optional[int]=None,empirical_boosts:Optional[dict[str,float]]=None)->list[sqlite3.Row]:
     tc=strategy.get("strategy",{}).get("throughput",{}); target=int(target or tc.get("daily_target",15)); target=max(int(tc.get("daily_minimum",10)),min(int(tc.get("daily_maximum",20)),target))
-    done={"applied","screen","interview","final","final_interview","offer","rejected","withdrawn","skip","closed"}
-    elig=[r for r in rows if int(r["is_active"] or 0)==1 and clean_text(r["posting_status"])!="closed" and norm(r["application_status"]) not in done and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}]
+    elig=[r for r in rows if int(r["is_active"] or 0)==1 and clean_text(r["posting_status"])!="closed" and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}]
     rank={"APPLY_NOW":0,"APPLY_VOLUME":1,"HIGH_VALUE_STRETCH":2}; empirical_boosts=empirical_boosts or {}; elig.sort(key=lambda r:(rank.get(r["recommendation"],9),-((r["application_priority_score"] or 0)+empirical_boosts.get(norm(r["normalized_title_family"] or r["title"]),0.0)),-(r["door_score"] or 0),-(r["qualification_score"] or 0),-(r["relevance_score"] or 0)))
     out=[]; selected=set(); cc={}; fc={}; maxc=int(tc.get("max_same_company_per_day",2)); maxf=int(tc.get("max_same_title_family_per_day",4)); p3_limit=int(target*float(tc.get("p3_max_percent",5))/100); p3_count=0
     # Pass 1: maximize diversity while keeping the strongest recommendations first.
@@ -1281,7 +1527,7 @@ def progress_summary(store:PrecisionStore,strategy:dict[str,Any])->str:
       SUM(CASE WHEN screen_at IS NOT NULL THEN 1 ELSE 0 END) screens,
       SUM(CASE WHEN interview_at IS NOT NULL THEN 1 ELSE 0 END) interviews,
       SUM(CASE WHEN offer_at IS NOT NULL THEN 1 ELSE 0 END) offers,
-      SUM(CASE WHEN is_active=1 AND application_status NOT IN ('applied','screen','interview','final_interview','offer','rejected','withdrawn') AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH') THEN 1 ELSE 0 END) reservoir
+      SUM(CASE WHEN is_active=1 AND upper(application_status)='NEW' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH') THEN 1 ELSE 0 END) reservoir
       FROM jobs""").fetchone()
     goal=int(strategy.get("strategy",{}).get("throughput",{}).get("cumulative_application_goal",500)); target=int(strategy.get("strategy",{}).get("throughput",{}).get("daily_target",15)); applied=int(r["applied"] or 0); reservoir=int(r["reservoir"] or 0)
     remaining=max(0,goal-applied); days=(remaining+target-1)//target if target else 0; runway=reservoir/target if target else 0
@@ -1356,13 +1602,12 @@ def export_updates(store:PrecisionStore,out:Path)->None:
 def export_all(store:PrecisionStore,out:Path,strategy:dict[str,Any],config:dict[str,Any],mode:str):
     out.mkdir(parents=True,exist_ok=True); rows=store.rows()
     fields=["job_id","change_status","last_changed_at","update_count","is_active","recommendation","application_priority_score","door_score","landing_score","career_score","relevance_score","qualification_score","urgency_score","application_friction_score","eligibility_confidence","remote_confidence","source_confidence","extraction_confidence","title","company","location_raw","salary_text","posted_at","posting_status","application_deadline","normalized_title_family","career_lane","search_profile","resume_variant","remote_gate","employment_type","employment_class","employment_reason","source_verification","source_verification_reason","canonical_verified","recall_reason","travel_percent","timezone_requirement","work_auth_gate","work_authorization_requirement","salary_annual_mid","canonical_source_site","canonical_url","apply_url","application_status","notes","first_seen","last_seen"]
-    done={"applied","screen","interview","final_interview","offer","rejected","withdrawn"}
     for name,pred in [
         ("all_discovered",lambda r:True),
         ("active_jobs",lambda r:int(r["is_active"] or 0)==1),
         ("candidate_universe",lambda r:int(r["is_active"] or 0)==1 and float(r["relevance_score"] or 0)>=65),
-        ("qualified_universe",lambda r:int(r["is_active"] or 0)==1 and r["application_status"] not in done and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH","REVIEW","REVIEW_REMOTE","VERIFY_SOURCE","REVIEW_EMPLOYMENT"}),
-        ("application_reservoir",lambda r:int(r["is_active"] or 0)==1 and r["application_status"] not in done and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}),
+        ("qualified_universe",lambda r:int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH","REVIEW","REVIEW_REMOTE","VERIFY_SOURCE","REVIEW_EMPLOYMENT"}),
+        ("application_reservoir",lambda r:int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}),
         ("verification_queue",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="VERIFY_SOURCE"),
         ("employment_review",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="REVIEW_EMPLOYMENT"),
         ("contract_review",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="CONTRACT_REVIEW"),
@@ -1380,7 +1625,7 @@ def export_all(store:PrecisionStore,out:Path,strategy:dict[str,Any],config:dict[
     with (out/"jobs.jsonl").open("w",encoding="utf-8") as f:
         for r in rows: f.write(json.dumps(dict(r),ensure_ascii=False)+"\n")
     build_dashboard(store,out); picked=build_daily_plan(store,out,strategy); export_updates(store,out); build_funnel_report(store,out,strategy)
-    candidates=[r for r in rows if int(r["is_active"] or 0)==1 and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH","REVIEW","VERIFY_SOURCE","REVIEW_EMPLOYMENT"} and r["application_status"] not in done]
+    candidates=[r for r in rows if int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH","REVIEW","VERIFY_SOURCE","REVIEW_EMPLOYMENT"}]
     bd=out/"chatgpt_batches"; bd.mkdir(exist_ok=True)
     for old in bd.glob("*.md"): old.unlink()
     for bi in range(0,len(candidates),10):
@@ -1392,7 +1637,7 @@ def export_all(store:PrecisionStore,out:Path,strategy:dict[str,Any],config:dict[
     for r in rows:
         recs[r["recommendation"]]=recs.get(r["recommendation"],0)+1; lanes[r["career_lane"] or "unclassified"]=lanes.get(r["career_lane"] or "unclassified",0)+1
     for o in store.conn.execute("SELECT source_site,COUNT(*) n FROM source_occurrences GROUP BY source_site"): sources[o["source_site"]]=o["n"]
-    reservoir=sum(1 for r in rows if int(r["is_active"] or 0)==1 and r["application_status"] not in done and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"})
+    reservoir=sum(1 for r in rows if int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"})
     changes=store.conn.execute("SELECT COUNT(*) n FROM jobs WHERE change_status IN ('NEW','UPDATED') AND (change_ack_at IS NULL OR change_ack_at<last_changed_at)").fetchone()["n"]
     report=["# Search Run Market Report",f"Generated: {now_iso()}",f"Total canonical jobs retained: **{len(rows)}**",f"Active qualified application reservoir: **{reservoir}**",f"Unacknowledged new/updated jobs: **{changes}**",f"Daily application slate: **{len(picked)}**",progress_summary(store,strategy),"\n## Recommendation counts"]+[f"- {k}: {v}" for k,v in sorted(recs.items(),key=lambda x:-x[1])]+["\n## Career lanes"]+[f"- {k}: {v}" for k,v in sorted(lanes.items(),key=lambda x:-x[1])]+["\n## Source occurrences"]+[f"- {k}: {v}" for k,v in sorted(sources.items(),key=lambda x:-x[1])]
     (out/"market_report.md").write_text("\n".join(report)+"\n",encoding="utf-8")
@@ -2011,7 +2256,7 @@ def build_retrieval_audit(store:PrecisionStore,out:Path)->Path:
     candidate=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND COALESCE(relevance_score,0)>=65")
     relevant=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND COALESCE(relevance_score,0)>=65 AND recommendation NOT IN ('OUT_OF_SCOPE','SKIP_HARD_GATE','SKIP_SOURCE')")
     qualified=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND COALESCE(qualification_score,0)>=68")
-    reservoir=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH') AND application_status NOT IN ('applied','screen','interview','final_interview','offer','rejected')")
+    reservoir=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
     blank=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND LENGTH(TRIM(COALESCE(description,'')))<120")
     remote_pass=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='pass'")
     remote_reject=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='reject'")

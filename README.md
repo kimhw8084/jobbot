@@ -146,7 +146,7 @@ do not point unattended tests at `data/jobs.sqlite3`.
 - Migrations run integrity checks before and after, and use SQLite’s backup API before changing an existing schema.
 - Logs are written under `out/logs/`; exports and plan/audit reports are under `out/`.
 
-The core portfolio is exactly 80% healthcare, 15% higher education/EdTech, and 5% content/bilingual/AI quality. Within healthcare it is 35% operations/access, 15% health information/documentation/QA, 20% quality/data/analytics, and 10% implementation/project/program operations. Transferable generic roles are a labeled fallback and do not displace the core portfolio.
+The durable career architecture is 55% Healthcare Regulated Operations & Data Quality, 25% Healthcare Analytics/Project/Implementation, 15% Education/Learning/EdTech, and 5% Bilingual AI/Content Quality. Active live retrieval uses a separate versioned profile: its calibration order does not set permanent query quotas, and deep/staged plans recall every enabled credible family. See [Career strategy](docs/CAREER_STRATEGY.md) and [Search plan](docs/SEARCH_PLAN.md).
 
 ## Tests and release
 

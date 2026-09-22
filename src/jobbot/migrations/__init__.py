@@ -21,6 +21,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0015_production_integrity_states",
     "jobbot.migrations.m0016_chg146_workers_controls",
     "jobbot.migrations.m0017_chg159_human_wait",
+    "jobbot.migrations.m0018_chg170_live_search_provenance",
 )
 
 

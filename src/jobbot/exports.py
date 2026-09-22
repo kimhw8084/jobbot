@@ -14,6 +14,7 @@ EXPORT_COLUMNS = (
     "door_score", "resume_variant", "application_status", "canonical_url", "apply_url",
     "description", "required_qualifications", "preferred_qualifications", "requirement_matches_json",
     "requirement_gaps_json", "remote_evidence_json", "schedule_requirement", "score_components_json", "score_reasons_json",
+    "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
 )
 
 DISCOVERY_COLUMNS = (
@@ -21,6 +22,7 @@ DISCOVERY_COLUMNS = (
     "first_seen_at", "last_seen_at", "sighting_count", "detail_read", "canonical_job_id",
     "title_hint", "company_hint", "location_hint", "posted_text", "posted_age_days", "observed_at",
     "card_json", "detail_status", "detail_attempts", "detail_started_at", "detail_completed_at", "detail_error",
+    "strategy_profile", "strategy_profile_version", "query_family", "query_kind", "query_pass", "initial_order",
 )
 
 APPLICATION_HISTORY_COLUMNS = (
@@ -70,15 +72,15 @@ def export_selected(conn: sqlite3.Connection, output_dir: Path, job_ids: Sequenc
 def export_all(conn: sqlite3.Connection, output_dir: Path, *, batch_size: int = 20) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     terminal = "('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED','WITHDRAWN','SKIP','CLOSED')"
-    qualified = "is_active=1 AND remote_gate='pass' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')"
+    qualified = "is_active=1 AND upper(application_status)='NEW' AND remote_gate='pass' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')"
     definitions = {
         "all_jobs.csv": ("1=1", ()),
         "active_jobs.csv": ("is_active=1", ()),
         "qualified_jobs.csv": (qualified, ()),
         "unapplied_jobs.csv": (qualified + f" AND upper(application_status) NOT IN {terminal}", ()),
-        "apply_now.csv": ("is_active=1 AND recommendation='APPLY_NOW'", ()),
-        "apply_volume.csv": ("is_active=1 AND recommendation='APPLY_VOLUME'", ()),
-        "stretch.csv": ("is_active=1 AND recommendation='HIGH_VALUE_STRETCH'", ()),
+        "apply_now.csv": ("is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_NOW'", ()),
+        "apply_volume.csv": ("is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_VOLUME'", ()),
+        "stretch.csv": ("is_active=1 AND upper(application_status)='NEW' AND recommendation='HIGH_VALUE_STRETCH'", ()),
         "application_tracker.csv": ("upper(application_status)!='NEW'", ()),
         "recent_updates.csv": ("change_status IN ('NEW','UPDATED','CLOSED','REOPENED')", ()),
     }

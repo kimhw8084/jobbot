@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -39,12 +40,25 @@ def mark(conn: sqlite3.Connection, job_id: str, status: str, *, notes: str = "",
     normalized = normalize_status(status)
     if conn.execute("SELECT 1 FROM jobs WHERE job_id=?", (job_id,)).fetchone() is None:
         raise ApplicationError(f"unknown job id: {job_id}")
+    gate_row = conn.execute("SELECT qualification_gates_json FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+    try:
+        qualification_gates = json.loads(gate_row[0] or "{}") if gate_row else {}
+    except (TypeError, ValueError, json.JSONDecodeError):
+        qualification_gates = {}
+    if not isinstance(qualification_gates, dict):
+        qualification_gates = {}
+    qualification_gates["no_repeat"] = {
+        "status": "pass" if normalized == "NEW" else "fail",
+        "evidence": "not previously handled" if normalized == "NEW" else f"already handled with status {normalized}",
+    }
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     conn.execute("BEGIN IMMEDIATE")
     try:
         conn.execute(
-            "UPDATE jobs SET application_status=?,notes=CASE WHEN ?='' THEN notes ELSE ? END WHERE job_id=?",
-            (normalized, notes, notes, job_id),
+            """UPDATE jobs SET application_status=?,recommendation=?,qualification_gates_json=?,
+               notes=CASE WHEN ?='' THEN notes ELSE ? END WHERE job_id=?""",
+            (normalized, "REVIEW" if normalized == "NEW" else "ALREADY_HANDLED",
+             json.dumps(qualification_gates, ensure_ascii=False, sort_keys=True), notes, notes, job_id),
         )
         cursor = conn.execute(
             "INSERT INTO application_events(job_id,event_type,event_at,notes,source) VALUES(?,?,?,?,?)",

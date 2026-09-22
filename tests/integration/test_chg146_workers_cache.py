@@ -43,6 +43,14 @@ class Chg146WorkersCacheTests(unittest.TestCase):
             root = self.make_root(td); rpc.BASE = root
             try:
                 run_id = browser_tasks.enqueue_validation(root, ["linkedin", "indeed", "glassdoor"], max_results=1)
+                conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
+                provenance = conn.execute(
+                    "SELECT strategy_profile,strategy_profile_version,query_family,query_kind,query_pass FROM browser_search_tasks WHERE browser_run_id=?",
+                    (run_id,),
+                ).fetchall()
+                conn.close()
+                self.assertEqual(len(provenance), 3)
+                self.assertTrue(all(all(value for value in row) for row in provenance))
                 self.assertTrue(rpc.handle({"action": "begin_run", "run_id": run_id})["ok"])
                 leased = {}
                 for platform in ("linkedin", "indeed", "glassdoor"):

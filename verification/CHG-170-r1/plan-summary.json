@@ -1,0 +1,276 @@
+{
+  "before": {
+    "mode": "staged",
+    "total_tasks": 834,
+    "by_platform": {
+      "glassdoor": 278,
+      "indeed": 278,
+      "linkedin": 278
+    },
+    "by_legacy_lane": {
+      "CONTENT_AI_QUALITY": 60,
+      "HEALTHCARE_IMPLEMENTATION": 84,
+      "HEALTHCARE_INFO_QA": 78,
+      "HEALTHCARE_OPS_ACCESS": 372,
+      "HEALTHCARE_QUALITY_DATA": 96,
+      "HIGHER_ED_EDTECH": 144
+    },
+    "explicit_strategy_profile_family_pass_dimensions": false
+  },
+  "after": {
+    "mode": "staged",
+    "strategy_profile": "jobbot-broad-qualified-yield",
+    "strategy_profile_version": "2026-09-22.1",
+    "total_tasks": 140,
+    "by_platform": {
+      "linkedin": 56,
+      "indeed": 42,
+      "glassdoor": 42
+    },
+    "by_family": {
+      "provider_lifecycle_credentialing_data": 20,
+      "healthcare_quality_data_documentation_compliance": 20,
+      "healthcare_project_implementation_program_support": 20,
+      "higher_ed_academic_back_office": 20,
+      "bounded_transferable_records_data_process_ops": 20,
+      "backoffice_patient_access_eligibility_enrollment": 20,
+      "bilingual_ai_content_quality": 20
+    },
+    "by_pass": {
+      "linkedin_intent": 28,
+      "linkedin_title_family": 28,
+      "indeed_exact_phrase": 28,
+      "indeed_compact_boolean": 14,
+      "glassdoor_narrow_title": 42
+    },
+    "phase_counts": {
+      "A_FASTEST_DOOR_RECENT": 30,
+      "B_REMAINING_CORE_RECENT": 40,
+      "C_DEEP_BACKFILL": 70
+    },
+    "deep_families_by_platform": {
+      "glassdoor": [
+        "backoffice_patient_access_eligibility_enrollment",
+        "bilingual_ai_content_quality",
+        "bounded_transferable_records_data_process_ops",
+        "healthcare_project_implementation_program_support",
+        "healthcare_quality_data_documentation_compliance",
+        "higher_ed_academic_back_office",
+        "provider_lifecycle_credentialing_data"
+      ],
+      "indeed": [
+        "backoffice_patient_access_eligibility_enrollment",
+        "bilingual_ai_content_quality",
+        "bounded_transferable_records_data_process_ops",
+        "healthcare_project_implementation_program_support",
+        "healthcare_quality_data_documentation_compliance",
+        "higher_ed_academic_back_office",
+        "provider_lifecycle_credentialing_data"
+      ],
+      "linkedin": [
+        "backoffice_patient_access_eligibility_enrollment",
+        "bilingual_ai_content_quality",
+        "bounded_transferable_records_data_process_ops",
+        "healthcare_project_implementation_program_support",
+        "healthcare_quality_data_documentation_compliance",
+        "higher_ed_academic_back_office",
+        "provider_lifecycle_credentialing_data"
+      ]
+    },
+    "all_queries_remote_only_unlimited": true,
+    "exposed_fields": [
+      "age_days",
+      "allocation_percent",
+      "career_lane",
+      "career_priority",
+      "enabled",
+      "execution_rank",
+      "initial_order",
+      "lane",
+      "lane_label",
+      "max_results",
+      "phase",
+      "platform",
+      "priority",
+      "profile",
+      "query",
+      "query_family",
+      "query_kind",
+      "query_pass",
+      "remote_required",
+      "resume_variant",
+      "search_url",
+      "sort_mode",
+      "strategy_profile",
+      "strategy_profile_version",
+      "task_key"
+    ],
+    "by_platform_family_pass_phase": {
+      "linkedin": {
+        "provider_lifecycle_credentialing_data/linkedin_intent/A_FASTEST_DOOR_RECENT": 2,
+        "provider_lifecycle_credentialing_data/linkedin_title_family/A_FASTEST_DOOR_RECENT": 2,
+        "healthcare_quality_data_documentation_compliance/linkedin_intent/A_FASTEST_DOOR_RECENT": 2,
+        "healthcare_quality_data_documentation_compliance/linkedin_title_family/A_FASTEST_DOOR_RECENT": 2,
+        "healthcare_project_implementation_program_support/linkedin_intent/A_FASTEST_DOOR_RECENT": 2,
+        "healthcare_project_implementation_program_support/linkedin_title_family/A_FASTEST_DOOR_RECENT": 2,
+        "higher_ed_academic_back_office/linkedin_intent/B_REMAINING_CORE_RECENT": 2,
+        "higher_ed_academic_back_office/linkedin_title_family/B_REMAINING_CORE_RECENT": 2,
+        "bounded_transferable_records_data_process_ops/linkedin_intent/B_REMAINING_CORE_RECENT": 2,
+        "bounded_transferable_records_data_process_ops/linkedin_title_family/B_REMAINING_CORE_RECENT": 2,
+        "backoffice_patient_access_eligibility_enrollment/linkedin_intent/B_REMAINING_CORE_RECENT": 2,
+        "backoffice_patient_access_eligibility_enrollment/linkedin_title_family/B_REMAINING_CORE_RECENT": 2,
+        "bilingual_ai_content_quality/linkedin_intent/B_REMAINING_CORE_RECENT": 2,
+        "bilingual_ai_content_quality/linkedin_title_family/B_REMAINING_CORE_RECENT": 2,
+        "provider_lifecycle_credentialing_data/linkedin_intent/C_DEEP_BACKFILL": 2,
+        "provider_lifecycle_credentialing_data/linkedin_title_family/C_DEEP_BACKFILL": 2,
+        "healthcare_quality_data_documentation_compliance/linkedin_intent/C_DEEP_BACKFILL": 2,
+        "healthcare_quality_data_documentation_compliance/linkedin_title_family/C_DEEP_BACKFILL": 2,
+        "healthcare_project_implementation_program_support/linkedin_intent/C_DEEP_BACKFILL": 2,
+        "healthcare_project_implementation_program_support/linkedin_title_family/C_DEEP_BACKFILL": 2,
+        "higher_ed_academic_back_office/linkedin_intent/C_DEEP_BACKFILL": 2,
+        "higher_ed_academic_back_office/linkedin_title_family/C_DEEP_BACKFILL": 2,
+        "bounded_transferable_records_data_process_ops/linkedin_intent/C_DEEP_BACKFILL": 2,
+        "bounded_transferable_records_data_process_ops/linkedin_title_family/C_DEEP_BACKFILL": 2,
+        "backoffice_patient_access_eligibility_enrollment/linkedin_intent/C_DEEP_BACKFILL": 2,
+        "backoffice_patient_access_eligibility_enrollment/linkedin_title_family/C_DEEP_BACKFILL": 2,
+        "bilingual_ai_content_quality/linkedin_intent/C_DEEP_BACKFILL": 2,
+        "bilingual_ai_content_quality/linkedin_title_family/C_DEEP_BACKFILL": 2
+      },
+      "indeed": {
+        "provider_lifecycle_credentialing_data/indeed_exact_phrase/A_FASTEST_DOOR_RECENT": 2,
+        "provider_lifecycle_credentialing_data/indeed_compact_boolean/A_FASTEST_DOOR_RECENT": 1,
+        "healthcare_quality_data_documentation_compliance/indeed_exact_phrase/A_FASTEST_DOOR_RECENT": 2,
+        "healthcare_quality_data_documentation_compliance/indeed_compact_boolean/A_FASTEST_DOOR_RECENT": 1,
+        "healthcare_project_implementation_program_support/indeed_exact_phrase/A_FASTEST_DOOR_RECENT": 2,
+        "healthcare_project_implementation_program_support/indeed_compact_boolean/A_FASTEST_DOOR_RECENT": 1,
+        "higher_ed_academic_back_office/indeed_exact_phrase/B_REMAINING_CORE_RECENT": 2,
+        "higher_ed_academic_back_office/indeed_compact_boolean/B_REMAINING_CORE_RECENT": 1,
+        "bounded_transferable_records_data_process_ops/indeed_exact_phrase/B_REMAINING_CORE_RECENT": 2,
+        "bounded_transferable_records_data_process_ops/indeed_compact_boolean/B_REMAINING_CORE_RECENT": 1,
+        "backoffice_patient_access_eligibility_enrollment/indeed_exact_phrase/B_REMAINING_CORE_RECENT": 2,
+        "backoffice_patient_access_eligibility_enrollment/indeed_compact_boolean/B_REMAINING_CORE_RECENT": 1,
+        "bilingual_ai_content_quality/indeed_exact_phrase/B_REMAINING_CORE_RECENT": 2,
+        "bilingual_ai_content_quality/indeed_compact_boolean/B_REMAINING_CORE_RECENT": 1,
+        "provider_lifecycle_credentialing_data/indeed_exact_phrase/C_DEEP_BACKFILL": 2,
+        "provider_lifecycle_credentialing_data/indeed_compact_boolean/C_DEEP_BACKFILL": 1,
+        "healthcare_quality_data_documentation_compliance/indeed_exact_phrase/C_DEEP_BACKFILL": 2,
+        "healthcare_quality_data_documentation_compliance/indeed_compact_boolean/C_DEEP_BACKFILL": 1,
+        "healthcare_project_implementation_program_support/indeed_exact_phrase/C_DEEP_BACKFILL": 2,
+        "healthcare_project_implementation_program_support/indeed_compact_boolean/C_DEEP_BACKFILL": 1,
+        "higher_ed_academic_back_office/indeed_exact_phrase/C_DEEP_BACKFILL": 2,
+        "higher_ed_academic_back_office/indeed_compact_boolean/C_DEEP_BACKFILL": 1,
+        "bounded_transferable_records_data_process_ops/indeed_exact_phrase/C_DEEP_BACKFILL": 2,
+        "bounded_transferable_records_data_process_ops/indeed_compact_boolean/C_DEEP_BACKFILL": 1,
+        "backoffice_patient_access_eligibility_enrollment/indeed_exact_phrase/C_DEEP_BACKFILL": 2,
+        "backoffice_patient_access_eligibility_enrollment/indeed_compact_boolean/C_DEEP_BACKFILL": 1,
+        "bilingual_ai_content_quality/indeed_exact_phrase/C_DEEP_BACKFILL": 2,
+        "bilingual_ai_content_quality/indeed_compact_boolean/C_DEEP_BACKFILL": 1
+      },
+      "glassdoor": {
+        "provider_lifecycle_credentialing_data/glassdoor_narrow_title/A_FASTEST_DOOR_RECENT": 3,
+        "healthcare_quality_data_documentation_compliance/glassdoor_narrow_title/A_FASTEST_DOOR_RECENT": 3,
+        "healthcare_project_implementation_program_support/glassdoor_narrow_title/A_FASTEST_DOOR_RECENT": 3,
+        "higher_ed_academic_back_office/glassdoor_narrow_title/B_REMAINING_CORE_RECENT": 3,
+        "bounded_transferable_records_data_process_ops/glassdoor_narrow_title/B_REMAINING_CORE_RECENT": 3,
+        "backoffice_patient_access_eligibility_enrollment/glassdoor_narrow_title/B_REMAINING_CORE_RECENT": 3,
+        "bilingual_ai_content_quality/glassdoor_narrow_title/B_REMAINING_CORE_RECENT": 3,
+        "provider_lifecycle_credentialing_data/glassdoor_narrow_title/C_DEEP_BACKFILL": 3,
+        "healthcare_quality_data_documentation_compliance/glassdoor_narrow_title/C_DEEP_BACKFILL": 3,
+        "healthcare_project_implementation_program_support/glassdoor_narrow_title/C_DEEP_BACKFILL": 3,
+        "higher_ed_academic_back_office/glassdoor_narrow_title/C_DEEP_BACKFILL": 3,
+        "bounded_transferable_records_data_process_ops/glassdoor_narrow_title/C_DEEP_BACKFILL": 3,
+        "backoffice_patient_access_eligibility_enrollment/glassdoor_narrow_title/C_DEEP_BACKFILL": 3,
+        "bilingual_ai_content_quality/glassdoor_narrow_title/C_DEEP_BACKFILL": 3
+      }
+    }
+  },
+  "coverage_change": {
+    "baseline_tasks_were_lane_title_queries_without_family_pass_provenance": true,
+    "candidate_has_enabled_deep_recall_families": 7,
+    "each_enabled_family_is_present_in_deep_phase_on_all_three_platforms": true
+  },
+  "representative_queries": {
+    "glassdoor": [
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "narrow_title",
+        "query": "provider enrollment specialist"
+      },
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "narrow_title",
+        "query": "credentialing coordinator"
+      },
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "narrow_title",
+        "query": "provider data specialist"
+      },
+      {
+        "query_family": "healthcare_quality_data_documentation_compliance",
+        "query_kind": "narrow_title",
+        "query": "healthcare quality specialist"
+      },
+      {
+        "query_family": "healthcare_quality_data_documentation_compliance",
+        "query_kind": "narrow_title",
+        "query": "medical records coordinator"
+      }
+    ],
+    "indeed": [
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "exact_phrase",
+        "query": "\"provider enrollment specialist\""
+      },
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "exact_phrase",
+        "query": "\"credentialing coordinator\""
+      },
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "compact_boolean",
+        "query": "\"provider roster\" OR \"provider data\""
+      },
+      {
+        "query_family": "healthcare_quality_data_documentation_compliance",
+        "query_kind": "exact_phrase",
+        "query": "\"healthcare quality specialist\""
+      },
+      {
+        "query_family": "healthcare_quality_data_documentation_compliance",
+        "query_kind": "exact_phrase",
+        "query": "\"medical records specialist\""
+      }
+    ],
+    "linkedin": [
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "intent",
+        "query": "provider lifecycle, credentialing, enrollment and provider data maintenance roles at health plans"
+      },
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "intent",
+        "query": "healthcare credentialing operations including provider onboarding and roster maintenance"
+      },
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "title_family",
+        "query": "\"provider enrollment\" OR \"provider credentialing\" specialist coordinator"
+      },
+      {
+        "query_family": "provider_lifecycle_credentialing_data",
+        "query_kind": "title_family",
+        "query": "\"provider data\" credentialing roster specialist"
+      },
+      {
+        "query_family": "healthcare_quality_data_documentation_compliance",
+        "query_kind": "intent",
+        "query": "nonclinical healthcare quality documentation audit and compliance operations"
+      }
+    ]
+  },
+  "interpretation": "The old and new totals are plan sizes, not result-quality evidence. The new plan adds inspectable family/pass coverage and uses smaller platform-appropriate exact queries; no yield claim is inferred from raw counts."
+}
