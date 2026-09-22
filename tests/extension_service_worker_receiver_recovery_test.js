@@ -11,7 +11,7 @@ const CARD1={source_job_id:'L1',url:'https://www.linkedin.com/jobs/view/L1/',tit
 const CARD2={source_job_id:'L2',url:'https://www.linkedin.com/jobs/view/L2/',title:'Data Quality Analyst',company:'UW Health',location:'Madison, WI',posted_text:'2 days ago',posted_age_days:2};
 
 function safePage(cards=[CARD1],url=SEARCH_URL){
-  return{platform:'linkedin',page_type:'search',page_url:url,ready:true,authenticated:true,auth_state:'verified',login_required:false,challenged:false,extraction_scope_missing:false,result_links:cards,exhausted:true,exhaustion_reason:'fixture end state',extraction_diagnostics:{scope_method:'fixture'}};
+  return{platform:'linkedin',receiver_attached:true,platform_receiver_ready:true,attachment_generation:'fixture-generation',document_generation:'fixture-generation',page_type:'search',page_url:url,ready:true,authenticated:true,auth_state:'verified',login_required:false,challenged:false,extraction_scope_missing:false,result_links:cards,exhausted:true,exhaustion_reason:'fixture end state',extraction_diagnostics:{scope_method:'fixture'}};
 }
 function panePage(card){
   return{platform:'linkedin',page_type:'job',page_url:card.url,selected:true,search_pane:true,identity_proven:true,identity_status:'MATCH',selected_source_job_id:card.source_job_id,current_job_id:card.source_job_id,detail_acquisition:{mode:'search_pane'},job:{source_job_id:card.source_job_id,canonical_url:card.url,title:card.title,company:card.company,location:card.location,description:'A substantive observed description that is deliberately long enough to satisfy the complete-content threshold used by the durable job ledger.'}};
@@ -30,7 +30,7 @@ function makeWorker({mode='direct',failure='none',responseAfterReload='safe'}={}
     return safePage(mode==='persistence'?[CARD1,CARD2]:[CARD1]);
   };
   const chrome={
-    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.24'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
+    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.25'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
     storage:{local:{get:async()=>({jobbot_bridge_config:{port:43123,token:'x'.repeat(24)}}),set:async()=>{},remove:async()=>{}}},
     windows:{
       get:async id=>windows.get(id)||(()=>{throw new Error(`window ${id} missing`);})(),
@@ -123,7 +123,8 @@ async function run(){
   try{await inspectWithRecovery(persistent);}catch(error){persistentError=error;}
   assert(persistentError&&persistentError.name==='ReceiverRecoveryError');
   assert.strictEqual(persistent.state.reloads,1,'persistent receiver absence must not reload twice');
-  assert.strictEqual(recoveryOutcomes(persistent).at(-1),'receiver_deadline_exhausted');
+  assert.strictEqual(recoveryOutcomes(persistent).at(-1),'target_regeneration_receiver_deadline_exhausted');
+  assert.strictEqual(persistent.state.createdWindows,1,'persistent receiver absence permits one bounded replacement target');
   assert.strictEqual(recoveryEvents(persistent).at(-1).payload.receiver_error,RECEIVER_ERROR);
   assert(recoveryEvents(persistent).at(-1).payload.readiness_attempts>0);
   const persistentTask=makeWorker({failure:'persistent'});

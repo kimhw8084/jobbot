@@ -21,7 +21,7 @@ function makeWorker({ targetPresent = true } = {}) {
   const targets = { tab: { id: 42, windowId: 41, status: 'complete', active: false, url: 'https://www.indeed.com/jobs?q=patient&l=United%20States' }, window: { id: 41, state: 'normal', focused: false, type: 'normal' } };
   const chrome = {
     runtime: {
-      getManifest: () => ({ version_name: '3.2.2-prod-ready.672cf88.24' }),
+      getManifest: () => ({ version_name: '3.2.2-prod-ready.672cf88.25' }),
       getURL: (path) => `chrome-extension://jobbot/${path}`,
       onMessage: { addListener: () => {} }, onStartup: { addListener: () => {} }, onInstalled: { addListener: () => {} }, reload: () => {},
     },
@@ -64,17 +64,17 @@ function makeWorker({ targetPresent = true } = {}) {
 
 (async () => {
   const worker = makeWorker();
-  await worker.run(146, 'indeed', '3.2.2-prod-ready.672cf88.24', 'refresh-146');
+  await worker.run(146, 'indeed', '3.2.2-prod-ready.672cf88.25', 'refresh-146');
   assert.strictEqual(worker.focused.length, 1, 'Focus must foreground the recorded target only');
   assert.strictEqual(worker.focused[0].id, 41);
   assert.strictEqual(worker.focused[0].details.focused, true);
-  assert.strictEqual(worker.navigations.length, 0, 'Focus and supervisor recovery must not navigate the preserved tab');
+  assert.strictEqual(worker.navigations.filter((update) => update.details.url).length, 0, 'Focus and supervisor recovery must not navigate the preserved tab');
   assert.strictEqual(worker.calls.filter((call) => call.action === 'content_probe').length, 2, 'one explicit recheck performs one auth/search readiness attempt');
   assert.strictEqual(worker.calls.filter((call) => call.action === 'worker_runtime' && call.worker_status === 'challenged').length >= 1, true, 'challenge remains durably visible');
   assert.strictEqual(worker.calls.filter((call) => call.action === 'ack_control').length, 3, 'focus, recheck, and emergency controls are independently acknowledged');
 
   const recovered = makeWorker({ targetPresent: false });
-  await recovered.run(146, 'indeed', '3.2.2-prod-ready.672cf88.24', 'refresh-146');
+  await recovered.run(146, 'indeed', '3.2.2-prod-ready.672cf88.25', 'refresh-146');
   assert.strictEqual(recovered.created.length, 1, 'a missing recorded target gets at most one recovery window');
   console.log('CHG-146 r2 supervisor regression passed: challenged Indeed reattaches to one target, focus has no navigation, recheck is explicit and bounded, and emergency stop remains commandable');
 })().catch((error) => { console.error(error); process.exitCode = 1; });

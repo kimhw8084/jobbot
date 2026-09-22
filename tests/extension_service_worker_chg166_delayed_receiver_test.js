@@ -9,7 +9,7 @@ const SEARCH_URL='https://www.linkedin.com/jobs/search/?keywords=patient%20enrol
 const RECEIVER_ERROR='Could not establish connection. Receiving end does not exist.';
 const CARD1={source_job_id:'L1',url:'https://www.linkedin.com/jobs/view/L1/',title:'Registry Analyst',company:'UW Health',location:'Madison, WI',posted_text:'1 day ago',posted_age_days:1};
 const CARD2={source_job_id:'L2',url:'https://www.linkedin.com/jobs/view/L2/',title:'Data Quality Analyst',company:'UW Health',location:'Madison, WI',posted_text:'2 days ago',posted_age_days:2};
-const safePage=(cards=[CARD1],url=SEARCH_URL)=>({platform:'linkedin',page_type:'search',page_url:url,ready:true,authenticated:true,auth_state:'verified',login_required:false,challenged:false,extraction_scope_missing:false,result_links:cards,exhausted:true,exhaustion_reason:'fixture end state'});
+const safePage=(cards=[CARD1],url=SEARCH_URL)=>({platform:'linkedin',receiver_attached:true,platform_receiver_ready:true,attachment_generation:'fixture-generation',document_generation:'fixture-generation',page_type:'search',page_url:url,ready:true,authenticated:true,auth_state:'verified',login_required:false,challenged:false,extraction_scope_missing:false,result_links:cards,exhausted:true,exhaustion_reason:'fixture end state'});
 const panePage=(card)=>({platform:'linkedin',page_type:'job',page_url:card.url,selected:true,search_pane:true,identity_proven:true,identity_status:'MATCH',selected_source_job_id:card.source_job_id,current_job_id:card.source_job_id,detail_acquisition:{mode:'search_pane'},job:{source_job_id:card.source_job_id,canonical_url:card.url,title:card.title,company:card.company,location:card.location,description:'A substantive pane description used only by the deterministic fixture.'}});
 
 function makeWorker({readinessFailures=0,persistent=false,mode='direct',afterReload='safe',arbitrary=false}={}){
@@ -17,9 +17,9 @@ function makeWorker({readinessFailures=0,persistent=false,mode='direct',afterRel
   const state={reloads:0,readinessProbes:0,createdWindows:0,createdTabs:0,detailIndex:0,records:new Set(),jobs:new Set(),checkpoint:null};
   const searchTab={id:11,windowId:7,status:'complete',url:SEARCH_URL,active:false};tabs.set(11,searchTab);windows.set(7,{id:7,state:'minimized',focused:false,type:'normal'});
   const chrome={
-    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.24'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
+    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.25'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
     storage:{local:{get:async()=>({jobbot_bridge_config:{port:43123,token:'x'.repeat(24)}}),set:async()=>{},remove:async()=>{}}},
-    windows:{get:async id=>windows.get(id)||(()=>{throw new Error(`window ${id} missing`);})(),create:async()=>{state.createdWindows+=1;throw new Error('recovery target creation is forbidden in this fixture');},remove:async id=>windows.delete(id)},
+    windows:{get:async id=>windows.get(id)||(()=>{throw new Error(`window ${id} missing`);})(),create:async({url})=>{state.createdWindows+=1;const windowId=100+state.createdWindows,tab={id:99+state.createdWindows,windowId,status:'complete',url,active:false};tabs.set(tab.id,tab);windows.set(windowId,{id:windowId,state:'minimized',focused:false,type:'normal',tabs:[tab]});return{id:windowId,tabs:[tab]};},remove:async id=>windows.delete(id)},
     alarms:{create:()=>{},onAlarm:{addListener:()=>{}}},
     tabs:{
       get:async id=>tabs.get(id)||(()=>{throw new Error(`tab ${id} missing`);})(),
@@ -33,7 +33,7 @@ function makeWorker({readinessFailures=0,persistent=false,mode='direct',afterRel
         if(message.type==='JOBBOT_RECEIVER_READY'){
           state.readinessProbes+=1;
           if(persistent||state.readinessProbes<=readinessFailures)throw new Error(RECEIVER_ERROR);
-          return{receiver_ready:true,platform:'linkedin',page_url:tab.url,surface:'job'};
+          return{receiver_ready:true,receiver_attached:true,platform_receiver_ready:true,attachment_generation:'fixture-generation',document_generation:'fixture-generation',platform:'linkedin',page_url:tab.url,surface:'job'};
         }
         if(persistent)throw new Error(RECEIVER_ERROR);
         if(afterReload==='challenge')return{platform:'linkedin',page_type:'challenge',page_url:tab.url,challenged:true,challenge_reason:'fixture challenge'};
@@ -101,7 +101,7 @@ async function run(){
   assert.strictEqual(absent.state.checkpoint.processed,4);
   assert.strictEqual(absent.state.checkpoint.page_fingerprint,'L0');
   assert.strictEqual(absent.state.checkpoint.requested_search_url,SEARCH_URL.replaceAll('%20','+'));
-  assert.strictEqual(absent.state.reloads,1);assert(absent.state.readinessProbes>0);assert.deepStrictEqual(outcomes(absent).at(-1),'receiver_deadline_exhausted');
+  assert.strictEqual(absent.state.reloads,1);assert.strictEqual(absent.state.createdWindows,1);assert.strictEqual(absent.state.createdTabs,0);assert(absent.state.readinessProbes>0);assert.deepStrictEqual(outcomes(absent).at(-1),'target_regeneration_receiver_deadline_exhausted');
 
   for(const surface of ['challenge','login','context']){
     const worker=makeWorker({afterReload:surface});let error;

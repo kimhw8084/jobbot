@@ -21,7 +21,7 @@ from jobbot.runtime_binding import DEPLOYMENT_MARKER, sync_extension
 
 
 PREDECESSOR_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.10"
-REPAIRED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.24"
+REPAIRED_EXTENSION_BUILD = "3.2.2-prod-ready.672cf88.25"
 
 
 class ExtensionRefreshIntegrationTests(unittest.TestCase):
