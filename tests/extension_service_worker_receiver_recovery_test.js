@@ -30,7 +30,7 @@ function makeWorker({mode='direct',failure='none',responseAfterReload='safe'}={}
     return safePage(mode==='persistence'?[CARD1,CARD2]:[CARD1]);
   };
   const chrome={
-    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.23'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
+    runtime:{getManifest:()=>({version_name:'3.2.2-prod-ready.672cf88.24'}),getURL:path=>`chrome-extension://jobbot/${path}`,onMessage:{addListener:()=>{}},onStartup:{addListener:()=>{}},onInstalled:{addListener:()=>{}},reload:()=>{}},
     storage:{local:{get:async()=>({jobbot_bridge_config:{port:43123,token:'x'.repeat(24)}}),set:async()=>{},remove:async()=>{}}},
     windows:{
       get:async id=>windows.get(id)||(()=>{throw new Error(`window ${id} missing`);})(),
@@ -90,9 +90,10 @@ function makeWorker({mode='direct',failure='none',responseAfterReload='safe'}={}
 }
 
 function recoveryContext(worker,overrides={}){
-  return{platform:'linkedin',run_id:154,task_id:41,target:worker.target,requested_url:SEARCH_URL,idle_wait_ms:0,checkpoint:{requested_search_url:SEARCH_URL,search_url:SEARCH_URL,observed_page_url:SEARCH_URL,context_status:'verified',page_number:7,scroll_generation:7,page_fingerprint:'L1'},context_check:(_response,observed)=>{try{const r=new URL(SEARCH_URL),o=new URL(observed);return r.searchParams.get('start')===o.searchParams.get('start')?'verified':'query_context_lost';}catch(_){return'unverified';}},...overrides};
+  return{platform:'linkedin',run_id:154,task_id:41,target:worker.target,requested_url:SEARCH_URL,idle_wait_ms:0,receiver_ready_timeout_ms:40,checkpoint:{requested_search_url:SEARCH_URL,search_url:SEARCH_URL,observed_page_url:SEARCH_URL,context_status:'verified',page_number:7,scroll_generation:7,page_fingerprint:'L1'},context_check:(_response,observed)=>{try{const r=new URL(SEARCH_URL),o=new URL(observed);return r.searchParams.get('start')===o.searchParams.get('start')?'verified':'query_context_lost';}catch(_){return'unverified';}},...overrides};
 }
 function recoveryEvents(worker){return worker.events.filter(event=>event.type==='receiver_recovery');}
+function recoveryOutcomes(worker){return recoveryEvents(worker).map(event=>event.payload.outcome);}
 async function inspectWithRecovery(worker){return worker.inspectTab(11,'JOBBOT_INSPECT_SEARCH_EVENTUALLY',{},4,null,recoveryContext(worker));}
 
 async function run(){
@@ -108,34 +109,35 @@ async function run(){
   assert.strictEqual(restored.state.reloads,1,'receiver recovery permits one same-tab reload');
   assert.strictEqual(restored.state.createdWindows,0);
   assert.strictEqual(restored.state.createdTabs,0);
-  assert.strictEqual(recoveryEvents(restored).length,1);
-  assert.strictEqual(recoveryEvents(restored)[0].payload.outcome,'restored');
-  assert.strictEqual(recoveryEvents(restored)[0].payload.same_target,true);
-  assert.strictEqual(recoveryEvents(restored)[0].payload.tab_id,11);
-  assert.strictEqual(recoveryEvents(restored)[0].payload.window_id,7);
-  assert.strictEqual(recoveryEvents(restored)[0].payload.windows_created_delta,0);
-  assert.strictEqual(recoveryEvents(restored)[0].payload.standalone_detail_tabs_delta,0);
+  assert.deepStrictEqual(recoveryOutcomes(restored),['ordinary_retry_exhaustion','reload_requested','reload_completed','post_reload_receiver_wait','receiver_ready','restored']);
+  const restoredEvidence=recoveryEvents(restored).at(-1).payload;
+  assert.strictEqual(restoredEvidence.same_target,true);
+  assert.strictEqual(restoredEvidence.tab_id,11);
+  assert.strictEqual(restoredEvidence.window_id,7);
+  assert.strictEqual(restoredEvidence.windows_created_delta,0);
+  assert.strictEqual(restoredEvidence.standalone_detail_tabs_delta,0);
+  assert.strictEqual(restoredEvidence.readiness_attempts,1);
 
   const persistent=makeWorker({failure:'persistent'});
   let persistentError;
   try{await inspectWithRecovery(persistent);}catch(error){persistentError=error;}
   assert(persistentError&&persistentError.name==='ReceiverRecoveryError');
   assert.strictEqual(persistent.state.reloads,1,'persistent receiver absence must not reload twice');
-  assert.strictEqual(recoveryEvents(persistent).length,1);
-  assert.strictEqual(recoveryEvents(persistent)[0].payload.outcome,'retryable');
-  assert.strictEqual(recoveryEvents(persistent)[0].payload.receiver_error,RECEIVER_ERROR);
+  assert.strictEqual(recoveryOutcomes(persistent).at(-1),'receiver_deadline_exhausted');
+  assert.strictEqual(recoveryEvents(persistent).at(-1).payload.receiver_error,RECEIVER_ERROR);
+  assert(recoveryEvents(persistent).at(-1).payload.readiness_attempts>0);
   const persistentTask=makeWorker({failure:'persistent'});
-  await persistentTask.processTask(154,{task_id:41,platform:'linkedin',requested_search_url:SEARCH_URL,search_url:SEARCH_URL,checkpoint_json:'{}'},persistentTask.target,'worker-154-linkedin');
+  await persistentTask.processTask(154,{task_id:41,platform:'linkedin',requested_search_url:SEARCH_URL,search_url:SEARCH_URL,receiver_ready_timeout_ms:40,checkpoint_json:'{}'},persistentTask.target,'worker-154-linkedin');
   assert.deepStrictEqual(persistentTask.calls.filter(call=>call.action==='complete_task').map(call=>call.payload.status),['incomplete']);
   assert.strictEqual(persistentTask.calls.filter(call=>call.action==='platform_readiness'&&call.payload.status==='retryable').length,1);
   assert.strictEqual(persistentTask.state.reloads,1);
 
   for(const responseAfterReload of ['challenge','login','context']){
     const worker=makeWorker({failure:'receiver',responseAfterReload});
-    const page=await inspectWithRecovery(worker);
-    assert.strictEqual(responseAfterReload==='challenge'?page.challenged:responseAfterReload==='login'?page.login_required:page.page_url.includes('start=0'),true);
-    assert.strictEqual(recoveryEvents(worker)[0].payload.outcome,'restored');
-    assert.strictEqual(recoveryEvents(worker)[0].payload.context_status,responseAfterReload==='context'?'query_context_lost':'verified');
+    let recoveryError;
+    try{await inspectWithRecovery(worker);}catch(error){recoveryError=error;}
+    assert(recoveryError&&recoveryError.name==='ReceiverRecoveryError');
+    assert.strictEqual(recoveryOutcomes(worker).at(-1),responseAfterReload==='challenge'?'challenge_abort':responseAfterReload==='login'?'login_abort':'context_abort');
     assert.strictEqual(worker.state.reloads,1);
   }
 
@@ -146,14 +148,14 @@ async function run(){
   assert.strictEqual(gone.state.reloads,0,'a missing target must not be reloaded');
   assert.strictEqual(gone.state.createdWindows,0);
   assert.strictEqual(gone.state.createdTabs,0);
-  assert.strictEqual(recoveryEvents(gone)[0].payload.outcome,'target_unavailable');
+  assert.strictEqual(recoveryOutcomes(gone).at(-1),'target_unavailable');
 
   const wrongOrigin=makeWorker({failure:'wrong-origin'});
   let wrongOriginError;
   try{await inspectWithRecovery(wrongOrigin);}catch(error){wrongOriginError=error;}
   assert(wrongOriginError&&wrongOriginError.name==='ReceiverRecoveryError');
   assert.strictEqual(wrongOrigin.state.reloads,0,'wrong-origin tabs must not be reloaded');
-  assert.strictEqual(recoveryEvents(wrongOrigin)[0].payload.outcome,'not_eligible');
+  assert.strictEqual(recoveryOutcomes(wrongOrigin).at(-1),'context_abort');
 
   // An arbitrary bridge/runtime error is not a receiver-unavailable signal.
   const arbitraryWorker=makeWorker({failure:'arbitrary'});
@@ -172,8 +174,8 @@ async function run(){
   assert.strictEqual(durable.calls.filter(call=>call.action==='record_result'&&call.payload.source_job_id==='L1').length,1);
   assert.strictEqual(durable.calls.filter(call=>call.action==='record_result'&&call.payload.source_job_id==='L2').length,1);
   assert.strictEqual(durable.state.reloads,1);
-  assert.strictEqual(recoveryEvents(durable).length,1);
-  assert.strictEqual(recoveryEvents(durable)[0].payload.same_target,true);
+  assert.strictEqual(recoveryOutcomes(durable).at(-1),'restored');
+  assert.strictEqual(recoveryEvents(durable).at(-1).payload.same_target,true);
   assert.strictEqual(durable.state.createdWindows,0);
   assert.strictEqual(durable.state.createdTabs,0);
   const resultIndices=durable.calls.map((call,index)=>call.action==='record_result'?index:-1).filter(index=>index>=0);

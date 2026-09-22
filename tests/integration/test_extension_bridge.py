@@ -60,6 +60,8 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertEqual(target_lifecycle.returncode, 0, target_lifecycle.stderr or target_lifecycle.stdout)
         receiver_recovery = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_receiver_recovery_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(receiver_recovery.returncode, 0, receiver_recovery.stderr or receiver_recovery.stdout)
+        delayed_receiver = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_chg166_delayed_receiver_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(delayed_receiver.returncode, 0, delayed_receiver.stderr or delayed_receiver.stdout)
         primary_scope = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_primary_scope_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(primary_scope.returncode, 0, primary_scope.stderr or primary_scope.stdout)
         dashboard = (PROJECT_ROOT / "extension" / "dashboard.html").read_text(encoding="utf-8")
