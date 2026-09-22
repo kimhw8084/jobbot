@@ -1,0 +1,18 @@
+{
+  "schema": "jobbot-verification-manifest-v1",
+  "project": "jobbot",
+  "request": "CHG-166-r4",
+  "artifact_kind": "read-only-evidence-recovery-receipt",
+  "fabric_capture": {"applied": false},
+  "source_candidate": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+  "source_tree": "8bb6fa0dc734a7cf6c238140e9fd4cf6d840c9c8",
+  "build": "3.2.2-prod-ready.672cf88.25",
+  "terminal_classification": "external blocker",
+  "files": [
+    {
+      "path": "verification/CHG-166-r4.json",
+      "bytes": 26139,
+      "sha256": "c7d4e4f84a54f276c1a3b95e0ebb6513dab90a88ac0bc75719a0f6d98bfacb34"
+    }
+  ]
+}
