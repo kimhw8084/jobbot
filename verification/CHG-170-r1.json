@@ -1,0 +1,143 @@
+{
+  "request_id": "CHG-170-r1",
+  "project": "jobbot / kimhw8084/jobbot",
+  "target_branch": "main",
+  "working_branch": "codex/jobbot-CHG-170-r1",
+  "base_commit": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+  "tested_head_commit": "8c8a0515c23a81b584089db4e2a43aaefcf78f8b",
+  "candidate_commit_message": "CHG-170-r1: add broad qualified-yield search profile",
+  "migration": {
+    "version": 18,
+    "name": "CHG-170 versioned live-search provenance and fail-closed eligibility",
+    "facts": [
+      "Additive/idempotent columns store strategy profile, version, family, query kind/pass and initial order on search tasks, task results and source occurrences.",
+      "Jobs store annual base-pay minimum, hard-gate evidence, preference signals and preference adjustment.",
+      "Task-result provenance backfills from durable search tasks; previously handled actionables become ALREADY_HANDLED; legacy actionables without gate evidence become REVIEW.",
+      "Migration validation used temporary SQLite fixtures; production data/jobs.sqlite3 was not opened or changed."
+    ]
+  },
+  "tests": [
+    {
+      "command": "rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_database_ledger tests.integration.test_browser_tasks -v",
+      "result": "PASS — 39 tests"
+    },
+    {
+      "command": "rtk env PYTHONPATH=src python -m unittest discover -s tests",
+      "result": "PASS — 127 tests"
+    },
+    {
+      "command": "rtk env PYTHONPATH=src JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg170-plan-cli python -m jobbot search-plan --mode staged",
+      "result": "PASS — 140 deterministic tasks; generated JSON/CSV/HTML in temporary output and matched the committed task/count payload exactly"
+    }
+  ],
+  "search_plan_evidence": {
+    "before_artifact": "verification/CHG-170-r1/before-search-plan.json",
+    "after_artifacts": [
+      "verification/CHG-170-r1/after-search-plan.json",
+      "verification/CHG-170-r1/after-search-plan.csv",
+      "verification/CHG-170-r1/after-search-plan.html"
+    ],
+    "summary_artifact": "verification/CHG-170-r1/plan-summary.json",
+    "before": {
+      "mode": "staged",
+      "tasks": 834,
+      "per_platform": {
+        "linkedin": 278,
+        "indeed": 278,
+        "glassdoor": 278
+      },
+      "explicit_profile_family_pass_provenance": false
+    },
+    "after": {
+      "profile": "jobbot-broad-qualified-yield",
+      "version": "2026-09-22.1",
+      "tasks": 140,
+      "per_platform": {
+        "linkedin": 56,
+        "indeed": 42,
+        "glassdoor": 42
+      },
+      "phase_counts": {
+        "A_FASTEST_DOOR_RECENT": 30,
+        "B_REMAINING_CORE_RECENT": 40,
+        "C_DEEP_BACKFILL": 70
+      },
+      "families": {
+        "provider_lifecycle_credentialing_data": 20,
+        "healthcare_quality_data_documentation_compliance": 20,
+        "healthcare_project_implementation_program_support": 20,
+        "higher_ed_academic_back_office": 20,
+        "bounded_transferable_records_data_process_ops": 20,
+        "backoffice_patient_access_eligibility_enrollment": 20,
+        "bilingual_ai_content_quality": 20
+      },
+      "passes": {
+        "linkedin_intent": 28,
+        "linkedin_title_family": 28,
+        "indeed_exact_phrase": 28,
+        "indeed_compact_boolean": 14,
+        "glassdoor_narrow_title": 42
+      },
+      "deep_recall": "All 7 enabled families have deep-phase coverage on LinkedIn, Indeed and Glassdoor.",
+      "sample_exact_queries": {
+        "linkedin": "provider lifecycle, credentialing, enrollment and provider data maintenance roles at health plans",
+        "indeed": "\"provider enrollment specialist\"",
+        "glassdoor": "provider enrollment specialist"
+      }
+    },
+    "interpretation": "Totals describe plan size, not result quality. Evidence demonstrates explicit correct-family/pass coverage and a guaranteed deep recall pass; it makes no yield claim from raw task counts."
+  },
+  "hard_gate_matrix": {
+    "actionable_recommendations": [
+      "APPLY_NOW",
+      "APPLY_VOLUME",
+      "HIGH_VALUE_STRETCH"
+    ],
+    "positive_fixture": "A posting with affirmative evidence for all gates can qualify as actionable.",
+    "failures_and_unknowns": "Every tested failure or unknown remains non-actionable for home-only remote/Texas eligibility, full-time, permanent employee status, employer-provided base-pay floor, required travel/in-person conditions, current/open status, unsupported mandatory credential/skills/experience, and handled status.",
+    "preference_only": "Admissions-sales/call-queue mismatch lowers preference ranking while retaining discovery and recall evidence.",
+    "ambiguity": "Ambiguous title words do not establish fit; substantive responsibility evidence is required, otherwise existing review semantics apply.",
+    "no_repeat": "After APPLIED, recommendation remains ALREADY_HANDLED; the application event and source sighting remain stored, duplicate sightings increment history, and daily actionable plan omits the handled job."
+  },
+  "live_site_production_validation": "NOT_RUN — separately human-gated runtime state; no LinkedIn, Indeed or Glassdoor production browsing was attempted.",
+  "production_ledger_validation": "NOT_USED — no read, write or mutation of production data/jobs.sqlite3.",
+  "request_binding": "This evidence is bound to the approved Project OS BUILD request CHG-170-r1 on codex/jobbot-CHG-170-r1.",
+  "candidate_changed_files": [
+    "README.md",
+    "config/candidate.toml",
+    "config/live_search.toml",
+    "config/strategy.toml",
+    "docs/CAREER_STRATEGY.md",
+    "docs/SEARCH_PLAN.md",
+    "src/jobbot/application.py",
+    "src/jobbot/audit.py",
+    "src/jobbot/bridge/rpc.py",
+    "src/jobbot/browser_tasks.py",
+    "src/jobbot/cli.py",
+    "src/jobbot/config.py",
+    "src/jobbot/dashboard.py",
+    "src/jobbot/discoveries.py",
+    "src/jobbot/doctor.py",
+    "src/jobbot/exports.py",
+    "src/jobbot/legacy_core.py",
+    "src/jobbot/legacy_engine.py",
+    "src/jobbot/migrations/__init__.py",
+    "src/jobbot/migrations/m0018_chg170_live_search_provenance.py",
+    "src/jobbot/search_plan.py",
+    "tests/integration/test_browser_tasks.py",
+    "tests/integration/test_chg112_production_integrity.py",
+    "tests/integration/test_chg146_workers_cache.py",
+    "tests/integration/test_database_ledger.py",
+    "tests/integration/test_run_now.py",
+    "tests/regression/test_scoring.py",
+    "tests/unit/test_qualification_gates.py",
+    "tests/unit/test_strategy.py",
+    "verification/CHG-170-r1/after-search-plan.csv",
+    "verification/CHG-170-r1/after-search-plan.html",
+    "verification/CHG-170-r1/after-search-plan.json",
+    "verification/CHG-170-r1/before-search-plan.json",
+    "verification/CHG-170-r1/plan-summary.json"
+  ],
+  "verification_artifact": "verification/CHG-170-r1.json",
+  "evidence_commit_note": "This evidence file is committed separately after the tested candidate code commit because a commit cannot contain its own final commit SHA."
+}
