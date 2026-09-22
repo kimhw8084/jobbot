@@ -1,0 +1,319 @@
+{
+  "schema": "jobbot-verification-v1",
+  "project": "jobbot",
+  "request": "CHG-166-r2",
+  "fabric": {
+    "job": "CF-7a6c2c50525f329c8d752c2a",
+    "request": "CHG-166-r2",
+    "release": "1.2.4-quota-recovery-candidate",
+    "health": "healthy",
+    "active_workers_at_check": 5,
+    "queue_depth_at_check": 0,
+    "quota_gate": "AVAILABLE",
+    "capture_applied": false
+  },
+  "identity": {
+    "origin_main": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "source_base": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "product_candidate_sha": "7b08666f7b169a78ec28653556d94db5437e8031",
+    "product_candidate_tree": "fa4bd39f732c25980aaa94a92b6f86c6275a930f",
+    "product_work_branch": "codex/jobbot-CHG-166-r2",
+    "remote_product_work_branch": "refs/heads/codex/jobbot-CHG-166-r2",
+    "remote_product_work_branch_sha": "7b08666f7b169a78ec28653556d94db5437e8031",
+    "parent_is_exact_origin_main": true,
+    "worktree_clean_after_verification": true,
+    "manifest_version_name": "3.2.2-prod-ready.672cf88.24",
+    "product_source_changes_made": false,
+    "main_integrated": false
+  },
+  "deterministic_floor": {
+    "full_unittest": {
+      "command": "python -m unittest discover -s tests -v",
+      "passed": 115,
+      "skipped": 1,
+      "failed": 0
+    },
+    "focused_python": {
+      "tests.integration.test_chg112_production_integrity": {"passed": 8, "failed": 0},
+      "tests.integration.test_chg146_r2_controls": {"passed": 2, "failed": 0},
+      "tests.integration.test_chg146_workers_cache": {"passed": 4, "failed": 0},
+      "tests.integration.test_chg159_dashboard": {"passed": 8, "failed": 0},
+      "tests.integration.test_extension_refresh": {"passed": 8, "failed": 0},
+      "tests.integration.test_run_now": {"passed": 6, "failed": 0},
+      "tests.integration.test_runtime_binding": {"passed": 9, "failed": 0}
+    },
+    "extension_js_regressions": {
+      "passed_scripts": 11,
+      "failed_scripts": 0,
+      "scripts": [
+        "tests/extension_bootstrap_compatibility_test.js",
+        "tests/extension_chg146_pane_test.js",
+        "tests/extension_chg146_supervisor_test.js",
+        "tests/extension_linkedin_scope_test.js",
+        "tests/extension_primary_scope_test.js",
+        "tests/extension_service_worker_auth_return_test.js",
+        "tests/extension_service_worker_chg166_delayed_receiver_test.js",
+        "tests/extension_service_worker_receiver_recovery_test.js",
+        "tests/extension_service_worker_scope_recovery_test.js",
+        "tests/extension_service_worker_target_lifecycle_test.js",
+        "tests/extension_startup_lifecycle_test.js"
+      ]
+    },
+    "node_check": {
+      "passed": 9,
+      "failed": 0,
+      "files": [
+        "extension/bootstrap.js",
+        "extension/common.js",
+        "extension/dashboard.js",
+        "extension/glassdoor.js",
+        "extension/indeed.js",
+        "extension/linkedin.js",
+        "extension/selectors.js",
+        "extension/service_worker.js",
+        "src/jobbot/web/dashboard.js"
+      ]
+    },
+    "compileall": "PASS",
+    "deep_search_plan": {
+      "platform_scope": ["linkedin"],
+      "tasks": 139,
+      "indeed_tasks": 0,
+      "glassdoor_tasks": 0,
+      "production_result_caps": "none"
+    },
+    "fresh_migration": {
+      "versions_applied": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+      "current_versions": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+      "integrity_check": "ok",
+      "foreign_key_check": []
+    },
+    "isolated_doctor": "PASS",
+    "isolated_preflight": {
+      "status": "PASS",
+      "staged_tasks": 288,
+      "platforms": ["linkedin"]
+    },
+    "resource_lifetime_and_windows_coverage": "PASS via full suite and extension lifecycle/receiver regressions",
+    "prior_candidate_ci_reference": "35676852179",
+    "verify_ci": "not run"
+  },
+  "build_and_runtime": {
+    "build_command": "python scripts/build_release.py",
+    "package": "dist/jobbot-3.2.0.zip",
+    "package_sha256": "dd8a7f8b43b16ba5f322fc3366e9a4f3181934d2880d17e1b853f9073fbed024",
+    "package_manifest_version_name": "3.2.2-prod-ready.672cf88.24",
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+    "deployment_source_identity": "sha256:b059f98560a8bda136d7945090941d38015b4de42c36ad6a2cd65d4621b6015b",
+    "deployment_source_head": "7b08666f7b169a78ec28653556d94db5437e8031",
+    "deployment_root_identity_proven": true,
+    "chrome": "Google Chrome",
+    "profile_directory": "Default",
+    "runtime_version_name": "3.2.2-prod-ready.672cf88.24",
+    "runtime_source_identity": "sha256:b059f98560a8bda136d7945090941d38015b4de42c36ad6a2cd65d4621b6015b",
+    "runtime_identity_confirmed": true,
+    "bridge": {
+      "host": "127.0.0.1",
+      "authenticated": true,
+      "unauthorized_rejection": true
+    },
+    "refresh": {
+      "supported_cli": true,
+      "status": "confirmed",
+      "reload_count": 1,
+      "classification": "intended_extension_reachable_and_current"
+    }
+  },
+  "live_scope": {
+    "platform": "linkedin",
+    "indeed_contacted": false,
+    "glassdoor_contacted": false,
+    "indeed_tasks_created": 0,
+    "glassdoor_tasks_created": 0,
+    "ordinary_chrome": true,
+    "one_worker": true,
+    "one_owned_window": true,
+    "one_reused_search_tab": true,
+    "standalone_detail_tabs": 0,
+    "challenge_bypass": false,
+    "fake_human_behavior": false
+  },
+  "smoke": {
+    "run_id": 1,
+    "mode": "staged",
+    "planned_linkedin_tasks": 288,
+    "task_status_counts": {"deferred_by_platform": 288},
+    "query_started": "patient enrollment specialist",
+    "pages_visited": 3,
+    "cards": {
+      "discovered": 24,
+      "persistence_attempted": 24,
+      "persisted": 24,
+      "failed": 0,
+      "duplicate_cards": 0
+    },
+    "unique_source_job_ids": 24,
+    "source_job_ids": [
+      "4463893518", "4464942086", "4468122256", "4468139480", "4468144492",
+      "4468149886", "4468163172", "4468165176", "4468176185", "4468176195",
+      "4468192378", "4468194368", "4468773965", "4468778478", "4468783800",
+      "4468784299", "4469227431", "4469950698", "4469961229", "4469966009",
+      "4469994435", "4470223888", "4470234411", "4470244112"
+    ],
+    "distinct_canonical_jobs": 9,
+    "pane_selections": 17,
+    "detail_attempts": 17,
+    "completed_detail_reads": 8,
+    "substantive_complete_details": 8,
+    "description_lengths_complete": {"min": 2116, "median": 3227.5, "max": 12793},
+    "description_lengths_substantive": {"min": 2116, "median": 3227.5, "max": 12793},
+    "card_metadata": {
+      "title": {"count": 24, "percent": 100.0},
+      "company": {"count": 0, "percent": 0.0},
+      "location": {"count": 0, "percent": 0.0},
+      "posted": {"count": 0, "percent": 0.0}
+    },
+    "completed_detail_metadata": {
+      "title": {"count": 8, "percent": 100.0},
+      "company": {"count": 8, "percent": 100.0},
+      "location": {"count": 8, "percent": 100.0},
+      "posted": {"count": 8, "percent": 100.0}
+    },
+    "detail_states": {
+      "PENDING": 0,
+      "RUNNING": 0,
+      "RETRYABLE": 0,
+      "FAILED": 0,
+      "EXTERNAL_BLOCKED": 0,
+      "COMPLETE": 8,
+      "DEFERRED_RECALL": 15,
+      "PARTIAL": 1
+    },
+    "retry_error_reasons": [
+      "pane identity mismatch or non-pane surface (8 transient events)"
+    ],
+    "missing_content": {"MISSING": 15, "PARTIAL": 1, "COMPLETE": 8},
+    "complete_rows_below_250_chars": 0,
+    "duplicates": {
+      "sighting_duplicates": 0,
+      "duplicate_cards": 0,
+      "invalid_source_to_multi_canonical": 0,
+      "duplicate_canonical_url_mappings": 0,
+      "duplicate_occurrence_mappings": 0
+    },
+    "provenance": {
+      "source_occurrences": 9,
+      "job_versions": 9,
+      "identity_persisted": 24,
+      "card_before_pane_before_detail": true,
+      "unprocessed_cards_without_detail": 15
+    },
+    "remote_evidence": {
+      "states": {"OBSERVED": 4, "UNKNOWN": 5},
+      "remote_required_treated_as_evidence": false,
+      "synthetic_remote_violations": 0
+    },
+    "location_evidence": {
+      "states": {"OBSERVED": 9},
+      "truthfulness_violations": 0
+    },
+    "apply_destination": {
+      "states": {"UNKNOWN": 9},
+      "nonempty_apply_urls": 0,
+      "board_source_equals_apply": 0,
+      "synthetic_apply_violations": 0
+    },
+    "integrity": {
+      "pragma_integrity_check": "ok",
+      "pragma_foreign_key_check": [],
+      "audit_reconciliation": true,
+      "unexplained_counts": 0
+    }
+  },
+  "receiver_recovery": {
+    "state_machine": [
+      "ordinary_retry_exhaustion",
+      "reload_requested",
+      "reload_completed",
+      "post_reload_receiver_wait",
+      "receiver_deadline_exhausted"
+    ],
+    "receiver_error": "Could not establish connection. Receiving end does not exist.",
+    "ordinary_retry_exhaustion": true,
+    "same_tab_reload_count": 1,
+    "readiness_attempts_after_reload": 17,
+    "readiness_elapsed_ms": 12001,
+    "receiver_ready_or_restored": false,
+    "terminal_receiver_failure": true,
+    "terminal_state": "SYSTEM_RETRYABLE",
+    "checkpoint_preserved": true,
+    "windows_created_delta": 0,
+    "tabs_created_delta": 0,
+    "standalone_detail_tabs_delta": 0,
+    "detail_page_navigations_delta": 0
+  },
+  "timing": {
+    "run_created_at": "2026-09-22T02:09:26+00:00",
+    "active_worker_start": "2026-09-22T02:10:02+00:00",
+    "linkedin_readiness_verified_at": "2026-09-22T02:10:06+00:00",
+    "timer_start": "2026-09-22T02:10:06+00:00",
+    "stop_request_at": null,
+    "final_at": "2026-09-22T02:10:41+00:00",
+    "active_seconds_after_readiness": 35.0,
+    "wall_clock_seconds_run": 39.0,
+    "cards_per_active_minute": 41.1429,
+    "unique_identities_per_active_minute": 41.1429,
+    "substantive_details_per_active_minute": 13.7143,
+    "required_active_seconds": 300,
+    "required_active_seconds_met": false
+  },
+  "orderly_stop": {
+    "stop_after_current_requested": false,
+    "current_atomic_detail_waited": false,
+    "durable_stopped_checkpointed_state": false,
+    "terminal_state": "SYSTEM_RETRYABLE",
+    "reason": "terminal receiver deadline occurred before a passing five-minute smoke"
+  },
+  "production_ledger": {
+    "path": "/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3",
+    "access_policy": "immutable read-only SQLite inspection only",
+    "before": {
+      "resolved_path": "/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3",
+      "exists": true,
+      "size": 22175744,
+      "mtime_ns": 1789996359162314204,
+      "inode": 178639507,
+      "sha256": "16bffdfca4aa2d6287fc37c0aae720595eea1e9a3c98cee0a9c4bf9d69140d91"
+    },
+    "after": {
+      "resolved_path": "/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3",
+      "exists": true,
+      "size": 22175744,
+      "mtime_ns": 1789996359162314204,
+      "inode": 178639507,
+      "sha256": "16bffdfca4aa2d6287fc37c0aae720595eea1e9a3c98cee0a9c4bf9d69140d91"
+    },
+    "exact_equality": true,
+    "active_production_run_detected": false,
+    "production_migration_or_write_detected": false,
+    "commands_resolved_database_to_production": false
+  },
+  "safe_oracle": {
+    "all_conditions_met": false,
+    "failed_conditions": [
+      "active smoke completed only 35 seconds after readiness, not >=300",
+      "orderly stop-after-current/checkpoint completion was not reached",
+      "terminal receiver failure receiver_deadline_exhausted occurred",
+      "persistent receiver absence ended in SYSTEM_RETRYABLE"
+    ],
+    "linkedin_production_execution": "NOT SAFE"
+  },
+  "authorization": {
+    "exact_linkedin_command": "./RUN_NOW.command --platform linkedin",
+    "authorized": false,
+    "reason": "safe oracle failed; do not execute",
+    "plain_run_now_authorized": false,
+    "full_big3": "governed by paused CHG-39 and not authorized by this smoke"
+  }
+}
