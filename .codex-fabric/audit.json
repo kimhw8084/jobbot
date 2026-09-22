@@ -1,0 +1,619 @@
+{
+  "accepted_at": "2026-09-22T21:22:50Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "config/candidate.toml",
+      "status": "M"
+    },
+    {
+      "additions": 117,
+      "deletions": 0,
+      "path": "config/live_search.toml",
+      "status": "A"
+    },
+    {
+      "additions": 15,
+      "deletions": 36,
+      "path": "config/strategy.toml",
+      "status": "M"
+    },
+    {
+      "additions": 13,
+      "deletions": 11,
+      "path": "docs/CAREER_STRATEGY.md",
+      "status": "M"
+    },
+    {
+      "additions": 22,
+      "deletions": 5,
+      "path": "docs/SEARCH_PLAN.md",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 2,
+      "path": "src/jobbot/application.py",
+      "status": "M"
+    },
+    {
+      "additions": 3,
+      "deletions": 3,
+      "path": "src/jobbot/audit.py",
+      "status": "M"
+    },
+    {
+      "additions": 20,
+      "deletions": 5,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 48,
+      "deletions": 35,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 3,
+      "path": "src/jobbot/cli.py",
+      "status": "M"
+    },
+    {
+      "additions": 77,
+      "deletions": 4,
+      "path": "src/jobbot/config.py",
+      "status": "M"
+    },
+    {
+      "additions": 12,
+      "deletions": 9,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 3,
+      "path": "src/jobbot/discoveries.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "src/jobbot/doctor.py",
+      "status": "M"
+    },
+    {
+      "additions": 6,
+      "deletions": 4,
+      "path": "src/jobbot/exports.py",
+      "status": "M"
+    },
+    {
+      "additions": 14,
+      "deletions": 1,
+      "path": "src/jobbot/legacy_core.py",
+      "status": "M"
+    },
+    {
+      "additions": 270,
+      "deletions": 25,
+      "path": "src/jobbot/legacy_engine.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 53,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0018_chg170_live_search_provenance.py",
+      "status": "A"
+    },
+    {
+      "additions": 103,
+      "deletions": 46,
+      "path": "src/jobbot/search_plan.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "tests/integration/test_browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 3,
+      "deletions": 1,
+      "path": "tests/integration/test_chg112_production_integrity.py",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 0,
+      "path": "tests/integration/test_chg146_workers_cache.py",
+      "status": "M"
+    },
+    {
+      "additions": 23,
+      "deletions": 3,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 23,
+      "deletions": 8,
+      "path": "tests/integration/test_run_now.py",
+      "status": "M"
+    },
+    {
+      "additions": 12,
+      "deletions": 3,
+      "path": "tests/regression/test_scoring.py",
+      "status": "M"
+    },
+    {
+      "additions": 271,
+      "deletions": 0,
+      "path": "tests/unit/test_qualification_gates.py",
+      "status": "A"
+    },
+    {
+      "additions": 124,
+      "deletions": 91,
+      "path": "tests/unit/test_strategy.py",
+      "status": "M"
+    },
+    {
+      "additions": 143,
+      "deletions": 0,
+      "path": "verification/CHG-170-r1.json",
+      "status": "A"
+    },
+    {
+      "additions": 141,
+      "deletions": 0,
+      "path": "verification/CHG-170-r1/after-search-plan.csv",
+      "status": "A"
+    },
+    {
+      "additions": 3,
+      "deletions": 0,
+      "path": "verification/CHG-170-r1/after-search-plan.html",
+      "status": "A"
+    },
+    {
+      "additions": 3930,
+      "deletions": 0,
+      "path": "verification/CHG-170-r1/after-search-plan.json",
+      "status": "A"
+    },
+    {
+      "additions": 15900,
+      "deletions": 0,
+      "path": "verification/CHG-170-r1/before-search-plan.json",
+      "status": "A"
+    },
+    {
+      "additions": 276,
+      "deletions": 0,
+      "path": "verification/CHG-170-r1/plan-summary.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'registrar|certification|certificate|credential' config/candidate.toml | head -60 && rtk sed -n '785,840p' src/jobbot/legacy_engine.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'credential|registration|license|certification|certificate' config/candidate.toml\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_browser_tasks tests.integration.test_chg146_workers_cache tests.integration.test_run_now -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests -v > /tmp/jobbot-chg170-unittest-final.log 2>&1; status_code=$?; rtk tail -n 100 /tmp/jobbot-chg170-unittest-final.log; exit $status_code'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '75,160p' tests/integration/test_chg112_production_integrity.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_chg112_production_integrity.Chg112ProductionIntegrityTests.test_recall_first_persists_negatives_and_all_mode_releases_them tests.unit.test_qualification_gates.QualificationGateTests.test_preference_mismatch_changes_ranking_without_removing_discovery -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests > /tmp/jobbot-chg170-unittest-pass.log 2>&1; status_code=$?; rtk tail -n 35 /tmp/jobbot-chg170-unittest-pass.log; exit $status_code'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'application_status[[:space:]]*=' src/jobbot | head -40 && rtk rg -n 'SET application_status' src/jobbot\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json\nfrom collections import Counter, defaultdict\nfrom pathlib import Path\nfrom jobbot.config import PROJECT_ROOT, load_bundle\nfrom jobbot.search_plan import compile_staged_plan, plan_counts, write_plan\n\nroot = PROJECT_ROOT\nbundle = load_bundle(root)\ntasks = compile_staged_plan(bundle)\nevidence = root / \\\"verification\\\" / \\\"CHG-170-r1\\\"\noutputs = write_plan(tasks, evidence, \\\"staged\\\")\nfor extension, key in ((\\\"json\\\", \\\"json\\\"), (\\\"csv\\\", \\\"csv\\\"), (\\\"html\\\", \\\"html\\\")):\n    source = outputs[key]\n    target = evidence / f\\\"after-search-plan.{extension}\\\"\n    if target.exists():\n        target.unlink()\n    source.rename(target)\n\nafter_payload = json.loads((evidence / \\\"after-search-plan.json\\\").read_text(encoding=\\\"utf-8\\\"))\nbefore_payload = json.loads((evidence / \\\"before-search-plan.json\\\").read_text(encoding=\\\"utf-8\\\"))\nsummary = {\n    \\\"before\\\": {\n        \\\"mode\\\": before_payload.get(\\\"mode\\\"),\n        \\\"total_tasks\\\": before_payload.get(\\\"counts\\\", {}).get(\\\"total\\\", len(before_payload.get(\\\"tasks\\\", []))),\n        \\\"by_platform\\\": before_payload.get(\\\"counts\\\", {}).get(\\\"by_platform\\\", {}),\n        \\\"dimensions_exposed\\\": sorted(set.intersection(*(set(task) for task in before_payload.get(\\\"tasks\\\", [])))) if before_payload.get(\\\"tasks\\\") else [],\n    },\n    \\\"after\\\": {\n        \\\"mode\\\": after_payload.get(\\\"mode\\\"),\n        \\\"strategy_profile\\\": after_payload.get(\\\"strategy_profile\\\"),\n        \\\"strategy_profile_version\\\": after_payload.get(\\\"strategy_profile_version\\\"),\n        \\\"total_tasks\\\": after_payload[\\\"counts\\\"][\\\"total\\\"],\n        \\\"by_platform\\\": after_payload[\\\"counts\\\"][\\\"by_platform\\\"],\n        \\\"by_family\\\": after_payload[\\\"counts\\\"][\\\"by_family\\\"],\n        \\\"by_pass\\\": after_payload[\\\"counts\\\"][\\\"by_pass\\\"],\n        \\\"phase_counts\\\": dict(Counter(task[\\\"phase\\\"] for task in after_payload[\\\"tasks\\\"])),\n        \\\"deep_families_by_platform\\\": {\n            platform: sorted({task[\\\"query_family\\\"] for task in after_payload[\\\"tasks\\\"] if task[\\\"platform\\\"] == platform and task[\\\"phase\\\"] == \\\"C_DEEP_BACKFILL\\\"})\n            for platform in (\\\"linkedin\\\", \\\"indeed\\\", \\\"glassdoor\\\")\n        },\n        \\\"dimensions_exposed\\\": sorted(set.intersection(*(set(task) for task in after_payload[\\\"tasks\\\"]))) if after_payload[\\\"tasks\\\"] else [],\n    },\n    \\\"representative_queries\\\": {},\n    \\\"interpretation\\\": \\\"Counts describe deterministic planned retrieval work, not result quality or qualified-opportunity yield.\\\",\n}\nfor platform in (\\\"linkedin\\\", \\\"indeed\\\", \\\"glassdoor\\\"):\n    records = []\n    seen = set()\n    for task in after_payload[\\\"tasks\\\"]:\n        if task[\\\"platform\\\"] \"'!= platform:\n            continue\n        identity = (task[\"query_family\"], task[\"query_kind\"], task[\"query\"])\n        if identity in seen:\n            continue\n        seen.add(identity)\n        records.append({\"query_family\": task[\"query_family\"], \"query_kind\": task[\"query_kind\"], \"query\": task[\"query\"]})\n        if len(records) == 4:\n            break\n    summary[\"representative_queries\"][platform] = records\n(evidence / \"plan-summary.json\").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding=\"utf-8\")\nprint(json.dumps(summary, ensure_ascii=False, indent=2))\nPY'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '120,160p' config/strategy.toml && rtk sed -n '160,180p' config/strategy.toml\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -A 5 'id = \\\"HEALTHCARE_(OPS_ACCESS|INFO_QA|QUALITY_DATA|IMPLEMENTATION)\\\"' config/strategy.toml\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring -v && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json\nfrom collections import Counter\nfrom pathlib import Path\nfrom jobbot.config import PROJECT_ROOT, load_bundle\nfrom jobbot.search_plan import compile_staged_plan, write_plan\n\nroot = PROJECT_ROOT\nevidence = root / \\\"verification\\\" / \\\"CHG-170-r1\\\"\nbundle = load_bundle(root)\ntasks = compile_staged_plan(bundle)\noutputs = write_plan(tasks, evidence, \\\"staged\\\")\nfor extension, key in ((\\\"json\\\", \\\"json\\\"), (\\\"csv\\\", \\\"csv\\\"), (\\\"html\\\", \\\"html\\\")):\n    source = outputs[key]\n    target = evidence / f\\\"after-search-plan.{extension}\\\"\n    target.unlink(missing_ok=True)\n    source.rename(target)\n\nafter_payload = json.loads((evidence / \\\"after-search-plan.json\\\").read_text(encoding=\\\"utf-8\\\"))\nbefore_payload = json.loads((evidence / \\\"before-search-plan.json\\\").read_text(encoding=\\\"utf-8\\\"))\nafter_tasks = after_payload[\\\"tasks\\\"]\nsummary = {\n    \\\"before\\\": {\n        \\\"mode\\\": before_payload.get(\\\"mode\\\"),\n        \\\"total_tasks\\\": before_payload.get(\\\"counts\\\", {}).get(\\\"total\\\", len(before_payload.get(\\\"tasks\\\", []))),\n        \\\"by_platform\\\": before_payload.get(\\\"counts\\\", {}).get(\\\"by_platform\\\", {}),\n        \\\"by_legacy_lane\\\": before_payload.get(\\\"counts\\\", {}).get(\\\"by_lane\\\", {}),\n        \\\"explicit_strategy_profile_family_pass_dimensions\\\": False,\n    },\n    \\\"after\\\": {\n        \\\"mode\\\": after_payload.get(\\\"mode\\\"),\n        \\\"strategy_profile\\\": after_payload.get(\\\"strategy_profile\\\"),\n        \\\"strategy_profile_version\\\": after_payload.get(\\\"strategy_profile_version\\\"),\n        \\\"total_tasks\\\": after_payload[\\\"counts\\\"][\\\"total\\\"],\n        \\\"by_platform\\\": after_payload[\\\"counts\\\"][\\\"by_platform\\\"],\n        \\\"by_family\\\": after_payload[\\\"counts\\\"][\\\"by_family\\\"],\n        \\\"by_pass\\\": after_payload[\\\"counts\\\"][\\\"by_pass\\\"],\n        \\\"phase_counts\\\": dict(Counter(task[\\\"phase\\\"] for task in after_tasks)),\n        \\\"deep_families_by_platform\\\": {\n            platform: sorted({task[\\\"query_family\\\"] for task in after_tasks if task[\\\"platform\\\"] == platform and task[\\\"phase\\\"] == \\\"C_DEEP_BACKFILL\\\"})\n            for platform in (\\\"linkedin\\\", \\\"indeed\\\", \\\"glassdoor\\\")\n        },\n        \\\"all_queries_remote_only_unlimited\\\": all(task[\\\"remote_required\\\"] and task[\\\"max_results\\\"] is None for task in after_tasks),\n        \\\"exposed_fields\\\": sorted(set.intersection(*(set(task) for task in after_tasks))) if after_tasks else [],\n    },\n    \\\"coverage_change\\\": {\n        \\\"baseline_tasks_were_lane_title_queries_without_family_pass_provenance\\\": True,\n        \\\"candidate_has_enabled_deep_recall_families\\\": len(bundle.live_search[\\\"families\\\"]),\n        \\\"each_enabled_family_is_present_in_deep_phase_on_all_three_platforms\\\": all(\n            len({task[\\\"query_family\\\"] for task in after_tasks if task[\\\"platform\\\"] == platform and task[\\\"phase\\\"] == \\\"C_DEEP_BACKFILL\\\"}) == len(bundle.live_search[\\\"families\\\"])\n            for platform in (\\\"linkedin\\\", \\\"indeed\\\", \\\"glassdoor\\\")\n        ),\n    },\n    \\\"representative_queries\\\": {},\n    \\\"interpretation\\\": \\\"The old and new totals are plan sizes, not result-quality evidence. The new plan adds inspectable family/pass coverage and uses smaller platform-appropriate exact queries; no yield claim is inferred from raw counts.\\\",\n}\nfor platform in (\\\"linkedin\\\", \\\"indeed\\\", \\\"glassdoor\\\"):\n    rows=[]\n    seen=set()\n    for task in after_tasks:\n        if task[\\\"platform\\\"] \"'!= platform:\n            continue\n        key=(task[\"query_family\"],task[\"query_kind\"],task[\"query\"])\n        if key in seen:\n            continue\n        seen.add(key)\n        rows.append({\"query_family\":task[\"query_family\"],\"query_kind\":task[\"query_kind\"],\"query\":task[\"query\"]})\n        if len(rows)==5:\n            break\n    summary[\"representative_queries\"][platform]=rows\n(evidence / \"plan-summary.json\").write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding=\"utf-8\")\nprint(json.dumps(summary,ensure_ascii=False,indent=2))\nPY'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '80% healthcare|HEALTHCARE_INFO_QA.*20|HEALTHCARE_QUALITY_DATA.*15|35/15/20|80%, 15%|old|portfolio is' README.md docs config tests src/jobbot | head -120 && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -A 5 'id = \\\"HEALTHCARE_(OPS_ACCESS|INFO_QA|QUALITY_DATA|IMPLEMENTATION)\\\"' config/strategy.toml && rtk sed -n '6,16p' config/live_search.toml && rtk sed -n '5,15p' docs/CAREER_STRATEGY.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json\nfrom pathlib import Path\npath=Path('verification/CHG-170-r1/plan-summary.json')\nsummary=json.loads(path.read_text(encoding='utf-8'))\npayload=json.loads(Path('verification/CHG-170-r1/after-search-plan.json').read_text(encoding='utf-8'))\nsummary['after']['by_platform_family_pass_phase']=payload['counts']['platform_family_pass']\npath.write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf-8')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'provider enrollment|provider credential|provider roster|CAQH|credentialing' config/candidate.toml | head -60\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_qualification_gates tests.regression.test_scoring tests.unit.test_strategy -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --check && rtk git diff --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_qualification_gates tests.regression.test_scoring tests.unit.test_strategy -v > /tmp/jobbot-chg170-focused.log 2>&1; result=$?; rtk tail -n 35 /tmp/jobbot-chg170-focused.log; exit $result'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests > /tmp/jobbot-chg170-full.log 2>&1; result=$?; rtk tail -n 45 /tmp/jobbot-chg170-full.log; exit $result'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -l verification/CHG-170-r1 && rtk cat verification/CHG-170-r1/plan-summary.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"def (build|generate|compile).*plan|render_.*(csv|html)|search_plan\\\" src/jobbot/search_plan.py src/jobbot/cli.py && rtk sed -n '1,240p' src/jobbot/search_plan.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,120p' src/jobbot/cli.py && rtk rg -n \\\"class ConfigBundle|def load_config|def load_bundle|load_config\\\" src/jobbot/config.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python - <<'PY'\nimport json\nfrom collections import Counter, defaultdict\nfrom pathlib import Path\nfrom jobbot.config import load_bundle\nfrom jobbot.search_plan import compile_staged_plan, plan_counts, write_plan\n\nroot = Path('.')\nevidence = root / 'verification' / 'CHG-170-r1'\nbefore = json.loads((evidence / 'before-search-plan.json').read_text())\nbundle = load_bundle(root)\ntasks = compile_staged_plan(bundle)\npaths = write_plan(tasks, evidence, 'staged')\nfor key, path in paths.items():\n    target = evidence / f'after-search-plan.{key}'\n    path.replace(target)\n\nbefore_tasks = before.get('tasks', [])\nbefore_summary = {\n    'mode': before.get('mode', 'staged'),\n    'total_tasks': len(before_tasks),\n    'by_platform': dict(sorted(Counter(str(t.get('platform', 'unknown')) for t in before_tasks).items())),\n    'by_legacy_lane': dict(sorted(Counter(str(t.get('lane', 'unknown')) for t in before_tasks).items())),\n    'explicit_strategy_profile_family_pass_dimensions': all(\n        all(t.get(k) for k in ('strategy_profile', 'query_family', 'query_kind', 'query_pass'))\n        for t in before_tasks\n    ) if before_tasks else False,\n}\ncounts = plan_counts(tasks)\nby_phase = Counter(t.phase for t in tasks)\nplatforms = sorted({t.platform for t in tasks})\nfamilies = sorted({t.query_family for t in tasks})\ndeep_by_platform = {\n    platform: sorted({t.query_family for t in tasks if t.platform == platform and t.phase == 'C_DEEP_BACKFILL'})\n    for platform in platforms\n}\nfields = list(tasks[0].__dataclass_fields__) if tasks else []\nrepresentatives = {}\nfor platform in platforms:\n    selected = [t for t in tasks if t.platform == platform][:5]\n    representatives[platform] = [\n        {'query_family': t.query_family, 'query_kind': t.query_kind, 'query': t.query}\n        for t in selected\n    ]\nsummary = {\n    'before': before_summary,\n    'after': {\n        'mode': 'staged',\n        'strategy_profile': tasks[0].strategy_profile if tasks else '',\n        'strategy_profile_version': tasks[0].strategy_profile_version if tasks else '',\n        'total_tasks': counts['total'],\n        'by_platform': counts['by_platform'],\n        'by_family': counts['by_family'],\n        'by_pass': counts['by_pass'],\n        'phase_counts': dict(sorted(by_phase.items())),\n        'deep_families_by_platform': deep_by_platform,\n        'all_queries_remote_only_unlimited': all(t.remote_required and t.max_results is None for t in tasks),\n        'exposed_fields': sorted(fields),\n        'by_platform_family_pass_phase': counts['platform_family_pass'],\n    },\n    'coverage_change': {\n        'baseline_tasks_were_lane_title_queries_without_family_pass_provenance': not before_summary['explicit_strategy_profile_family_pass_dimensions'],\n        'candidate_has_enabled_deep_recall_families': len(families),\n        'each_enabled_family_is_present_in_deep_phase_on_all_three_platforms': all(set(deep_by_platform.get(p, [])) == set(families) for p in ('linkedin', 'indeed', 'glassdoor')),\n    },\n    'representative_queries': representatives,\n    'interpretation': 'The old and new totals are plan sizes, not result-quality evidence. The new plan adds inspectable family/pass coverage and uses smaller platform-appropriate exact queries; no yield claim is inferred from raw counts.',\n}\n(evidence / 'plan-summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\\\\n')\nprint(json.dumps({'total': counts['total'], 'by_platform': counts['by_platform'], 'by_family': counts['by_family'], 'by_pass': counts['by_pass'], 'phase_counts': dict(by_phase), 'deep_family_counts': {p: len(v) for p,v in deep_by_platform.items()}, 'files': sorted(p.name for p in evidence.iterdir())}, indent=2))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex/RTK.md && rtk cat /Users/haewonkim/.codex/law.md && rtk git rev-parse HEAD && rtk git branch --show-current && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_database_ledger tests.integration.test_browser_tasks -v > /tmp/jobbot-chg170-focused-db.log 2>&1; result=$?; rtk tail -n 45 /tmp/jobbot-chg170-focused-db.log; exit $result'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff -- config/candidate.toml config/strategy.toml docs/CAREER_STRATEGY.md docs/SEARCH_PLAN.md README.md && rtk git diff -- src/jobbot/legacy_engine.py | rtk sed -n '1,360p' && rtk cat src/jobbot/migrations/m0018_chg170_live_search_provenance.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '210,280p' src/jobbot/search_plan.py && rtk sed -n '325,338p' src/jobbot/cli.py && rtk rg -n \\\"compile_staged_plan|staged\\\" tests/unit/test_strategy.py tests/integration/test_run_now.py src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' tests/unit/test_strategy.py && rtk rg -n \\\"def parser\\\\(\\\" src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_database_ledger tests.integration.test_browser_tasks -v > /tmp/jobbot-chg170-focused-final.log 2>&1; result=$?; rtk tail -n 42 /tmp/jobbot-chg170-focused-final.log; exit $result'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests > /tmp/jobbot-chg170-full-final.log 2>&1; result=$?; rtk tail -n 18 /tmp/jobbot-chg170-full-final.log; exit $result'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"output_dir|output\" config/runtime.toml src/jobbot/config.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg170-plan-cli python -m jobbot search-plan --mode staged'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check && rtk env python - <<'PY'\nfrom pathlib import Path\nimport json\nroot=Path('verification/CHG-170-r1')\ncommitted=json.loads((root/'after-search-plan.json').read_text())\ncli=json.loads(Path('/tmp/jobbot-chg170-plan-cli/search_plan.json').read_text())\nassert committed['tasks']==cli['tasks']\nassert committed['counts']==cli['counts']\nprint(f\\\"CLI plan matches evidence exactly: {len(committed['tasks'])} tasks\\\")\nprint(f\\\"Before plan tasks: {len(json.loads((root/'before-search-plan.json').read_text())['tasks'])}\\\")\nprint(f\\\"Summary deep recall coverage: {json.loads((root/'plan-summary.json').read_text())['coverage_change']['each_enabled_family_is_present_in_deep_phase_on_all_three_platforms']}\\\")\nPY\nrtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add -A'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --check && rtk git status --short --branch'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git log -3 --oneline --decorate && rtk git rev-parse HEAD && rtk git show --stat --oneline --summary HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"CHG-170-r1: add broad qualified-yield search profile\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD && rtk git diff --name-only c9bcbe7bf63431601597cbf55eef452489c0b141 HEAD && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat tests/unit/test_qualification_gates.py && rtk rg -n \"m0018|qualification_gates|strategy_profile\" tests/integration/test_database_ledger.py tests/integration/test_run_now.py tests/integration/test_browser_tasks.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env python - <<'PY'\nimport json\nfrom pathlib import Path\n\nreport = {\n    \\\"request_id\\\": \\\"CHG-170-r1\\\",\n    \\\"project\\\": \\\"jobbot / kimhw8084/jobbot\\\",\n    \\\"target_branch\\\": \\\"main\\\",\n    \\\"working_branch\\\": \\\"codex/jobbot-CHG-170-r1\\\",\n    \\\"base_commit\\\": \\\"c9bcbe7bf63431601597cbf55eef452489c0b141\\\",\n    \\\"tested_head_commit\\\": \\\"8c8a0515c23a81b584089db4e2a43aaefcf78f8b\\\",\n    \\\"candidate_commit_message\\\": \\\"CHG-170-r1: add broad qualified-yield search profile\\\",\n    \\\"changed_files\\\": [\n        \\\"README.md\\\",\n        \\\"config/candidate.toml\\\",\n        \\\"config/live_search.toml\\\",\n        \\\"config/strategy.toml\\\",\n        \\\"docs/CAREER_STRATEGY.md\\\",\n        \\\"docs/SEARCH_PLAN.md\\\",\n        \\\"src/jobbot/application.py\\\",\n        \\\"src/jobbot/audit.py\\\",\n        \\\"src/jobbot/bridge/rpc.py\\\",\n        \\\"src/jobbot/browser_tasks.py\\\",\n        \\\"src/jobbot/cli.py\\\",\n        \\\"src/jobbot/config.py\\\",\n        \\\"src/jobbot/dashboard.py\\\",\n        \\\"src/jobbot/discoveries.py\\\",\n        \\\"src/jobbot/doctor.py\\\",\n        \\\"src/jobbot/exports.py\\\",\n        \\\"src/jobbot/legacy_core.py\\\",\n        \\\"src/jobbot/legacy_engine.py\\\",\n        \\\"src/jobbot/migrations/__init__.py\\\",\n        \\\"src/jobbot/migrations/m0018_chg170_live_search_provenance.py\\\",\n        \\\"src/jobbot/search_plan.py\\\",\n        \\\"tests/integration/test_browser_tasks.py\\\",\n        \\\"tests/integration/test_chg112_production_integrity.py\\\",\n        \\\"tests/integration/test_chg146_workers_cache.py\\\",\n        \\\"tests/integration/test_database_ledger.py\\\",\n        \\\"tests/integration/test_run_now.py\\\",\n        \\\"tests/regression/test_scoring.py\\\",\n        \\\"tests/unit/test_qualification_gates.py\\\",\n        \\\"tests/unit/test_strategy.py\\\",\n        \\\"verification/CHG-170-r1/after-search-plan.csv\\\",\n        \\\"verification/CHG-170-r1/after-search-plan.html\\\",\n        \\\"verification/CHG-170-r1/after-search-plan.json\\\",\n        \\\"verification/CHG-170-r1/before-search-plan.json\\\",\n        \\\"verification/CHG-170-r1/plan-summary.json\\\"\n    ],\n    \\\"migration\\\": {\n        \\\"version\\\": 18,\n        \\\"name\\\": \\\"CHG-170 versioned live-search provenance and fail-closed eligibility\\\",\n        \\\"facts\\\": [\n            \\\"Additive/idempotent columns store strategy profile, version, family, query kind/pass and initial order on search tasks, task results and source occurrences.\\\",\n            \\\"Jobs store annual base-pay minimum, hard-gate evidence, preference signals and preference adjustment.\\\",\n            \\\"Task-result provenance backfills from durable search tasks; previously handled actionables become ALREADY_HANDLED; legacy actionables without gate evidence become REVIEW.\\\",\n            \\\"Migration validation used temporary SQLite fixtures; production data/jobs.sqlite3 was not opened or changed.\\\"\n        ]\n    },\n    \\\"tests\\\": [\n        {\n            \\\"command\\\": \\\"rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_database_ledger tests.integration.test_browser_tasks -v\\\",\n            \\\"result\\\": \\\"PASS — 39 tests\\\"\n        },\n        {\n            \\\"command\\\": \\\"rtk env PYTHONPATH=src python -m unittest discover -s tests\\\",\n            \\\"result\\\": \\\"PASS — 127 tests\\\"\n        },\n        {\n            \\\"command\\\": \\\"rtk env PYTHONPATH=src JOBBOT_OUTPUT_DIR=/tmp/jobbot-chg170-plan-cli python -m jobbot search-plan --mode staged\\\",\n            \\\"result\\\": \\\"PASS — 140 deterministic tasks; generated JSON/CSV/HTML in temporary output and matched the committed task/count payload exactly\\\"\n        }\n    ],\n    \\\"search_plan_evidence\\\": {\n        \\\"before_artifact\\\": \\\"verification/CHG-170-r1/before-search-plan.json\\\",\n        \\\"after_artifacts\\\": [\n            \\\"verification/CHG-170-r1/after-search-plan.json\\\",\n            \\\"verification/CHG-170-r1/after-search-plan.csv\\\",\n            \\\"verification/CHG-170-r1/after-search-plan.html\\\"\n        ],\n        \\\"summary_artifact\\\": \\\"verification/CHG-170-r1/plan-summary.json\\\",\n        \\\"before\\\": {\n            \\\"mode\\\": \\\"staged\\\",\n            \\\"tasks\\\": 834,\n            \\\"per_platform\\\": {\\\"linkedin\\\": 278, \\\"indeed\\\": 278, \\\"glassdoor\\\": 278},\n            \\\"explicit_profile_family_pass_provenance\\\": False\n        },\n        \\\"after\\\": {\n            \\\"profile\\\": \\\"jobbot-broad-qualified-yield\\\",\n            \\\"version\\\": \\\"2026-09-22.1\\\",\n            \\\"tasks\\\": 140,\n            \\\"per_platform\\\": {\\\"linkedin\\\": 56, \\\"indeed\\\": 42, \\\"glassdoor\\\": 42},\n            \\\"phase_counts\\\": {\\\"A_FASTEST_DOOR_RECENT\\\": 30, \\\"B_REMAINING_CORE_RECENT\\\": 40, \\\"C_DEEP_BACKFILL\\\": 70},\n            \\\"families\\\": {\n                \\\"provider_lifecycle_credentialing_data\\\": 20,\n                \\\"healthcare_quality_data_documentation_compliance\\\": 20,\n                \\\"healthcare_project_implementation_program_support\\\": 20,\n                \\\"higher_ed_academic_back_office\\\": 20,\n                \\\"bounded_transferable_records_data_process_ops\\\": 20,\n                \\\"backoffice_patient_access_eligibility_enrollment\\\": 20,\n                \\\"bilingual_ai_content_quality\\\": 20\n            },\n            \\\"passes\\\": {\n                \\\"linkedin_intent\\\": 28,\n                \\\"linkedin_title_family\\\": 28,\n                \\\"indeed_exact_phrase\\\": 28,\n                \\\"indeed_compact_boolean\\\": 14,\n                \\\"glassdoor_narrow_title\\\": 42\n            },\n            \\\"deep_recall\\\": \\\"All 7 enabled families have deep-phase coverage on LinkedIn, Indeed and Glassdoor.\\\",\n            \\\"sample_exact_queries\\\": {\n                \\\"linkedin\\\": \\\"provider lifecycle, credentialing, enrollment and provider data maintenance roles at health plans\\\",\n                \\\"indeed\\\": \\\"\\\\\\\"provider enrollment specialist\\\\\\\"\\\",\n                \\\"glassdoor\\\": \\\"provider enrollment specialist\\\"\n            }\n        },\n        \\\"interpretation\\\": \\\"Totals describe plan size, not result quality. Evidence demonstrates explicit correct-family/pass coverage and a guaranteed deep recall pass; it makes no yield claim from raw task counts.\\\"\n    },\n    \\\"hard_gate_matrix\\\": {\n        \\\"actionable_recommendations\\\": [\\\"APPLY_NOW\\\", \\\"APPLY_VOLUME\\\", \\\"HIGH_VALUE_STRETCH\\\"],\n        \\\"positive_fixture\\\": \\\"A posting with affirmative evidence for all gates can qualify as actionable.\\\",\n        \\\"failures_and_unknowns\\\": \\\"Every tested failure or unknown remains non-actionable for home-only remote/Texas eligibility, full-time, permanent employee status, employer-provided base-pay floor, required travel/in-person conditions, current/open status, unsupported mandatory credential/skills/experience, and handled status.\\\",\n        \\\"preference_only\\\": \\\"Admissions-sales/call-queue mismatch lowers preference ranking while retaining discovery and recall evidence.\\\",\n        \\\"ambiguity\\\": \\\"Ambiguous title words do not establish fit; substantive responsibility evidence is required, otherwise existing review semantics apply.\\\",\n        \\\"no_repeat\\\": \\\"After APPLIED, recommendation remains ALREADY_HANDLED; the application event and source sighting remain stored, duplicate sightings increment history, and daily actionable plan omits the handled job.\\\"\n    },\n    \\\"live_site_production_validation\\\": \\\"NOT_RUN — separately human-gated runtime state; no LinkedIn, Indeed or Glassdoor production browsing was attempted.\\\",\n    \\\"production_ledger_validation\\\": \\\"NOT_USED — no read, write or mutation of production data/jobs.sqlite3.\\\",\n    \\\"request_binding\\\": \\\"This evidence is bound to the approved Project OS BUILD request CHG-170-r1 on codex/jobbot-CHG-170-r1.\\\"\n}\nPath(\\\"verification/CHG-170-r1.json\\\").write_text(json.dumps(report, ensure_ascii=False, indent=2) + \\\"\\\\n\\\")\nprint(\\\"wrote verification/CHG-170-r1.json\\\")\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env python - <<'PY'\nimport json\nfrom pathlib import Path\npath=Path('verification/CHG-170-r1.json')\nreport=json.loads(path.read_text())\nreport['candidate_changed_files']=report.pop('changed_files')\nreport['verification_artifact']='verification/CHG-170-r1.json'\nreport['evidence_commit_note']='This evidence file is committed separately after the tested candidate code commit because a commit cannot contain its own final commit SHA.'\npath.write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\\\\n')\ncheck=json.loads(path.read_text())\nassert check['tested_head_commit']=='8c8a0515c23a81b584089db4e2a43aaefcf78f8b'\nassert len(check['candidate_changed_files']) == 34\nprint(f\\\"valid JSON; {len(check['candidate_changed_files'])} candidate files; tested head {check['tested_head_commit']}\\\")\nPY\nrtk git status --short --branch && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-170-r1.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"CHG-170-r1: bind verification evidence to candidate\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD main && rtk git log -2 --oneline --decorate && rtk git show --stat --oneline --summary HEAD && rtk git status --porcelain=v1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rm -rf /tmp/jobbot-chg170-focused.log /tmp/jobbot-chg170-full.log /tmp/jobbot-chg170-focused-db.log /tmp/jobbot-chg170-focused-final.log /tmp/jobbot-chg170-full-final.log /tmp/jobbot-chg170-plan-cli'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-6-luna",
+    "event_count": 481,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.69,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 35114240,
+      "fresh_input_tokens": 830338,
+      "input_tokens": 35944578,
+      "non_reasoning_output_tokens": 74843,
+      "output_tokens": 191316,
+      "reasoning_output_tokens": 116473,
+      "total_processed_tokens": 36135894
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "0afb92845e5138cf5d172733693624701797fa86",
+      "subject": "CHG-170-r1: bind verification evidence to candidate"
+    },
+    {
+      "sha": "8c8a0515c23a81b584089db4e2a43aaefcf78f8b",
+      "subject": "CHG-170-r1: add broad qualified-yield search profile"
+    }
+  ],
+  "diff": {
+    "additions": 21674,
+    "changed_files": 35,
+    "commit_count": 2,
+    "deletions": 302
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 8,
+    "items": [
+      {
+        "bytes": 8798,
+        "path": "README.md",
+        "sha256": "adddbbc6140219fd4aa572c75425e7bb7c946cf3f3c92959ea57c000957e5bff"
+      },
+      {
+        "bytes": 3402,
+        "path": "docs/CAREER_STRATEGY.md",
+        "sha256": "ef9a1759122ea43b1e8d9c1020231927768d656994d54ea49bb4e07cf29f2882"
+      },
+      {
+        "bytes": 3897,
+        "path": "docs/SEARCH_PLAN.md",
+        "sha256": "40307d961311cebd3f62cc1cf6e0a9a818ab7a3d3ed6e431b445b9d946cdf5a1"
+      },
+      {
+        "bytes": 7049,
+        "path": "verification/CHG-170-r1.json",
+        "sha256": "becca15f8da49c444b4cb2ac5a02f725fbb8a91eb36e9114269b197e0e592037"
+      },
+      {
+        "bytes": 80356,
+        "path": "verification/CHG-170-r1/after-search-plan.html",
+        "sha256": "c8da53efe15b8361c697955eb5a15618bd33df9af80826fc00a25fb438d7de55"
+      },
+      {
+        "bytes": 163564,
+        "path": "verification/CHG-170-r1/after-search-plan.json",
+        "sha256": "c4540f57cf3fdd3bdd7aa47336d5ea0eaf1bfb3dbcbceb86853695e17c0cbe4f"
+      },
+      {
+        "bytes": 593223,
+        "path": "verification/CHG-170-r1/before-search-plan.json",
+        "sha256": "6479dfb8d4c63fdc0b5756e6eb7910911772c0c2cfd2a5a710f87f1976fc51cd"
+      },
+      {
+        "bytes": 13549,
+        "path": "verification/CHG-170-r1/plan-summary.json",
+        "sha256": "bbcb159821054322f1b17a022e1e91763c7e446d1eb33cbfe58bc280dceedf24"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.4-quota-recovery-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.4-quota-recovery-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-22T22:31:45Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "branch": "codex/jobbot-CHG-170-r1",
+    "detached_verify": false,
+    "head_sha": "0afb92845e5138cf5d172733693624701797fa86",
+    "remote_exact_head": true,
+    "remote_head_sha": "0afb92845e5138cf5d172733693624701797fa86",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "work_branch": "codex/jobbot-CHG-170-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-3304fe7962072c854253f769",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-170-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-170-r1"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.4-quota-recovery-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-170-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-22T21:22:51Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 4134,
+    "queue_seconds": 1,
+    "total_seconds": 4135
+  },
+  "transport": {
+    "bytes": 10269,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 9988,
+    "prompt_sha256": "0469c00da1055425819ba964793a86e84be9ea17267bc749e0cee9a8495734cb",
+    "sha256": "3304fe7962072c854253f7690428e2f51e1721f92e38fb827a6a23d75748addf"
+  }
+}
