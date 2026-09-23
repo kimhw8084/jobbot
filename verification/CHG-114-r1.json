@@ -1,0 +1,154 @@
+{
+  "request_binding": {
+    "change": "CHG-114-r1",
+    "repository": "kimhw8084/jobbot",
+    "target_branch": "codex/jobbot-CHG-114-r1",
+    "required_base": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "scope": "Durable search-quality telemetry, evidence-aware frozen yield ordering, advisory probable-sibling clustering, and provenance UX consuming CHG-170/CHG-113.",
+    "constraints": [
+      "No merge or mutation of main.",
+      "Preserve the CHG-170 search profile, enabled families, compiled task identities, phase semantics, and deep recall coverage.",
+      "Do not add a duplicate qualification system or application-provenance model.",
+      "Production jobs.sqlite3 must not be used for validation.",
+      "No live LinkedIn, Indeed, Glassdoor, ordinary-Chrome refresh, or receiver recovery validation."
+    ]
+  },
+  "source_state": {
+    "base": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "tested_head": "239051b6dcdf382f54fd1a48b48f7e625108b018",
+    "tested_head_is_base_plus_implementation": true,
+    "verification_artifact_is_follow_up_commit": true,
+    "branch": "codex/jobbot-CHG-114-r1",
+    "main_mutated": false
+  },
+  "changed_files": [
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DATABASE.md",
+    "docs/SEARCH_PLAN.md",
+    "docs/SEARCH_QUALITY.md",
+    "src/jobbot/bridge/rpc.py",
+    "src/jobbot/browser_tasks.py",
+    "src/jobbot/dashboard.py",
+    "src/jobbot/exports.py",
+    "src/jobbot/migrations/__init__.py",
+    "src/jobbot/migrations/m0020_chg114_search_quality.py",
+    "src/jobbot/provenance.py",
+    "src/jobbot/search_ordering.py",
+    "src/jobbot/search_quality.py",
+    "src/jobbot/siblings.py",
+    "src/jobbot/web/dashboard.css",
+    "src/jobbot/web/dashboard.html",
+    "src/jobbot/web/dashboard.js",
+    "tests/integration/test_chg112_production_integrity.py",
+    "tests/integration/test_chg114_search_quality.py",
+    "tests/integration/test_database_ledger.py",
+    "verification/CHG-114-r1.json"
+  ],
+  "migration": {
+    "version": 20,
+    "file": "src/jobbot/migrations/m0020_chg114_search_quality.py",
+    "behavior": "Additive and idempotent; freezes baseline/effective execution ranks and order rationale/sample metadata on tasks, stores ordering parameters on runs, and adds indexes for quality history, source-occurrence aggregation, event attribution, and sibling recency.",
+    "production_database_touched": false
+  },
+  "metric_dictionary": {
+    "definition_version": "chg114-search-quality-v1",
+    "source_of_truth": "Reproducible aggregation from browser_search_tasks, search_task_results, jobs, browser_events, application_events, and source_occurrences; no materialized metric cache.",
+    "task_and_family_dimensions": [
+      "strategy_profile", "profile_version", "platform", "query_family", "query_kind", "query_pass", "exact query/task identity", "age_window_days", "phase"
+    ],
+    "metrics": {
+      "discovery_and_identity": ["cards_persisted", "unique_source_ids", "unique_canonical_jobs", "sightings", "duplicate_sighting_ratio", "reported_duplicate_cards", "multi_query_canonical_jobs"],
+      "recall_and_detail": ["recall_selected", "recall_qa_samples", "detail_attempts", "detail_completions", "detail_partial", "detail_failures", "detail_external_blocks", "detail_completion_rate"],
+      "verification_and_yield": ["source_verified_count", "application_destination_verified_count", "evidence_ready_count", "qualification_ready_count", "actionable_count", "hard_reject_count", "review_count", "no_repeat_leakage_count", "actionable_hard_reject_leakage_count"],
+      "cost_and_execution": ["pages_visited", "scroll_generations", "detail_reads", "task_elapsed_seconds", "mean_task_elapsed_seconds", "search_detail_cost_units", "cost_per_evidence_ready", "cost_per_actionable"],
+      "safety_and_funnel": ["challenges", "auth_blocks", "external_blocks", "interruptions", "task_failures", "application_count", "screen_count", "interview_count", "offer_count"]
+    },
+    "source_occurrence_metrics": "Supplemental profile/version/platform/family/kind/pass aggregation. source_occurrences has no task age-window or phase, so it is not used to fabricate those dimensions.",
+    "definitions": "Full reproducible formulas and outcome-state rules are in docs/SEARCH_QUALITY.md and are exposed by /api/search-quality."
+  },
+  "attribution_rule": {
+    "occurrence_yield": "Every persisted task result remains visible in task metrics, including repeated sightings and cards that map to an already-known canonical job.",
+    "canonical_yield": "Distinct canonical job_id within a query/family metric grouping; exact query rows may overlap when the same job was seen by multiple tasks.",
+    "downstream_funnel": "Each canonical job-stage is counted once per strategy profile + profile version + platform + query family. Credit it to the discovery with earliest first_seen_at, then lowest task_id, then lowest result_id. Query kind/pass, phase, and age window do not create extra copies of the same downstream stage.",
+    "fixture_proof": "Seeded duplicate and cross-query sightings credit the application, screen, interview, and offer once to the earliest logical-family discovery; later phase/platform/query rows do not multiply them."
+  },
+  "ordering": {
+    "algorithm_version": "chg114-yield-v1",
+    "positive_signal": "Distinct canonical jobs with both CHG-113 evidence_readiness_state=READY and qualification_readiness_state=READY and a CHG-170 actionable recommendation.",
+    "history_eligibility": "Completed or partial detail outcomes linked to durable READY, REVIEW, or BLOCKED evidence and qualification states; raw card volume is not a positive signal.",
+    "score": "Pooled-prior shrinkage estimate of qualified outcomes per pages-plus-detail-reads cost; compare using configured Wilson confidence intervals and minimum effect guardrail.",
+    "defaults": {
+      "min_evaluated_jobs": 8,
+      "prior_strength": 8.0,
+      "confidence_z": 1.96,
+      "minimum_effect_per_cost": 0.02,
+      "max_rank_displacement": 20
+    },
+    "fallback": "If any peer task is below sample sufficiency, intervals overlap/contradict, or displacement exceeds the guardrail, preserve baseline execution order exactly.",
+    "stable_ties": ["baseline execution_rank", "priority", "task_key"],
+    "scheduling_scope": "Within existing phase/platform peer groups only. Every task and identity remains queued; effective ranks occupy existing baseline rank slots. The run freezes config, reason, and sample at enqueue. Existing phase progression, platform waves, leases, checkpoints, stop/resume, and human waits remain in force.",
+    "seeded_before_after": {
+      "tasks": ["query A", "query B"],
+      "sample_size_each": 8,
+      "baseline_order_and_ranks": [{"query": "query A", "rank": 10}, {"query": "query B", "rank": 20}],
+      "query_a": {"cards_persisted": 48, "sightings": 88, "unique_source_ids": 48, "unique_canonical_jobs": 8, "duplicate_sighting_ratio": 0.454545, "actionable_count": 0},
+      "query_b": {"cards_persisted": 8, "sightings": 8, "unique_source_ids": 8, "unique_canonical_jobs": 8, "duplicate_sighting_ratio": 0.0, "actionable_count": 8},
+      "learned_order_and_ranks": [{"query": "query B", "effective_rank": 10}, {"query": "query A", "effective_rank": 20}],
+      "result": "Strong trusted ready yield promotes query B despite lower raw volume; duplicate zero-qualified query A does not promote by card count.",
+      "insufficient_and_contradictory_history": "Seeded below-floor samples and overlapping 95% Wilson intervals both retain baseline A then B order and ranks."
+    }
+  },
+  "task_universe_and_recall": {
+    "exact_base": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "compiled_task_count": 140,
+    "candidate_task_count": 140,
+    "task_identity_set_equal": true,
+    "enabled_families_with_deep_recall": 7,
+    "configured_platforms": ["linkedin", "indeed", "glassdoor"],
+    "deep_family_platform_coverage_equal": true,
+    "ordering_changes_only_execution_order": true,
+    "evidence": "Isolated test compiles the integrated CHG-170 staged plan, verifies 140 task identities before and after ordering, asserts every enabled minimum_deep_recall family/platform pair remains present in C_DEEP_BACKFILL, and observes baseline ranks when history is insufficient."
+  },
+  "probable_sibling_fixtures": {
+    "algorithm_version": "chg114-probable-siblings-v1",
+    "grouped": ["sib-1", "sib-2"],
+    "basis": "Normalized employer/title, compatible location/remote bucket, posted dates within 30 days, and distinct verified ATS requisitions explicitly retained as separate related jobs.",
+    "excluded": ["sib-conflict: identity mismatch", "sib-other: incompatible verified employer"],
+    "recomputation_deterministic": true,
+    "canonical_jobs_merged": false,
+    "source_occurrences_changed": false,
+    "output": "Advisory cluster carries algorithm/version, confidence, basis, and member canonical job IDs; no destructive controls."
+  },
+  "provenance_ux_proof": {
+    "fields": ["remote", "location", "salary", "employment_type", "posted/current status", "requirements", "application_destination", "source_verification"],
+    "surfaces": ["job list/detail API", "dashboard job detail", "CSV/JSON export", "full underlying evidence JSON remains included"],
+    "fixture_states": {
+      "location": "OBSERVED",
+      "posted/current status": "OBSERVED with search_card evidence source",
+      "remote": "INFERRED_OR_DERIVED when value exists without a durable observation marker",
+      "salary": "INFERRED_OR_DERIVED when value exists without a durable observation marker",
+      "employment_type": "INFERRED_OR_DERIVED when value exists without a durable observation marker",
+      "requirements": "OBSERVED from supported employer-description extraction",
+      "application_destination": "OBSERVED and separately verified using CHG-113 destination state"
+    },
+    "api_proof": ["/api/search-quality", "/api/sibling-clusters", "/api/jobs/{job_id}"],
+    "dashboard_controls": "Sibling display and inspection only; no merge controls."
+  },
+  "tests": {
+    "focused_command": "PYTHONPATH=src python -m unittest tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_dashboard_exports_application tests.integration.test_database_ledger tests.unit.test_chg113_evidence_readiness tests.unit.test_qualification_gates tests.unit.test_strategy -q",
+    "focused_result": "62 tests passed in 8.216s",
+    "full_command": "PYTHONPATH=src python -m unittest discover -s tests -q",
+    "full_result": "151 tests passed in 42.619s",
+    "syntax": "python -m compileall -q src tests passed",
+    "dashboard_javascript": "node --check src/jobbot/web/dashboard.js passed",
+    "migration_idempotence": "Verified by isolated SQLite fixture; second migration call applies no migration and added task-order columns are present.",
+    "existing_hard_gate_and_readiness": "Focused CHG-113 evidence readiness, CHG-170 qualification gate, strategy, task, database, and dashboard/export suites passed."
+  },
+  "validation_boundary": {
+    "production_ledger": "NOT_USED",
+    "validation_database": "Disposable isolated SQLite fixtures only.",
+    "live_big_3": "NOT_RUN",
+    "live_platform_or_chrome_actions": "NOT_RUN"
+  }
+}
