@@ -1,0 +1,267 @@
+{
+  "request_binding": {
+    "change": "Project OS FINAL VERIFY for JobBot CHG-39-r15",
+    "repository": "kimhw8084/jobbot",
+    "working_branch": "codex/jobbot-CHG-39-r15",
+    "authoritative_integrated_main": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "authoritative_main_tree": "0623f5577a4699910009f17bd0f0872012b729c5",
+    "integrated_chg166_r5_head": "100c189b4a4fded7520f9702e98cad531b00e960",
+    "required_extension_build": "3.2.2-prod-ready.672cf88.26",
+    "scope": "Verification only. Product source, extension source, config, tests, docs, selectors, search policy, thresholds, and qualification behavior were not changed."
+  },
+  "source_state": {
+    "code_head_tested": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "code_tree_tested": "0623f5577a4699910009f17bd0f0872012b729c5",
+    "target_drift": "zero",
+    "working_tree_before_evidence": "clean",
+    "local_main_before_and_after": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "origin_main_before_and_after": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "main_mutated": false,
+    "remote_verify_branch_before_evidence": "absent",
+    "verification_artifact_is_follow_up_commit": true,
+    "evidence_commit_note": "The artifact records the exact tested code head. The final remote VERIFY branch head is checked after committing and reported in the completion record because a commit cannot contain its own SHA."
+  },
+  "classification": "VERIFY_INFRASTRUCTURE",
+  "decision": {
+    "go_production": false,
+    "reason": "The exact stable extension source was deployed, but the supported authenticated maintenance refresh could not reach a loaded extension in the bound ordinary Chrome profile. It returned extension_absent_disabled_or_unavailable with no observed build. The Product browser runtime was not reached, so no platform lane or production validator was started.",
+    "minimal_reproducer": "From the target checkout, run the supported jobbot refresh-extension CLI with JOBBOT_DATABASE_PATH and JOBBOT_OUTPUT_DIR set to disposable paths. Normal Chrome launch returned 0 for the bound Default profile, but the bridge reported extension_unavailable_or_unreachable, observed_build empty, reload_count 0, and identity_confirmed false.",
+    "product_runtime_judged": false,
+    "external_platform_blocker_observed": false,
+    "external_platform_state": "NOT_EVALUATED; no platform page was visited"
+  },
+  "runtime_identity": {
+    "normal_browser": {
+      "browser": "Google Chrome",
+      "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "bound_profile_directory": "Default",
+      "profile_binding_ok": true,
+      "repository_or_fabric_browser_profile_used": false
+    },
+    "extension_source": {
+      "canonical_extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+      "manifest_key_present": true,
+      "manifest_key_sha256": "sha256:6db9249b8bb52fb20be3acd46a4c3c9fa50d48653a9fb6c8e10e52ff93239f92",
+      "expected_build": "3.2.2-prod-ready.672cf88.26",
+      "source_head": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+      "stable_extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "stable_deployment_marker": "/Users/haewonkim/Library/Application Support/JobBot/extension/deployment_identity.json",
+      "source_root": "/Users/haewonkim/.codex-fabric/worktrees/CF-913c99afbc73c05e4936854a",
+      "source_identity": "sha256:8361471e11c4e58c3bf237da53862d1eae1671a350371a1fdf3529faedd649f8",
+      "deployed_identity": "sha256:8361471e11c4e58c3bf237da53862d1eae1671a350371a1fdf3529faedd649f8",
+      "deployment_matches_exact_target": true
+    },
+    "sync": {
+      "command": "python3 -m jobbot sync-extension",
+      "mechanism": "repository-supported stable-extension sync CLI",
+      "exit_code": 0,
+      "result": "deployment_source_current"
+    },
+    "maintenance_refresh": {
+      "command": "python3 -m jobbot refresh-extension --timeout 90",
+      "wrapper_used": false,
+      "isolated_database": "/tmp/jobbot-chg39-r15-dKgRsi/isolated/maintenance.sqlite3",
+      "isolated_output": "/tmp/jobbot-chg39-r15-dKgRsi/isolated/maintenance-out",
+      "exit_code": 2,
+      "status": "failed",
+      "diagnostic_classification": "extension_absent_disabled_or_unavailable",
+      "expected_build": "3.2.2-prod-ready.672cf88.26",
+      "observed_build": "",
+      "reload_count": 0,
+      "identity_confirmed": false,
+      "browser_launch_return_code": 0,
+      "browser_launch_delivery": "not_confirmed",
+      "bridge_token_value": "NOT_RETAINED"
+    },
+    "runtime_binding_diagnostics_after_sync": "PASS; stable deployed source identity and bound Chrome profile match exact target",
+    "loaded_extension_identity": "UNPROVEN; Chrome did not report a loaded runtime build"
+  },
+  "isolation": {
+    "disposable_checkout": "/tmp/jobbot-chg39-r15-dKgRsi/repo",
+    "doctor_database": "/tmp/jobbot-chg39-r15-dKgRsi/isolated/doctor.sqlite3",
+    "doctor_output": "/tmp/jobbot-chg39-r15-dKgRsi/isolated/doctor-out",
+    "maintenance_database": "/tmp/jobbot-chg39-r15-dKgRsi/isolated/maintenance.sqlite3",
+    "maintenance_output": "/tmp/jobbot-chg39-r15-dKgRsi/isolated/maintenance-out",
+    "python_suite": "ran in disposable clone of exact code head; temporary fixtures stayed inside the clone or system temporary directories",
+    "disposable_clone_default_database": {
+      "path": "/tmp/jobbot-chg39-r15-dKgRsi/repo/data/jobs.sqlite3",
+      "state": "present after the deterministic suite in the disposable clone only",
+      "cleanup": "removed with the disposable clone; contents were not read or copied"
+    },
+    "full_validator": "not started because the runtime refresh prerequisite failed",
+    "production_data_jobs_sqlite3": "NOT_USED / NOT_READ / NOT_MUTATED",
+    "live_application_execution": "NOT_RUN"
+  },
+  "deterministic_floor": {
+    "doctor": {
+      "command": "python3 -m jobbot doctor with disposable JOBBOT_DATABASE_PATH and JOBBOT_OUTPUT_DIR",
+      "exit_code": 0,
+      "result": "PASS",
+      "python": "3.14.5",
+      "migrations_current": true,
+      "isolated_database_integrity": "ok",
+      "extension_manifest_and_id": "PASS",
+      "bridge_token_authentication": "PASS",
+      "unauthorized_rpc_rejection": "PASS",
+      "normal_google_chrome_detection": "PASS",
+      "fast_plan_tasks": 30,
+      "deep_plan_tasks": 70
+    },
+    "python_suite": {
+      "command": "python3 -m unittest discover -s tests -q",
+      "checkout": "/tmp/jobbot-chg39-r15-dKgRsi/repo",
+      "exit_code": 0,
+      "total": 154,
+      "passed": 153,
+      "skipped": 1,
+      "skip_reason": "optional historical-ledger migration fixture is unavailable in the clean disposable checkout",
+      "elapsed_seconds": 50.991,
+      "result": "PASS"
+    },
+    "extension_javascript_regressions": {
+      "exit_code": 0,
+      "result": "PASS",
+      "suite_count": 14,
+      "suites": [
+        "tests/extension_bootstrap_compatibility_test.js",
+        "tests/extension_chg146_pane_test.js",
+        "tests/extension_chg146_supervisor_test.js",
+        "tests/extension_linkedin_scope_test.js",
+        "tests/extension_primary_scope_test.js",
+        "tests/extension_receiver_bootstrap_test.js",
+        "tests/extension_service_worker_auth_return_test.js",
+        "tests/extension_service_worker_chg166_delayed_receiver_test.js",
+        "tests/extension_service_worker_receiver_isolation_test.js",
+        "tests/extension_service_worker_receiver_recovery_test.js",
+        "tests/extension_service_worker_receiver_regeneration_test.js",
+        "tests/extension_service_worker_scope_recovery_test.js",
+        "tests/extension_service_worker_target_lifecycle_test.js",
+        "tests/extension_startup_lifecycle_test.js"
+      ],
+      "syntax_check_count": 10,
+      "syntax_checks": "all extension/*.js and src/jobbot/web/*.js"
+    },
+    "chg166_receiver_fixture_coverage": [
+      "bootstrap attachment and delayed receiver",
+      "bounded recovery, regeneration and checkpoint continuity",
+      "worker isolation and platform-local challenge handling",
+      "target lifecycle, no-focus behavior and replacement bounds"
+    ],
+    "production_integrity_bridge_refresh_control": "PASS in the full deterministic Python and JavaScript suites"
+  },
+  "search_qualification_telemetry_invariants": {
+    "compiled_ordered_task_count": 140,
+    "task_counts_by_platform": {
+      "linkedin": 56,
+      "indeed": 42,
+      "glassdoor": 42
+    },
+    "phase_counts": {
+      "A_FASTEST_DOOR_RECENT": 30,
+      "B_REMAINING_CORE_RECENT": 40,
+      "C_DEEP_BACKFILL": 70
+    },
+    "enabled_query_families": 7,
+    "minimum_deep_recall_required_family_platform_pairs": 21,
+    "missing_deep_recall_pairs": 0,
+    "production_tasks_uncapped": true,
+    "remote_required": true,
+    "CHG170_hard_gates_and_no_repeat": "PASS deterministic regression coverage; handled/no-repeat opportunities and hard-gate failures do not surface as current Actionable/yield",
+    "CHG113_evidence_readiness_and_provenance": "PASS deterministic regression coverage; missing or partial content and unverified provenance remain non-READY",
+    "CHG114_trusted_qualified_yield_and_frozen_ordering": "PASS deterministic regression coverage; task universe/recall unchanged by ordering, phase/platform ordering preserved, handled success retains intrinsic yield without resurfacing",
+    "live_search_quality_telemetry": "NOT_COMPUTED; no live run ledger was produced",
+    "ordering_tuned_from_this_run": false
+  },
+  "platform_local_acceptance": {
+    "required_workload": "three sequential acceptance searches, query 1 through query 3, plus available later-page/batch behavior",
+    "acceptance_command_template": "python3 -m jobbot acceptance --platform <linkedin|indeed|glassdoor> --days 7 --max-results 20 with disposable JOBBOT_DATABASE_PATH and JOBBOT_OUTPUT_DIR",
+    "linkedin": {
+      "status": "NOT_RUN",
+      "reason": "loaded extension prerequisite failed before platform navigation",
+      "readiness": "NOT_EVALUATED",
+      "queries_started": 0,
+      "pages": 0,
+      "cards": 0,
+      "canonical_jobs": 0,
+      "substantive_details": 0
+    },
+    "indeed": {
+      "status": "NOT_RUN",
+      "reason": "loaded extension prerequisite failed before platform navigation",
+      "readiness": "NOT_EVALUATED",
+      "queries_started": 0,
+      "pages": 0,
+      "cards": 0,
+      "canonical_jobs": 0,
+      "substantive_details": 0
+    },
+    "glassdoor": {
+      "status": "NOT_RUN",
+      "reason": "loaded extension prerequisite failed before platform navigation",
+      "readiness": "NOT_EVALUATED",
+      "queries_started": 0,
+      "pages": 0,
+      "cards": 0,
+      "canonical_jobs": 0,
+      "substantive_details": 0
+    },
+    "external_blockers": "NOT_EVALUATED; no sign-in, challenge, or outage surface was visited"
+  },
+  "receiver_lifecycle": {
+    "linkedin_fresh_active_continuity_seconds": 0,
+    "required_seconds": 300,
+    "receiver_attachments": 0,
+    "receiver_loss_events": 0,
+    "reload_or_regeneration_events": 0,
+    "terminal_cause": "No search task started; receiver continuity was not observable",
+    "receiver_loss_terminal_failure_count": "NOT_EVALUATED",
+    "recovery_bounds_live_proof": "NOT_RUN; deterministic recovery fixtures passed"
+  },
+  "concurrent_big3_isolation": {
+    "status": "NOT_RUN",
+    "reason": "loaded extension prerequisite failed",
+    "platform_workers_active_together": false,
+    "per_platform_readiness_or_terminal_state": "NOT_EVALUATED",
+    "phase_wave_leasing_stop_resume_and_peer_progress_live_proof": "NOT_RUN"
+  },
+  "production_validator": {
+    "supported_command": "python3 -m jobbot validate-production --semi-minutes 30",
+    "repository_wrapper_used": false,
+    "status": "NOT_STARTED_AFTER_FAILED_RUNTIME_REFRESH_PREREQUISITE",
+    "exit_code": null,
+    "PROD_READY": false,
+    "PROD_READY_interpretation": "NOT_ESTABLISHED",
+    "primary_live": "NOT_RUN",
+    "soak": "NOT_RUN",
+    "semi_production_30_minutes": "NOT_RUN",
+    "internal_failures": "NOT_EVALUATED_BY_VALIDATOR",
+    "external_blockers": "NOT_EVALUATED_BY_VALIDATOR",
+    "extension_unresponsive": "NOT_EVALUATED_BY_VALIDATOR",
+    "dashboard_identity_and_live_refresh": "NOT_RUN"
+  },
+  "data_integrity_postflight": {
+    "doctor_isolated_ledger_integrity": "PASS",
+    "deterministic_reconciliation_and_dedupe_fixtures": "PASS",
+    "live_occurrence_canonical_detail_reconciliation": "NOT_RUN; no live ledger",
+    "missing_description_location_apply_provenance_live_check": "NOT_RUN; no live detail",
+    "current_actionable_output_live_check": "NOT_RUN; no live ledger",
+    "CHG114_live_telemetry_computation": "NOT_RUN; no live ledger"
+  },
+  "browser_target_observation": {
+    "refresh_launch_target": "normal Google Chrome, bound profile Default, stable extension URI; bridge delivery not confirmed",
+    "window_count_after_refresh_attempt": 5,
+    "tab_count_after_refresh_attempt": 14,
+    "before_after_count_baseline": "UNAVAILABLE",
+    "search_surface_targets_created": 0,
+    "focus_delta": "NOT_MEASURED",
+    "standalone_detail_navigation": "NOT_RUN",
+    "target_window_tab_and_focus_invariants": "NOT_PROVEN_FOR_LIVE_SEARCH; deterministic lifecycle fixtures passed"
+  },
+  "evidence_safety": {
+    "bridge_token_or_refresh_url_values_recorded": false,
+    "cookies_passwords_or_private_session_material_recorded": false,
+    "challenge_bypass_or_application_action": "NOT_USED",
+    "production_data_jobs_sqlite3": "NOT_USED / NOT_READ / NOT_MUTATED",
+    "live_application_execution": "NOT_RUN"
+  }
+}
