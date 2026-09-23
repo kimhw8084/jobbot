@@ -1,0 +1,129 @@
+{
+  "change": "CHG-200-r1",
+  "project": "JobBot",
+  "request": {
+    "objective": "Establish acquisition-v2 as a provider-neutral managed acquisition seam while preserving the integrated ledger, search, qualification, evidence, no-repeat, and telemetry behavior.",
+    "baseline_commit": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "baseline_tree": "0623f5577a4699910009f17bd0f0872012b729c5",
+    "work_branch": "codex/jobbot-CHG-200-r1",
+    "main_must_not_be_moved_or_merged": true,
+    "r1_is_credential_free": true,
+    "application_execution": "human-only",
+    "production_entrypoint_switch_in_r1": false
+  },
+  "git": {
+    "branch": "codex/jobbot-CHG-200-r1",
+    "base_commit": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "validated_implementation_commit": "61cc5f643eb297d00b1149888dd029d89b52352d",
+    "validated_implementation_tree": "04b0f2dcfc9b60d18d095d5f0e91777d1d1933a5",
+    "main_mutated": false,
+    "merge_performed": false,
+    "implementation_worktree_clean": true
+  },
+  "architecture_seam": {
+    "package": "src/jobbot/acquisition",
+    "provider_contract": "ProviderAdapter.fetch(SearchTask) -> ProviderBatch; AcquisitionRecord keeps provider identity separate from source_surface and carries URL roles, query/task key, provider record ID, observation timestamp, card/detail, and raw provider metadata.",
+    "providers": [
+      "jsonl-file",
+      "json-file",
+      "managed-http with injected transport"
+    ],
+    "shared_ingestion": "Browser RPC and acquisition-v2 call shared persist_card and persist_detail services, which retain existing discovery persistence, canonical ledger upsert/versioning, scoring, evidence readiness, URL-role handling, counters, and reconciliation.",
+    "coordinator_cli": "python -m jobbot acquire --provider jsonl-file|json-file --path ...; managed-http transport is injectable for callers/tests and the R1 CLI makes no live HTTP call.",
+    "completion_and_failure": "A task exhausts only when the provider returns COMPLETE with non-empty explicit completion evidence. Missing proof, partial batches, ambiguous cursors, transport errors, timeouts, invalid responses, and detail failures remain incomplete or retryable. Previously committed sightings are retained. Managed-provider failure never falls back to legacy Chrome.",
+    "provider_claims": "Provider payloads are observations. Ingestion ignores provider-supplied verification upgrades; source and application destinations remain governed by existing evidence verification.",
+    "migration": {
+      "version": 21,
+      "name": "CHG-200 provider-neutral acquisition provenance",
+      "tables": [
+        "browser_runs",
+        "browser_search_tasks",
+        "search_task_results",
+        "source_occurrences"
+      ],
+      "backfill": "Historical rows are deterministically labeled legacy-browser/unknown, with task key and phase copied where available; job truth and evidence states are unchanged."
+    },
+    "canonicalization": "Explicit ATS/employer requisition URL roles participate in existing reconciliation; distinct explicit requisition URLs stay distinct when exact text otherwise matches.",
+    "provider_selection": "RUN_NOW remains unchanged in R1. Managed-provider production qualification and selection are pending. The normal-Chrome Big-3 runner is documented as frozen legacy/deprecated; direct ATS retrieval remains independent verification/enrichment."
+  },
+  "preserved_invariants": {
+    "staged_task_count": 140,
+    "required_deep_family_platform_pairs": 21,
+    "sqlite_authoritative_append_oriented_ledger": true,
+    "hard_gates_and_no_repeat": true,
+    "evidence_and_source_application_provenance": true,
+    "trusted_qualified_yield_telemetry": true,
+    "frozen_ordering_and_sibling_clustering": true,
+    "direct_ats_employer_retrieval_and_reconciliation": true,
+    "human_only_application_execution": true
+  },
+  "equivalence_and_failure_coverage": [
+    "Equivalent card/detail input through legacy browser RPC and acquisition-v2 shared ingestion yields the same canonical job, source occurrence, snapshot/version behavior, evidence readiness, qualification result, and recommendation.",
+    "JSONL card/detail ingestion persists identity before detail and does not create an extra job version.",
+    "Missing description/location/salary/application data remains incomplete, REVIEW/UNKNOWN, and non-actionable.",
+    "The same requisition observed through two providers reconciles to one canonical job while provider sightings remain in durable task results; distinct ATS requisitions stay distinct.",
+    "Timeout/error after committed sightings preserves those rows and leaves the task incomplete/retryable.",
+    "Explicit completion evidence closes a task; absent proof does not.",
+    "Provider provenance appears in dashboard, exports, and CHG-114 provider diagnostics without changing existing task/family ordering samples or minimum-sample guardrails."
+  ],
+  "validation": {
+    "execution_boundary": "Tests ran in a disposable copy of the working tree with its data directory excluded. No live Chrome or Big-3 runtime was used.",
+    "full_python_suite": {
+      "command": "python -m unittest discover -s tests",
+      "result": "PASS",
+      "tests": 161
+    },
+    "focused_regression_suites": {
+      "modules": [
+        "tests.integration.test_acquisition_v2",
+        "tests.integration.test_run_now",
+        "tests.unit.test_chg113_evidence_readiness",
+        "tests.integration.test_chg114_search_quality",
+        "tests.integration.test_browser_tasks",
+        "tests.integration.test_chg112_production_integrity",
+        "tests.integration.test_database_ledger"
+      ],
+      "result": "PASS",
+      "tests": 54
+    },
+    "extension_javascript": {
+      "test_suites": 14,
+      "syntax_checked_scripts": 9,
+      "result": "PASS"
+    },
+    "git_diff_check": "PASS"
+  },
+  "data_and_network_boundary": {
+    "production_data_jobs_sqlite3": "NOT_USED / NOT_READ / NOT_MUTATED",
+    "live_linkedin_indeed_glassdoor": "NOT_RUN",
+    "external_provider_network_calls": "NOT_RUN",
+    "managed_http_transport": "injected/mocked only",
+    "paid_provider_credentials": "NOT_USED",
+    "production_provider_selection": "PENDING qualification in a later Change"
+  },
+  "changed_files": [
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/OPERATIONS.md",
+    "docs/SEARCH_QUALITY.md",
+    "src/jobbot/acquisition/__init__.py",
+    "src/jobbot/acquisition/coordinator.py",
+    "src/jobbot/acquisition/ingestion.py",
+    "src/jobbot/acquisition/models.py",
+    "src/jobbot/acquisition/protocol.py",
+    "src/jobbot/acquisition/providers.py",
+    "src/jobbot/bridge/rpc.py",
+    "src/jobbot/browser_tasks.py",
+    "src/jobbot/cli.py",
+    "src/jobbot/dashboard.py",
+    "src/jobbot/exports.py",
+    "src/jobbot/legacy_engine.py",
+    "src/jobbot/migrations/__init__.py",
+    "src/jobbot/migrations/m0021_acquisition_v2.py",
+    "src/jobbot/search_quality.py",
+    "tests/integration/test_acquisition_v2.py",
+    "tests/integration/test_chg112_production_integrity.py",
+    "tests/integration/test_database_ledger.py",
+    "verification/CHG-200-r1.json"
+  ]
+}
