@@ -1,0 +1,407 @@
+{
+  "schema_version": "jobbot-project-os-verification/v1",
+  "change": "CHG-39-r16",
+  "verification": "PROJECT_OS_FINAL_LIVE_VERIFY",
+  "classification": "REASSESS_ACQUISITION_LAYER",
+  "classification_reason": "The loaded .26 runtime passed the identity precheck and LinkedIn reached verified readiness with no challenge or login surface, then the repository receiver lost its target after bounded retry and one same-target reload. The target became unavailable, query 3 never started, and the full validator could not start its primary live run within its 45-second startup bound. This is an acquisition/runtime failure after integrated CHG-166-r5, not an external platform blocker.",
+  "project_decision": "Stop custom browser-runtime expansion and replace the acquisition layer while retaining JobBot ledger, search, and qualification intelligence.",
+  "repository": {
+    "name": "kimhw8084/jobbot",
+    "branch": "codex/jobbot-CHG-39-r16",
+    "base_commit": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "base_tree": "0623f5577a4699910009f17bd0f0872012b729c5",
+    "candidate_head_before_artifact": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "origin_main_commit_final_read": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "origin_main_tree_final_read": "0623f5577a4699910009f17bd0f0872012b729c5",
+    "target_drift": false,
+    "product_source_config_test_doc_diff_from_base": "none",
+    "only_repository_change": "verification/CHG-39-r16.json"
+  },
+  "runtime_precheck": {
+    "profile_binding": {
+      "browser": "Google Chrome",
+      "profile_directory": "Default",
+      "extension_root": "/Users/haewonkim/Library/Application Support/JobBot/extension"
+    },
+    "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb",
+    "required_build": "3.2.2-prod-ready.672cf88.26",
+    "sync_extension": {
+      "exit_code": 0,
+      "status": "deployment_source_current",
+      "source_head": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+      "source_identity": "sha256:8361471e11c4e58c3bf237da53862d1eae1671a350371a1fdf3529faedd649f8",
+      "deployed_identity": "sha256:8361471e11c4e58c3bf237da53862d1eae1671a350371a1fdf3529faedd649f8",
+      "deployed_identity_matches_current_main_extension": true
+    },
+    "refresh_extension": {
+      "exit_code": 0,
+      "status": "confirmed",
+      "identity_confirmed": true,
+      "observed_build": "3.2.2-prod-ready.672cf88.26",
+      "observed_source_identity": "sha256:8361471e11c4e58c3bf237da53862d1eae1671a350371a1fdf3529faedd649f8",
+      "observed_deployment_root": "/Users/haewonkim/Library/Application Support/JobBot/extension",
+      "browser_delivery": "confirmed_by_extension_identity",
+      "runtime_profile": "Default"
+    },
+    "canonical_extension_key": {
+      "source_and_deployed_key_match": true,
+      "sha256_prefix": "953bc4b6ed976d01",
+      "canonical_extension_id_unchanged": true
+    },
+    "precheck_pass": true
+  },
+  "deterministic_floor": {
+    "doctor": {
+      "status": "pass",
+      "checks_passed": 15,
+      "python": "3.11.7",
+      "normal_chrome_found": true,
+      "extension_id": "jfdlmelgonjhgnabpbipjefgamedpgfb"
+    },
+    "run_now_preflight": {
+      "status": "pass",
+      "require_runtime_binding": true,
+      "task_count": 140,
+      "database": "/tmp/jobbot-chg39-r16/deterministic/preflight/jobs.sqlite3"
+    },
+    "python_suite": {
+      "command": "python3 -m unittest discover -s tests -v",
+      "execution_root": "/private/tmp/jobbot-chg39-r16/python-suite",
+      "python_runtime": "3.14.5",
+      "exit_code": 0,
+      "tests_run": 154,
+      "passed": 153,
+      "skipped": 1,
+      "skip_reason": "local historical ledger is unavailable"
+    },
+    "javascript_syntax": {
+      "status": "pass",
+      "paths": [
+        "extension/*.js",
+        "src/jobbot/web/*.js"
+      ]
+    },
+    "javascript_regressions": {
+      "status": "pass",
+      "scripts_run": 14,
+      "coverage": [
+        "CHG-166 bootstrap and delayed receiver readiness",
+        "CHG-166 receiver recovery and regeneration bounds",
+        "CHG-166 checkpoint and deduplication continuity",
+        "target lifecycle and background focus behavior",
+        "healthy-peer and platform isolation",
+        "CHG-146-r5 startup lifecycle",
+        "extension bridge, refresh, auth return, and control paths",
+        "LinkedIn, Indeed, and Glassdoor extraction scopes"
+      ]
+    },
+    "chg170_113_114_invariants": {
+      "staged_compiled_ordered_tasks": 140,
+      "staged_phase_counts": {
+        "A_FASTEST_DOOR_RECENT": 30,
+        "B_REMAINING_CORE_RECENT": 40,
+        "C_DEEP_BACKFILL": 70
+      },
+      "staged_platform_counts": {
+        "linkedin": 56,
+        "indeed": 42,
+        "glassdoor": 42
+      },
+      "deep_tasks": 70,
+      "deep_family_platform_pairs": 21,
+      "deep_pairs_by_platform": {
+        "linkedin": 7,
+        "indeed": 7,
+        "glassdoor": 7
+      },
+      "frozen_order_violations": 0,
+      "task_keys_unique": true,
+      "production_tasks_uncapped": true,
+      "hard_gate_evidence_readiness_no_repeat_and_trusted_yield_regressions": "pass"
+    }
+  },
+  "platform_acceptance": {
+    "linkedin": {
+      "isolated_database": "/tmp/jobbot-chg39-r16/acceptance/linkedin/jobs.sqlite3",
+      "isolated_output": "/tmp/jobbot-chg39-r16/acceptance/linkedin/out",
+      "exit_code": 2,
+      "run_status": "partial",
+      "started_at": "2026-09-23T22:01:07+00:00",
+      "terminal_at": "2026-09-23T22:01:52+00:00",
+      "readiness": {
+        "state_at_2026-09-23T22:01:11Z": "verified",
+        "auth_or_challenge_surface": "none observed before receiver loss",
+        "terminal_state": "unverified",
+        "terminal_reason": "INCOMPLETE: receiver recovery aborted: target_unavailable"
+      },
+      "queries": [
+        {
+          "index": 1,
+          "started": true,
+          "advanced_to_later_page": true,
+          "terminal_status": "exhausted",
+          "pages_visited": 2,
+          "cards_extracted": 14,
+          "cards_persisted": 14,
+          "detail_reads": 4
+        },
+        {
+          "index": 2,
+          "started_automatically": true,
+          "advanced_to_later_page": true,
+          "terminal_status": "deferred_by_platform",
+          "pages_visited": 2,
+          "cards_extracted": 14,
+          "cards_persisted": 14,
+          "detail_reads": 13
+        },
+        {
+          "index": 3,
+          "started_automatically": false,
+          "terminal_status": "deferred_by_platform",
+          "pages_visited": 0,
+          "cards_extracted": 0
+        }
+      ],
+      "ledger": {
+        "sqlite_integrity": "ok",
+        "audit_reconciliation": "pass",
+        "cards_extracted": 28,
+        "persistence_attempted": 28,
+        "cards_persisted": 28,
+        "persistence_failed": 0,
+        "repeat_sightings": 8,
+        "unique_result_rows": 21,
+        "linked_canonical_result_rows": 17,
+        "canonical_jobs": 16,
+        "jobs_table_rows": 16,
+        "canonical_job_duplication": false,
+        "complete_enriched_details_with_description_over_160_chars": 17
+      },
+      "substantive_detail_examples": [
+        {
+          "source_job_id": "4471126725",
+          "canonical_job_id": "J6CD4A33C9E536B",
+          "title": "Specialist, Hospital Operations - Spine ( Remote)",
+          "company": "Johnson & Johnson MedTech",
+          "description_chars": 8790,
+          "detail_status": "COMPLETE",
+          "content_state": "COMPLETE",
+          "enrichment_status": "ENRICHED",
+          "evidence_readiness_state": "REVIEW",
+          "qualification_readiness_state": "REVIEW"
+        },
+        {
+          "source_job_id": "4471136178",
+          "canonical_job_id": "J3F65FBEB9FBA4D",
+          "title": "Care Access Guide",
+          "company": "Imagine360",
+          "description_chars": 4333,
+          "detail_status": "COMPLETE",
+          "content_state": "COMPLETE",
+          "enrichment_status": "ENRICHED",
+          "evidence_readiness_state": "REVIEW",
+          "qualification_readiness_state": "REVIEW"
+        }
+      ],
+      "provenance_and_quality": {
+        "job_rows": 16,
+        "location_evidence_observed_rows": 16,
+        "blank_location_marked_unknown_rows": 0,
+        "application_destination_unknown_rows": 16,
+        "verified_application_destinations": 0,
+        "evidence_readiness_review_rows": 16,
+        "qualification_readiness_review_rows": 16
+      },
+      "receiver_continuity": {
+        "verified_ready_at": "2026-09-23T22:01:11+00:00",
+        "terminal_failure_at": "2026-09-23T22:01:52+00:00",
+        "fresh_active_seconds_after_readiness": 41,
+        "required_active_seconds": 300,
+        "minimum_continuity_met": false,
+        "attachment_and_document_generations": [
+          {
+            "times": ["2026-09-23T22:01:08+00:00", "2026-09-23T22:01:09+00:00"],
+            "document_generation": "1790200868043-lxm3mvfy",
+            "attachment_generation": "1790200868043-lxm3mvfy"
+          },
+          {
+            "times": ["2026-09-23T22:01:11+00:00", "2026-09-23T22:01:13+00:00"],
+            "document_generation": "1790200871723-jcus3fzq",
+            "attachment_generation": "1790200871723-jcus3fzq"
+          },
+          {
+            "times": ["2026-09-23T22:01:19+00:00", "2026-09-23T22:01:20+00:00"],
+            "document_generation": "1790200879633-2ybqn90j",
+            "attachment_generation": "1790200879633-2ybqn90j"
+          },
+          {
+            "times": ["2026-09-23T22:01:22+00:00", "2026-09-23T22:01:23+00:00"],
+            "document_generation": "1790200882665-xzodc8au",
+            "attachment_generation": "1790200882665-xzodc8au"
+          },
+          {
+            "times": ["2026-09-23T22:01:26+00:00", "2026-09-23T22:01:27+00:00"],
+            "document_generation": "1790200886721-z70t3rov",
+            "attachment_generation": "1790200886721-z70t3rov"
+          },
+          {
+            "times": ["2026-09-23T22:01:34+00:00", "2026-09-23T22:01:35+00:00"],
+            "document_generation": "1790200894412-mh88sg0n",
+            "attachment_generation": "1790200894412-mh88sg0n"
+          }
+        ],
+        "receiver_loss_timeline": [
+          {
+            "at": "2026-09-23T22:01:46+00:00",
+            "event": "ordinary_retry_exhaustion",
+            "receiver_error": "Could not establish connection. Receiving end does not exist.",
+            "same_target": true,
+            "reload_attempts": 0
+          },
+          {
+            "at": "2026-09-23T22:01:46+00:00",
+            "event": "reload_requested",
+            "same_target": true,
+            "reload_method": "tabs.reload",
+            "reload_attempts": 1
+          },
+          {
+            "at": "2026-09-23T22:01:47+00:00",
+            "event": "reload_completed",
+            "same_target": true,
+            "reload_attempts": 1
+          },
+          {
+            "at": "2026-09-23T22:01:47+00:00",
+            "event": "post_reload_receiver_wait",
+            "same_target": true,
+            "reload_attempts": 1,
+            "new_receiver_generation_observed": false
+          },
+          {
+            "at": "2026-09-23T22:01:52+00:00",
+            "event": "target_unavailable",
+            "terminal_cause": "target_missing",
+            "same_target": false,
+            "reload_attempts": 1,
+            "validated_target_replacements": 0,
+            "checkpoint_page": 2,
+            "checkpoint_context": "verified",
+            "checkpoint_last_source_job_id": "4469606490",
+            "windows_created_delta": 0,
+            "tabs_created_delta": 0,
+            "standalone_detail_tabs_delta": 0,
+            "detail_page_navigations_delta": 0
+          }
+        ],
+        "checkpoint_preserved": true
+      },
+      "browser_target_and_focus": {
+        "owned_search_windows": 1,
+        "owned_search_tabs": 1,
+        "accumulating_windows_or_tabs": false,
+        "focus_control_requests": 0,
+        "window_focus_snapshots": {
+          "unfocused": 15,
+          "focused_terminal_snapshot": 1
+        },
+        "normal_focus_invariant": "not proven; the terminal recovery snapshot recorded window_focused=true without a JobBot focus control request"
+      }
+    },
+    "indeed": {
+      "isolated_database": "/tmp/jobbot-chg39-r16/acceptance/indeed/jobs.sqlite3",
+      "isolated_output": "/tmp/jobbot-chg39-r16/acceptance/indeed/out",
+      "run_status": "stopped_before_start",
+      "auth_readiness": "unchecked",
+      "queries_started": 0,
+      "cards_persisted": 0,
+      "details_completed": 0,
+      "browser_targets": 0,
+      "events": ["extension_refresh_requested"],
+      "terminal_reason": "The accepted refresh request produced no extension build identity or run_started event; the isolated queued run was emergency-stopped and left resumable."
+    },
+    "glassdoor": {
+      "isolated_database": "/tmp/jobbot-chg39-r16/acceptance/glassdoor/jobs.sqlite3",
+      "isolated_output": "/tmp/jobbot-chg39-r16/acceptance/glassdoor/out",
+      "run_status": "queued_before_start",
+      "auth_readiness": "unchecked",
+      "queries_started": 0,
+      "cards_persisted": 0,
+      "details_completed": 0,
+      "browser_targets": 0,
+      "bridge_start_exit_code": 1,
+      "bridge_start_error": "argument --token: expected one argument",
+      "terminal_reason": "The loopback bridge child exited during startup before Chrome delivery or platform readiness."
+    }
+  },
+  "concurrent_big3": {
+    "validator_enqueued_linkedin_indeed_glassdoor_together": true,
+    "all_three_workers_started": false,
+    "pages_cards_details_persisted": 0,
+    "platform_readiness": {
+      "linkedin": "unchecked in validator run",
+      "indeed": "unchecked",
+      "glassdoor": "unchecked"
+    },
+    "worker_isolation_and_peer_progress_proven": false,
+    "stop_resume_checkpoint_semantics": "deterministic regressions passed; the live Big-3 phase did not start"
+  },
+  "full_validator": {
+    "command": "python3 -m jobbot validate-production --stage full --semi-minutes 30",
+    "exit_code": 1,
+    "validation_stage": "full",
+    "preflight_pass": true,
+    "primary_live_pass": false,
+    "primary_outcome": "extension_unresponsive",
+    "primary_duration_seconds": 45.56,
+    "primary_bridge_restarts": 1,
+    "primary_extension_build_pass": false,
+    "extension_unresponsive": true,
+    "soak_pass": null,
+    "semi_production_pass": null,
+    "semi_production_minutes_requested": 30,
+    "soak_and_semi_not_started_reason": "The supported validator returns after primary live validation fails.",
+    "PROD_READY": false,
+    "internal_failures": [
+      "Chrome extension did not start the validation run within 45 seconds; run REFRESH_EXTENSION.command and rerun validator",
+      "loaded extension did not report build 3.2.2-prod-ready.672cf88.26; REFRESH_EXTENSION.command did not confirm the expected build",
+      "primary live micro-validation failed"
+    ],
+    "external_blockers": [],
+    "isolated_databases": [
+      "/private/tmp/jobbot-chg39-r16/live/data/validation_20260923T220527Z.sqlite3",
+      "/private/tmp/jobbot-chg39-r16/live/data/validation_soak_20260923T220527Z.sqlite3",
+      "/private/tmp/jobbot-chg39-r16/live/data/validation_semiprod_20260923T220527Z.sqlite3"
+    ],
+    "database_integrity": {
+      "primary_micro": "ok",
+      "soak": "not_created",
+      "semi_production": "not_created"
+    }
+  },
+  "search_quality_postflight": {
+    "isolated_ledger_integrity": "ok",
+    "reconciliation": "pass",
+    "metric_definition_version": "chg114-search-quality-v2",
+    "task_metrics_computed": 3,
+    "family_metrics_computed": 1,
+    "source_occurrence_metrics_computed": 1,
+    "frozen_order_rows": 3,
+    "current_actionable_count": 0,
+    "trusted_qualified_yield_count": 0,
+    "application_events": 0,
+    "downstream_attribution": "earliest durable discovery per profile/version/platform/family; no duplicate downstream events in this isolated run",
+    "readiness_rule_regressions": "pass; current actionable requires evidence READY and qualification READY",
+    "handled_no_repeat_regressions": "pass; handled or no-repeat-failed jobs do not resurface"
+  },
+  "data_safety": {
+    "production_data_jobs_sqlite3": "NOT_USED / NOT_READ / NOT_MUTATED",
+    "acceptance_validation_soak_databases": "disposable isolated paths only",
+    "live_application_execution": "NOT_RUN",
+    "challenge_bypass_or_captcha_solving": "NOT_RUN",
+    "credential_cookie_password_export": "NOT_RUN",
+    "normal_focus_control_request": "NOT_RUN"
+  },
+  "verification_artifact_is_secret_free": true
+}
