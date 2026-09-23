@@ -21,7 +21,7 @@ EXPORT_COLUMNS = (
     "description", "required_qualifications", "preferred_qualifications", "requirement_matches_json",
     "requirement_gaps_json", "remote_evidence_json", "schedule_requirement", "score_components_json", "score_reasons_json",
     "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
-    "field_provenance_json",
+    "field_provenance_json", "acquisition_providers",
 )
 
 DISCOVERY_COLUMNS = (
@@ -33,6 +33,8 @@ DISCOVERY_COLUMNS = (
     "identity_evidence_state", "detail_evidence_state", "requirements_evidence_state", "source_verification_state",
     "application_destination_verification_state", "evidence_readiness_state", "evidence_missing_json", "evidence_blocking_json",
     "strategy_profile", "strategy_profile_version", "query_family", "query_kind", "query_pass", "initial_order",
+    "acquisition_provider", "acquisition_mode", "provider_run_id", "provider_record_id",
+    "provider_observed_at", "provider_metadata_json", "query_task_key", "phase", "employer_job_url",
 )
 
 APPLICATION_HISTORY_COLUMNS = (
@@ -51,8 +53,13 @@ def _rows(conn: sqlite3.Connection, where: str = "1=1", args: Sequence[Any] = ()
     columns = tuple(dict.fromkeys(
         (column for column in EXPORT_COLUMNS if column != "field_provenance_json")
     ).keys())
-    columns = tuple(dict.fromkeys((*columns, "remote_status", "posting_status", "required_qualifications", "employment_type")))
-    return list(conn.execute(f"SELECT {','.join(columns)} FROM jobs WHERE {where} ORDER BY door_score DESC,last_seen DESC", args))
+    columns = tuple(dict.fromkeys((*columns, "remote_status", "posting_status", "required_qualifications", "employment_type", "acquisition_providers")))
+    select_columns = ",".join(
+        "COALESCE((SELECT group_concat(DISTINCT o.acquisition_provider) FROM source_occurrences o WHERE o.job_id=jobs.job_id),'') AS acquisition_providers"
+        if column == "acquisition_providers" else column
+        for column in columns
+    )
+    return list(conn.execute(f"SELECT {select_columns} FROM jobs WHERE {where} ORDER BY door_score DESC,last_seen DESC", args))
 
 
 def _export_value(row: sqlite3.Row, column: str) -> Any:

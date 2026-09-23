@@ -38,7 +38,7 @@ TABLE_COLUMNS = (
     "source_verification_state", "application_destination_verification_state", "evidence_readiness_state", "qualification_readiness_state",
     "evidence_missing_json", "evidence_blocking_json", "evidence_readiness_json",
     "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
-    "field_provenance",
+    "field_provenance", "acquisition_providers",
 )
 
 
@@ -662,10 +662,12 @@ def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "
           r.title_hint,r.company_hint,r.location_hint,r.posted_text,r.posted_age_days,r.observed_at,
           r.detail_status,r.detail_attempts,r.detail_error,r.source_url,r.canonical_job_id,t.query_text,
           r.identity_status,r.card_metadata_status,r.content_state,r.enrichment_priority,r.recall_selected,r.recall_qa_sample,r.recall_reason,
-          r.discovery_url,r.board_detail_url,r.observed_board_apply_url,r.ats_requisition_url,r.verified_application_url,
+          r.discovery_url,r.board_detail_url,r.observed_board_apply_url,r.employer_job_url,r.ats_requisition_url,r.verified_application_url,
           r.identity_evidence_state,r.detail_evidence_state,r.requirements_evidence_state,r.source_verification_state,
           r.application_destination_verification_state,r.evidence_readiness_state,r.evidence_missing_json,r.evidence_blocking_json,
-          r.strategy_profile,r.strategy_profile_version,r.query_family,r.query_kind,r.query_pass,r.initial_order
+          r.strategy_profile,r.strategy_profile_version,r.query_family,r.query_kind,r.query_pass,r.initial_order,
+          r.acquisition_provider,r.acquisition_mode,r.provider_run_id,r.provider_record_id,
+          r.provider_observed_at,r.provider_metadata_json,r.query_task_key,r.phase
           FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id""" + status_clause + " ORDER BY r.result_id DESC LIMIT ?", args,
     ).fetchall()
     pending = int(conn.execute(
@@ -731,6 +733,7 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
       j.source_verification_state,j.application_destination_verification_state,j.evidence_readiness_state,j.qualification_readiness_state,
       j.evidence_missing_json,j.evidence_blocking_json,j.evidence_readiness_json,
       j.salary_annual_min,j.qualification_gates_json,j.preference_signals_json,j.preference_adjustment,
+      COALESCE((SELECT group_concat(DISTINCT o.acquisition_provider) FROM source_occurrences o WHERE o.job_id=j.job_id),'') acquisition_providers,
       j.remote_status,j.posting_status,j.required_qualifications,j.employment_type,j.evidence_provenance_json
       FROM jobs j WHERE {where} ORDER BY COALESCE(j.application_priority_score,j.door_score,0) DESC,j.last_seen DESC
       LIMIT ? OFFSET ?""", [*args, page_size, (page - 1) * page_size]).fetchall()
@@ -950,7 +953,11 @@ def serve(bundle: ConfigBundle, *, host: str | None = None, port: int | None = N
         server.server_close()
 
 
-DISCOVERY_COLUMNS = ("result_id", "platform", "title_hint", "company_hint", "location_hint", "posted_text", "detail_status", "detail_attempts", "observed_at")
+DISCOVERY_COLUMNS = (
+    "result_id", "platform", "title_hint", "company_hint", "location_hint", "posted_text",
+    "detail_status", "detail_attempts", "observed_at", "acquisition_provider",
+    "acquisition_mode", "provider_run_id", "provider_record_id", "query_task_key", "phase", "employer_job_url",
+)
 
 
 DASHBOARD_HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JobBot v3.2.1 Dashboard</title><style>

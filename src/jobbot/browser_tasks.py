@@ -61,6 +61,19 @@ def glassdoor_search_url(query: str, days: int) -> str:
     return build_search_url("glassdoor", normalize_search_query(query), days)
 
 
+def _stamp_legacy_acquisition_identity(conn: sqlite3.Connection, run_id: int) -> None:
+    provider_run_id = f"legacy-browser-run:{int(run_id)}"
+    conn.execute(
+        """UPDATE browser_runs SET acquisition_provider='legacy-browser',acquisition_mode='legacy-browser',
+           provider_run_id=? WHERE browser_run_id=?""", (provider_run_id, run_id),
+    )
+    conn.execute(
+        """UPDATE browser_search_tasks SET acquisition_provider='legacy-browser',acquisition_mode='legacy-browser',
+           provider_run_id=?,query_task_key=COALESCE(NULLIF(query_task_key,''),task_key,'')
+           WHERE browser_run_id=?""", (provider_run_id, run_id),
+    )
+
+
 def search_url(platform: str, query: str, days: int) -> str:
     return build_search_url(platform, normalize_search_query(query), days)
 
@@ -180,6 +193,7 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
              t["strategy_profile"], t["strategy_profile_version"], t["query_family"], t["query_kind"], t["query_pass"], t["initial_order"],
              *ordering_fields[(t["task_key"], t["phase"])].values()),
         )
+    _stamp_legacy_acquisition_identity(store.conn, rid)
     store.conn.commit(); store.close()
     return rid
 
@@ -253,6 +267,7 @@ def enqueue_validation_sample(
              task.strategy_profile, task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order,
              *ordering_fields[(task.task_key, task.phase)].values()),
         )
+    _stamp_legacy_acquisition_identity(store.conn, rid)
     store.conn.commit(); store.close()
     return rid
 
@@ -290,6 +305,7 @@ def enqueue_gate(base: Path, platform: str = "indeed", days: int = 7, max_result
              task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order,
              *ordering_fields[(_task_key(platform, task.query, days), "ACCEPTANCE_SMOKE")].values()),
         )
+    _stamp_legacy_acquisition_identity(store.conn, rid)
     store.conn.commit(); store.close(); return rid
 
 
@@ -332,6 +348,7 @@ def enqueue_validation(base: Path, platforms: list[str] | None = None, *, max_re
              task.query_family, task.query_kind, task.query_pass, task.initial_order,
              *ordering_fields[(task.task_key, "VALIDATION_MICRO")].values()),
         )
+    _stamp_legacy_acquisition_identity(store.conn, rid)
     store.conn.commit(); store.close(); return rid
 
 
@@ -350,9 +367,12 @@ def resume_run(base: Path, rid: int | None = None) -> int:
         if not row:
             store.close(); raise RuntimeError("no resumable browser run found")
         rid = int(row[0])
-    exists = store.conn.execute("SELECT 1 FROM browser_runs WHERE browser_run_id=?", (rid,)).fetchone()
+    exists = store.conn.execute("SELECT acquisition_provider,acquisition_mode FROM browser_runs WHERE browser_run_id=?", (rid,)).fetchone()
     if not exists:
         store.close(); raise RuntimeError(f"browser run not found: {rid}")
+    if str(exists["acquisition_provider"] or "legacy-browser") != "legacy-browser":
+        store.close()
+        raise RuntimeError("provider acquisition runs must be resumed with their acquisition provider; legacy Chrome is never selected as fallback")
     now = j.now_iso()
     store.conn.execute(
         """UPDATE browser_search_tasks

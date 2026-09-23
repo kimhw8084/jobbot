@@ -200,7 +200,8 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
           learned_order_reason,learned_order_sample_size,ordering_algorithm_version,results_seen,jobs_recorded,
           cards_extracted,cards_persistence_succeeded,duplicate_cards,pages_visited,scroll_generation,detail_count_read,
           challenge_reason,last_error,safety_stop_reason,search_profile,strategy_profile,strategy_profile_version,
-          query_family,query_kind,query_pass,initial_order
+          query_family,query_kind,query_pass,initial_order,acquisition_provider,acquisition_mode,provider_run_id,
+          provider_completion_state,provider_failure_class
         FROM browser_search_tasks ORDER BY task_id""").fetchall()
     tasks: dict[int, dict[str, Any]] = {}
     task_accs: dict[tuple[Any, ...], dict[str, Any]] = {}
@@ -208,6 +209,7 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
     task_meta: dict[tuple[Any, ...], dict[str, Any]] = {}
     family_meta: dict[tuple[Any, ...], dict[str, Any]] = {}
     task_family: dict[int, tuple[Any, ...]] = {}
+    provider_metrics: dict[tuple[str, str, str], dict[str, Any]] = {}
     for raw in task_rows:
         row = dict(raw)
         task_id = int(row["task_id"])
@@ -215,6 +217,24 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
         tdim = _task_dimensions(row)
         fdim = _family_dimensions(row)
         task_family[task_id] = fdim
+        provider_key = (
+            str(row.get("acquisition_provider") or "legacy-browser"),
+            str(row.get("acquisition_mode") or "unknown"),
+            str(row.get("platform") or ""),
+        )
+        provider_metric = provider_metrics.setdefault(provider_key, {
+            "acquisition_provider": provider_key[0], "acquisition_mode": provider_key[1],
+            "platform": provider_key[2], "task_count": 0, "task_complete_count": 0,
+            "task_incomplete_count": 0, "task_retryable_count": 0, "provider_failure_count": 0,
+            "card_count": 0, "provider_record_ids": set(), "canonical_jobs": set(),
+            "trusted_qualified_yield_jobs": set(),
+        })
+        provider_metric["task_count"] += 1
+        provider_state = str(row.get("provider_completion_state") or "").upper()
+        provider_metric["task_complete_count"] += int(provider_state == "COMPLETE")
+        provider_metric["task_incomplete_count"] += int(provider_state == "INCOMPLETE")
+        provider_metric["task_retryable_count"] += int(provider_state == "RETRYABLE")
+        provider_metric["provider_failure_count"] += int(bool(row.get("provider_failure_class")))
         tacc = task_accs.setdefault(tdim, _accumulator())
         facc = family_accs.setdefault(fdim, _accumulator())
         for acc in (tacc, facc):
@@ -250,6 +270,7 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
 
     result_rows = conn.execute("""SELECT r.result_id,r.task_id,r.source_site,r.source_job_id,r.source_url,r.canonical_job_id,
           r.first_seen_at,r.sighting_count,r.detail_read,r.detail_status,r.detail_attempts,r.content_state,
+          r.acquisition_provider,r.acquisition_mode,r.provider_record_id,
           r.recall_selected,r.recall_qa_sample,r.evidence_readiness_state result_evidence_readiness_state,
           j.evidence_readiness_state,j.qualification_readiness_state,j.recommendation,j.application_status,
           j.hard_reject_reasons_json,j.qualification_gates_json,j.source_verification_state,j.source_verification,
@@ -263,6 +284,26 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
     for raw in result_rows:
         row = dict(raw)
         task = tasks.get(int(row["task_id"]), {})
+        provider_key = (
+            str(row.get("acquisition_provider") or task.get("acquisition_provider") or "legacy-browser"),
+            str(row.get("acquisition_mode") or task.get("acquisition_mode") or "unknown"),
+            str(row.get("source_site") or ""),
+        )
+        provider_metric = provider_metrics.setdefault(provider_key, {
+            "acquisition_provider": provider_key[0], "acquisition_mode": provider_key[1],
+            "platform": provider_key[2], "task_count": 0, "task_complete_count": 0,
+            "task_incomplete_count": 0, "task_retryable_count": 0, "provider_failure_count": 0,
+            "card_count": 0, "provider_record_ids": set(), "canonical_jobs": set(),
+            "trusted_qualified_yield_jobs": set(),
+        })
+        provider_metric["card_count"] += 1
+        if row.get("provider_record_id"):
+            provider_metric["provider_record_ids"].add(str(row["provider_record_id"]))
+        provider_job_id = str(row.get("canonical_job_id") or "")
+        if provider_job_id:
+            provider_metric["canonical_jobs"].add(provider_job_id)
+            if trusted_qualified_yield(row):
+                provider_metric["trusted_qualified_yield_jobs"].add(provider_job_id)
         tdim = _task_dimensions(task)
         fdim = _family_dimensions(task)
         tacc = task_accs.setdefault(tdim, _accumulator())
@@ -375,15 +416,24 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
               baseline_execution_rank,effective_execution_rank,learned_order_reason,learned_order_sample_size,ordering_algorithm_version
             FROM browser_search_tasks WHERE browser_run_id=? ORDER BY platform,phase,effective_execution_rank,priority,task_id""", (run[0],)):
             ordering.append({key: row[key] for key in row.keys()})
-    source_occurrences = [dict(row) for row in conn.execute("""SELECT strategy_profile,strategy_profile_version profile_version,
-          source_site platform,query_family,query_kind,query_pass,COUNT(*) source_occurrence_rows,
+    source_occurrences = [dict(row) for row in conn.execute("""SELECT acquisition_provider,acquisition_mode,
+          strategy_profile,strategy_profile_version profile_version,source_site platform,query_family,query_kind,query_pass,COUNT(*) source_occurrence_rows,
           COUNT(DISTINCT COALESCE(NULLIF(source_job_id,''),source_url)) unique_source_ids,
           COUNT(DISTINCT job_id) unique_canonical_jobs,
           COUNT(DISTINCT CASE WHEN source_verification_state IN ('verified_direct_ats','verified_canonical_ats','verified_jsonld') THEN job_id END) source_verified_jobs,
           COUNT(DISTINCT CASE WHEN application_destination_verification_state IN ('VERIFIED_ATS','VERIFIED_EMPLOYER') THEN job_id END) verified_application_destinations
         FROM source_occurrences WHERE strategy_profile<>''
-        GROUP BY strategy_profile,strategy_profile_version,source_site,query_family,query_kind,query_pass
+        GROUP BY acquisition_provider,acquisition_mode,strategy_profile,strategy_profile_version,source_site,query_family,query_kind,query_pass
         ORDER BY platform,query_family,query_kind,query_pass""")]
+    provider_documents = []
+    for metric in provider_metrics.values():
+        provider_documents.append({
+            key: (sorted(value) if isinstance(value, set) else value)
+            for key, value in metric.items()
+        })
+    provider_documents.sort(key=lambda item: (
+        item["acquisition_provider"], item["acquisition_mode"], item["platform"],
+    ))
     maximum = max(1, min(2000, int(limit)))
     return {
         "metric_definition_version": METRIC_DEFINITION_VERSION,
@@ -398,10 +448,12 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
             "trusted_qualified_yield_count": "Distinct linked canonical jobs passing the shared trusted intrinsic qualified-yield predicate, including handled jobs only while current substantive evidence remains qualified.",
             "funnel_attribution": "Each downstream canonical job-stage is credited once per strategy profile/version + platform + query family, to its earliest durable discovery in that group; duplicate sightings and later query touches do not multiply events.",
             "detail_cost": "Pages visited plus detail reads; cost per outcome is null when the outcome denominator is zero.",
+            "provider_diagnostics": "Additional provider/mode/platform diagnostics; provider partitioning does not change existing task/family ordering samples or minimum-sample guardrails.",
         },
         "attribution_rule": "Occurrence metrics include every durable task result. Canonical yield is distinct job_id per query/family grouping. Funnel events use earliest first_seen_at, then task_id, then result_id within profile/version/platform/family.",
         "task_metrics": task_metrics[:maximum],
         "family_metrics": family_metrics[:maximum],
         "source_occurrence_metrics": source_occurrences[:maximum],
+        "provider_metrics": provider_documents[:maximum],
         "current_order": ordering[:maximum],
     }
