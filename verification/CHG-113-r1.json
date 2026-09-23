@@ -1,0 +1,141 @@
+{
+  "request_id": "CHG-113-r1",
+  "project": "jobbot / kimhw8084/jobbot",
+  "target_branch": "main",
+  "working_branch": "codex/jobbot-CHG-113-r1",
+  "base_commit": "8d4570537e9577e6c74f43422321afc54c0d0700",
+  "tested_head_commit": "e7faed46ef6be57ec012a8c6a315ca417456f14e",
+  "candidate_commit_message": "CHG-113-r1: add evidence readiness and URL provenance",
+  "migration": {
+    "version": 19,
+    "name": "CHG-113 evidence readiness and application URL provenance",
+    "tables": [
+      "jobs",
+      "source_occurrences",
+      "search_task_results"
+    ],
+    "evolution": "Additive and idempotent. Legacy actionable rows are held at REVIEW until a current score pass writes the evidence and qualification readiness contract.",
+    "content_versioning": "The migration and strategy-only rescoring do not create employer-content versions. Trusted source-content changes continue through source_snapshot, immutable job_versions, and field diffs."
+  },
+  "evidence_readiness_model": {
+    "identity_evidence_state": [
+      "MISSING",
+      "PARTIAL",
+      "COMPLETE"
+    ],
+    "detail_evidence_state": [
+      "MISSING",
+      "PARTIAL",
+      "COMPLETE"
+    ],
+    "requirements_evidence_state": [
+      "MISSING",
+      "PARTIAL",
+      "UNRESOLVED",
+      "SUPPORTED",
+      "UNSUPPORTED"
+    ],
+    "source_verification_state": "The existing source-verification vocabulary, including verified direct ATS, verified canonical ATS, verified JSON-LD, assisted board, unverified discovery, and identity mismatch.",
+    "application_destination_verification_state": [
+      "MISSING",
+      "BOARD_ONLY",
+      "OBSERVED_UNVERIFIED",
+      "VERIFIED_ATS",
+      "VERIFIED_EMPLOYER",
+      "IDENTITY_MISMATCH"
+    ],
+    "evidence_readiness_state": [
+      "REVIEW",
+      "READY",
+      "BLOCKED"
+    ],
+    "qualification_readiness_state": [
+      "REVIEW",
+      "READY",
+      "BLOCKED"
+    ],
+    "actionable_requirement": "APPLY_NOW, APPLY_VOLUME, and HIGH_VALUE_STRETCH require evidence_readiness_state=READY and qualification_readiness_state=READY. Qualification readiness includes every current CHG-170 gate.",
+    "missing_evidence_behavior": "Missing or partial detail, unresolved requirements/domain, unverified source, and unverified destination remain REVIEW. Missing detail is not treated as a negative domain or requirement fact.",
+    "explanation": "evidence_readiness_json stores observed evidence with source/type, role URLs, gate evidence, missing items, blocking items, readiness decision, and current recommendation/reason."
+  },
+  "url_provenance_roles": {
+    "discovery_url": "Original search-card/discovery URL; first discovery is retained on the canonical job.",
+    "board_detail_url": "Observed LinkedIn, Indeed, or Glassdoor detail page.",
+    "observed_board_apply_url": "Apply action/link observed on a board; observation alone is not employer or ATS verification.",
+    "employer_job_url": "Employer career/job page from trusted source evidence.",
+    "ats_requisition_url": "Public ATS requisition URL with a job-specific requisition identity.",
+    "verified_application_url": "Final employer or public ATS destination whose provenance and job identity are verified. No form submission or credential interaction is performed.",
+    "compatibility": "Existing canonical_url and apply_url remain available; role/state fields carry the distinct semantics. ATS host parsing requires a valid host boundary and requisition-specific URL."
+  },
+  "changed_files": [
+    "docs/ARCHITECTURE.md",
+    "docs/DATABASE.md",
+    "src/jobbot/audit.py",
+    "src/jobbot/bridge/rpc.py",
+    "src/jobbot/dashboard.py",
+    "src/jobbot/discoveries.py",
+    "src/jobbot/evidence.py",
+    "src/jobbot/exports.py",
+    "src/jobbot/legacy_core.py",
+    "src/jobbot/legacy_engine.py",
+    "src/jobbot/migrations/__init__.py",
+    "src/jobbot/migrations/m0019_chg113_evidence_readiness.py",
+    "src/jobbot/strategy_runtime.py",
+    "tests/integration/test_audit.py",
+    "tests/integration/test_chg112_production_integrity.py",
+    "tests/integration/test_dashboard_exports_application.py",
+    "tests/integration/test_database_ledger.py",
+    "tests/unit/test_chg113_evidence_readiness.py"
+  ],
+  "deterministic_fixture_outcomes": [
+    {
+      "fixture": "Card/title-only Trauma Registrar, Cancer Registrar 2, and Weekend Admissions Screener",
+      "result": "Persisted as recall/discovery with detail and requirements missing; final domain/readiness remains REVIEW and never Actionable from title alone."
+    },
+    {
+      "fixture": "Higher-education registrar with transcript, student-record, and registration responsibilities; complete CHG-170 gates and trusted ATS destination",
+      "result": "Evidence and qualification readiness READY; Actionable recommendation permitted."
+    },
+    {
+      "fixture": "Nonclinical healthcare enrollment/records operations role with matching responsibilities and complete evidence",
+      "result": "Evidence and qualification readiness READY; Actionable recommendation permitted."
+    },
+    {
+      "fixture": "Enriched licensed clinical role and unrelated healthcare sales role",
+      "result": "Not Actionable; the clinical case retains its explicit licensure/qualification reason and the sales case retains its evidence-backed responsibility/domain result."
+    },
+    {
+      "fixture": "Complete board detail with no trusted employer/ATS destination",
+      "result": "BOARD_ONLY destination state; final readiness REVIEW and verified_application_url empty."
+    },
+    {
+      "fixture": "Spoofed ATS hostname and ATS board URL without a requisition identity",
+      "result": "Not recognized as verified ATS requisition provenance."
+    }
+  ],
+  "reconciliation_and_versioning_outcomes": {
+    "matching_board_to_ats": "Matching company/title/requisition evidence reconciles to one canonical job, adds the higher-authority ATS occurrence/provenance, and retains the original board occurrence, discovery URL, board detail URL, and observed apply link.",
+    "identity_mismatch": "Incompatible company/title or ATS requisition evidence fails closed into a separate blocked identity-mismatch record; the prior canonical verification and verified destination are not upgraded.",
+    "strategy_rescore": "Configuration-only rescoring recomputes gates/readiness/scores/recommendation and creates no new employer-content version.",
+    "trusted_content_change": "Changed trusted description/requirements recalculates domain, requirements, CHG-170 gates, readiness, score, and recommendation, and creates the normal immutable content version and diffs."
+  },
+  "tests": [
+    {
+      "command": "rtk env PYTHONPATH=src python3 -m unittest tests.unit.test_chg113_evidence_readiness tests.integration.test_database_ledger tests.integration.test_dashboard_exports_application tests.integration.test_audit tests.integration.test_chg112_production_integrity tests.integration.test_browser_tasks tests.integration.test_extension_bridge",
+      "result": "PASS — 40 tests in 25.021 seconds."
+    },
+    {
+      "command": "rtk env PYTHONPATH=src python3 -m unittest discover -s tests",
+      "result": "PASS — 142 tests in 36.679 seconds.",
+      "isolation": "Ran in disposable copy /var/folders/nz/6q2p_ldx3txdbw_gttbpnwjr0000gn/T/com.apple.shortcuts.mac-helper/jobbot-chg113-final-validation-blol7q3s/repo."
+    },
+    {
+      "command": "rtk python3 -m compileall -q src/jobbot tests; rtk git diff --check",
+      "result": "PASS."
+    }
+  ],
+  "production_ledger_validation": "NOT_USED — no pre-existing production data/jobs.sqlite3 was present or opened. The full Python suite used a disposable copy. A focused bridge integration created a test scratch data/jobs.sqlite3 in the checkout; it was removed without opening it, restoring data/ to .gitkeep only.",
+  "live_big_three_validation": "NOT_RUN — no live LinkedIn, Indeed, or Glassdoor production acceptance, browser refresh, or receiver lifecycle action was performed.",
+  "request_binding": "Project OS BUILD for JobBot CHG-113-r1 on exact integrated main 8d4570537e9577e6c74f43422321afc54c0d0700. Implement the remaining evidence-completeness and application/source-provenance layer without duplicating CHG-170 or CHG-114. Work only on codex/jobbot-CHG-113-r1; never merge or move main. Preserve SQLite authority, card-before-detail-before-qualification ordering, immutable meaningful employer-content versions, a read-only application boundary, and isolated validation. Do not perform live Big-3 acceptance or application execution.",
+  "evidence_commit_note": "This verification artifact follows the repository pattern: it records the exact tested code commit above and is committed after that code commit because a commit cannot contain its own final SHA. The final remote branch head is checked and reported after the verification-artifact commit is pushed."
+}
