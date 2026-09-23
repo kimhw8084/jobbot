@@ -712,7 +712,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 }
                 queued=conn.execute(f"""SELECT * FROM browser_search_tasks
                   WHERE browser_run_id=? AND status='queued' {platform_clause}
-                  ORDER BY {phase_order_sql()},execution_rank,priority,task_id""",(rid, requested_platform) if requested_platform else (rid,)).fetchall()
+                  ORDER BY {phase_order_sql()},COALESCE(NULLIF(effective_execution_rank,0),execution_rank),priority,task_id""",(rid, requested_platform) if requested_platform else (rid,)).fetchall()
                 eligible=[]
                 if requested_platform and pstate is not None and str(pstate['readiness_state']) == 'unchecked' and queued:
                     eligible=list(queued)
@@ -735,7 +735,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                     _,chosen_platform=min(platform_candidates,key=lambda item:(item[0],{'linkedin':0,'indeed':1,'glassdoor':2}.get(item[1],99)))
                     t=conn.execute(f"""SELECT * FROM browser_search_tasks
                       WHERE browser_run_id=? AND platform=? AND phase=? AND status='queued'
-                      ORDER BY execution_rank,priority,task_id LIMIT 1""",(rid,chosen_platform,phase)).fetchone()
+                      ORDER BY COALESCE(NULLIF(effective_execution_rank,0),execution_rank),priority,task_id LIMIT 1""",(rid,chosen_platform,phase)).fetchone()
             if not t:return {'ok':True,'done':True}
             if t['status']=='queued':
                 lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
@@ -840,11 +840,23 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             apply_candidate=j.canonical_url(j.clean_text(raw.get('apply_url') or ''))
             apply_url=apply_candidate if apply_candidate and apply_candidate != url else ''
             provenance={
+                'source_type': 'board_detail',
+                'detail_source_type': 'board_detail',
                 'identity': 'observed_detail_identity',
                 'card_metadata': 'search_card' if raw.get('search_card') else 'detail_surface',
                 'description': 'observed_substantive_detail',
                 'location': 'observed' if location else 'unknown',
+                'location_source_type': 'board_detail',
                 'remote': 'observed_detail_text' if remote_status in {'remote','fully remote','100 remote','us remote'} else 'unknown',
+                'remote_source_type': 'board_detail',
+                'salary': 'observed_detail_text' if j.clean_text(raw.get('salary_text') or '') else 'unknown',
+                'salary_source_type': 'board_detail',
+                'employment_type': 'observed_detail_text' if j.clean_text(raw.get('employment_type') or '') else 'unknown',
+                'employment_type_source_type': 'board_detail',
+                'posted_at': 'observed_search_card_or_detail' if j.clean_text(raw.get('posted_at') or '') else 'unknown',
+                'posted_at_source_type': 'search_card' if raw.get('search_card') else 'board_detail',
+                'requirements': 'employer_description_requirement_extraction',
+                'requirements_source_type': 'board_detail',
                 'application_destination': 'observed_distinct_destination' if apply_url else 'unknown_board_destination',
                 'remote_filter_intent': bool(task['remote_required']),
             }

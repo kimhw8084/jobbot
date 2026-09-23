@@ -21,6 +21,9 @@ from .db import Database
 from .diagnostics import instrumentation
 from .exports import export_selected
 from .platform_state import human_waiting, interaction_state, runnable_resume, resumable_task, state_owner
+from .provenance import field_provenance_summary
+from .search_quality import search_quality_metrics
+from .siblings import probable_sibling_clusters
 
 
 TABLE_COLUMNS = (
@@ -35,6 +38,7 @@ TABLE_COLUMNS = (
     "source_verification_state", "application_destination_verification_state", "evidence_readiness_state", "qualification_readiness_state",
     "evidence_missing_json", "evidence_blocking_json", "evidence_readiness_json",
     "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
+    "field_provenance",
 )
 
 
@@ -726,10 +730,16 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
       j.identity_evidence_state,j.detail_evidence_state,j.requirements_evidence_state,
       j.source_verification_state,j.application_destination_verification_state,j.evidence_readiness_state,j.qualification_readiness_state,
       j.evidence_missing_json,j.evidence_blocking_json,j.evidence_readiness_json,
-      j.salary_annual_min,j.qualification_gates_json,j.preference_signals_json,j.preference_adjustment
+      j.salary_annual_min,j.qualification_gates_json,j.preference_signals_json,j.preference_adjustment,
+      j.remote_status,j.posting_status,j.required_qualifications,j.employment_type,j.evidence_provenance_json
       FROM jobs j WHERE {where} ORDER BY COALESCE(j.application_priority_score,j.door_score,0) DESC,j.last_seen DESC
       LIMIT ? OFFSET ?""", [*args, page_size, (page - 1) * page_size]).fetchall()
-    return {"page": page, "page_size": page_size, "total": total, "columns": TABLE_COLUMNS, "jobs": [_dict(row) for row in rows]}
+    jobs = []
+    for row in rows:
+        value = _dict(row) or {}
+        value["field_provenance"] = field_provenance_summary(value)
+        jobs.append(value)
+    return {"page": page, "page_size": page_size, "total": total, "columns": TABLE_COLUMNS, "jobs": jobs}
 
 
 def job_detail(conn: sqlite3.Connection, job_id: str) -> dict[str, Any] | None:
@@ -743,6 +753,7 @@ def job_detail(conn: sqlite3.Connection, job_id: str) -> dict[str, Any] | None:
                 job[key] = json.loads(job[key] or "[]")
             except (TypeError, json.JSONDecodeError):
                 pass
+    job["field_provenance"] = field_provenance_summary(job)
     occurrences = [_dict(x) for x in conn.execute("SELECT * FROM source_occurrences WHERE job_id=? ORDER BY source_site,first_seen", (job_id,))]
     versions = [_dict(x) for x in conn.execute("SELECT * FROM job_versions WHERE job_id=? ORDER BY version_no DESC", (job_id,))]
     diffs = [_dict(x) for x in conn.execute("SELECT * FROM job_diffs WHERE job_id=? ORDER BY version_id DESC,field_name", (job_id,))]
@@ -815,6 +826,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._json(200, strategy_info(self.bundle)); return
             if parsed.path == "/api/coverage":
                 self._json(200, coverage(conn)); return
+            if parsed.path == "/api/search-quality":
+                query = urllib.parse.parse_qs(parsed.query)
+                limit = int((query.get("limit") or ["500"])[0])
+                self._json(200, search_quality_metrics(conn, limit=limit)); return
+            if parsed.path == "/api/sibling-clusters":
+                query = urllib.parse.parse_qs(parsed.query)
+                limit = int((query.get("limit") or ["5000"])[0])
+                output_limit = int((query.get("output_limit") or ["200"])[0])
+                self._json(200, probable_sibling_clusters(conn, limit=limit, output_limit=output_limit)); return
             if parsed.path == "/api/run":
                 self._json(200, active_run(conn)); return
             if parsed.path == "/api/metrics":

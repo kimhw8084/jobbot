@@ -21,6 +21,15 @@ observed evidence, missing items, blockers, and both evidence and qualification
 readiness decisions. Old actionable labels are held at `REVIEW` until the
 versioned scoring pass recalculates them against the current strategy.
 
+Migration 20 adds the CHG-114 frozen ordering fields to browser tasks and the
+ordering-parameter record to browser runs. It also adds indexes for bounded
+task/discovery/funnel quality aggregation. Search-quality metrics are derived
+from the underlying task, result, job-readiness, event, and browser-event rows;
+they are not copied into a materialized metric table. The additive provenance
+summary is computed for API/dashboard/export output, while raw evidence JSON
+remains in its existing job and occurrence fields. See
+[`SEARCH_QUALITY.md`](SEARCH_QUALITY.md) for exact metric and attribution rules.
+
 Important interpretations:
 
 - `remote_required` is query intent. `remote_evidence_state=OBSERVED` requires observed detail evidence; missing location is `UNKNOWN`.
