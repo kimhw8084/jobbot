@@ -12,6 +12,10 @@ EXPORT_COLUMNS = (
     "posted_at", "first_seen", "last_seen", "salary_text", "employment_class", "remote_gate",
     "eligible_states_json", "location_raw", "relevance_score", "qualification_score", "landing_score", "career_score",
     "door_score", "resume_variant", "application_status", "canonical_url", "apply_url",
+    "discovery_url", "board_detail_url", "observed_board_apply_url", "employer_job_url",
+    "ats_requisition_url", "verified_application_url", "identity_evidence_state", "detail_evidence_state",
+    "requirements_evidence_state", "source_verification_state", "application_destination_verification_state",
+    "evidence_readiness_state", "qualification_readiness_state", "evidence_missing_json", "evidence_blocking_json", "evidence_readiness_json",
     "description", "required_qualifications", "preferred_qualifications", "requirement_matches_json",
     "requirement_gaps_json", "remote_evidence_json", "schedule_requirement", "score_components_json", "score_reasons_json",
     "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
@@ -22,6 +26,9 @@ DISCOVERY_COLUMNS = (
     "first_seen_at", "last_seen_at", "sighting_count", "detail_read", "canonical_job_id",
     "title_hint", "company_hint", "location_hint", "posted_text", "posted_age_days", "observed_at",
     "card_json", "detail_status", "detail_attempts", "detail_started_at", "detail_completed_at", "detail_error",
+    "discovery_url", "board_detail_url", "observed_board_apply_url", "ats_requisition_url", "verified_application_url",
+    "identity_evidence_state", "detail_evidence_state", "requirements_evidence_state", "source_verification_state",
+    "application_destination_verification_state", "evidence_readiness_state", "evidence_missing_json", "evidence_blocking_json",
     "strategy_profile", "strategy_profile_version", "query_family", "query_kind", "query_pass", "initial_order",
 )
 
@@ -72,15 +79,15 @@ def export_selected(conn: sqlite3.Connection, output_dir: Path, job_ids: Sequenc
 def export_all(conn: sqlite3.Connection, output_dir: Path, *, batch_size: int = 20) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     terminal = "('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED','WITHDRAWN','SKIP','CLOSED')"
-    qualified = "is_active=1 AND upper(application_status)='NEW' AND remote_gate='pass' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')"
+    qualified = "is_active=1 AND upper(application_status)='NEW' AND remote_gate='pass' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')"
     definitions = {
         "all_jobs.csv": ("1=1", ()),
         "active_jobs.csv": ("is_active=1", ()),
         "qualified_jobs.csv": (qualified, ()),
         "unapplied_jobs.csv": (qualified + f" AND upper(application_status) NOT IN {terminal}", ()),
-        "apply_now.csv": ("is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_NOW'", ()),
-        "apply_volume.csv": ("is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_VOLUME'", ()),
-        "stretch.csv": ("is_active=1 AND upper(application_status)='NEW' AND recommendation='HIGH_VALUE_STRETCH'", ()),
+        "apply_now.csv": ("is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation='APPLY_NOW'", ()),
+        "apply_volume.csv": ("is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation='APPLY_VOLUME'", ()),
+        "stretch.csv": ("is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation='HIGH_VALUE_STRETCH'", ()),
         "application_tracker.csv": ("upper(application_status)!='NEW'", ()),
         "recent_updates.csv": ("change_status IN ('NEW','UPDATED','CLOSED','REOPENED')", ()),
     }

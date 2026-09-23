@@ -356,6 +356,12 @@ class Job:
     source_job_id: str = ""
     canonical_url: str = ""
     apply_url: str = ""
+    discovery_url: str = ""
+    board_detail_url: str = ""
+    observed_board_apply_url: str = ""
+    employer_job_url: str = ""
+    ats_requisition_url: str = ""
+    verified_application_url: str = ""
     title: str = ""
     company: str = ""
     location_raw: str = ""
@@ -390,6 +396,17 @@ class Job:
     door_score: float = 0.0
     recommendation: str = "REVIEW"
     score_reasons: list[str] = field(default_factory=list)
+    identity_evidence_state: str = "MISSING"
+    detail_evidence_state: str = "MISSING"
+    requirements_evidence_state: str = "MISSING"
+    source_verification_state: str = "UNVERIFIED_DISCOVERY"
+    application_destination_verification_state: str = "MISSING"
+    evidence_readiness_state: str = "REVIEW"
+    qualification_readiness_state: str = "REVIEW"
+    evidence_missing: list[str] = field(default_factory=list)
+    evidence_blocking: list[str] = field(default_factory=list)
+    evidence_readiness: dict[str, Any] = field(default_factory=dict)
+    evidence_recommendation_reason: str = ""
 
     @property
     def job_id(self) -> str:
@@ -671,6 +688,11 @@ def fetch_direct_ats_watch(client: HttpClient, app_cfg: dict[str, Any]) -> list[
 # ---------- Public ATS enrichment ----------
 
 def enrich_public_ats(client: HttpClient, job: Job) -> Job:
+    if isinstance(job.raw,dict):
+        job.raw.setdefault("discovery_url",job.canonical_url)
+        if job.source_site in {"linkedin","indeed","glassdoor"}:
+            job.raw.setdefault("board_detail_url",job.canonical_url)
+            if job.apply_url and job.apply_url!=job.canonical_url: job.raw.setdefault("observed_board_apply_url",job.apply_url)
     url = job.apply_url or job.canonical_url
     h = host_of(url)
     try:

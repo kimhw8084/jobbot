@@ -809,12 +809,14 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             if not title or not url:return {'ok':False,'error':'insufficient_job_identity'}
             evidence=msg.get('detail_evidence') if isinstance(msg.get('detail_evidence'),dict) else {}
             if not evidence and isinstance(raw.get('detail_evidence'),dict): evidence=raw['detail_evidence']
+            discovery_url=url
             if result_id:
                 observed=conn.execute("SELECT source_job_id,source_url FROM search_task_results WHERE result_id=? AND task_id=?",(result_id,tid)).fetchone()
                 if observed is None:
                     return {'ok':False,'error':'result_not_found'}
                 if observed['source_job_id'] and sid and str(observed['source_job_id']) != sid:
                     return {'ok':False,'error':'detail_identity_mismatch'}
+                discovery_url=j.canonical_url(j.clean_text(observed['source_url'] or '')) or url
                 acquisition=evidence.get('detail_acquisition') if isinstance(evidence.get('detail_acquisition'),dict) else {}
                 mode=j.clean_text(acquisition.get('mode') or evidence.get('acquisition_mode') or '')
                 if mode and mode not in {'search_pane','cache','user_reenrichment'}:
@@ -846,7 +848,8 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 'application_destination': 'observed_distinct_destination' if apply_url else 'unknown_board_destination',
                 'remote_filter_intent': bool(task['remote_required']),
             }
-            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=apply_url,title=title,company=company,location_raw=location,remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'strategy_profile':task['strategy_profile'],'strategy_profile_version':task['strategy_profile_version'],'query_family':task['query_family'],'query_kind':task['query_kind'],'query_pass':task['query_pass'],'initial_order':task['initial_order'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_intent':bool(task['remote_required']),'source_payload':raw,'_discovery_company':j.clean_text(raw.get('search_card',{}).get('company') if isinstance(raw.get('search_card'),dict) else '')})
+            job_raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'strategy_profile':task['strategy_profile'],'strategy_profile_version':task['strategy_profile_version'],'query_family':task['query_family'],'query_kind':task['query_kind'],'query_pass':task['query_pass'],'initial_order':task['initial_order'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_intent':bool(task['remote_required']),'source_payload':raw,'_discovery_company':j.clean_text(raw.get('search_card',{}).get('company') if isinstance(raw.get('search_card'),dict) else ''),'discovery_url':discovery_url,'board_detail_url':url,'observed_board_apply_url':apply_candidate}
+            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=apply_url,title=title,company=company,location_raw=location,remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw=job_raw)
             setattr(job,'_mode','deep');j.score_job(job,strategy,cfg.get('candidate',{}));ledger_status=store.upsert(job,commit=False)
             fields={'new':'jobs_new','updated':'jobs_updated','unchanged':'jobs_unchanged'}
             if ledger_status in fields:
@@ -863,9 +866,18 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             conn.execute("""UPDATE jobs SET description_state=?,content_state=?,enrichment_status=?,enrichment_last_error='',
               location_evidence_state=?,remote_evidence_state=?,apply_destination_state=?,evidence_provenance_json=?
               WHERE job_id=?""",(description_state,content_state,enrichment_status,location_state,remote_state,apply_state,json.dumps(provenance,ensure_ascii=False),jid))
-            if result_id: finish_detail(conn,result_id,jid,content_state=content_state)
-            else: conn.execute("""UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status=?,content_state=?,detail_completed_at=?
-              WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?""",(jid,'COMPLETE' if content_state=='COMPLETE' else 'PARTIAL',content_state,j.now_iso(),tid,source_site,sid,url))
+            result_evidence=(job.identity_evidence_state,job.detail_evidence_state,job.requirements_evidence_state,job.source_verification,job.application_destination_verification_state,job.evidence_readiness_state,json.dumps(job.evidence_missing,ensure_ascii=False),json.dumps(job.evidence_blocking,ensure_ascii=False))
+            if result_id:
+                finish_detail(conn,result_id,jid,content_state=content_state)
+                conn.execute("""UPDATE search_task_results SET discovery_url=?,board_detail_url=?,observed_board_apply_url=?,
+                  ats_requisition_url=?,verified_application_url=?,identity_evidence_state=?,detail_evidence_state=?,requirements_evidence_state=?,
+                  source_verification_state=?,application_destination_verification_state=?,evidence_readiness_state=?,evidence_missing_json=?,evidence_blocking_json=?
+                  WHERE result_id=?""",(discovery_url,url,apply_candidate,job.ats_requisition_url,job.verified_application_url,*result_evidence,result_id))
+            else: conn.execute("""UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status=?,content_state=?,detail_completed_at=?,
+              discovery_url=?,board_detail_url=?,observed_board_apply_url=?,ats_requisition_url=?,verified_application_url=?,
+              identity_evidence_state=?,detail_evidence_state=?,requirements_evidence_state=?,source_verification_state=?,
+              application_destination_verification_state=?,evidence_readiness_state=?,evidence_missing_json=?,evidence_blocking_json=?
+              WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?""",(jid,'COMPLETE' if content_state=='COMPLETE' else 'PARTIAL',content_state,j.now_iso(),discovery_url,url,apply_candidate,job.ats_requisition_url,job.verified_application_url,*result_evidence,tid,source_site,sid,url))
             acquisition_value=evidence.get('detail_acquisition') if isinstance(evidence.get('detail_acquisition'),dict) else {}
             conn.execute("UPDATE browser_search_tasks SET detail_acquisition_mode=? WHERE task_id=?", (j.clean_text(acquisition_value.get('mode') or evidence.get('acquisition_mode') or 'search_pane'), tid))
             cache_published=False

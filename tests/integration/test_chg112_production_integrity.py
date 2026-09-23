@@ -319,9 +319,9 @@ class Chg112ProductionIntegrityTests(unittest.TestCase):
             conn = sqlite3.connect(path)
             conn.execute("CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL)")
             migrations = all_migrations()
-            # Recreate the historical schema immediately before CHG-166/164's
-            # human-gated re-enrichment migration, then apply the full chain.
-            for migration in migrations[:-2]:
+            # Recreate the historical schema immediately before the human-gated
+            # re-enrichment migration, then apply it and the later additive migrations.
+            for migration in migrations[:-3]:
                 migration.upgrade(conn)
                 conn.execute("INSERT INTO schema_migrations VALUES(?,?,?)", (migration.VERSION, migration.NAME, "2026-09-17T00:00:00+00:00"))
             now = "2026-09-17T00:00:00+00:00"

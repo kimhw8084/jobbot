@@ -32,7 +32,8 @@ class DashboardExportApplicationTests(unittest.TestCase):
             ))
         conn.executemany("""INSERT INTO jobs(job_id,title,company,location_raw,canonical_url,apply_url,remote_status,employment_type,
           salary_text,posted_at,description,career_lane,resume_variant,remote_gate,relevance_score,qualification_score,landing_score,career_score,door_score,
-          recommendation,first_seen,last_seen,application_status,posting_status,is_active) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", rows)
+          recommendation,first_seen,last_seen,application_status,posting_status,is_active,evidence_readiness_state,qualification_readiness_state)
+          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", [(*row, "READY", "READY") for row in rows])
         conn.commit()
 
     def test_dashboard_server_side_pagination_detail_and_status_persistence(self) -> None:

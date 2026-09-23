@@ -46,6 +46,19 @@ class Discovery:
     recall_selected: bool
     recall_qa_sample: bool
     recall_reason: str
+    discovery_url: str
+    board_detail_url: str
+    observed_board_apply_url: str
+    ats_requisition_url: str
+    verified_application_url: str
+    identity_evidence_state: str
+    detail_evidence_state: str
+    requirements_evidence_state: str
+    source_verification_state: str
+    application_destination_verification_state: str
+    evidence_readiness_state: str
+    evidence_missing_json: str
+    evidence_blocking_json: str
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> "Discovery":
@@ -70,6 +83,19 @@ class Discovery:
             recall_selected=bool(row["recall_selected"]),
             recall_qa_sample=bool(row["recall_qa_sample"]),
             recall_reason=str(row["recall_reason"] or ""),
+            discovery_url=str(row["discovery_url"] or ""),
+            board_detail_url=str(row["board_detail_url"] or ""),
+            observed_board_apply_url=str(row["observed_board_apply_url"] or ""),
+            ats_requisition_url=str(row["ats_requisition_url"] or ""),
+            verified_application_url=str(row["verified_application_url"] or ""),
+            identity_evidence_state=str(row["identity_evidence_state"] or "MISSING"),
+            detail_evidence_state=str(row["detail_evidence_state"] or "MISSING"),
+            requirements_evidence_state=str(row["requirements_evidence_state"] or "MISSING"),
+            source_verification_state=str(row["source_verification_state"] or "UNVERIFIED_DISCOVERY"),
+            application_destination_verification_state=str(row["application_destination_verification_state"] or "MISSING"),
+            evidence_readiness_state=str(row["evidence_readiness_state"] or "REVIEW"),
+            evidence_missing_json=str(row["evidence_missing_json"] or "[]"),
+            evidence_blocking_json=str(row["evidence_blocking_json"] or "[]"),
         )
 
 
@@ -84,6 +110,12 @@ def upsert_card(
     recall_reason: str = "", enrichment_priority: int = 0,
 ) -> tuple[Discovery, bool]:
     now = _now()
+    card_missing = json.dumps([
+        "substantive employer job detail is missing",
+        "requirements evidence is missing",
+        "employer or public ATS source verification is not complete",
+        "verified final application destination is missing",
+    ], ensure_ascii=False)
     row = conn.execute(
         """SELECT * FROM search_task_results
            WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?""",
@@ -146,6 +178,19 @@ def upsert_card(
              1 if eligible_for_detail else 0, int(bool(recall_selected)), int(bool(recall_qa_sample)), result_id),
         )
         duplicate = True
+    conn.execute(
+        """UPDATE search_task_results SET discovery_url=?,identity_evidence_state=CASE
+             WHEN length(trim(COALESCE(title_hint,'')))>0 AND length(trim(COALESCE(company_hint,'')))>0 THEN 'COMPLETE' ELSE 'PARTIAL' END,
+             detail_evidence_state=CASE WHEN content_state='COMPLETE' THEN 'COMPLETE' WHEN content_state='PARTIAL' THEN 'PARTIAL' ELSE 'MISSING' END,
+             requirements_evidence_state=CASE WHEN content_state='COMPLETE' THEN requirements_evidence_state WHEN content_state='PARTIAL' THEN 'PARTIAL' ELSE 'MISSING' END,
+             source_verification_state=CASE WHEN source_verification_state='' THEN 'UNVERIFIED_DISCOVERY' ELSE source_verification_state END,
+             application_destination_verification_state=CASE WHEN application_destination_verification_state='MISSING' THEN 'BOARD_ONLY' ELSE application_destination_verification_state END,
+             evidence_readiness_state=CASE WHEN content_state='MISSING' THEN 'REVIEW' ELSE evidence_readiness_state END,
+             evidence_missing_json=CASE WHEN content_state='COMPLETE' THEN evidence_missing_json ELSE ? END,
+             evidence_blocking_json=CASE WHEN content_state='COMPLETE' THEN evidence_blocking_json ELSE ? END
+           WHERE result_id=?""",
+        (source_url, card_missing, card_missing, result_id),
+    )
     saved = conn.execute("SELECT * FROM search_task_results WHERE result_id=?", (result_id,)).fetchone()
     return Discovery.from_row(saved), duplicate
 
