@@ -27,9 +27,15 @@ from pathlib import Path
 from typing import Any, Iterable, Optional
 
 from . import legacy_core as c
+from .evidence import (
+    ATS_SITES,
+    apply_evidence_readiness,
+    ats_url_identity,
+    derive_url_roles,
+)
 from .strategy_runtime import FALLBACK_LANE_ID, fallback_activation_enabled, with_fallback_activation
 
-VERSION = "3.2.0"
+VERSION = "3.2.1"
 c.VERSION = VERSION
 
 # Re-export core helpers used below.
@@ -228,13 +234,24 @@ def source_verification_analysis(job:Job)->tuple[str,str,int]:
     """Separate discovery provenance from final employer/ATS verification."""
     url=job.apply_url or job.canonical_url; typ,token=ats_identity(url) if 'ats_identity' in globals() else ("","")
     raw=job.raw if isinstance(job.raw,dict) else {}
+    mismatch=clean_text(raw.get("_reconciliation_identity_mismatch") or raw.get("_ats_identity_mismatch") or "")
+    if mismatch:
+        return "identity_mismatch",mismatch,0
     if int(raw.get("_ledger_canonical_verified",0) or 0)==1:
         return clean_text(raw.get("_ledger_source_verification") or "verified_canonical_ats"), clean_text(raw.get("_ledger_source_verification_reason") or "preserved canonical verification from ledger"), 1
     discovery_company=clean_text(raw.get("_discovery_company") or raw.get("company") or raw.get("companyName") or "")
     enriched_company=clean_text(job.company)
     if discovery_company and enriched_company and not company_compatible(discovery_company,enriched_company):
         return "identity_mismatch",f"discovery company '{discovery_company}' does not match canonical company '{enriched_company}'",0
-    if job.source_site in {"greenhouse","lever","ashby","smartrecruiters"}: return "verified_direct_ats",f"direct public {job.source_site} posting",1
+    ats_payload=raw.get("ats_enrichment") if isinstance(raw.get("ats_enrichment"),dict) else {}
+    payload_url=clean_text(ats_payload.get("hostedUrl") or ats_payload.get("absolute_url") or ats_payload.get("jobUrl") or "")
+    expected_identity=ats_url_identity(url)
+    observed_identity=ats_url_identity(payload_url)
+    if expected_identity[0] and observed_identity[0]==expected_identity[0] and expected_identity[2] and observed_identity[2] and expected_identity[2]!=observed_identity[2]:
+        return "identity_mismatch",f"ATS requisition URL identifies {expected_identity[2]} but enriched source identifies {observed_identity[2]}",0
+    if expected_identity[0]=="greenhouse" and expected_identity[2] and clean_text(ats_payload.get("id")) and expected_identity[2].isdigit() and clean_text(ats_payload.get("id"))!=expected_identity[2]:
+        return "identity_mismatch",f"Greenhouse requisition URL identifies {expected_identity[2]} but enriched source identifies {clean_text(ats_payload.get('id'))}",0
+    if job.source_site in ATS_SITES and typ==job.source_site: return "verified_direct_ats",f"direct public {job.source_site} posting",1
     if typ and (raw.get("ats_enrichment") or raw.get("jsonld_enrichment")): return "verified_canonical_ats",f"discovery listing resolved to public {typ} posting",1
     if raw.get("jsonld_enrichment"): return "verified_jsonld","public employer page contained JobPosting structured data",1
     if typ: return "direct_ats_link",f"apply link points to public {typ} ATS but details were not fully enriched",0
@@ -922,20 +939,42 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
         }
         query_family=clean_text(raw.get("query_family") or "")
         ambiguous_title=bool(re.search(r"\b(?:registrar|admissions?|enrollment|intake|operations?|coordinator|implementation)\b",job.title,re.I))
-        _,recall_reason=recall_prefilter(job,strategy)
-        if ambiguous_title and recall_reason not in {"excluded occupation family","explicit out-of-scope title"} and (bool(job.recall_reason) and job.recall_reason!="no recall-stage title archetype" or query_family in live_families):
+        recall_selected,recall_reason=recall_prefilter(job,strategy)
+        if ambiguous_title and recall_reason not in {"excluded occupation family","explicit out-of-scope title"} and (recall_selected or query_family in live_families):
             job.search_profile=""; job.career_lane=""; job.resume_variant=""; job.matched_keywords=[]; job.qualification_score=0.0
             job.requirement_matches=[]; job.requirement_gaps=[]; job.required_skills=[]; job.management_required=0
             job.landing_score=job.career_score=job.door_score=0.0; job.recommendation="REVIEW"; job.hard_reject_reasons=[]
-            job.qualification_gates={"responsibility_domain":_gate("review","ambiguous title lacks a resolved substantive domain/responsibility profile")}
+            job.qualification_gates={
+                "responsibility_domain":_gate("review","ambiguous title lacks a resolved substantive domain/responsibility profile"),
+                "requirements_supported":_gate("review","substantive requirements evidence is missing with the job detail"),
+            }
             job.score_reasons=["title is ambiguous; substantive responsibility evidence is unresolved"]
             job.score_components={"role_relevance":job.relevance_score,"qualification_fit":0.0,"landing_fit":0.0,"career_value":0.0,"door_score":0.0}
             job.preference_adjustment,job.preference_signals=_preference_ranking(job,strategy)
+            apply_evidence_readiness(job)
+            job.score_reasons.append(job.evidence_recommendation_reason)
+            return job
+        if len(job.description or "")<250 and (recall_selected or query_family in live_families) and recall_reason not in {"excluded occupation family","explicit out-of-scope title"}:
+            job.search_profile=""; job.career_lane=""; job.resume_variant=""; job.matched_keywords=[]; job.qualification_score=0.0
+            job.requirement_matches=[]; job.requirement_gaps=[]; job.required_skills=[]; job.management_required=0
+            job.landing_score=job.career_score=job.door_score=0.0; job.recommendation="REVIEW"; job.hard_reject_reasons=[]
+            job.qualification_gates={
+                "responsibility_domain":_gate("review","recall candidate has no substantive responsibility/domain evidence"),
+                "requirements_supported":_gate("review","substantive requirements evidence is missing with the job detail"),
+            }
+            job.score_reasons=["recall candidate has no substantive job detail; final domain and qualification remain unresolved"]
+            job.score_components={"role_relevance":job.relevance_score,"qualification_fit":0.0,"landing_fit":0.0,"career_value":0.0,"door_score":0.0}
+            job.preference_adjustment,job.preference_signals=_preference_ranking(job,strategy)
+            apply_evidence_readiness(job)
+            job.score_reasons.append(job.evidence_recommendation_reason)
             return job
         job.search_profile=""; job.career_lane=""; job.resume_variant=""; job.matched_keywords=[]; job.qualification_score=0.0
         job.requirement_matches=[]; job.requirement_gaps=[]; job.required_skills=[]; job.management_required=0
         job.landing_score=job.career_score=job.door_score=0.0; job.recommendation="OUT_OF_SCOPE"; job.hard_reject_reasons=[]; job.score_reasons=["role-family relevance below threshold / out of scope"]
         job.score_components={"role_relevance":job.relevance_score,"qualification_fit":0.0,"landing_fit":0.0,"career_value":0.0,"door_score":0.0}
+        job.qualification_gates={}
+        apply_evidence_readiness(job)
+        job.score_reasons.append(job.evidence_recommendation_reason)
         return job
     job.search_profile=clean_text(profile.get("name")); job.career_lane=clean_text(profile.get("career_lane")); job.resume_variant=clean_text(profile.get("resume_variant")); job.matched_keywords=kws
     a=requirement_analysis(job,profile,strategy,candidate); job.requirement_matches=a["matches"]; job.requirement_gaps=a["critical_gaps"]+a["learnable_gaps"]; job.required_skills=a["required_skills"]; job.management_required=1 if a["management_required"] else 0; job.years_required=a["years_required"]
@@ -1015,6 +1054,8 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     gate_reviews=[name for name,value in job.qualification_gates.items() if value["status"]!="pass"]
     if gate_reviews: job.score_reasons.append("hard-gate review: "+", ".join(gate_reviews))
     job.score_components={"role_relevance":job.relevance_score,"qualification_fit":job.qualification_score,"landing_fit":job.landing_score,"career_value":job.career_score,"door_score":job.door_score,"freshness":job.urgency_score,"application_friction":job.application_friction_score,"source_confidence":job.source_confidence,"remote_confidence":job.remote_confidence,"preference_adjustment":job.preference_adjustment}
+    apply_evidence_readiness(job)
+    job.score_reasons.append(job.evidence_recommendation_reason)
     return job
 
 # Make browser capture in the core use the new scoring engine.
@@ -1159,15 +1200,18 @@ def job_from_row(row:sqlite3.Row)->Job:
         try:
             x=json.loads(row[k] or "[]"); return x if isinstance(x,list) else []
         except Exception: return []
+    role_names=("discovery_url","board_detail_url","observed_board_apply_url","employer_job_url","ats_requisition_url","verified_application_url")
+    role_values={name:clean_text(row[name]) if name in row.keys() else "" for name in role_names}
     j=Job(
         source_site=clean_text(row["canonical_source_site"] if "canonical_source_site" in row.keys() else "ledger") or "ledger",
         source_job_id="", canonical_url=clean_text(row["canonical_url"]), apply_url=clean_text(row["apply_url"]),
+        **role_values,
         title=clean_text(row["title"]), company=clean_text(row["company"]), location_raw=clean_text(row["location_raw"]),
         remote_status=clean_text(row["remote_status"]), employment_type=clean_text(row["employment_type"]),
         salary_text=clean_text(row["salary_text"]), salary_min=row["salary_min"], salary_max=row["salary_max"],
         salary_currency=clean_text(row["salary_currency"]), salary_period=clean_text(row["salary_period"]),
         posted_at=clean_text(row["posted_at"]), description=clean_text(row["description"]), category=clean_text(row["category"]),
-        tags=arr("tags_json"), raw={"rescore_from_ledger":True,"_ledger_canonical_verified":int(row["canonical_verified"] or 0) if "canonical_verified" in row.keys() else 0,"_ledger_source_verification":clean_text(row["source_verification"]) if "source_verification" in row.keys() else "","_ledger_source_verification_reason":clean_text(row["source_verification_reason"]) if "source_verification_reason" in row.keys() else ""},
+        tags=arr("tags_json"), raw={"rescore_from_ledger":True,"posting_status":clean_text(row["posting_status"]) if "posting_status" in row.keys() else "","_ledger_canonical_verified":int(row["canonical_verified"] or 0) if "canonical_verified" in row.keys() else 0,"_ledger_source_verification":clean_text(row["source_verification"]) if "source_verification" in row.keys() else "","_ledger_source_verification_reason":clean_text(row["source_verification_reason"]) if "source_verification_reason" in row.keys() else "","_reconciliation_identity_mismatch":clean_text(row["source_verification_reason"]) if "source_verification" in row.keys() and clean_text(row["source_verification"])=="identity_mismatch" else ""},
     )
     setattr(j,"application_status",clean_text(row["application_status"] if "application_status" in row.keys() else "NEW").upper() or "NEW")
     return j
@@ -1207,15 +1251,30 @@ class PrecisionStore(c.Store):
 
     def resolve_job_id(self,job:Job)->str:
         ok=occurrence_key(job)
-        r=self.conn.execute("SELECT job_id FROM source_occurrences WHERE occurrence_key=?",(ok,)).fetchone()
-        if r: return clean_text(r["job_id"])
+        r=self.conn.execute("SELECT j.* FROM source_occurrences o JOIN jobs j ON j.job_id=o.job_id WHERE o.occurrence_key=?",(ok,)).fetchone()
+        if r:
+            conflict=self._reconciliation_identity_conflict(r,job,job.canonical_url or job.apply_url)
+            if conflict:
+                if isinstance(job.raw,dict): job.raw["_reconciliation_identity_mismatch"]=conflict
+                return self._mismatch_job_id(job)
+            return clean_text(r["job_id"])
         urls=[canonical_url(x) for x in (job.apply_url,job.canonical_url) if canonical_url(x)]
         for u in urls:
             if not is_job_specific_url(u): continue
-            r=self.conn.execute("SELECT job_id FROM jobs WHERE canonical_url=? OR apply_url=? LIMIT 1",(u,u)).fetchone()
-            if r: return clean_text(r["job_id"])
-            r=self.conn.execute("SELECT job_id FROM source_occurrences WHERE source_url=? OR apply_url=? LIMIT 1",(u,u)).fetchone()
-            if r: return clean_text(r["job_id"])
+            r=self.conn.execute("SELECT * FROM jobs WHERE canonical_url=? OR apply_url=? OR ats_requisition_url=? LIMIT 1",(u,u,u)).fetchone()
+            if r:
+                conflict=self._reconciliation_identity_conflict(r,job,u)
+                if conflict:
+                    if isinstance(job.raw,dict): job.raw["_reconciliation_identity_mismatch"]=conflict
+                    return self._mismatch_job_id(job)
+                return clean_text(r["job_id"])
+            r=self.conn.execute("SELECT j.* FROM source_occurrences o JOIN jobs j ON j.job_id=o.job_id WHERE o.source_url=? OR o.apply_url=? OR o.ats_requisition_url=? LIMIT 1",(u,u,u)).fetchone()
+            if r:
+                conflict=self._reconciliation_identity_conflict(r,job,u)
+                if conflict:
+                    if isinstance(job.raw,dict): job.raw["_reconciliation_identity_mismatch"]=conflict
+                    return self._mismatch_job_id(job)
+                return clean_text(r["job_id"])
         # Strong exact cross-source fingerprint: same company + title + essentially identical description.
         if job.company and job.title and len(job.description or "")>500:
             dh=hashlib.sha256(norm(job.description)[:12000].encode()).hexdigest()[:20]
@@ -1281,7 +1340,67 @@ class PrecisionStore(c.Store):
             "remote_evidence_json":json.dumps(getattr(job,"remote_evidence",{}),ensure_ascii=False),
             "schedule_requirement":clean_text(getattr(job,"schedule_requirement","")),
             "score_components_json":json.dumps(getattr(job,"score_components",{}),ensure_ascii=False),
+            "identity_evidence_state":clean_text(getattr(job,"identity_evidence_state","MISSING")),
+            "detail_evidence_state":clean_text(getattr(job,"detail_evidence_state","MISSING")),
+            "requirements_evidence_state":clean_text(getattr(job,"requirements_evidence_state","MISSING")),
+            "source_verification_state":clean_text(getattr(job,"source_verification_state",getattr(job,"source_verification","UNVERIFIED_DISCOVERY"))),
+            "application_destination_verification_state":clean_text(getattr(job,"application_destination_verification_state","MISSING")),
+            "evidence_readiness_state":clean_text(getattr(job,"evidence_readiness_state","REVIEW")),
+            "qualification_readiness_state":clean_text(getattr(job,"qualification_readiness_state","REVIEW")),
+            "evidence_missing_json":json.dumps(getattr(job,"evidence_missing",[]),ensure_ascii=False,sort_keys=True),
+            "evidence_blocking_json":json.dumps(getattr(job,"evidence_blocking",[]),ensure_ascii=False,sort_keys=True),
+            "evidence_readiness_json":json.dumps(getattr(job,"evidence_readiness",{}),ensure_ascii=False,sort_keys=True),
         }
+
+    def _url_role_values(self,job:Job)->dict[str,str]:
+        return derive_url_roles(job)
+
+    def _merged_url_role_values(self,existing:sqlite3.Row|None,job:Job)->dict[str,str]:
+        incoming=self._url_role_values(job)
+        if existing is None:
+            return incoming
+        current={key:clean_text(existing[key]) if key in existing.keys() else "" for key in incoming}
+        merged={}
+        for key,value in incoming.items():
+            if key=="discovery_url":
+                merged[key]=current[key] or value
+            elif key=="verified_application_url":
+                merged[key]=value if bool(getattr(job,"canonical_verified",0)) and value else current[key]
+            elif key=="ats_requisition_url":
+                merged[key]=value if bool(getattr(job,"canonical_verified",0)) and value else current[key] or value
+            else:
+                merged[key]=value or current[key]
+        return merged
+
+    @staticmethod
+    def _reconciliation_identity_conflict(existing:sqlite3.Row,job:Job,url:str)->str:
+        existing_company=clean_text(existing["company"])
+        incoming_company=clean_text(job.company)
+        if existing_company and incoming_company and not company_compatible(existing_company,incoming_company):
+            return f"source company '{incoming_company}' does not match canonical company '{existing_company}'"
+        existing_title=norm(clean_text(existing["title"]))
+        incoming_title=norm(clean_text(job.title))
+        if existing_title and incoming_title and existing_title!=incoming_title and existing_title not in incoming_title and incoming_title not in existing_title:
+            return f"source title '{job.title}' does not match canonical title '{clean_text(existing['title'])}'"
+        expected=ats_url_identity(url)
+        raw=job.raw if isinstance(job.raw,dict) else {}
+        payload=raw.get("ats_enrichment") if isinstance(raw.get("ats_enrichment"),dict) else {}
+        if job.source_site in ATS_SITES and expected[0]=="greenhouse" and expected[2].isdigit():
+            observed_ids=re.findall(r"\d+",clean_text(job.source_job_id))
+            if observed_ids and observed_ids[-1]!=expected[2]:
+                return f"Greenhouse requisition URL identifies {expected[2]} but source identity identifies {observed_ids[-1]}"
+        payload_url=clean_text(payload.get("hostedUrl") or payload.get("absolute_url") or payload.get("jobUrl") or "")
+        observed=ats_url_identity(payload_url)
+        if expected[0] and observed[0]==expected[0] and expected[2] and observed[2] and expected[2]!=observed[2]:
+            return f"ATS requisition URL identifies {expected[2]} but enriched source identifies {observed[2]}"
+        if expected[0]=="greenhouse" and expected[2] and clean_text(payload.get("id")) and expected[2].isdigit() and clean_text(payload.get("id"))!=expected[2]:
+            return f"Greenhouse requisition URL identifies {expected[2]} but enriched source identifies {clean_text(payload.get('id'))}"
+        return ""
+
+    @staticmethod
+    def _mismatch_job_id(job:Job)->str:
+        value="|".join((norm(job.company),norm(job.title),remote_identity_bucket(job.location_raw),job.source_site,norm(job.source_job_id or job.canonical_url or job.apply_url)))
+        return "J"+hashlib.sha256(value.encode("utf-8",errors="ignore")).hexdigest()[:14].upper()
 
     def _insert_version(self,jid:str,snap:dict[str,Any],h:str,job:Job,ok:str,diff:dict[str,Any],reason:str):
         n=int(self.conn.execute("SELECT COALESCE(MAX(version_no),0)+1 n FROM job_versions WHERE job_id=?",(jid,)).fetchone()["n"])
@@ -1295,9 +1414,24 @@ class PrecisionStore(c.Store):
                 (jid,version_id,field,json.dumps(change.get("old"),ensure_ascii=False),json.dumps(change.get("new"),ensure_ascii=False),observed))
 
     def upsert(self,job:Job,run_id:Optional[int]=None,commit:bool=True)->str:
-        now=now_iso(); jid=self.resolve_job_id(job); ok=occurrence_key(job); snap=source_snapshot(job); h=snapshot_hash(snap)
+        now=now_iso(); jid=self.resolve_job_id(job); ok=occurrence_key(job)
         board=clean_text((job.raw or {}).get("_board") or (job.raw or {}).get("board") or "")
         existing=self.conn.execute("SELECT * FROM jobs WHERE job_id=?",(jid,)).fetchone()
+        mismatch=clean_text((job.raw or {}).get("_reconciliation_identity_mismatch") or "") if isinstance(job.raw,dict) else ""
+        if mismatch:
+            ok="O"+hashlib.sha256((ok+"|identity-mismatch|"+mismatch).encode("utf-8",errors="ignore")).hexdigest()[:18].upper()
+            job.source_verification="identity_mismatch"; job.source_verification_reason=mismatch; job.canonical_verified=0
+            job.source_confidence=min(float(getattr(job,"source_confidence",0) or 0),55.0)
+            job.verified_application_url=""
+            gates=dict(getattr(job,"qualification_gates",{}) or {})
+            gates["source_identity"]={"status":"fail","evidence":mismatch}
+            job.qualification_gates=gates; job.recommendation="SKIP_HARD_GATE"
+            if mismatch not in job.hard_reject_reasons: job.hard_reject_reasons.append(mismatch)
+            apply_evidence_readiness(job)
+            job.recommendation="SKIP_HARD_GATE"
+            job.score_reasons=list(getattr(job,"score_reasons",[]))+["source identity mismatch: "+mismatch]
+        snap=source_snapshot(job); h=snapshot_hash(snap)
+        role_values=self._merged_url_role_values(existing,job)
         if existing is not None:
             application_status=clean_text(existing["application_status"] or "NEW").upper()
             setattr(job,"application_status",application_status)
@@ -1311,7 +1445,7 @@ class PrecisionStore(c.Store):
         if existing is None:
             vals={
                 "job_id":jid,**{k:snap[k] for k in ("title","company","location_raw","canonical_url","apply_url","remote_status","employment_type","salary_text","salary_min","salary_max","salary_currency","salary_period","posted_at","description","category")},
-                "tags_json":json.dumps(snap["tags"],ensure_ascii=False),**self._strategy_values(job),
+                "tags_json":json.dumps(snap["tags"],ensure_ascii=False),**role_values,**self._strategy_values(job),
                 "first_seen":now,"last_seen":now,"current_content_hash":h,"canonical_source_site":job.source_site,
                 "canonical_source_confidence":incoming_conf,"canonical_occurrence_key":ok,"last_changed_at":now,"change_status":"NEW","update_count":0,
                 "is_active":0 if clean_text(getattr(job,"posting_status","unknown"))=="closed" else 1,
@@ -1325,13 +1459,16 @@ class PrecisionStore(c.Store):
             same_canonical_occurrence=clean_text(existing["canonical_occurrence_key"])==ok
             authoritative=same_canonical_occurrence or incoming_conf>old_conf or not clean_text(existing["description"])
             sv=self._strategy_values(job)
+            role_sets=",".join(f"{key}=?" for key in role_values)
+            role_args=[role_values[key] for key in role_values]
             # Strategy fields are refreshed only from an authoritative/current source; a low-quality mirror cannot degrade the canonical score.
             if authoritative:
                 sets=[]; args=[]
                 for k,v in sv.items(): sets.append(f"{k}=?"); args.append(v)
+                sets.extend(f"{key}=?" for key in role_values); args.extend(role_args)
                 args.extend([now,jid]); self.conn.execute(f"UPDATE jobs SET {','.join(sets)},last_seen=? WHERE job_id=?",args)
             else:
-                self.conn.execute("UPDATE jobs SET last_seen=? WHERE job_id=?",(now,jid))
+                self.conn.execute(f"UPDATE jobs SET {role_sets},last_seen=? WHERE job_id=?",[ *role_args,now,jid])
             reopened=bool(existing["is_active"]==0 and clean_text(getattr(job,"posting_status","unknown"))!="closed" and authoritative)
             if authoritative and (h!=oldh or reopened):
                 d=diff_snapshots(oldsnap,snap)
@@ -1351,23 +1488,44 @@ class PrecisionStore(c.Store):
         provenance={key:clean_text((job.raw or {}).get(key) or "") for key in (
             "strategy_profile","strategy_profile_version","query_family","query_kind","query_pass")}
         provenance["initial_order"]=int((job.raw or {}).get("initial_order") or 0)
+        occurrence_roles=self._url_role_values(job)
+        occurrence_source_url=occurrence_roles.get("board_detail_url") or occurrence_roles.get("discovery_url") or job.canonical_url
+        occurrence_states={
+            "identity_evidence_state":clean_text(getattr(job,"identity_evidence_state","MISSING")),
+            "detail_evidence_state":clean_text(getattr(job,"detail_evidence_state","MISSING")),
+            "requirements_evidence_state":clean_text(getattr(job,"requirements_evidence_state","MISSING")),
+            "source_verification_state":clean_text(getattr(job,"source_verification","unverified_discovery")),
+            "application_destination_verification_state":clean_text(getattr(job,"application_destination_verification_state","MISSING")),
+            "evidence_readiness_state":clean_text(getattr(job,"evidence_readiness_state","REVIEW")),
+            "evidence_missing_json":json.dumps(getattr(job,"evidence_missing",[]),ensure_ascii=False,sort_keys=True),
+            "evidence_blocking_json":json.dumps(getattr(job,"evidence_blocking",[]),ensure_ascii=False,sort_keys=True),
+        }
         occ=self.conn.execute("SELECT * FROM source_occurrences WHERE occurrence_key=?",(ok,)).fetchone()
         if occ:
             self.conn.execute("""UPDATE source_occurrences SET job_id=?,source_url=?,apply_url=?,raw_json=?,last_seen=?,seen_count=seen_count+1,
                 source_board=?,content_hash=?,is_active=1,missed_complete_scans=0,last_seen_run_id=?,strategy_profile=?,
-                strategy_profile_version=?,query_family=?,query_kind=?,query_pass=?,initial_order=? WHERE occurrence_key=?""",
-                (jid,job.canonical_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),now,board,h,run_id,
+                strategy_profile_version=?,query_family=?,query_kind=?,query_pass=?,initial_order=?,
+                discovery_url=?,board_detail_url=?,observed_board_apply_url=?,employer_job_url=?,ats_requisition_url=?,verified_application_url=?,
+                identity_evidence_state=?,detail_evidence_state=?,requirements_evidence_state=?,source_verification_state=?,
+                application_destination_verification_state=?,evidence_readiness_state=?,evidence_missing_json=?,evidence_blocking_json=?
+                WHERE occurrence_key=?""",
+                (jid,occurrence_source_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),now,board,h,run_id,
                  provenance["strategy_profile"],provenance["strategy_profile_version"],provenance["query_family"],
-                 provenance["query_kind"],provenance["query_pass"],provenance["initial_order"],ok))
+                 provenance["query_kind"],provenance["query_pass"],provenance["initial_order"],
+                 *occurrence_roles.values(),*occurrence_states.values(),ok))
         else:
             self.conn.execute("""INSERT INTO source_occurrences(
                 occurrence_key,job_id,source_site,source_job_id,source_url,apply_url,raw_json,first_seen,last_seen,
                 seen_count,source_board,content_hash,is_active,missed_complete_scans,last_seen_run_id,strategy_profile,
-                strategy_profile_version,query_family,query_kind,query_pass,initial_order
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (ok,jid,job.source_site,job.source_job_id,job.canonical_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),
+                strategy_profile_version,query_family,query_kind,query_pass,initial_order,
+                discovery_url,board_detail_url,observed_board_apply_url,employer_job_url,ats_requisition_url,verified_application_url,
+                identity_evidence_state,detail_evidence_state,requirements_evidence_state,source_verification_state,
+                application_destination_verification_state,evidence_readiness_state,evidence_missing_json,evidence_blocking_json
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (ok,jid,job.source_site,job.source_job_id,occurrence_source_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),
                  now,now,1,board,h,1,0,run_id,provenance["strategy_profile"],provenance["strategy_profile_version"],
-                 provenance["query_family"],provenance["query_kind"],provenance["query_pass"],provenance["initial_order"]))
+                 provenance["query_family"],provenance["query_kind"],provenance["query_pass"],provenance["initial_order"],
+                 *occurrence_roles.values(),*occurrence_states.values()))
         self.conn.execute("UPDATE jobs SET seen_count=seen_count+? WHERE job_id=?",(0 if existing is None else 1,jid))
         if commit: self.conn.commit()
         return status
@@ -1484,7 +1642,7 @@ def jsoncol(row: sqlite3.Row,key:str)->list[Any]:
 
 def select_daily_plan(rows:list[sqlite3.Row],strategy:dict[str,Any],target:Optional[int]=None,empirical_boosts:Optional[dict[str,float]]=None)->list[sqlite3.Row]:
     tc=strategy.get("strategy",{}).get("throughput",{}); target=int(target or tc.get("daily_target",15)); target=max(int(tc.get("daily_minimum",10)),min(int(tc.get("daily_maximum",20)),target))
-    elig=[r for r in rows if int(r["is_active"] or 0)==1 and clean_text(r["posting_status"])!="closed" and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}]
+    elig=[r for r in rows if int(r["is_active"] or 0)==1 and clean_text(r["posting_status"])!="closed" and norm(r["application_status"])=="new" and clean_text(r["evidence_readiness_state"])=="READY" and clean_text(r["qualification_readiness_state"])=="READY" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}]
     rank={"APPLY_NOW":0,"APPLY_VOLUME":1,"HIGH_VALUE_STRETCH":2}; empirical_boosts=empirical_boosts or {}; elig.sort(key=lambda r:(rank.get(r["recommendation"],9),-((r["application_priority_score"] or 0)+empirical_boosts.get(norm(r["normalized_title_family"] or r["title"]),0.0)),-(r["door_score"] or 0),-(r["qualification_score"] or 0),-(r["relevance_score"] or 0)))
     out=[]; selected=set(); cc={}; fc={}; maxc=int(tc.get("max_same_company_per_day",2)); maxf=int(tc.get("max_same_title_family_per_day",4)); p3_limit=int(target*float(tc.get("p3_max_percent",5))/100); p3_count=0
     # Pass 1: maximize diversity while keeping the strongest recommendations first.
@@ -1541,7 +1699,7 @@ def progress_summary(store:PrecisionStore,strategy:dict[str,Any])->str:
       SUM(CASE WHEN screen_at IS NOT NULL THEN 1 ELSE 0 END) screens,
       SUM(CASE WHEN interview_at IS NOT NULL THEN 1 ELSE 0 END) interviews,
       SUM(CASE WHEN offer_at IS NOT NULL THEN 1 ELSE 0 END) offers,
-      SUM(CASE WHEN is_active=1 AND upper(application_status)='NEW' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH') THEN 1 ELSE 0 END) reservoir
+      SUM(CASE WHEN is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH') THEN 1 ELSE 0 END) reservoir
       FROM jobs""").fetchone()
     goal=int(strategy.get("strategy",{}).get("throughput",{}).get("cumulative_application_goal",500)); target=int(strategy.get("strategy",{}).get("throughput",{}).get("daily_target",15)); applied=int(r["applied"] or 0); reservoir=int(r["reservoir"] or 0)
     remaining=max(0,goal-applied); days=(remaining+target-1)//target if target else 0; runway=reservoir/target if target else 0
@@ -1615,20 +1773,20 @@ def export_updates(store:PrecisionStore,out:Path)->None:
 
 def export_all(store:PrecisionStore,out:Path,strategy:dict[str,Any],config:dict[str,Any],mode:str):
     out.mkdir(parents=True,exist_ok=True); rows=store.rows()
-    fields=["job_id","change_status","last_changed_at","update_count","is_active","recommendation","application_priority_score","door_score","landing_score","career_score","relevance_score","qualification_score","urgency_score","application_friction_score","eligibility_confidence","remote_confidence","source_confidence","extraction_confidence","title","company","location_raw","salary_text","posted_at","posting_status","application_deadline","normalized_title_family","career_lane","search_profile","resume_variant","remote_gate","employment_type","employment_class","employment_reason","source_verification","source_verification_reason","canonical_verified","recall_reason","travel_percent","timezone_requirement","work_auth_gate","work_authorization_requirement","salary_annual_mid","canonical_source_site","canonical_url","apply_url","application_status","notes","first_seen","last_seen"]
+    fields=["job_id","change_status","last_changed_at","update_count","is_active","recommendation","application_priority_score","door_score","landing_score","career_score","relevance_score","qualification_score","urgency_score","application_friction_score","eligibility_confidence","remote_confidence","source_confidence","extraction_confidence","title","company","location_raw","salary_text","posted_at","posting_status","application_deadline","normalized_title_family","career_lane","search_profile","resume_variant","remote_gate","employment_type","employment_class","employment_reason","source_verification","source_verification_reason","canonical_verified","recall_reason","travel_percent","timezone_requirement","work_auth_gate","work_authorization_requirement","salary_annual_mid","canonical_source_site","canonical_url","apply_url","discovery_url","board_detail_url","observed_board_apply_url","employer_job_url","ats_requisition_url","verified_application_url","identity_evidence_state","detail_evidence_state","requirements_evidence_state","source_verification_state","application_destination_verification_state","evidence_readiness_state","qualification_readiness_state","evidence_missing_json","evidence_blocking_json","evidence_readiness_json","application_status","notes","first_seen","last_seen"]
     for name,pred in [
         ("all_discovered",lambda r:True),
         ("active_jobs",lambda r:int(r["is_active"] or 0)==1),
         ("candidate_universe",lambda r:int(r["is_active"] or 0)==1 and float(r["relevance_score"] or 0)>=65),
         ("qualified_universe",lambda r:int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH","REVIEW","REVIEW_REMOTE","VERIFY_SOURCE","REVIEW_EMPLOYMENT"}),
-        ("application_reservoir",lambda r:int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}),
+        ("application_reservoir",lambda r:int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["evidence_readiness_state"]=="READY" and r["qualification_readiness_state"]=="READY" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"}),
         ("verification_queue",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="VERIFY_SOURCE"),
         ("employment_review",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="REVIEW_EMPLOYMENT"),
         ("contract_review",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="CONTRACT_REVIEW"),
         ("part_time_review",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="PART_TIME_REVIEW"),
-        ("apply_now",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="APPLY_NOW"),
-        ("apply_volume",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="APPLY_VOLUME"),
-        ("stretch",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"]=="HIGH_VALUE_STRETCH"),
+        ("apply_now",lambda r:int(r["is_active"] or 0)==1 and r["evidence_readiness_state"]=="READY" and r["qualification_readiness_state"]=="READY" and r["recommendation"]=="APPLY_NOW"),
+        ("apply_volume",lambda r:int(r["is_active"] or 0)==1 and r["evidence_readiness_state"]=="READY" and r["qualification_readiness_state"]=="READY" and r["recommendation"]=="APPLY_VOLUME"),
+        ("stretch",lambda r:int(r["is_active"] or 0)==1 and r["evidence_readiness_state"]=="READY" and r["qualification_readiness_state"]=="READY" and r["recommendation"]=="HIGH_VALUE_STRETCH"),
         ("review",lambda r:int(r["is_active"] or 0)==1 and r["recommendation"] in {"REVIEW","REVIEW_REMOTE"}),
         ("closed",lambda r:int(r["is_active"] or 0)==0),
     ]:
@@ -1651,7 +1809,7 @@ def export_all(store:PrecisionStore,out:Path,strategy:dict[str,Any],config:dict[
     for r in rows:
         recs[r["recommendation"]]=recs.get(r["recommendation"],0)+1; lanes[r["career_lane"] or "unclassified"]=lanes.get(r["career_lane"] or "unclassified",0)+1
     for o in store.conn.execute("SELECT source_site,COUNT(*) n FROM source_occurrences GROUP BY source_site"): sources[o["source_site"]]=o["n"]
-    reservoir=sum(1 for r in rows if int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"})
+    reservoir=sum(1 for r in rows if int(r["is_active"] or 0)==1 and norm(r["application_status"])=="new" and r["evidence_readiness_state"]=="READY" and r["qualification_readiness_state"]=="READY" and r["recommendation"] in {"APPLY_NOW","APPLY_VOLUME","HIGH_VALUE_STRETCH"})
     changes=store.conn.execute("SELECT COUNT(*) n FROM jobs WHERE change_status IN ('NEW','UPDATED') AND (change_ack_at IS NULL OR change_ack_at<last_changed_at)").fetchone()["n"]
     report=["# Search Run Market Report",f"Generated: {now_iso()}",f"Total canonical jobs retained: **{len(rows)}**",f"Active qualified application reservoir: **{reservoir}**",f"Unacknowledged new/updated jobs: **{changes}**",f"Daily application slate: **{len(picked)}**",progress_summary(store,strategy),"\n## Recommendation counts"]+[f"- {k}: {v}" for k,v in sorted(recs.items(),key=lambda x:-x[1])]+["\n## Career lanes"]+[f"- {k}: {v}" for k,v in sorted(lanes.items(),key=lambda x:-x[1])]+["\n## Source occurrences"]+[f"- {k}: {v}" for k,v in sorted(sources.items(),key=lambda x:-x[1])]
     (out/"market_report.md").write_text("\n".join(report)+"\n",encoding="utf-8")
@@ -1675,6 +1833,11 @@ def print_summary(store:PrecisionStore):
 
 def enrich_public_jsonld(client:HttpClient,job:Job)->Job:
     """Best-effort public JobPosting JSON-LD enrichment for ATSs not covered by core adapters."""
+    if isinstance(job.raw,dict):
+        job.raw.setdefault("discovery_url",job.canonical_url)
+        if job.source_site in BOARD_SITES:
+            job.raw.setdefault("board_detail_url",job.canonical_url)
+            if job.apply_url and job.apply_url!=job.canonical_url: job.raw.setdefault("observed_board_apply_url",job.apply_url)
     url=job.apply_url or job.canonical_url
     if not url or is_restricted_url(url): return job
     try:
@@ -1710,6 +1873,8 @@ def enrich_public_jsonld(client:HttpClient,job:Job)->Job:
         job.title=clean_text(jp.get("title") or job.title); job.company=clean_text(org.get("name") if isinstance(org,dict) else org) or job.company
         job.location_raw=clean_text(loc) or job.location_raw; job.description=strip_html(jp.get("description")) or job.description; job.posted_at=clean_text(jp.get("datePosted") or job.posted_at)
         job.employment_type=clean_text(jp.get("employmentType") or job.employment_type)
+        if clean_text(jp.get("url")): job.employer_job_url=canonical_url(clean_text(jp.get("url")))
+        if clean_text(jp.get("applicationUrl") or jp.get("applyUrl")): job.apply_url=canonical_url(clean_text(jp.get("applicationUrl") or jp.get("applyUrl")))
         job.raw["jsonld_enrichment"]=jp
     except Exception as e: job.raw["jsonld_enrichment_error"]=str(e)
     return job
@@ -1717,16 +1882,8 @@ def enrich_public_jsonld(client:HttpClient,job:Job)->Job:
 
 
 def ats_identity(url:str)->tuple[str,str]:
-    try:
-        p=urllib.parse.urlsplit(url); host=(p.hostname or "").lower(); parts=[urllib.parse.unquote(x) for x in p.path.split("/") if x]
-        if ("greenhouse.io" in host or "greenhouse.com" in host) and parts:
-            # job-boards.greenhouse.io/<board>/jobs/<id>
-            return "greenhouse",parts[0]
-        if "jobs.ashbyhq.com" in host and parts: return "ashby",parts[0]
-        if "jobs.lever.co" in host and parts: return "lever",parts[0]
-        if ("jobs.smartrecruiters.com" in host or "careers.smartrecruiters.com" in host) and parts: return "smartrecruiters",parts[0]
-    except Exception: pass
-    return "",""
+    site,board,_=ats_url_identity(url)
+    return site,board
 
 
 def load_ats_watch(path:Path,max_boards:int)->dict[str,list[dict[str,Any]]]:
@@ -2270,7 +2427,7 @@ def build_retrieval_audit(store:PrecisionStore,out:Path)->Path:
     candidate=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND COALESCE(relevance_score,0)>=65")
     relevant=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND COALESCE(relevance_score,0)>=65 AND recommendation NOT IN ('OUT_OF_SCOPE','SKIP_HARD_GATE','SKIP_SOURCE')")
     qualified=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND COALESCE(qualification_score,0)>=68")
-    reservoir=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
+    reservoir=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
     blank=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND LENGTH(TRIM(COALESCE(description,'')))<120")
     remote_pass=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='pass'")
     remote_reject=scalar("SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='reject'")

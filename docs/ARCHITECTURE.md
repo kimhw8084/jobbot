@@ -71,6 +71,19 @@ orders expensive detail work; recall negatives remain durable and sampled for
 later QA. The explicit `re-enrich` command switches a user-requested run to
 `enrichment_mode=all`.
 
+The CHG-113 ledger extension keeps the original discovery URL, board detail URL,
+observed board apply action, employer job page, ATS requisition URL, and
+verified final application destination in separate fields on canonical jobs
+and source occurrences. A board URL or board-internal apply action is never a
+verified application destination. Evidence readiness records identity/card,
+substantive detail, requirements, source, and application-destination states,
+plus observed evidence, missing items, blockers, and the final readiness
+decision. Actionable recommendations and their export/daily-plan surfaces
+require both evidence readiness and all existing CHG-170 qualification gates.
+Trusted detail changes flow through the existing score then ledger upsert path;
+strategy-only rescoring updates derived state without manufacturing an
+employer-content version.
+
 Requested and observed search URLs are stored separately. Redirects and lost
 query context are `INCOMPLETE` recovery states, never exhaustion. Bridge
 retries use the same request identity and bounded attempts for transient local

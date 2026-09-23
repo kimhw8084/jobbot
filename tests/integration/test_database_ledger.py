@@ -20,7 +20,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 19)))
+            self.assertEqual(result.applied, tuple(range(1, 20)))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -39,6 +39,9 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 self.assertTrue({"cards_extracted", "cards_persistence_succeeded", "execution_rank", "phase"} <= task_fields)
                 self.assertTrue({"strategy_profile", "query_family", "query_kind", "query_pass", "initial_order"} <= task_fields)
                 self.assertTrue({"strategy_profile", "query_family", "query_kind", "query_pass", "initial_order"} <= occurrence_fields)
+                job_fields = {row[1] for row in conn.execute("PRAGMA table_info(jobs)")}
+                self.assertTrue({"discovery_url", "board_detail_url", "observed_board_apply_url", "employer_job_url", "ats_requisition_url", "verified_application_url"} <= job_fields)
+                self.assertTrue({"identity_evidence_state", "detail_evidence_state", "requirements_evidence_state", "source_verification_state", "application_destination_verification_state", "evidence_readiness_state", "qualification_readiness_state", "evidence_readiness_json"} <= job_fields)
                 self.assertEqual(conn.execute("SELECT type FROM sqlite_master WHERE name='extension_refresh_requests'").fetchone()[0], "table")
                 refresh_fields = {row[1] for row in conn.execute("PRAGMA table_info(extension_refresh_requests)")}
                 self.assertTrue({"observed_source_identity", "observed_deployment_root", "diagnostics_json"} <= refresh_fields)
@@ -84,9 +87,9 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
             conn = Database(bundle).connect()
             self.assertTrue(fallback_activation_enabled(conn, bundle.runtime))
             conn.executemany(
-                """INSERT INTO jobs(job_id,remote_gate,recommendation,application_status,is_active,posting_status,first_seen,last_seen)
-                   VALUES(?,?,?,?,?,?,?,?)""",
-                [(f"reservoir-{index}", "pass", "APPLY_NOW", "NEW", 1, "", "2026-09-14T00:00:00+00:00", "2026-09-14T00:00:00+00:00") for index in range(50)],
+                """INSERT INTO jobs(job_id,remote_gate,recommendation,application_status,is_active,posting_status,first_seen,last_seen,evidence_readiness_state,qualification_readiness_state)
+                   VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                [(f"reservoir-{index}", "pass", "APPLY_NOW", "NEW", 1, "", "2026-09-14T00:00:00+00:00", "2026-09-14T00:00:00+00:00", "READY", "READY") for index in range(50)],
             )
             conn.commit()
             self.assertFalse(fallback_activation_enabled(conn, bundle.runtime))

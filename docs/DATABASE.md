@@ -13,10 +13,20 @@ were historically marked `COMPLETE` become `RETRYABLE`/missing-content rows,
 while job versions and sightings remain unchanged. Use `jobbot re-enrich` only
 after a user decision; it requeues incomplete content and never deletes history.
 
+Migration 19 adds the CHG-113 evidence-readiness contract. Canonical jobs and
+their source occurrences keep separate URL roles for discovery, board detail,
+observed board apply action, employer job page, public ATS requisition, and
+verified final application destination. `evidence_readiness_json` records
+observed evidence, missing items, blockers, and both evidence and qualification
+readiness decisions. Old actionable labels are held at `REVIEW` until the
+versioned scoring pass recalculates them against the current strategy.
+
 Important interpretations:
 
 - `remote_required` is query intent. `remote_evidence_state=OBSERVED` requires observed detail evidence; missing location is `UNKNOWN`.
 - `apply_url` is populated only for a distinct observed application destination. A LinkedIn/Indeed/Glassdoor board URL is not application verification.
+- `verified_application_url` is populated only after employer/public ATS provenance is verified and identity matches. `application_destination_verification_state` distinguishes `VERIFIED_ATS`, `VERIFIED_EMPLOYER`, `OBSERVED_UNVERIFIED`, `BOARD_ONLY`, `MISSING`, and `IDENTITY_MISMATCH`; the compatibility `apply_destination_state` remains an observation-only field.
+- `evidence_readiness_state='READY'` requires complete identity and substantive detail, supported requirements and responsibility/domain evidence, canonical employer/ATS verification, and a verified application destination. `qualification_readiness_state='READY'` also requires every CHG-170 qualification gate to pass. Only rows ready on both states enter application exports or daily plans.
 - `detail_status=COMPLETE` is content-complete only when `content_state=COMPLETE`.
 
 Before pending migrations on an existing database, JobBot runs `PRAGMA integrity_check`, creates a consistent backup with SQLite’s online backup API under `data/backups/`, applies idempotent migrations, and runs another integrity check. It never uses a naïve copy of an active SQLite file.

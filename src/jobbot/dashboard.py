@@ -29,6 +29,11 @@ TABLE_COLUMNS = (
     "relevance_score", "qualification_score", "landing_score", "career_score", "door_score",
     "resume_variant", "application_status", "change_status", "description_state", "content_state",
     "location_evidence_state", "remote_evidence_state", "apply_destination_state", "source_verification",
+    "discovery_url", "board_detail_url", "observed_board_apply_url", "employer_job_url",
+    "ats_requisition_url", "verified_application_url",
+    "identity_evidence_state", "detail_evidence_state", "requirements_evidence_state",
+    "source_verification_state", "application_destination_verification_state", "evidence_readiness_state", "qualification_readiness_state",
+    "evidence_missing_json", "evidence_blocking_json", "evidence_readiness_json",
     "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
 )
 
@@ -105,11 +110,12 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
         "remote_confirmed": "SELECT COUNT(*) FROM jobs WHERE remote_gate='pass' AND remote_evidence_state='OBSERVED'",
         "remote_review": "SELECT COUNT(*) FROM jobs WHERE remote_gate='review'",
         "remote_rejected": "SELECT COUNT(*) FROM jobs WHERE remote_gate='reject'",
-        "qualified": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')",
-        "apply_now": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_NOW'",
-        "apply_volume": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_VOLUME'",
-        "stretch": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation='HIGH_VALUE_STRETCH'",
+        "qualified": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')",
+        "apply_now": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation='APPLY_NOW'",
+        "apply_volume": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation='APPLY_VOLUME'",
+        "stretch": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND evidence_readiness_state='READY' AND qualification_readiness_state='READY' AND recommendation='HIGH_VALUE_STRETCH'",
         "reservoir": """SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='pass' AND upper(application_status)='NEW'
+          AND evidence_readiness_state='READY' AND qualification_readiness_state='READY'
           AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')
           AND upper(application_status) NOT IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED','WITHDRAWN','SKIP','CLOSED')""",
         "applied": "SELECT COUNT(*) FROM jobs WHERE upper(application_status) IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED')",
@@ -652,6 +658,9 @@ def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "
           r.title_hint,r.company_hint,r.location_hint,r.posted_text,r.posted_age_days,r.observed_at,
           r.detail_status,r.detail_attempts,r.detail_error,r.source_url,r.canonical_job_id,t.query_text,
           r.identity_status,r.card_metadata_status,r.content_state,r.enrichment_priority,r.recall_selected,r.recall_qa_sample,r.recall_reason,
+          r.discovery_url,r.board_detail_url,r.observed_board_apply_url,r.ats_requisition_url,r.verified_application_url,
+          r.identity_evidence_state,r.detail_evidence_state,r.requirements_evidence_state,r.source_verification_state,
+          r.application_destination_verification_state,r.evidence_readiness_state,r.evidence_missing_json,r.evidence_blocking_json,
           r.strategy_profile,r.strategy_profile_version,r.query_family,r.query_kind,r.query_pass,r.initial_order
           FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id""" + status_clause + " ORDER BY r.result_id DESC LIMIT ?", args,
     ).fetchall()
@@ -670,7 +679,7 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
     args: list[Any] = []
     view = one("view")
     if view == "actionable":
-        conditions.append("j.is_active=1 AND upper(j.application_status)='NEW' AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
+        conditions.append("j.is_active=1 AND upper(j.application_status)='NEW' AND j.evidence_readiness_state='READY' AND j.qualification_readiness_state='READY' AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
     elif view not in {"", "all"}:
         raise ValueError(f"unsupported jobs view: {view}")
     mappings = {
@@ -712,6 +721,11 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
       j.relevance_score,j.qualification_score,j.landing_score,j.career_score,j.door_score,
       j.resume_variant,j.application_status,j.change_status,j.description_state,j.content_state,
       j.location_evidence_state,j.remote_evidence_state,j.apply_destination_state,j.source_verification,
+      j.discovery_url,j.board_detail_url,j.observed_board_apply_url,j.employer_job_url,
+      j.ats_requisition_url,j.verified_application_url,
+      j.identity_evidence_state,j.detail_evidence_state,j.requirements_evidence_state,
+      j.source_verification_state,j.application_destination_verification_state,j.evidence_readiness_state,j.qualification_readiness_state,
+      j.evidence_missing_json,j.evidence_blocking_json,j.evidence_readiness_json,
       j.salary_annual_min,j.qualification_gates_json,j.preference_signals_json,j.preference_adjustment
       FROM jobs j WHERE {where} ORDER BY COALESCE(j.application_priority_score,j.door_score,0) DESC,j.last_seen DESC
       LIMIT ? OFFSET ?""", [*args, page_size, (page - 1) * page_size]).fetchall()

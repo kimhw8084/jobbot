@@ -24,6 +24,7 @@ def fallback_activation_enabled(conn: sqlite3.Connection, runtime: dict[str, Any
             WHERE is_active=1
               AND upper(COALESCE(posting_status,'')) <> 'CLOSED'
               AND remote_gate='pass'
+              AND evidence_readiness_state='READY'
               AND recommendation IN ({recommendation_marks})
               AND upper(COALESCE(application_status,'NEW')) NOT IN ({status_marks})""",
         (*ACTIONABLE_RECOMMENDATIONS, *TERMINAL_APPLICATION_STATUSES),

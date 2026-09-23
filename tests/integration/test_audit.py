@@ -53,7 +53,7 @@ class AuditIntegrationTests(unittest.TestCase):
             job_b = scored("Software Engineer", "Software engineering and backend development responsibilities. " * 20)
             store.upsert(job_a)
             store.upsert(job_b)
-            store.conn.execute("UPDATE jobs SET recommendation='APPLY_NOW',is_active=1 WHERE job_id=?", (job_a.job_id,))
+            store.conn.execute("UPDATE jobs SET recommendation='APPLY_NOW',is_active=1,evidence_readiness_state='READY',qualification_readiness_state='READY' WHERE job_id=?", (job_a.job_id,))
             store.conn.execute("UPDATE jobs SET recommendation='OUT_OF_SCOPE',is_active=1 WHERE job_id=?", (job_b.job_id,))
             task_one = store.conn.execute("SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? LIMIT 1", (run_one,)).fetchone()[0]
             task_two = store.conn.execute("SELECT task_id FROM browser_search_tasks WHERE browser_run_id=? LIMIT 1", (run_two,)).fetchone()[0]
