@@ -1,0 +1,567 @@
+{
+  "accepted_at": "2026-09-23T13:41:26Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 0,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 0,
+      "path": "docs/DATABASE.md",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "docs/SEARCH_PLAN.md",
+      "status": "M"
+    },
+    {
+      "additions": 75,
+      "deletions": 0,
+      "path": "docs/SEARCH_QUALITY.md",
+      "status": "A"
+    },
+    {
+      "additions": 14,
+      "deletions": 2,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 72,
+      "deletions": 14,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 22,
+      "deletions": 2,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 18,
+      "deletions": 5,
+      "path": "src/jobbot/exports.py",
+      "status": "M"
+    },
+    {
+      "additions": 7,
+      "deletions": 3,
+      "path": "src/jobbot/legacy_engine.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 36,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0020_chg114_search_quality.py",
+      "status": "A"
+    },
+    {
+      "additions": 111,
+      "deletions": 0,
+      "path": "src/jobbot/provenance.py",
+      "status": "A"
+    },
+    {
+      "additions": 94,
+      "deletions": 0,
+      "path": "src/jobbot/qualified_yield.py",
+      "status": "A"
+    },
+    {
+      "additions": 174,
+      "deletions": 0,
+      "path": "src/jobbot/search_ordering.py",
+      "status": "A"
+    },
+    {
+      "additions": 407,
+      "deletions": 0,
+      "path": "src/jobbot/search_quality.py",
+      "status": "A"
+    },
+    {
+      "additions": 158,
+      "deletions": 0,
+      "path": "src/jobbot/siblings.py",
+      "status": "A"
+    },
+    {
+      "additions": 14,
+      "deletions": 0,
+      "path": "src/jobbot/web/dashboard.css",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 2,
+      "path": "src/jobbot/web/dashboard.html",
+      "status": "M"
+    },
+    {
+      "additions": 16,
+      "deletions": 2,
+      "path": "src/jobbot/web/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 2,
+      "path": "tests/integration/test_chg112_production_integrity.py",
+      "status": "M"
+    },
+    {
+      "additions": 494,
+      "deletions": 0,
+      "path": "tests/integration/test_chg114_search_quality.py",
+      "status": "A"
+    },
+    {
+      "additions": 2,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 154,
+      "deletions": 0,
+      "path": "verification/CHG-114-r1.json",
+      "status": "A"
+    },
+    {
+      "additions": 175,
+      "deletions": 0,
+      "path": "verification/CHG-114-r2.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '1,280p' tests/unit/test_qualification_gates.py && rtk proxy sed -n '1,240p' tests/unit/test_chg113_evidence_readiness.py && rtk proxy sed -n '1,190p' tests/integration/test_browser_tasks.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '185,250p' tests/unit/test_qualification_gates.py && rtk proxy rg -n \\\"ALREADY_HANDLED|no_repeat\\\" tests/unit/test_qualification_gates.py tests/unit/test_chg113_evidence_readiness.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '265,315p' tests/unit/test_qualification_gates.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_dashboard_exports_application tests.integration.test_database_ledger tests.unit.test_chg113_evidence_readiness tests.unit.test_qualification_gates tests.unit.test_strategy tests.regression.test_scoring -q'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest discover -s tests -q'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy node --check src/jobbot/web/dashboard.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- src/jobbot/qualified_yield.py src/jobbot/search_ordering.py src/jobbot/search_quality.py src/jobbot/legacy_engine.py src/jobbot/web/dashboard.js src/jobbot/web/dashboard.html docs/SEARCH_QUALITY.md tests/integration/test_chg114_search_quality.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '1,240p' src/jobbot/qualified_yield.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '48,100p' src/jobbot/search_ordering.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '245,285p' src/jobbot/search_quality.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"chg114-search-quality-v1|chg114-yield-v1|qualified_yield\" src docs tests verification/CHG-114-r1.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --check && rtk git branch --show-current && rtk git rev-parse HEAD && rtk git merge-base --is-ancestor 16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add docs/SEARCH_QUALITY.md src/jobbot/legacy_engine.py src/jobbot/qualified_yield.py src/jobbot/search_ordering.py src/jobbot/search_quality.py src/jobbot/web/dashboard.html src/jobbot/web/dashboard.js tests/integration/test_chg114_search_quality.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"Fix CHG-114 trusted qualified yield\" && rtk git status --short --branch && rtk git rev-parse HEAD && rtk git show --stat --oneline --summary HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_dashboard_exports_application tests.integration.test_database_ledger tests.unit.test_chg113_evidence_readiness tests.unit.test_qualification_gates tests.unit.test_strategy tests.regression.test_scoring -q'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest discover -s tests -q'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy node --check src/jobbot/web/dashboard.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD && rtk git cat-file -p HEAD && rtk git merge-base e290106ebdceba6eecf8b2b381a4e45317e233b2 HEAD && rtk git merge-base --is-ancestor 16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-only e290106ebdceba6eecf8b2b381a4e45317e233b2..HEAD && rtk git status --short --branch && rtk git rev-parse main origin/main && rtk git ls-remote --heads origin codex/jobbot-CHG-114-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"jobs\\\\.sqlite3|database_path|PrecisionStore\\\\(\\\" tests\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '1,82p' tests/integration/test_database_ledger.py && rtk proxy sed -n '90,112p' tests/integration/test_validator.py && rtk proxy sed -n '45,65p' tests/integration/test_launcher_environment.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sed -n '1,95p' src/jobbot/config.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy ls -la data'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy ls -la /Users/haewonkim/.codex-fabric/repos/jobbot/data'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"PROJECT_ROOT|JOBBOT_ROOT|JOBBOT_DATABASE_PATH\" src/jobbot/config.py tests/integration/test_database_ledger.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"Database\\\\(|PrecisionStore\\\\(|Store\\\\(\\\" tests\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy mktemp -d /tmp/jobbot-chg114-r2.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git archive 76063ffabfe853deeed4752eb6f885becbe57a88 | rtk proxy tar -x -C '/tmp/jobbot-chg114-r2.QeqUKv'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy test ! -e data/jobs.sqlite3 && rtk proxy env PYTHONPATH=src python -m unittest tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_dashboard_exports_application tests.integration.test_database_ledger tests.unit.test_chg113_evidence_readiness tests.unit.test_qualification_gates tests.unit.test_strategy tests.regression.test_scoring -q'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy pwd && rtk proxy which python && rtk proxy which python3 && rtk proxy ls -la'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import sys; print(sys.executable)' && rtk proxy printenv PATH\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printenv PATH && rtk proxy /opt/anaconda3/bin/python -c 'import sys; print(sys.executable)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy test ! -e data/jobs.sqlite3 && rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_dashboard_exports_application tests.integration.test_database_ledger tests.unit.test_chg113_evidence_readiness tests.unit.test_qualification_gates tests.unit.test_strategy tests.regression.test_scoring -q'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy test ! -e data/jobs.sqlite3 && rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest discover -s tests -q'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import json; p=json.load(open(\\\"verification/CHG-114-r2.json\\\")); print(p[\\\"source_state\\\"][\\\"tested_r2_head\\\"], p[\\\"tests\\\"][\\\"focused_isolated_result\\\"], p[\\\"tests\\\"][\\\"full_isolated_result\\\"])'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-only 16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy rm -rf '/tmp/jobbot-chg114-r2.QeqUKv'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-114-r2.json && rtk git commit -m \"Record CHG-114-r2 verification evidence\" && rtk git rev-parse HEAD && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git log --oneline --decorate --graph -5 && rtk git merge-base --is-ancestor 16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c HEAD && rtk git rev-parse main origin/main && rtk git ls-remote --heads origin codex/jobbot-CHG-114-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push origin HEAD:refs/heads/codex/jobbot-CHG-114-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git ls-remote --heads origin codex/jobbot-CHG-114-r2 && rtk git rev-parse main origin/main && rtk git merge-base --is-ancestor 16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c refs/remotes/origin/codex/jobbot-CHG-114-r2 && rtk git show --stat --oneline --summary HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-6-luna",
+    "event_count": 232,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.24,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 15052800,
+      "fresh_input_tokens": 270104,
+      "input_tokens": 15322904,
+      "non_reasoning_output_tokens": 24286,
+      "output_tokens": 75347,
+      "reasoning_output_tokens": 51061,
+      "total_processed_tokens": 15398251
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "a3e4f1e72988540d29f8a6db6d8f46f7fcf38e3e",
+      "subject": "Record CHG-114-r2 verification evidence"
+    },
+    {
+      "sha": "76063ffabfe853deeed4752eb6f885becbe57a88",
+      "subject": "Fix CHG-114 trusted qualified yield"
+    },
+    {
+      "sha": "16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c",
+      "subject": "Record CHG-114-r1 verification evidence"
+    },
+    {
+      "sha": "239051b6dcdf382f54fd1a48b48f7e625108b018",
+      "subject": "Add evidence-aware search quality telemetry"
+    }
+  ],
+  "diff": {
+    "additions": 2071,
+    "changed_files": 25,
+    "commit_count": 4,
+    "deletions": 34
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 8,
+    "items": [
+      {
+        "bytes": 8841,
+        "path": "README.md",
+        "sha256": "af619c5efb539d0094ec7223049307e4061d0d35a398c30bd8838853e33ea4bd"
+      },
+      {
+        "bytes": 9358,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "87baec4244e0b661935d3dbb33c3908fdb5412735261810e704bd33c59612379"
+      },
+      {
+        "bytes": 4180,
+        "path": "docs/DATABASE.md",
+        "sha256": "a5c88e1e31c391e0068c1752225192eb39d08886e998be12f39adf09fc736b8c"
+      },
+      {
+        "bytes": 4272,
+        "path": "docs/SEARCH_PLAN.md",
+        "sha256": "5669240156fdf9f505d2d196adcc5b2ae94106cd16f7a6862eec9e7b6024a678"
+      },
+      {
+        "bytes": 11536,
+        "path": "docs/SEARCH_QUALITY.md",
+        "sha256": "8a0cc617bba225577a5fcc153b649cc1d2e799255a8303e8b0c51e0d09d18cea"
+      },
+      {
+        "bytes": 13122,
+        "path": "src/jobbot/web/dashboard.html",
+        "sha256": "6f8a39fd5e0c607e9472c9cb14e1fc3595760b46f85d25ae224b3f23a3b9a9c1"
+      },
+      {
+        "bytes": 11309,
+        "path": "verification/CHG-114-r1.json",
+        "sha256": "9d73b90e96a91128194926d9740d872ac90e4e09deb3e1cb5130c5242bcb96f9"
+      },
+      {
+        "bytes": 11911,
+        "path": "verification/CHG-114-r2.json",
+        "sha256": "5f203b750c348c2d8b1c9247dc28de3473d2420bf89e4f91ae6232ebcc83c450"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-23T14:08:03Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "branch": "codex/jobbot-CHG-114-r2",
+    "detached_verify": false,
+    "head_sha": "a3e4f1e72988540d29f8a6db6d8f46f7fcf38e3e",
+    "remote_exact_head": true,
+    "remote_head_sha": "a3e4f1e72988540d29f8a6db6d8f46f7fcf38e3e",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "work_branch": "codex/jobbot-CHG-114-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-24f203b709c687e9ba544300",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-114-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-114-r2"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-114-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-23T13:41:26Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1597,
+    "queue_seconds": 0,
+    "total_seconds": 1597
+  },
+  "transport": {
+    "bytes": 6370,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 6091,
+    "prompt_sha256": "a23d0c982f4109b6cb908cdf43f69cba92a47835365fd85d69cc0d41364dbc01",
+    "sha256": "24f203b709c687e9ba5443007303fe5027be1dfac0980d697c7829bec1bdb460"
+  }
+}
