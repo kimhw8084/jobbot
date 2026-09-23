@@ -1,0 +1,258 @@
+{
+  "request_binding": {
+    "change": "Project OS FIX for JobBot CHG-166-r5",
+    "repository": "kimhw8084/jobbot",
+    "target_branch": "codex/jobbot-CHG-166-r5",
+    "required_main_base": "c7590ceee393b8806d14b04903a100140c8f3019",
+    "exact_historical_candidate_to_reconcile": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+    "scope": "Carry forward only the missing CHG-166 .25 receiver-lifecycle semantics onto the exact integrated main base while preserving all later integrated behavior.",
+    "constraints": [
+      "Do not merge or move main.",
+      "Do not replace current-main runtime files wholesale with historical files.",
+      "Keep SQLite authoritative and application execution human-only.",
+      "Do not add challenge bypass, stealth, credential handling, cookie export, chrome.scripting injection, or focus theft.",
+      "Do not read or mutate production data/jobs.sqlite3.",
+      "Live LinkedIn, Indeed, and Glassdoor validation remains NOT_RUN in this FIX."
+    ]
+  },
+  "source_state": {
+    "base": "c7590ceee393b8806d14b04903a100140c8f3019",
+    "implementation_candidate_head": "45157baf6b226bfbb0fc90900a3d2d3583a3d06e",
+    "implementation_candidate_parent": "c7590ceee393b8806d14b04903a100140c8f3019",
+    "implementation_is_direct_child_of_required_base": true,
+    "historical_lineage": {
+      "old_base": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+      "candidate_24": "7b08666f7b169a78ec28653556d94db5437e8031",
+      "candidate_25_intermediate": "644542a66e9ca179ecc6577e7bc878a217593665",
+      "exact_candidate_25": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab",
+      "candidate_25_tree": "8bb6fa0dc734a7cf6c238140e9fd4cf6d840c9c8",
+      "r4_evidence_commit": "8bfada9fe2ee04d55f204760bef96bf6b5687e76",
+      "r4_evidence_parent": "638f2c1a19f2fdaef15daa7989eb3a9e1eedebab"
+    },
+    "remote_main_observed": "c7590ceee393b8806d14b04903a100140c8f3019",
+    "local_main_observed_after_implementation_commit": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "main_mutated_by_this_work": false,
+    "verification_artifact_is_follow_up_commit": true
+  },
+  "extension_build_identity": {
+    "version_name": "3.2.2-prod-ready.672cf88.26",
+    "historical_25_identity_reused": false,
+    "canonical_extension_key_preserved": true,
+    "refresh_and_deployment_identity_mechanisms_preserved": true
+  },
+  "semantic_reconciliation": [
+    {
+      "feature": "Declarative document_start receiver bootstrap on LinkedIn, Indeed, and Glassdoor, alongside existing document_idle platform scripts",
+      "classification": "PORTED",
+      "result": "The bootstrap is declared for all three primary platforms and does not perform card/detail persistence or business actions."
+    },
+    {
+      "feature": "Early receiver attachment observability while navigation is in progress and the platform receiver has not loaded",
+      "classification": "PORTED",
+      "result": "The bootstrap reports its attachment and can answer readiness/lifecycle probes before DOM readiness; the worker records accepted attachment evidence."
+    },
+    {
+      "feature": "Inspection deferred until the platform receiver and relevant DOM are ready",
+      "classification": "PORTED",
+      "result": "Pre-ready business inspection returns inspect_deferred. Readiness requires the platform receiver signal and a non-loading document."
+    },
+    {
+      "feature": "Receiver attachment, frame, document ID, document generation, and attachment sequence observability",
+      "classification": "PORTED",
+      "result": "Lifecycle diagnostics and recovery validation distinguish stale attachment evidence from a new document/generation and record successful inspection evidence."
+    },
+    {
+      "feature": "Pending-navigation, requested URL, platform, origin, and search-context validation",
+      "classification": "PORTED",
+      "result": "Recovery validates the effective pending target URL and exact owned tab/window/platform/search context before and throughout transitions, then revalidates the settled target."
+    },
+    {
+      "feature": "One bounded same-target reload for receiver loss",
+      "classification": "PRESENT_ALREADY",
+      "result": "Current main already had a bounded same-target reload; it remains in place and now must pass fresh attachment, document-generation, and context validation before resuming."
+    },
+    {
+      "feature": "Post-reload bounded readiness polling with generation checks",
+      "classification": "PORTED",
+      "result": "A bounded backoff wait accepts only fresh attachment evidence from the expected platform and a new document generation."
+    },
+    {
+      "feature": "At most one-for-one owned target regeneration after bounded receiver loss",
+      "classification": "PORTED",
+      "result": "One replacement attempt is allowed after same-target recovery; the replacement is validated before retiring the old owned target. No standalone detail tab is created."
+    },
+    {
+      "feature": "No accumulated windows/tabs, no focus theft, and preservation of existing search-tab ownership",
+      "classification": "PRESENT_ALREADY",
+      "result": "Current owned-target lifecycle and inactive-tab behavior remain authoritative; receiver recovery stays within those ownership rules."
+    },
+    {
+      "feature": "Resume only the same durable checkpoint after validating the new receiver/document generation",
+      "classification": "PORTED",
+      "result": "The current task checkpoint is preserved across reload/regeneration and is not resumed against a stale document, wrong origin, or wrong search context."
+    },
+    {
+      "feature": "Exactly-once card/detail persistence through SQLite identity and existing card-before-pane checkpoint semantics",
+      "classification": "PRESENT_ALREADY",
+      "result": "Current SQLite authority, source identity deduplication, and card-before-pane ordering remain intact and are exercised through recovery and regeneration."
+    },
+    {
+      "feature": "Receiver exhaustion remains incomplete/system-retryable while human site states remain fail-closed",
+      "classification": "PORTED",
+      "result": "Persistent receiver absence preserves the checkpoint and reports retryable/incomplete or unverified system state; challenge and sign-in states route to current human gates, while error/loading states do not become successful inspection."
+    },
+    {
+      "feature": "A receiver recovery or human gate on one platform does not stop healthy platform workers",
+      "classification": "PRESENT_ALREADY",
+      "result": "Platform workers remain independently supervised; the new LinkedIn recovery/challenge fixture confirms Indeed completes without target or focus leakage."
+    },
+    {
+      "feature": "Declarative content-script delivery without programmatic injection",
+      "classification": "PRESENT_ALREADY",
+      "result": "The extension continues to use manifest content scripts; repository checks assert chrome.scripting and executeScript are absent."
+    }
+  ],
+  "changed_files": [
+    "extension/common.js",
+    "extension/glassdoor.js",
+    "extension/indeed.js",
+    "extension/linkedin.js",
+    "extension/manifest.json",
+    "extension/receiver_bootstrap.js",
+    "extension/service_worker.js",
+    "tests/extension_bootstrap_compatibility_test.js",
+    "tests/extension_chg146_supervisor_test.js",
+    "tests/extension_receiver_bootstrap_test.js",
+    "tests/extension_service_worker_chg166_delayed_receiver_test.js",
+    "tests/extension_service_worker_receiver_isolation_test.js",
+    "tests/extension_service_worker_receiver_recovery_test.js",
+    "tests/extension_service_worker_receiver_regeneration_test.js",
+    "tests/extension_startup_lifecycle_test.js",
+    "tests/integration/test_extension_bridge.py",
+    "tests/integration/test_extension_refresh.py"
+  ],
+  "deterministic_receiver_fixtures": [
+    {
+      "file": "tests/extension_receiver_bootstrap_test.js",
+      "result": "PASS",
+      "proves": [
+        "document_start attachment and manifest coverage for all three primary platforms",
+        "query-value redaction and truthful pre-DOM deferral",
+        "post-hydration receiver readiness",
+        "no programmatic injection"
+      ]
+    },
+    {
+      "file": "tests/extension_service_worker_chg166_delayed_receiver_test.js",
+      "result": "PASS",
+      "proves": [
+        "delayed receiver readiness and bounded timeout",
+        "persistent absence preserves checkpoint and becomes system-retryable/incomplete",
+        "challenge, login, and context gates",
+        "card-before-pane exactly-once persistence",
+        "zero target/navigation deltas on timeout"
+      ]
+    },
+    {
+      "file": "tests/extension_service_worker_receiver_regeneration_test.js",
+      "result": "PASS",
+      "proves": [
+        "attachment/document generation changes",
+        "one same-target reload and at most one one-for-one replacement",
+        "pending navigation, wrong origin/context, stale generation, and replaced-target rejection",
+        "checkpoint continuity and deduplicated persistence",
+        "challenge/login/arbitrary-error classification",
+        "no focus change, no extra owned window/tab, and healthy Indeed behavior"
+      ]
+    },
+    {
+      "file": "tests/extension_service_worker_receiver_recovery_test.js",
+      "result": "PASS",
+      "proves": [
+        "bounded reload and retryable exhaustion",
+        "challenge/login/context routing and arbitrary-error fail-closed behavior",
+        "target-loss handling, one-window/one-tab evidence, and durable card-before-pane dedupe"
+      ]
+    },
+    {
+      "file": "tests/extension_service_worker_receiver_isolation_test.js",
+      "result": "PASS",
+      "proves": [
+        "Indeed completes while LinkedIn is in receiver recovery",
+        "LinkedIn challenge remains platform-local",
+        "no focus change, extra target, or standalone detail navigation"
+      ]
+    }
+  ],
+  "receiver_recovery_invariants": {
+    "same_target_reload_max": 1,
+    "owned_target_regeneration_max": 1,
+    "replacement_is_one_for_one_and_validated_before_old_target_retirement": true,
+    "accumulated_extra_windows": 0,
+    "accumulated_extra_tabs": 0,
+    "standalone_detail_navigation": false,
+    "focus_theft": false,
+    "checkpoint_continuity": true,
+    "duplicate_card_or_detail_persistence": false,
+    "wrong_origin_or_context_resume": false,
+    "production_sqlite_ledger_used": false
+  },
+  "current_main_invariants": {
+    "chg170_search_compiler_and_strategy": {
+      "result": "PASS",
+      "tests": 10,
+      "coverage": "broad search profile/query compilation, hard gates, provenance, and deterministic task strategy"
+    },
+    "chg170_chg114_deterministic_task_universe": {
+      "result": "PASS",
+      "tests": 12,
+      "ordered_search_tasks": 140,
+      "compiled_and_ordered_task_sets_equal": true,
+      "frozen_effective_ordering_and_sibling_clustering_preserved": true
+    },
+    "chg113_evidence_readiness": {
+      "result": "PASS",
+      "tests": 9,
+      "coverage": "direct-source/application provenance and post-enrichment readiness recalculation"
+    },
+    "qualification_gates": {
+      "result": "PASS",
+      "tests": 16,
+      "coverage": "substantive evidence gates, trusted qualified yield, and provenance behavior"
+    },
+    "current_bridge_lease_dashboard_and_runtime_tests": "PASS as part of the full repository Python/JavaScript deterministic suites"
+  },
+  "tests": {
+    "focused_extension_commands": [
+      "node --check extension/service_worker.js",
+      "node tests/extension_receiver_bootstrap_test.js",
+      "node tests/extension_service_worker_chg166_delayed_receiver_test.js",
+      "node tests/extension_service_worker_receiver_regeneration_test.js",
+      "node tests/extension_service_worker_receiver_recovery_test.js",
+      "node tests/extension_service_worker_target_lifecycle_test.js",
+      "node tests/extension_chg146_supervisor_test.js",
+      "node tests/extension_startup_lifecycle_test.js",
+      "node tests/extension_bootstrap_compatibility_test.js",
+      "node tests/extension_service_worker_receiver_isolation_test.js"
+    ],
+    "focused_extension_result": "PASS",
+    "full_javascript_command": "for f in tests/extension_*_test.js; do node \"$f\" || exit $?; done",
+    "full_javascript_checkout": "/tmp/jobbot-chg166-r5.gYbvTg (disposable copy; data/, out/, caches, and node_modules excluded)",
+    "full_javascript_result": "PASS",
+    "full_javascript_suites": 14,
+    "full_python_command": "python3 -m unittest discover -s tests -q (PYTHONPATH=<disposable-copy>/src)",
+    "full_python_checkout": "/tmp/jobbot-chg166-r5.gYbvTg (disposable copy; project data/ excluded)",
+    "full_python_result": "154 PASS, 0 SKIP",
+    "full_python_elapsed_seconds": 50.8,
+    "production_ledger": "NOT_USED",
+    "isolated_test_data": "Tests used only disposable fixtures/locations within the temporary checkout."
+  },
+  "validation_boundary": {
+    "live_big_3": "NOT_RUN",
+    "live_platform_or_chrome_actions": "NOT_RUN",
+    "production_data_jobs_sqlite3": "NOT_READ_NOT_MUTATED",
+    "programmatic_injection": "NOT_PRESENT",
+    "application_execution": "HUMAN_ONLY",
+    "verification_artifact_is_follow_up_commit": true
+  }
+}

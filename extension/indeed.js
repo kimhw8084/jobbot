@@ -95,4 +95,6 @@
   function advance(){const button=S.nextButtons.map(s=>document.querySelector(s)).find(Boolean);if(button){button.click();return{advanced:true,method:'click'};}return{advanced:false};}
   async function inspectJobEventually(){let last=inspectJob();for(let i=0;i<10&&last.page_type==='job'&&(!last.job?.title||!last.job?.description);i++){await new Promise(r=>setTimeout(r,500));last=inspectJob();}return last;}
   chrome.runtime.onMessage.addListener((m,_s,send)=>{if(m?.type==='JOBBOT_INSPECT_AUTH'){send(inspectAuth());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH'||m?.type==='JOBBOT_INSPECT_SEARCH_EVENTUALLY'){send(inspectSearch());return true;}if(m?.type==='JOBBOT_INSPECT_SEARCH_PANE'){inspectSearchPane(m.source_job_id,m.select!==false).then(send);return true;}if(m?.type==='JOBBOT_INSPECT_DETAIL'){inspectJobEventually().then(send);return true;}if(m?.type==='JOBBOT_INSPECT'){send(inspect());return true;}if(m?.type==='JOBBOT_SCROLL_AND_INSPECT'){C.scrollResults();setTimeout(()=>send(inspectSearch()),Math.max(500,Math.min(3000,Number(m.wait_ms||1200))));return true;}if(m?.type==='JOBBOT_ADVANCE_SEARCH'){const r=advance();setTimeout(()=>send({...r,page_url:location.href}),r.advanced?1200:0);return true;}return false;});
+  globalThis.JobBotPlatformReceiverReady=true;
+  globalThis.JobBotReceiverAttachment?.signalReady?.();
 })();
