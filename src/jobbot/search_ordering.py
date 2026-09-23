@@ -5,8 +5,9 @@ import math
 from dataclasses import asdict, dataclass
 from typing import Any, Iterable
 
+from .qualified_yield import trusted_qualified_yield
 
-ALGORITHM_VERSION = "chg114-yield-v1"
+ALGORITHM_VERSION = "chg114-yield-v2"
 
 
 @dataclass(frozen=True)
@@ -54,25 +55,38 @@ def _history(conn: Any, task: dict[str, Any], config: OrderingConfig) -> dict[st
         WHERE strategy_profile=? AND strategy_profile_version=? AND platform=? AND query_family=?
           AND query_kind=? AND query_pass=? AND task_key=? AND window_days=? AND phase=? AND query_text=?
           AND status NOT IN ('queued','running')""", params).fetchone()
-    result = conn.execute("""SELECT COUNT(DISTINCT CASE
-          WHEN r.detail_status IN ('COMPLETE','PARTIAL')
-           AND j.evidence_readiness_state IN ('READY','REVIEW','BLOCKED')
-           AND j.qualification_readiness_state IN ('READY','REVIEW','BLOCKED') THEN r.canonical_job_id END) evaluated,
-        COUNT(DISTINCT CASE WHEN j.evidence_readiness_state='READY'
-          AND j.qualification_readiness_state='READY'
-          AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')
-          THEN r.canonical_job_id END) qualified
+    rows = conn.execute("""SELECT r.canonical_job_id,r.detail_status,
+          j.evidence_readiness_state,j.qualification_readiness_state,j.recommendation,j.application_status,
+          j.identity_evidence_state,j.source_verification_state,j.source_verification,
+          j.application_destination_verification_state,j.remote_gate,j.employment_class,j.posting_status,j.is_active,
+          j.hard_reject_reasons_json,j.qualification_gates_json,j.evidence_readiness_json
         FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id
         JOIN jobs j ON j.job_id=r.canonical_job_id
         WHERE t.strategy_profile=? AND t.strategy_profile_version=? AND t.platform=? AND t.query_family=?
           AND t.query_kind=? AND t.query_pass=? AND t.task_key=? AND t.window_days=? AND t.phase=? AND t.query_text=?
-          AND t.status NOT IN ('queued','running')""", params).fetchone()
-    evaluated = int(result["evaluated"] or 0)
-    qualified = int(result["qualified"] or 0)
+          AND t.status NOT IN ('queued','running')""", params).fetchall()
+    evaluated_jobs: set[str] = set()
+    qualified_jobs: set[str] = set()
+    for raw in rows:
+        row = dict(raw)
+        job_id = str(row.get("canonical_job_id") or "")
+        if not job_id:
+            continue
+        if (
+            str(row.get("detail_status") or "").upper() in {"COMPLETE", "PARTIAL"}
+            and str(row.get("evidence_readiness_state") or "").upper() in {"READY", "REVIEW", "BLOCKED"}
+            and str(row.get("qualification_readiness_state") or "").upper() in {"READY", "REVIEW", "BLOCKED"}
+        ):
+            evaluated_jobs.add(job_id)
+        if trusted_qualified_yield(row):
+            qualified_jobs.add(job_id)
+    evaluated = len(evaluated_jobs)
+    qualified = len(qualified_jobs)
     cost = max(1, int(executions["cost"] or 0))
     cost_per_observation = cost / max(1, evaluated)
     return {
         "evaluated_jobs": evaluated, "qualified_jobs": qualified,
+        "trusted_qualified_yield_jobs": qualified,
         "execution_instances": int(executions["n"] or 0), "cost_units": cost,
         "cost_per_evaluated_job": cost_per_observation,
         "observed_yield_per_cost": qualified / cost,
@@ -137,7 +151,7 @@ def order_tasks(conn: Any, tasks: Iterable[dict[str, Any]], config: OrderingConf
                     learned = candidate != scores
                     if learned:
                         ordered = [item["task"] for item in candidate]
-                        reason = "learned: shrunk READY-qualified yield per search/detail cost; disjoint Wilson intervals"
+                        reason = "learned: shrunk trusted qualified yield per search/detail cost; disjoint Wilson intervals"
                     else:
                         reason = "baseline: trusted history supports current execution order"
         rank_slots = sorted(int(task.get("execution_rank") or 0) for task in baseline)
@@ -147,7 +161,7 @@ def order_tasks(conn: Any, tasks: Iterable[dict[str, Any]], config: OrderingConf
             task["effective_execution_rank"] = rank_slots[position] if learned else int(task.get("execution_rank") or 0)
             task["learned_order_reason"] = reason if not learned else (
                 f"{reason}; yield/cost={next((item['score'] for item in scores if item['task'] is task), 0):.6f}; "
-                f"sample={history.get('evaluated_jobs', 0)}, qualified={history.get('qualified_jobs', 0)}"
+                f"sample={history.get('evaluated_jobs', 0)}, trusted_qualified={history.get('trusted_qualified_yield_jobs', 0)}"
             )
             task["learned_order_sample_size"] = int(history.get("evaluated_jobs", 0))
             task["ordering_algorithm_version"] = ALGORITHM_VERSION

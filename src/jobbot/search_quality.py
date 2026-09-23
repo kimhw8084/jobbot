@@ -5,8 +5,9 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+from .qualified_yield import trusted_qualified_yield
 
-METRIC_DEFINITION_VERSION = "chg114-search-quality-v1"
+METRIC_DEFINITION_VERSION = "chg114-search-quality-v2"
 ACTIONABLE = {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"}
 VERIFIED_SOURCES = {"verified_direct_ats", "verified_canonical_ats", "verified_jsonld"}
 VERIFIED_DESTINATIONS = {"VERIFIED_ATS", "VERIFIED_EMPLOYER"}
@@ -97,7 +98,8 @@ def _accumulator() -> dict[str, Any]:
         "elapsed_seconds": 0.0, "elapsed_observations": 0,
         "source_verified_jobs": set(), "application_destination_verified_jobs": set(),
         "evidence_ready_jobs": set(), "qualification_ready_jobs": set(),
-        "actionable_jobs": set(), "hard_reject_jobs": set(), "review_jobs": set(),
+        "actionable_jobs": set(), "trusted_qualified_yield_jobs": set(),
+        "hard_reject_jobs": set(), "review_jobs": set(),
         "no_repeat_leakage_jobs": set(), "actionable_hard_reject_leakage_jobs": set(),
         "application_jobs": set(), "screen_jobs": set(), "interview_jobs": set(), "offer_jobs": set(),
         "challenge_task_ids": set(), "auth_task_ids": set(), "external_block_task_ids": set(),
@@ -121,6 +123,8 @@ def _record_job(acc: dict[str, Any], job: dict[str, Any], result: dict[str, Any]
     actionable = evidence_state == "READY" and qualification_state == "READY" and recommendation in ACTIONABLE
     if actionable:
         acc["actionable_jobs"].add(job_id)
+    if trusted_qualified_yield(job):
+        acc["trusted_qualified_yield_jobs"].add(job_id)
     try:
         hard_rejects = json.loads(str(job.get("hard_reject_reasons_json") or "[]"))
     except (TypeError, ValueError, json.JSONDecodeError):
@@ -166,10 +170,13 @@ def _public_metrics(acc: dict[str, Any]) -> dict[str, Any]:
     result["detail_completion_rate"] = _ratio(result.get("detail_completions", 0), result.get("detail_outcomes", 0))
     ready = int(result.get("evidence_ready_count", 0))
     qualified = int(result.get("actionable_count", 0))
+    trusted_qualified = int(result.get("trusted_qualified_yield_count", 0))
     reads = int(result.get("detail_reads", 0))
     result["detail_reads_per_evidence_ready"] = _ratio(reads, ready)
     result["detail_reads_per_actionable"] = _ratio(reads, qualified)
+    result["detail_reads_per_trusted_qualified_yield"] = _ratio(reads, trusted_qualified)
     result["cards_persisted"] = persisted
+    result["current_actionable_count"] = qualified
     result["unique_source_ids"] = int(result.get("source_ids", 0))
     result["unique_canonical_jobs"] = int(result.get("canonical_count", 0))
     result["recall_selected"] = int(result.get("recall_selected_count", 0))
@@ -182,6 +189,7 @@ def _public_metrics(acc: dict[str, Any]) -> dict[str, Any]:
     result["search_detail_cost_units"] = int(result.get("pages_visited", 0)) + reads
     result["cost_per_evidence_ready"] = _ratio(result["search_detail_cost_units"], ready)
     result["cost_per_actionable"] = _ratio(result["search_detail_cost_units"], qualified)
+    result["cost_per_trusted_qualified_yield"] = _ratio(result["search_detail_cost_units"], trusted_qualified)
     return result
 
 
@@ -245,7 +253,8 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
           r.recall_selected,r.recall_qa_sample,r.evidence_readiness_state result_evidence_readiness_state,
           j.evidence_readiness_state,j.qualification_readiness_state,j.recommendation,j.application_status,
           j.hard_reject_reasons_json,j.qualification_gates_json,j.source_verification_state,j.source_verification,
-          j.application_destination_verification_state
+          j.application_destination_verification_state,j.identity_evidence_state,j.remote_gate,j.employment_class,
+          j.posting_status,j.is_active,j.evidence_readiness_json
         FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id
         LEFT JOIN jobs j ON j.job_id=r.canonical_job_id ORDER BY r.result_id""").fetchall()
     first_touch: dict[tuple[Any, ...], tuple[tuple[Any, ...], tuple[Any, ...], tuple[tuple[int, float | str], int, int]]] = {}
@@ -384,7 +393,9 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
             "unique_source_ids": "Distinct (source_site, source_job_id), falling back to source_url, within the displayed grouping.",
             "unique_canonical_jobs": "Distinct linked canonical job_id within the displayed grouping.",
             "duplicate_sighting_ratio": "Sum(max(sighting_count-1, 0)) divided by total durable sightings.",
-            "qualified_yield": "Distinct jobs with evidence_readiness_state=READY, qualification_readiness_state=READY, and an actionable recommendation.",
+            "qualified_yield": "Distinct linked canonical jobs passing the versioned trusted intrinsic predicate using current durable evidence, source and destination verification, currentness, stable employment, no hard rejects, an actionable intrinsic scorer recommendation, and every substantive qualification gate. The no_repeat gate is excluded because it controls surfacing rather than intrinsic query quality.",
+            "current_actionable_count": "Current actionable reservoir: evidence and qualification readiness READY with an actionable current recommendation; application handling and no-repeat continue to prevent resurfacing.",
+            "trusted_qualified_yield_count": "Distinct linked canonical jobs passing the shared trusted intrinsic qualified-yield predicate, including handled jobs only while current substantive evidence remains qualified.",
             "funnel_attribution": "Each downstream canonical job-stage is credited once per strategy profile/version + platform + query family, to its earliest durable discovery in that group; duplicate sightings and later query touches do not multiply events.",
             "detail_cost": "Pages visited plus detail reads; cost per outcome is null when the outcome denominator is zero.",
         },

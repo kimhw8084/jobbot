@@ -15,10 +15,14 @@ from jobbot.config import ConfigBundle, PROJECT_ROOT, load_bundle
 from jobbot.dashboard import create_server, job_detail, query_jobs
 from jobbot.db import Database
 from jobbot.exports import export_selected
+from jobbot.application import mark
+from jobbot.legacy_engine import PrecisionStore, job_from_row
 from jobbot.provenance import field_provenance_summary
-from jobbot.search_ordering import OrderingConfig, order_tasks
+from jobbot.qualified_yield import REQUIRED_SUBSTANTIVE_GATES
+from jobbot.search_ordering import OrderingConfig, _history, order_tasks
 from jobbot.search_plan import compile_staged_plan
 from jobbot.search_quality import search_quality_metrics
+from jobbot.scoring import Job, score_job
 from jobbot.siblings import probable_sibling_clusters
 
 
@@ -66,26 +70,30 @@ class Chg114SearchQualityTests(unittest.TestCase):
             "jobbot-broad-qualified-yield", "1.0", family, kind, query_pass, 1, phase,
         )).lastrowid)
 
-    def job(self, job_id: str, *, ready: bool = True, company: str = "Example Health", title: str = "Patient Access Specialist", source_state: str = "verified_direct_ats", destination_state: str = "VERIFIED_ATS", recommendation: str | None = None, app_status: str = "NEW", qualification_gates: dict | None = None, posted_at: str = "2026-09-20T12:00:00+00:00", ats_url: str | None = None, identity_state: str = "COMPLETE", description: str = "Patient access enrollment, healthcare operations, documentation quality, and patient onboarding workflows.") -> None:
+    def job(self, job_id: str, *, ready: bool = True, company: str = "Example Health", title: str = "Patient Access Specialist", source_state: str = "verified_direct_ats", destination_state: str = "VERIFIED_ATS", recommendation: str | None = None, app_status: str = "NEW", qualification_gates: dict | None = None, posted_at: str = "2026-09-20T12:00:00+00:00", ats_url: str | None = None, identity_state: str = "COMPLETE", description: str = "Patient access enrollment, healthcare operations, documentation quality, and patient onboarding workflows.", hard_rejects: list[str] | None = None) -> None:
         readiness = "READY" if ready else "REVIEW"
         rec = recommendation or ("APPLY_NOW" if ready else "REVIEW")
+        gates = {name: {"status": "pass" if ready else "review", "evidence": "isolated fixture"} for name in REQUIRED_SUBSTANTIVE_GATES}
+        gates.update(qualification_gates or {})
+        gates.setdefault("no_repeat", {"status": "pass" if app_status == "NEW" else "fail", "evidence": "fixture handling status"})
+        rejects = hard_rejects if hard_rejects is not None else (["fixture hard reject"] if rec == "SKIP_HARD_GATE" else [])
         self.conn.execute("""INSERT INTO jobs(
-          job_id,title,company,location_raw,remote_status,employment_type,salary_text,posted_at,description,first_seen,last_seen,
+          job_id,title,company,location_raw,remote_status,employment_type,employment_class,salary_text,posted_at,description,first_seen,last_seen,
           remote_gate,recommendation,application_status,is_active,canonical_url,apply_url,canonical_source_site,
           evidence_readiness_state,qualification_readiness_state,identity_evidence_state,detail_evidence_state,
           requirements_evidence_state,source_verification,source_verification_state,application_destination_verification_state,
           verified_application_url,ats_requisition_url,discovery_url,board_detail_url,employer_job_url,location_evidence_state,
-          remote_evidence_state,apply_destination_state,evidence_provenance_json,hard_reject_reasons_json,qualification_gates_json,posting_status
-        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (
-            job_id, title, company, "Remote — United States", "remote", "Full-time", "$60,000/year", posted_at,
-            description, NOW, NOW, "pass", rec, app_status, 1, f"https://boards.greenhouse.io/example/jobs/{job_id}",
+          remote_evidence_state,apply_destination_state,evidence_provenance_json,hard_reject_reasons_json,qualification_gates_json,posting_status,evidence_readiness_json
+        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (
+            job_id, title, company, "Remote — United States", "remote", "Full-time permanent", "full_time_permanent" if ready else "unknown", "$60,000/year", posted_at,
+            description, NOW, NOW, "pass" if ready else "review", rec, app_status, 1, f"https://boards.greenhouse.io/example/jobs/{job_id}",
             f"https://boards.greenhouse.io/example/jobs/{job_id}", "greenhouse", readiness, readiness,
             identity_state, "COMPLETE", "SUPPORTED" if ready else "UNRESOLVED", source_state, source_state,
             destination_state, f"https://boards.greenhouse.io/example/jobs/{job_id}" if destination_state == "VERIFIED_ATS" else "",
             ats_url or f"https://boards.greenhouse.io/example/jobs/{job_id}", f"https://www.linkedin.com/jobs/view/{job_id}",
             "https://www.linkedin.com/jobs/view/detail", "", "OBSERVED", "OBSERVED", "OBSERVED",
             json.dumps({"location": "observed", "remote": "observed_detail_text", "salary": "observed_detail_text", "employment_type": "observed_detail_text", "posted_at": "observed_search_card_or_detail", "source_type": "board_detail", "posted_at_source_type": "search_card"}),
-            "[]", json.dumps(qualification_gates or {"no_repeat": {"status": "pass"}}), "OPEN",
+            json.dumps(rejects), json.dumps(gates), "active" if ready else "unknown", json.dumps({"recommendation": rec, "intrinsic_recommendation": rec}),
         ))
 
     def result(self, task_id: int, source_id: str, job_id: str | None, *, source_site: str = "linkedin", url: str | None = None, sightings: int = 1, status: str = "COMPLETE", attempts: int = 1, selected: int = 1, qa: int = 0, content: str = "COMPLETE", first_seen: str = NOW) -> int:
@@ -178,7 +186,134 @@ class Chg114SearchQualityTests(unittest.TestCase):
         self.assertEqual(indeed["application_count"], 0)
         self.assertEqual(indeed["no_repeat_leakage_count"], 1)
         self.assertEqual((source_occurrence["source_occurrence_rows"], source_occurrence["unique_source_ids"], source_occurrence["unique_canonical_jobs"]), (1, 1, 1))
-        self.assertEqual(metrics["metric_definition_version"], "chg114-search-quality-v1")
+        self.assertEqual(metrics["metric_definition_version"], "chg114-search-quality-v2")
+
+    def test_handled_success_keeps_trusted_yield_and_preserves_funnel_attribution(self) -> None:
+        run_id = self.run_row()
+        first_task = self.task(run_id, "handled query A", rank=10, details=1)
+        later_task = self.task(run_id, "handled query B", rank=20, details=1)
+        self.job("handled-success", ready=True)
+        self.result(first_task, "handled-source-a", "handled-success", first_seen=NOW)
+        self.result(later_task, "handled-source-b", "handled-success", first_seen="2026-09-22T12:00:00+00:00")
+        self.conn.commit()
+        current = self.current_task("handled query A", 10)
+
+        before = search_quality_metrics(self.conn)
+        before_a = next(row for row in before["task_metrics"] if row["query"] == "handled query A")
+        self.assertEqual(_history(self.conn, current, OrderingConfig())["trusted_qualified_yield_jobs"], 1)
+        self.assertEqual((before_a["current_actionable_count"], before_a["trusted_qualified_yield_count"]), (1, 1))
+
+        mark(self.conn, "handled-success", "APPLIED", source="chg114-regression")
+        row = self.conn.execute("SELECT recommendation,qualification_gates_json FROM jobs WHERE job_id='handled-success'").fetchone()
+        self.assertEqual(row["recommendation"], "ALREADY_HANDLED")
+        self.assertEqual(json.loads(row["qualification_gates_json"])["no_repeat"]["status"], "fail")
+        metrics = search_quality_metrics(self.conn)
+        query_a = next(item for item in metrics["task_metrics"] if item["query"] == "handled query A")
+        query_b = next(item for item in metrics["task_metrics"] if item["query"] == "handled query B")
+        self.assertEqual((query_a["current_actionable_count"], query_a["trusted_qualified_yield_count"], query_a["application_count"]), (0, 1, 1))
+        self.assertEqual(_history(self.conn, current, OrderingConfig())["trusted_qualified_yield_jobs"], 1)
+        self.assertEqual(query_b["application_count"], 0)
+
+        for stage, metric_key in (("SCREEN", "screen_count"), ("INTERVIEW", "interview_count"), ("OFFER", "offer_count")):
+            mark(self.conn, "handled-success", stage, source="chg114-regression")
+            metrics = search_quality_metrics(self.conn)
+            query_a = next(item for item in metrics["task_metrics"] if item["query"] == "handled query A")
+            query_b = next(item for item in metrics["task_metrics"] if item["query"] == "handled query B")
+            self.assertEqual(query_a["trusted_qualified_yield_count"], 1)
+            self.assertEqual(query_a["current_actionable_count"], 0)
+            self.assertEqual(query_a[metric_key], 1)
+            self.assertEqual(query_b["application_count"], 0)
+            self.assertEqual(_history(self.conn, current, OrderingConfig())["trusted_qualified_yield_jobs"], 1)
+        family = next(item for item in metrics["family_metrics"] if item["platform"] == "linkedin" and item["phase"] == "C_DEEP_BACKFILL")
+        self.assertEqual((family["application_count"], family["screen_count"], family["interview_count"], family["offer_count"]), (1, 1, 1, 1))
+
+    def test_handled_review_hard_fail_and_incomplete_jobs_never_become_yield(self) -> None:
+        run_id = self.run_row()
+        task_id = self.task(run_id, "manual handling query", details=3)
+        self.job("manual-review", ready=True, recommendation="REVIEW")
+        self.job(
+            "manual-hard-fail", ready=True, recommendation="SKIP_HARD_GATE",
+            qualification_gates={"base_pay_floor": {"status": "fail", "evidence": "below configured floor"}},
+            hard_rejects=["employer base pay is below the configured floor"],
+        )
+        self.job("manual-incomplete", ready=False, recommendation="REVIEW", source_state="unverified_discovery", destination_state="MISSING", identity_state="PARTIAL")
+        for job_id in ("manual-review", "manual-hard-fail", "manual-incomplete"):
+            self.result(task_id, f"source-{job_id}", job_id)
+        self.conn.commit()
+        for job_id in ("manual-review", "manual-hard-fail", "manual-incomplete"):
+            mark(self.conn, job_id, "APPLIED", source="manual-entry")
+
+        metrics = search_quality_metrics(self.conn)
+        query = next(item for item in metrics["task_metrics"] if item["query"] == "manual handling query")
+        self.assertEqual(query["application_count"], 3)
+        self.assertEqual(query["current_actionable_count"], 0)
+        self.assertEqual(query["trusted_qualified_yield_count"], 0)
+        for job_id in ("manual-review", "manual-hard-fail", "manual-incomplete"):
+            row = self.conn.execute("SELECT recommendation,qualification_gates_json FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+            self.assertEqual(row["recommendation"], "ALREADY_HANDLED")
+            self.assertEqual(json.loads(row["qualification_gates_json"])["no_repeat"]["status"], "fail")
+
+    def test_trusted_source_rescore_revokes_handled_qualified_yield_on_hard_gate_failure(self) -> None:
+        description = (
+            "Example Health is currently accepting applications for a fully remote United States role. "
+            "This is a full-time permanent employee position. The employer provides a $60,000 annual base salary. "
+            "No travel required. No required office days. No onsite training. No field work. No in-person events. "
+            "Healthcare patient enrollment operations include reviewing enrollment records, verifying documentation, "
+            "resolving discrepancies, coordinating workflow handoffs, and preparing accurate case records. "
+            "Required Qualifications: 2 years of healthcare enrollment or relevant operations experience. "
+            "HIPAA documentation and Excel workflows."
+        )
+        job = Job(
+            source_site="greenhouse", source_job_id="job-12345",
+            canonical_url="https://boards.greenhouse.io/example/jobs/12345",
+            apply_url="https://boards.greenhouse.io/example/jobs/12345",
+            title="Patient Enrollment Specialist", company="Example Health",
+            location_raw="Remote — United States", remote_status="remote",
+            employment_type="Full-time permanent", salary_text="$60,000/year",
+            salary_min=60000, salary_max=60000, salary_currency="USD", salary_period="year",
+            posted_at="2026-09-20T12:00:00+00:00", description=description,
+            raw={"posting_status": "active"},
+        )
+        job._mode = "deep"
+        score_job(job, self.bundle.strategy, self.bundle.legacy_runtime()["candidate"])
+        self.assertIn(job.recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"}, job.qualification_gates)
+        self.assertEqual(job.evidence_readiness_state, "READY")
+        self.assertIn(job.evidence_readiness["intrinsic_recommendation"], {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"})
+
+        store = PrecisionStore(self.root / "data" / "jobs.sqlite3")
+        try:
+            job_id = job.job_id
+            store.upsert(job)
+            run_id = self.run_row()
+            task_id = self.task(run_id, "source refresh query", details=1)
+            self.result(task_id, "greenhouse-12345", job_id)
+            self.conn.commit()
+            mark(self.conn, job_id, "APPLIED", source="chg114-regression")
+            before = search_quality_metrics(self.conn)
+            before_query = next(item for item in before["task_metrics"] if item["query"] == "source refresh query")
+            self.assertEqual(before_query["trusted_qualified_yield_count"], 1)
+
+            existing = store.conn.execute("SELECT * FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+            changed = job_from_row(existing)
+            changed.source_job_id = "job-12345"
+            changed.employment_type = "Part-time"
+            changed.description = description.replace("full-time permanent", "part-time")
+            changed._mode = "deep"
+            score_job(changed, self.bundle.strategy, self.bundle.legacy_runtime()["candidate"])
+            self.assertEqual(changed.recommendation, "ALREADY_HANDLED")
+            self.assertEqual(changed.qualification_gates["full_time"]["status"], "fail")
+            self.assertEqual(changed.evidence_readiness_state, "READY")
+            self.assertEqual(changed.qualification_readiness_state, "BLOCKED")
+            self.assertEqual(changed.evidence_readiness["intrinsic_recommendation"], "PART_TIME_REVIEW")
+            store.upsert(changed)
+
+            after = search_quality_metrics(self.conn)
+            after_query = next(item for item in after["task_metrics"] if item["query"] == "source refresh query")
+            self.assertEqual(after_query["current_actionable_count"], 0)
+            self.assertEqual(after_query["trusted_qualified_yield_count"], 0)
+            self.assertEqual(_history(self.conn, self.current_task("source refresh query", 10), OrderingConfig())["trusted_qualified_yield_jobs"], 0)
+        finally:
+            store.close()
 
     def test_insufficient_and_overlapping_history_preserve_baseline_order(self) -> None:
         self.history("query A", n=3, qualified=3)
@@ -291,7 +426,9 @@ class Chg114SearchQualityTests(unittest.TestCase):
                 siblings = json.loads(response.read())
             with urlopen(base + "/api/jobs/api-1", timeout=5) as response:
                 detail = json.loads(response.read())
-            self.assertEqual(quality["metric_definition_version"], "chg114-search-quality-v1")
+            self.assertEqual(quality["metric_definition_version"], "chg114-search-quality-v2")
+            self.assertIn("current_actionable_count", quality["metric_definitions"])
+            self.assertIn("no_repeat", quality["metric_definitions"]["qualified_yield"])
             self.assertIn("current_order", quality)
             self.assertTrue(siblings["advisory_only"])
             self.assertEqual(siblings["clusters"][0]["member_job_ids"], ["api-1", "api-2"])
