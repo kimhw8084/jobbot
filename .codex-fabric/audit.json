@@ -1,0 +1,556 @@
+{
+  "accepted_at": "2026-09-23T22:48:47Z",
+  "changed_files": [
+    {
+      "additions": 21,
+      "deletions": 0,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 22,
+      "deletions": 3,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 14,
+      "deletions": 0,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 18,
+      "deletions": 0,
+      "path": "docs/SEARCH_QUALITY.md",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 0,
+      "path": "src/jobbot/acquisition/__init__.py",
+      "status": "A"
+    },
+    {
+      "additions": 286,
+      "deletions": 0,
+      "path": "src/jobbot/acquisition/coordinator.py",
+      "status": "A"
+    },
+    {
+      "additions": 320,
+      "deletions": 0,
+      "path": "src/jobbot/acquisition/ingestion.py",
+      "status": "A"
+    },
+    {
+      "additions": 93,
+      "deletions": 0,
+      "path": "src/jobbot/acquisition/models.py",
+      "status": "A"
+    },
+    {
+      "additions": 15,
+      "deletions": 0,
+      "path": "src/jobbot/acquisition/protocol.py",
+      "status": "A"
+    },
+    {
+      "additions": 155,
+      "deletions": 0,
+      "path": "src/jobbot/acquisition/providers.py",
+      "status": "A"
+    },
+    {
+      "additions": 45,
+      "deletions": 166,
+      "path": "src/jobbot/bridge/rpc.py",
+      "status": "M"
+    },
+    {
+      "additions": 21,
+      "deletions": 1,
+      "path": "src/jobbot/browser_tasks.py",
+      "status": "M"
+    },
+    {
+      "additions": 24,
+      "deletions": 0,
+      "path": "src/jobbot/cli.py",
+      "status": "M"
+    },
+    {
+      "additions": 11,
+      "deletions": 4,
+      "path": "src/jobbot/dashboard.py",
+      "status": "M"
+    },
+    {
+      "additions": 10,
+      "deletions": 3,
+      "path": "src/jobbot/exports.py",
+      "status": "M"
+    },
+    {
+      "additions": 30,
+      "deletions": 7,
+      "path": "src/jobbot/legacy_engine.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 73,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0021_acquisition_v2.py",
+      "status": "A"
+    },
+    {
+      "additions": 56,
+      "deletions": 4,
+      "path": "src/jobbot/search_quality.py",
+      "status": "M"
+    },
+    {
+      "additions": 441,
+      "deletions": 0,
+      "path": "tests/integration/test_acquisition_v2.py",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_chg112_production_integrity.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 129,
+      "deletions": 0,
+      "path": "verification/CHG-200-r1.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_acquisition_v2 -v && PYTHONPATH=src rtk python -m py_compile src/jobbot/acquisition/*.py src/jobbot/bridge/rpc.py src/jobbot/browser_tasks.py src/jobbot/legacy_engine.py src/jobbot/dashboard.py src/jobbot/exports.py src/jobbot/search_quality.py src/jobbot/cli.py src/jobbot/migrations/m0021_acquisition_v2.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_acquisition_v2 tests.integration.test_run_now tests.unit.test_chg113_evidence_readiness tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_chg112_production_integrity -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '310,345p' tests/integration/test_chg112_production_integrity.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_chg112_production_integrity.Chg112ProductionIntegrityTests.test_migration_requeues_historical_identity_only_rows_without_losing_versions tests.integration.test_browser_tasks tests.integration.test_acquisition_v2 -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '49,95p' src/jobbot/acquisition/ingestion.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_acquisition_v2 -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '315,385p' src/jobbot/acquisition/ingestion.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"UPDATE search_task_results|employer_job_url\" src/jobbot/acquisition/ingestion.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_acquisition_v2 -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '390,445p' tests/integration/test_acquisition_v2.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_acquisition_v2.AcquisitionV2Tests.test_migration_backfills_history_as_legacy_browser_unknown tests.integration.test_acquisition_v2.AcquisitionV2Tests.test_jsonl_card_detail_identity_order_completion_and_provider_outputs -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '95,185p' tests/integration/test_acquisition_v2.py && rtk sed -n '235,265p' tests/integration/test_acquisition_v2.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_acquisition_v2 -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"offline|JSONL|acquisition/\" README.md docs/ARCHITECTURE.md docs/OPERATIONS.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest tests.integration.test_acquisition_v2 tests.integration.test_run_now tests.unit.test_chg113_evidence_readiness tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_chg112_production_integrity -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mktemp -d /tmp/jobbot-chg200-r1.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rsync -a --exclude=.git --exclude=data --exclude=.pytest_cache --exclude=__pycache__ --exclude='*.pyc' ./ /tmp/jobbot-chg200-r1.g0ydId/\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 1,
+        "output_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ps -A -o pid,command | rtk rg 'unittest discover -s tests|jobbot-chg200-r1.g0ydId' || true\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest discover -s tests'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest discover -s tests'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --stat && rtk git rev-parse HEAD && rtk git branch --show-current'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mktemp -d /tmp/jobbot-chg200-r1-final.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rsync -a --exclude=.git --exclude=data --exclude=.pytest_cache --exclude=__pycache__ --exclude='*.pyc' ./ /tmp/jobbot-chg200-r1-final.SzfLwH/\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 1,
+        "output_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python -c 'import os,subprocess,sys; log=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH/full-suite.log\\\"; env=dict(os.environ, PYTHONPATH=\\\"src\\\"); f=open(log,\\\"w\\\"); p=subprocess.run([\\\"/opt/anaconda3/bin/python\\\",\\\"-m\\\",\\\"unittest\\\",\\\"discover\\\",\\\"-s\\\",\\\"tests\\\"],cwd=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH\\\",env=env,stdout=f,stderr=subprocess.STDOUT); f.close(); lines=open(log).readlines(); print(\\\"EXIT\\\",p.returncode); print(\\\"\\\".join(lines[-60:])); sys.exit(p.returncode)'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'range\\\\(1, 21\\\\)|range\\\\(1, 20\\\\)|applied.*20|migration.*20' tests\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rsync -a --exclude=.git --exclude=data --exclude=.pytest_cache --exclude=__pycache__ --exclude='*.pyc' ./ /tmp/jobbot-chg200-r1-final.SzfLwH/\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 1,
+        "output_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files tests extension | rtk rg '(extension.*\\\\.js\"'$|'\"\\\\.test\\\\.js\"'$|_test'\"\\\\.js\"'$)'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c 'import glob,subprocess,sys,os; root=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH\\\"; tests=sorted(glob.glob(root+\\\"/tests/extension*_test.js\\\")); scripts=sorted(glob.glob(root+\\\"/extension/*.js\\\")); failures=[]; print(\\\"extension suites:\\\",len(tests)); [(lambda p,f: failures.append((f,p.returncode,p.stderr or p.stdout)) if p.returncode else None)(subprocess.run([\\\"node\\\",f],cwd=root,text=True,capture_output=True),os.path.relpath(f,root)) for f in tests]; print(\\\"extension syntax files:\\\",len(scripts)); [(lambda p,f: failures.append((f,p.returncode,p.stderr or p.stdout)) if p.returncode else None)(subprocess.run([\\\"node\\\",\\\"--check\\\",f],cwd=root,text=True,capture_output=True),os.path.relpath(f,root)) for f in scripts]; print(\\\"failures:\\\",failures); print(\\\"extension checks:\\\",\\\"PASS\\\" if not failures else \\\"FAIL\\\"); sys.exit(bool(failures))'\"",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python -c 'import os,subprocess,sys; log=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH/full-suite.log\\\"; env=dict(os.environ, PYTHONPATH=\\\"src\\\"); f=open(log,\\\"w\\\"); p=subprocess.run([\\\"/opt/anaconda3/bin/python\\\",\\\"-m\\\",\\\"unittest\\\",\\\"discover\\\",\\\"-s\\\",\\\"tests\\\"],cwd=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH\\\",env=env,stdout=f,stderr=subprocess.STDOUT); f.close(); lines=open(log).readlines(); print(\\\"EXIT\\\",p.returncode); print(\\\"\\\".join(lines[-45:])); sys.exit(p.returncode)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python -c 'import glob,subprocess,sys,os; root=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH\\\"; tests=sorted(glob.glob(root+\\\"/tests/extension*_test.js\\\")); scripts=sorted(glob.glob(root+\\\"/extension/*.js\\\")); failures=[]; print(\\\"extension suites:\\\",len(tests)); [(lambda p,f: failures.append((f,p.returncode,p.stderr or p.stdout)) if p.returncode else None)(subprocess.run([\\\"node\\\",f],cwd=root,text=True,capture_output=True),os.path.relpath(f,root)) for f in tests]; print(\\\"extension syntax files:\\\",len(scripts)); [(lambda p,f: failures.append((f,p.returncode,p.stderr or p.stdout)) if p.returncode else None)(subprocess.run([\\\"node\\\",\\\"--check\\\",f],cwd=root,text=True,capture_output=True),os.path.relpath(f,root)) for f in scripts]; print(\\\"failures:\\\",failures); print(\\\"extension checks:\\\",\\\"PASS\\\" if not failures else \\\"FAIL\\\"); sys.exit(bool(failures))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git status --short --branch && rtk git diff -- src/jobbot/acquisition src/jobbot/migrations/m0021_acquisition_v2.py src/jobbot/bridge/rpc.py src/jobbot/browser_tasks.py src/jobbot/legacy_engine.py src/jobbot/search_quality.py src/jobbot/dashboard.py src/jobbot/exports.py src/jobbot/cli.py tests/integration/test_acquisition_v2.py tests/integration/test_database_ledger.py tests/integration/test_chg112_production_integrity.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,280p' src/jobbot/acquisition/ingestion.py && rtk sed -n '1,340p' src/jobbot/acquisition/coordinator.py && rtk sed -n '1,280p' src/jobbot/migrations/m0021_acquisition_v2.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '240,440p' src/jobbot/acquisition/ingestion.py && rtk cat src/jobbot/acquisition/models.py && rtk cat src/jobbot/acquisition/providers.py && rtk cat src/jobbot/acquisition/protocol.py && rtk rg -n 'CREATE TABLE|browser_search_tasks|search_task_results' src/jobbot/migrations\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'occurrence_key|_url_role_values|def _occurrence' src/jobbot/legacy_engine.py src/jobbot -g '*.py' && rtk sed -n '1480,1580p' src/jobbot/legacy_engine.py && rtk sed -n '1,130p' src/jobbot/migrations/m0001_ledger.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1160,1205p' src/jobbot/legacy_engine.py && rtk sed -n '1350,1390p' src/jobbot/legacy_engine.py && rtk sed -n '690,850p' src/jobbot/bridge/rpc.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'same_requisition|cross_provider|acquisition_provider|provider_provenance' tests/integration/test_acquisition_v2.py && rtk sed -n '150,330p' tests/integration/test_acquisition_v2.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'production|data/jobs\\\\.sqlite3|PROJECT_ROOT|Database\\\\(' tests/integration/test_acquisition_v2.py tests/integration/test_run_now.py tests/unit/test_chg113_evidence_readiness.py tests/integration/test_chg114_search_quality.py tests/integration/test_browser_tasks.py tests/integration/test_chg112_production_integrity.py tests/integration/test_database_ledger.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,112p' tests/integration/test_database_ledger.py && rtk sed -n '330,365p' tests/integration/test_chg114_search_quality.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '200,470p' src/jobbot/search_quality.py && rtk rg -n 'provider_metrics|source_occurrence_metrics' src/jobbot/search_quality.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-only && rtk git ls-files --others --exclude-standard && rtk git branch -vv && rtk git rev-parse origin/main && rtk git merge-base HEAD origin/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk /opt/anaconda3/bin/python -c 'import os,subprocess,sys; log=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH/focused-suite.log\\\"; env=dict(os.environ, PYTHONPATH=\\\"src\\\"); modules=[\\\"tests.integration.test_acquisition_v2\\\",\\\"tests.integration.test_run_now\\\",\\\"tests.unit.test_chg113_evidence_readiness\\\",\\\"tests.integration.test_chg114_search_quality\\\",\\\"tests.integration.test_browser_tasks\\\",\\\"tests.integration.test_chg112_production_integrity\\\",\\\"tests.integration.test_database_ledger\\\"]; f=open(log,\\\"w\\\"); p=subprocess.run([\\\"/opt/anaconda3/bin/python\\\",\\\"-m\\\",\\\"unittest\\\",*modules],cwd=\\\"/tmp/jobbot-chg200-r1-final.SzfLwH\\\",env=env,stdout=f,stderr=subprocess.STDOUT); f.close(); print(\\\"EXIT\\\",p.returncode); print(\\\"\\\".join(open(log).readlines()[-45:])); sys.exit(p.returncode)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add README.md docs/ARCHITECTURE.md docs/OPERATIONS.md docs/SEARCH_QUALITY.md src/jobbot/acquisition src/jobbot/bridge/rpc.py src/jobbot/browser_tasks.py src/jobbot/cli.py src/jobbot/dashboard.py src/jobbot/exports.py src/jobbot/legacy_engine.py src/jobbot/migrations/__init__.py src/jobbot/migrations/m0021_acquisition_v2.py src/jobbot/search_quality.py tests/integration/test_acquisition_v2.py tests/integration/test_chg112_production_integrity.py tests/integration/test_database_ledger.py && rtk git diff --cached --check && rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git commit -m 'Build provider-neutral acquisition v2 seam'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD HEAD''^{tree} && rtk git status --short --branch && rtk git show --stat --oneline --summary HEAD && rtk git ls-remote --heads origin codex/jobbot-CHG-200-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk tail -n 12 /tmp/jobbot-chg200-r1-final.SzfLwH/full-suite.log && rtk tail -n 12 /tmp/jobbot-chg200-r1-final.SzfLwH/focused-suite.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk /opt/anaconda3/bin/python -m json.tool verification/CHG-200-r1.json && rtk git diff --check && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git add verification/CHG-200-r1.json && rtk git diff --cached --check && rtk git commit -m 'Record CHG-200-r1 verification evidence'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push -u origin codex/jobbot-CHG-200-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD origin/codex/jobbot-CHG-200-r1 origin/main && rtk git ls-remote --heads origin main codex/jobbot-CHG-200-r1 && rtk git log -2 --oneline --decorate'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-6-luna",
+    "event_count": 297,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.29,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 22463232,
+      "fresh_input_tokens": 390851,
+      "input_tokens": 22854083,
+      "non_reasoning_output_tokens": 53283,
+      "output_tokens": 108104,
+      "reasoning_output_tokens": 54821,
+      "total_processed_tokens": 22962187
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "117436f909c6e2b0de3ebd85079d0729e71201b6",
+      "subject": "Record CHG-200-r1 verification evidence"
+    },
+    {
+      "sha": "61cc5f643eb297d00b1149888dd029d89b52352d",
+      "subject": "Build provider-neutral acquisition v2 seam"
+    }
+  ],
+  "diff": {
+    "additions": 1796,
+    "changed_files": 23,
+    "commit_count": 2,
+    "deletions": 190
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 5,
+    "items": [
+      {
+        "bytes": 9904,
+        "path": "README.md",
+        "sha256": "36bb9a6aebcd2eadebf26732d961c7d340d12e40dadf938573a824071100f157"
+      },
+      {
+        "bytes": 10652,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "cf197ae92a5ef3acc9fd6409119395b317e68675870cbf1b7b22896df075ee3b"
+      },
+      {
+        "bytes": 5129,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "497bdde9bf2650b9d4310026a5a9adc702c292293be2c321bb8adddf62ef9856"
+      },
+      {
+        "bytes": 12502,
+        "path": "docs/SEARCH_QUALITY.md",
+        "sha256": "fb7161d2c217a56dffdf49b3aa63a4e1c34656b159ab5a8451f43ac53c913b38"
+      },
+      {
+        "bytes": 7156,
+        "path": "verification/CHG-200-r1.json",
+        "sha256": "1dee723c3ae20b68e559163989d84f9a9b5e74d718efaad34760f04e2f29e4b8"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-23T23:28:13Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "branch": "codex/jobbot-CHG-200-r1",
+    "detached_verify": false,
+    "head_sha": "117436f909c6e2b0de3ebd85079d0729e71201b6",
+    "remote_exact_head": true,
+    "remote_head_sha": "117436f909c6e2b0de3ebd85079d0729e71201b6",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "eb72aec2cb53a55d83b2254108d354b2d595164d",
+    "work_branch": "codex/jobbot-CHG-200-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-96dfbc3e100fa3786905ca2e",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-200-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-200-r1"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-200-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-23T22:48:48Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 2365,
+    "queue_seconds": 1,
+    "total_seconds": 2366
+  },
+  "transport": {
+    "bytes": 8970,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 8689,
+    "prompt_sha256": "de956ee33ecddf21167d89fa1f4bf999ceea1aaf1be8b3a87689a3bf129bab48",
+    "sha256": "96dfbc3e100fa3786905ca2e0b1f8fe704e74b74c2c1077e2b00c21fc10d7cae"
+  }
+}
