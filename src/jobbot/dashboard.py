@@ -29,6 +29,7 @@ TABLE_COLUMNS = (
     "relevance_score", "qualification_score", "landing_score", "career_score", "door_score",
     "resume_variant", "application_status", "change_status", "description_state", "content_state",
     "location_evidence_state", "remote_evidence_state", "apply_destination_state", "source_verification",
+    "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
 )
 
 
@@ -104,11 +105,11 @@ def summary(conn: sqlite3.Connection) -> dict[str, int]:
         "remote_confirmed": "SELECT COUNT(*) FROM jobs WHERE remote_gate='pass' AND remote_evidence_state='OBSERVED'",
         "remote_review": "SELECT COUNT(*) FROM jobs WHERE remote_gate='review'",
         "remote_rejected": "SELECT COUNT(*) FROM jobs WHERE remote_gate='reject'",
-        "qualified": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')",
-        "apply_now": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='APPLY_NOW'",
-        "apply_volume": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='APPLY_VOLUME'",
-        "stretch": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND recommendation='HIGH_VALUE_STRETCH'",
-        "reservoir": """SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='pass'
+        "qualified": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')",
+        "apply_now": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_NOW'",
+        "apply_volume": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation='APPLY_VOLUME'",
+        "stretch": "SELECT COUNT(*) FROM jobs WHERE is_active=1 AND upper(application_status)='NEW' AND recommendation='HIGH_VALUE_STRETCH'",
+        "reservoir": """SELECT COUNT(*) FROM jobs WHERE is_active=1 AND remote_gate='pass' AND upper(application_status)='NEW'
           AND recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')
           AND upper(application_status) NOT IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED','WITHDRAWN','SKIP','CLOSED')""",
         "applied": "SELECT COUNT(*) FROM jobs WHERE upper(application_status) IN ('APPLIED','SCREEN','INTERVIEW','FINAL','OFFER','REJECTED')",
@@ -650,7 +651,8 @@ def live_discoveries(conn: sqlite3.Connection, limit: int = 100, status: str = "
         """SELECT r.result_id,r.browser_run_id,r.task_id,r.source_site platform,r.source_job_id,
           r.title_hint,r.company_hint,r.location_hint,r.posted_text,r.posted_age_days,r.observed_at,
           r.detail_status,r.detail_attempts,r.detail_error,r.source_url,r.canonical_job_id,t.query_text,
-          r.identity_status,r.card_metadata_status,r.content_state,r.enrichment_priority,r.recall_selected,r.recall_qa_sample,r.recall_reason
+          r.identity_status,r.card_metadata_status,r.content_state,r.enrichment_priority,r.recall_selected,r.recall_qa_sample,r.recall_reason,
+          r.strategy_profile,r.strategy_profile_version,r.query_family,r.query_kind,r.query_pass,r.initial_order
           FROM search_task_results r JOIN browser_search_tasks t ON t.task_id=r.task_id""" + status_clause + " ORDER BY r.result_id DESC LIMIT ?", args,
     ).fetchall()
     pending = int(conn.execute(
@@ -668,7 +670,7 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
     args: list[Any] = []
     view = one("view")
     if view == "actionable":
-        conditions.append("j.is_active=1 AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
+        conditions.append("j.is_active=1 AND upper(j.application_status)='NEW' AND j.recommendation IN ('APPLY_NOW','APPLY_VOLUME','HIGH_VALUE_STRETCH')")
     elif view not in {"", "all"}:
         raise ValueError(f"unsupported jobs view: {view}")
     mappings = {
@@ -691,7 +693,7 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
         args.append(source)
     salary = one("salary_min")
     if salary:
-        conditions.append("COALESCE(j.salary_annual_mid,0)>=?")
+        conditions.append("COALESCE(j.salary_annual_min,0)>=?")
         args.append(float(salary))
     min_score, max_score = one("min_score"), one("max_score")
     if min_score:
@@ -709,7 +711,8 @@ def query_jobs(conn: sqlite3.Connection, params: dict[str, list[str]]) -> dict[s
       j.posted_at,j.first_seen,j.last_seen,j.salary_text,j.employment_class,j.remote_gate,j.eligible_states_json,j.location_raw,
       j.relevance_score,j.qualification_score,j.landing_score,j.career_score,j.door_score,
       j.resume_variant,j.application_status,j.change_status,j.description_state,j.content_state,
-      j.location_evidence_state,j.remote_evidence_state,j.apply_destination_state,j.source_verification
+      j.location_evidence_state,j.remote_evidence_state,j.apply_destination_state,j.source_verification,
+      j.salary_annual_min,j.qualification_gates_json,j.preference_signals_json,j.preference_adjustment
       FROM jobs j WHERE {where} ORDER BY COALESCE(j.application_priority_score,j.door_score,0) DESC,j.last_seen DESC
       LIMIT ? OFFSET ?""", [*args, page_size, (page - 1) * page_size]).fetchall()
     return {"page": page, "page_size": page_size, "total": total, "columns": TABLE_COLUMNS, "jobs": [_dict(row) for row in rows]}

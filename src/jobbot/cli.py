@@ -24,7 +24,7 @@ from .orchestrator import _open_chrome, enqueue, launch_browser_run, refresh_ext
 from .run_now import ensure_dashboard, preflight
 from .runtime_binding import bind_chrome_profile, sync_extension, stable_extension_root
 from .watch import DEEP, RECENT, SUPPLEMENTAL, WatchScheduler
-from .search_plan import compile_and_write, plan_counts
+from .search_plan import compile_and_write, compile_staged_and_write, plan_counts
 from .validator import run as run_validator
 
 
@@ -67,7 +67,10 @@ def run_supplemental_stage(bundle, run_id: int | None, mode: str = "deep") -> bo
 
 def command_search_plan(args: argparse.Namespace) -> int:
     bundle = _bundle()
-    tasks, paths = compile_and_write(bundle, args.mode, args.platform or None, open_browser=args.open)
+    if args.mode == "staged":
+        tasks, paths = compile_staged_and_write(bundle, args.platform or None, open_browser=args.open)
+    else:
+        tasks, paths = compile_and_write(bundle, args.mode, args.platform or None, open_browser=args.open)
     print(json.dumps(plan_counts(tasks), indent=2))
     for path in paths.values():
         print(path)
@@ -329,7 +332,7 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument("--version", action="version", version=__version__)
     sub = root.add_subparsers(dest="command", required=True)
     doctor = sub.add_parser("doctor"); doctor.set_defaults(func=command_doctor)
-    plan = sub.add_parser("search-plan"); plan.add_argument("--mode", choices=("fast", "deep"), default="deep"); plan.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); plan.add_argument("--open", action="store_true"); plan.set_defaults(func=command_search_plan)
+    plan = sub.add_parser("search-plan"); plan.add_argument("--mode", choices=("fast", "deep", "staged"), default="deep"); plan.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); plan.add_argument("--open", action="store_true"); plan.set_defaults(func=command_search_plan)
     run = sub.add_parser("run"); run.add_argument("--mode", choices=("fast", "deep"), default="fast"); run.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); run.add_argument("--enqueue-only", action="store_true"); run.add_argument("--no-open", action="store_true"); run.add_argument("--primary-only", action="store_true"); run.set_defaults(func=command_run)
     run_now = sub.add_parser("run-now"); run_now.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); run_now.add_argument("--enqueue-only", action="store_true"); run_now.add_argument("--no-open", action="store_true"); run_now.set_defaults(func=command_run_now)
     watch = sub.add_parser("watch"); watch.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); watch.add_argument("--once", action="store_true"); watch.add_argument("--enqueue-only", action="store_true"); watch.add_argument("--poll-seconds", type=int, default=60); watch.add_argument("--no-open", action="store_true"); watch.set_defaults(func=command_watch)

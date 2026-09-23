@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 import shutil
 import socket
 import sqlite3
@@ -28,9 +29,18 @@ class RunNowIntegrationTests(unittest.TestCase):
             bundle = bundle_with_database(root / "jobs.sqlite3", root / "out")
             self.assertFalse(bundle.database_path.exists())
             result = preflight(bundle, ["linkedin"])
-            self.assertEqual(result.task_count, 288)
+            self.assertEqual(result.task_count, 56)
             self.assertTrue(result.database_path.is_file())
             self.assertTrue((root / "out" / "search_plan.json").is_file())
+            plan = json.loads((root / "out" / "search_plan.json").read_text(encoding="utf-8"))
+            self.assertEqual({task["strategy_profile"] for task in plan["tasks"]}, {"jobbot-broad-qualified-yield"})
+            self.assertEqual({task["query_family"] for task in plan["tasks"]}, {
+                "provider_lifecycle_credentialing_data", "healthcare_quality_data_documentation_compliance",
+                "healthcare_project_implementation_program_support", "higher_ed_academic_back_office",
+                "bounded_transferable_records_data_process_ops", "backoffice_patient_access_eligibility_enrollment",
+                "bilingual_ai_content_quality",
+            })
+            self.assertTrue(all(task["query_kind"] and task["query_pass"] for task in plan["tasks"]))
         args = parser().parse_args(["run-now", "--platform", "linkedin", "--enqueue-only", "--no-open"])
         self.assertEqual(args.command, "run-now")
         launcher = bundle.root / "RUN_NOW.command"
@@ -59,6 +69,7 @@ class RunNowIntegrationTests(unittest.TestCase):
             try:
                 self.assertEqual(conn.execute("SELECT mode FROM browser_runs").fetchone()[0], "acceptance")
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks").fetchone()[0], 3)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE strategy_profile='jobbot-broad-qualified-yield' AND strategy_profile_version='2026-09-22.1' AND query_family<>'' AND query_kind<>'' AND query_pass<>''",).fetchone()[0], 3)
             finally:
                 conn.close()
 
@@ -69,18 +80,22 @@ class RunNowIntegrationTests(unittest.TestCase):
             run_id = browser_tasks.enqueue_production(root, "staged")
             conn = sqlite3.connect(root / "data" / "jobs.sqlite3")
             try:
-                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 864)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 140)
                 phases = dict(conn.execute("SELECT phase,COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? GROUP BY phase", (run_id,)).fetchall())
                 self.assertEqual(phases, {
-                    "A_FASTEST_DOOR_RECENT": 330,
-                    "B_REMAINING_CORE_RECENT": 102,
-                    "C_DEEP_BACKFILL": 432,
+                    "A_FASTEST_DOOR_RECENT": 30,
+                    "B_REMAINING_CORE_RECENT": 40,
+                    "C_DEEP_BACKFILL": 70,
                 })
                 self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND max_results IS NOT NULL", (run_id,)).fetchone()[0], 0)
+                rows = conn.execute("SELECT strategy_profile,query_family,query_kind,query_pass FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchall()
+                self.assertTrue(all(all(value for value in row) for row in rows))
+                deep_families = {row[0] for row in conn.execute("SELECT DISTINCT query_family FROM browser_search_tasks WHERE browser_run_id=? AND phase='C_DEEP_BACKFILL'", (run_id,))}
+                self.assertEqual(len(deep_families), 7)
             finally:
                 conn.close()
 
-    def test_staged_plan_suppresses_fallback_when_reservoir_is_full(self) -> None:
+    def test_minimum_recall_family_remains_when_reservoir_is_full(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             shutil.copytree(PROJECT_ROOT / "config", root / "config")
@@ -99,8 +114,8 @@ class RunNowIntegrationTests(unittest.TestCase):
             run_id = browser_tasks.enqueue_production(root, "staged", ["linkedin"])
             conn = sqlite3.connect(bundle.database_path)
             try:
-                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 278)
-                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND career_lane='FALLBACK_TRANSFERABLE'", (run_id,)).fetchone()[0], 0)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=?", (run_id,)).fetchone()[0], 56)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND query_family='bounded_transferable_records_data_process_ops' AND phase='C_DEEP_BACKFILL'", (run_id,)).fetchone()[0], 4)
             finally:
                 conn.close()
 

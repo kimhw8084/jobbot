@@ -501,7 +501,20 @@ class Store:
         return list(self.conn.execute("SELECT * FROM source_occurrences WHERE job_id=? ORDER BY source_site", (job_id,)))
 
     def mark(self, job_id: str, status: str, notes: str = "") -> None:
-        self.conn.execute("UPDATE jobs SET application_status=?, notes=CASE WHEN ?='' THEN notes ELSE ? END WHERE job_id=?", (status, notes, notes, job_id))
+        normalized = str(status).strip().upper() or "NEW"
+        row = self.conn.execute("SELECT qualification_gates_json FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+        try:
+            gates = json.loads(row[0] or "{}") if row else {}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            gates = {}
+        if not isinstance(gates, dict):
+            gates = {}
+        gates["no_repeat"] = {
+            "status": "pass" if normalized == "NEW" else "fail",
+            "evidence": "not previously handled" if normalized == "NEW" else f"already handled with status {normalized}",
+        }
+        recommendation = "ALREADY_HANDLED" if normalized != "NEW" else "REVIEW"
+        self.conn.execute("UPDATE jobs SET application_status=?, recommendation=?, qualification_gates_json=?, notes=CASE WHEN ?='' THEN notes ELSE ? END WHERE job_id=?", (normalized, recommendation, json.dumps(gates, ensure_ascii=False, sort_keys=True), notes, notes, job_id))
         self.conn.commit()
 
     def close(self) -> None:

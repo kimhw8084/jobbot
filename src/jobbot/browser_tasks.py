@@ -11,7 +11,7 @@ from typing import Any
 from . import legacy_engine as j
 from .config import PROJECT_ROOT, load_bundle
 from .db import Database, apply_pending
-from .search_plan import build_search_url, compile_plan, compile_staged_plan, normalize_search_query
+from .search_plan import _task_key, build_search_url, compile_plan, compile_staged_plan, normalize_search_query
 from .strategy_runtime import fallback_activation_enabled
 
 V3_VERSION = "3.2.1"
@@ -115,8 +115,12 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         planned = compile_plan(bundle, mode, chosen, include_fallback=include_fallback)
     tasks = [{
         "task_key": task.task_key, "platform": task.platform, "query_text": task.query,
+        "strategy_profile": task.strategy_profile,
+        "strategy_profile_version": task.strategy_profile_version,
+        "query_family": task.query_family, "query_kind": task.query_kind,
+        "query_pass": task.query_pass, "initial_order": task.initial_order,
         "window_days": task.age_days, "search_profile": task.profile,
-        "career_lane": task.lane, "resume_variant": task.resume_variant,
+        "career_lane": task.career_lane, "resume_variant": task.resume_variant,
         "priority": task.priority, "search_url": task.search_url,
         "execution_rank": task.execution_rank, "phase": task.phase,
     } for task in planned]
@@ -137,10 +141,12 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, t["platform"], t["query_text"], 1, t["window_days"], "date", t["search_url"], None, "queued", now,
-             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"]),
+             t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"],
+             t["strategy_profile"], t["strategy_profile_version"], t["query_family"], t["query_kind"], t["query_pass"], t["initial_order"]),
         )
     store.conn.commit(); store.close()
     return rid
@@ -204,30 +210,38 @@ def enqueue_validation_sample(
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, task.platform, task.query, 1, task.age_days, task.sort_mode, task.search_url, None, "queued", now,
-             task.profile, task.lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase),
+             task.profile, task.career_lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase,
+             task.strategy_profile, task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order),
         )
     store.conn.commit(); store.close()
     return rid
 
 
 def enqueue_gate(base: Path, platform: str = "indeed", days: int = 7, max_results: int = 20) -> int:
-    queries = ["patient enrollment specialist", "patient access specialist", "healthcare operations coordinator"]
     db, _, _, _, _ = paths(base)
+    bundle = load_bundle(base)
+    planned = compile_plan(bundle, "fast", [platform])[:3]
     store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
     rid = int(store.conn.execute(
         "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
         (V3_VERSION, "acceptance", platform, "queued", now, "Acceptance: auth + pagination + multi-query"),
     ).lastrowid)
-    store.conn.execute("INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,?)", (rid, platform, len(queries)))
-    for q in queries:
+    store.conn.execute("INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,?)", (rid, platform, len(planned)))
+    for task in planned:
         store.conn.execute(
-            """INSERT INTO browser_search_tasks(browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,search_profile,career_lane,priority)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (rid, platform, q, 1, days, "date", search_url(platform, q, days), max_results, "queued", now,
-             "acceptance-smoke", "healthcare_access", 0),
+            """INSERT INTO browser_search_tasks(
+              browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (rid, platform, task.query, 1, days, "date", search_url(platform, task.query, days), max_results, "queued", now,
+             task.profile, task.career_lane, task.resume_variant, task.priority, task.execution_rank, 1,
+             _task_key(platform, task.query, days), "ACCEPTANCE_SMOKE", task.strategy_profile,
+             task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order),
         )
     store.conn.commit(); store.close(); return rid
 
@@ -248,15 +262,17 @@ def enqueue_validation(base: Path, platforms: list[str] | None = None, *, max_re
     ).lastrowid)
     store.conn.executemany("INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,1)", [(rid, p) for p in chosen])
     for platform in chosen:
-        query = "patient enrollment specialist"
+        task = compile_plan(active_bundle, "fast", [platform])[0]
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
-              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (rid, platform, query, 1, 7, "date", search_url(platform, query, 7), max_results, "queued", now,
-             "validation-micro", "HEALTHCARE_OPS_ACCESS", "enrollment_operations", 0, 1, 1,
-             f"VALIDATION|{platform}|patient enrollment specialist", "A_FASTEST_DOOR_RECENT"),
+              search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (rid, platform, task.query, 1, task.age_days, "date", task.search_url, max_results, "queued", now,
+             task.profile, task.career_lane, task.resume_variant, task.priority, task.execution_rank, 1,
+             task.task_key, "VALIDATION_MICRO", task.strategy_profile, task.strategy_profile_version,
+             task.query_family, task.query_kind, task.query_pass, task.initial_order),
         )
     store.conn.commit(); store.close(); return rid
 
@@ -547,19 +563,16 @@ def install_check(base: Path) -> int:
 def self_test(base: Path) -> int:
     import tempfile
     _,_,_,cfg,strategy=paths(base)
-    tasks=iter_strategy_tasks(strategy,'deep',list(PLATFORMS))
-    unique_searches=set()
-    for s0 in strategy.get('searches',[]):
-        if not s0.get('enabled',True): continue
-        days0=int(s0.get('bootstrap_backfill_days',30) or 30)
-        for x in s0.get('keywords',[]):
-            q0=j.clean_text(x).lower()
-            if q0: unique_searches.add((q0,days0))
-    keyword_count=len(unique_searches)
-    expected=keyword_count*3
-    assert len(tasks)==expected,(len(tasks),expected)
-    assert all(t['search_url'].startswith('https://') for t in tasks)
-    assert all(t['platform'] in PLATFORMS for t in tasks)
+    bundle=load_bundle(base)
+    tasks=compile_plan(bundle,'deep',list(PLATFORMS))
+    identities={(t.platform,t.query.casefold(),t.age_days,t.remote_required) for t in tasks}
+    required={(str(f['id']),p) for f in bundle.live_search.get('families',[]) if f.get('enabled',True) and f.get('minimum_deep_recall',False) for p in PLATFORMS}
+    covered={(t.query_family,t.platform) for t in tasks}
+    assert len(identities)==len(tasks)
+    assert required<=covered,(required-covered)
+    assert all(t.search_url.startswith('https://') for t in tasks)
+    assert all(t.platform in PLATFORMS for t in tasks)
+    assert all(t.strategy_profile and t.query_family and t.query_kind and t.query_pass for t in tasks)
     assert 'f_WT=2' in linkedin_search_url('patient access specialist',7)
     assert 'fromage=7' in indeed_search_url('patient access specialist',7)
     assert '/Job/remote-patient-access-specialist-jobs-' in glassdoor_search_url('patient access specialist',7)
@@ -570,7 +583,7 @@ def self_test(base: Path) -> int:
         job=j.Job(source_site='indeed',source_job_id='abc123',canonical_url='https://www.indeed.com/viewjob?jk=abc123',apply_url='https://www.indeed.com/viewjob?jk=abc123',title='Patient Enrollment Specialist',company='Example Health',location_raw='Remote',remote_status='remote',employment_type='Full-time',posted_at=now,description='Remote healthcare patient enrollment and onboarding. Required Qualifications: 2 years relevant experience. HIPAA documentation and Excel.',raw={'browser_task_id':tid})
         setattr(job,'_mode','deep'); j.score_job(job,strategy,cfg.get('candidate',{})); a=s.upsert(job); b=s.upsert(job); job.description+=' Updated workflow documentation.'; setattr(job,'_mode','deep'); j.score_job(job,strategy,cfg.get('candidate',{})); c=s.upsert(job)
         assert (a,b,c)==('new','unchanged','updated'),(a,b,c); s.close()
-    print(f"V3 SELF-TEST PASSED — {keyword_count} researched keywords -> {expected} exhaustive Big-3 tasks in deep mode")
+    print(f"V3 SELF-TEST PASSED — {len(required) // len(PLATFORMS)} configured families have deep recall on all three platforms")
     return 0
 
 

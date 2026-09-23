@@ -9,6 +9,7 @@ from pathlib import Path
 from jobbot.config import PROJECT_ROOT
 from jobbot.db import Database, apply_pending
 from jobbot.legacy_engine import PrecisionStore, select_daily_plan
+from jobbot.scoring import score_job
 from jobbot.strategy_runtime import fallback_activation_enabled
 
 from tests.helpers import bundle_with_database, scored
@@ -19,7 +20,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 18)))
+            self.assertEqual(result.applied, tuple(range(1, 19)))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -33,8 +34,11 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 self.assertIsNone(conn.execute("SELECT max_results FROM browser_search_tasks LIMIT 1").fetchone())
                 fields = {row[1] for row in conn.execute("PRAGMA table_info(search_task_results)")}
                 task_fields = {row[1] for row in conn.execute("PRAGMA table_info(browser_search_tasks)")}
+                occurrence_fields = {row[1] for row in conn.execute("PRAGMA table_info(source_occurrences)")}
                 self.assertTrue({"title_hint", "card_json", "detail_status", "detail_lease_until"} <= fields)
                 self.assertTrue({"cards_extracted", "cards_persistence_succeeded", "execution_rank", "phase"} <= task_fields)
+                self.assertTrue({"strategy_profile", "query_family", "query_kind", "query_pass", "initial_order"} <= task_fields)
+                self.assertTrue({"strategy_profile", "query_family", "query_kind", "query_pass", "initial_order"} <= occurrence_fields)
                 self.assertEqual(conn.execute("SELECT type FROM sqlite_master WHERE name='extension_refresh_requests'").fetchone()[0], "table")
                 refresh_fields = {row[1] for row in conn.execute("PRAGMA table_info(extension_refresh_requests)")}
                 self.assertTrue({"observed_source_identity", "observed_deployment_root", "diagnostics_json"} <= refresh_fields)
@@ -135,11 +139,27 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
             path = Path(td) / "jobs.sqlite3"; bundle = bundle_with_database(path); Database(bundle).migrate(); store = PrecisionStore(path)
             try:
                 for index in range(24):
-                    job = scored("Patient Enrollment Specialist", "Fully remote healthcare enrollment. Required Qualifications: 2 years relevant experience. Full-time permanent with benefits.")
+                    job = scored(
+                        "Patient Enrollment Specialist",
+                        "Example Health is currently accepting applications for a fully remote United States role. "
+                        "This is a full-time permanent employee position. The employer provides a $60,000 annual base salary. "
+                        "No travel required. No required office days. No onsite training. No field work. No in-person events. "
+                        "Healthcare patient enrollment operations include reviewing enrollment records, verifying documentation, "
+                        "resolving discrepancies, coordinating workflow handoffs, and preparing accurate case records. "
+                        "Required Qualifications: 2 years of healthcare enrollment or relevant operations experience. "
+                        f"HIPAA documentation and Excel workflows. Requisition reference {index}."
+                    )
+                    job.salary_text = "$60,000/year"; job.salary_min = 60000; job.salary_max = 60000
+                    job.raw = {"posting_status": "active"}
+                    score_job(job, bundle.strategy, bundle.legacy_runtime()["candidate"])
+                    self.assertIn(job.recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"}, job.qualification_gates)
                     job.source_job_id = f"job-{index}"; job.canonical_url = f"https://boards.greenhouse.io/example/jobs/{index}"; job.apply_url = job.canonical_url; job.company = f"Employer {index % 5}"
                     store.upsert(job)
                 plan = select_daily_plan(store.rows(active_only=True), bundle.strategy, 15)
-                self.assertEqual(len(plan), 15)
+                self.assertEqual(len(plan), 15, [
+                    (row["recommendation"], row["application_status"], json.loads(row["qualification_gates_json"]))
+                    for row in store.rows(active_only=True)
+                ])
                 self.assertTrue(all(row["recommendation"] in {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"} for row in plan))
                 self.assertTrue(all(row["remote_gate"] == "pass" for row in plan))
             finally: store.close()

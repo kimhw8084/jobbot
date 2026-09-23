@@ -77,6 +77,8 @@ def upsert_card(
     conn: sqlite3.Connection, *, run_id: int, task_id: int, platform: str,
     source_job_id: str, source_url: str, title_hint: str = "", company_hint: str = "",
     location_hint: str = "", posted_text: str = "", posted_age_days: float | None = None,
+    strategy_profile: str = "", strategy_profile_version: str = "", query_family: str = "",
+    query_kind: str = "", query_pass: str = "", initial_order: int = 0,
     card: dict[str, Any] | None = None, eligible_for_detail: bool = True,
     recall_selected: bool = True, recall_qa_sample: bool = False,
     recall_reason: str = "", enrichment_priority: int = 0,
@@ -99,12 +101,14 @@ def upsert_card(
               task_id,source_site,source_job_id,source_url,first_seen_at,last_seen_at,
               browser_run_id,title_hint,company_hint,location_hint,posted_text,posted_age_days,
               observed_at,card_json,detail_status,identity_status,identity_persisted_at,
-              card_metadata_status,content_state,enrichment_priority,recall_selected,recall_qa_sample,recall_reason
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              card_metadata_status,content_state,enrichment_priority,recall_selected,recall_qa_sample,recall_reason,
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (task_id, platform, source_job_id, source_url, now, now, run_id, title_hint,
              company_hint, location_hint, posted_text, posted_age_days, now, payload, initial_status,
              "PERSISTED", now, metadata_status, "MISSING", int(enrichment_priority),
-             int(bool(recall_selected)), int(bool(recall_qa_sample)), recall_reason),
+             int(bool(recall_selected)), int(bool(recall_qa_sample)), recall_reason,
+             strategy_profile, strategy_profile_version, query_family, query_kind, query_pass, int(initial_order)),
         )
         result_id = int(cursor.lastrowid)
         duplicate = False
@@ -123,6 +127,12 @@ def upsert_card(
               enrichment_priority=MAX(enrichment_priority,?),
               recall_selected=MAX(recall_selected,?),recall_qa_sample=MAX(recall_qa_sample,?),
               recall_reason=CASE WHEN ?<>'' THEN ? ELSE recall_reason END,
+              strategy_profile=CASE WHEN ?<>'' THEN ? ELSE strategy_profile END,
+              strategy_profile_version=CASE WHEN ?<>'' THEN ? ELSE strategy_profile_version END,
+              query_family=CASE WHEN ?<>'' THEN ? ELSE query_family END,
+              query_kind=CASE WHEN ?<>'' THEN ? ELSE query_kind END,
+              query_pass=CASE WHEN ?<>'' THEN ? ELSE query_pass END,
+              initial_order=CASE WHEN ?>0 THEN ? ELSE initial_order END,
               detail_status=CASE WHEN detail_status='SKIPPED_AGE' AND ? THEN
                 CASE WHEN ? OR ? THEN 'PENDING' ELSE 'DEFERRED_RECALL' END ELSE detail_status END
               WHERE result_id=?""",
@@ -130,6 +140,9 @@ def upsert_card(
              location_hint, location_hint, posted_text, posted_text, posted_age_days,
              payload, payload, int(bool(metadata_status == "CAPTURED")), int(enrichment_priority),
              int(bool(recall_selected)), int(bool(recall_qa_sample)), recall_reason, recall_reason,
+             strategy_profile, strategy_profile, strategy_profile_version, strategy_profile_version,
+             query_family, query_family, query_kind, query_kind, query_pass, query_pass,
+             int(initial_order), int(initial_order),
              1 if eligible_for_detail else 0, int(bool(recall_selected)), int(bool(recall_qa_sample)), result_id),
         )
         duplicate = True

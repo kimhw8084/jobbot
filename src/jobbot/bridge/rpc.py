@@ -413,13 +413,24 @@ def _overall_auth_state(states: list[str]) -> str:
     return 'unchecked'
 
 
-def _recall_decision(strategy: dict[str, Any], platform: str, title: str, source_job_id: str, source_url: str) -> tuple[bool, bool, str, int]:
+def _recall_decision(
+    strategy: dict[str, Any], platform: str, title: str, source_job_id: str, source_url: str,
+    query_family: str = "",
+) -> tuple[bool, bool, str, int]:
     """Use the existing high-recall prefilter only for enrichment ordering."""
+    configured_families = {
+        str(family.get("id")) for family in strategy.get("_live_search_profile", {}).get("families", [])
+        if family.get("enabled", True) and family.get("minimum_deep_recall", False)
+    }
     probe = j.Job(source_site=platform, source_job_id=source_job_id,
                   canonical_url=source_url, title=title, remote_status="unknown")
     selected, reason = j.recall_prefilter(probe, strategy)
     sample_key = f"{platform}|{source_job_id}|{source_url}".encode("utf-8", errors="ignore")
     qa_sample = int(hashlib.sha256(sample_key).hexdigest()[:8], 16) % 20 == 0
+    if query_family and query_family in configured_families:
+        if reason in {"excluded occupation family", "explicit out-of-scope title"}:
+            return False, bool(qa_sample), j.clean_text(reason), 1 if qa_sample else 2
+        return True, False, f"active live-search family recall: {query_family}", 0
     return bool(selected), bool(qa_sample), j.clean_text(reason), 0 if selected else (1 if qa_sample else 2)
 
 
@@ -743,21 +754,25 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
         if action=='record_result':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
             if not source or not (sid or url):return {'ok':False,'error':'insufficient_result_identity'}
-            task=conn.execute("SELECT 1 FROM browser_search_tasks WHERE task_id=? AND browser_run_id=? AND platform=?",(tid,rid,source)).fetchone()
+            task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=? AND platform=?",(tid,rid,source)).fetchone()
             if not task:return {'ok':False,'error':'task_not_found'}
             try: posted_age=float(msg['posted_age_days']) if msg.get('posted_age_days') is not None else None
             except (TypeError,ValueError): posted_age=None
             card=msg.get('card') if isinstance(msg.get('card'),dict) else {}
             selected,qa_sample,recall_reason,enrichment_priority=_recall_decision(
                 strategy, source, j.clean_text(msg.get('title_hint') or card.get('title')),
-                sid, url,
+                sid, url, j.clean_text(task['query_family']),
             )
             discovery,duplicate=upsert_card(conn,run_id=rid,task_id=tid,platform=source,source_job_id=sid,source_url=url,
                 title_hint=j.clean_text(msg.get('title_hint') or card.get('title')),company_hint=j.clean_text(msg.get('company_hint') or card.get('company')),
                 location_hint=j.clean_text(msg.get('location_hint') or card.get('location')),posted_text=j.clean_text(msg.get('posted_text') or card.get('posted_text')),
                 posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)),
                 recall_selected=selected,recall_qa_sample=qa_sample,recall_reason=recall_reason,
-                enrichment_priority=enrichment_priority)
+                enrichment_priority=enrichment_priority,
+                strategy_profile=j.clean_text(task['strategy_profile']),
+                strategy_profile_version=j.clean_text(task['strategy_profile_version']),
+                query_family=j.clean_text(task['query_family']), query_kind=j.clean_text(task['query_kind']),
+                query_pass=j.clean_text(task['query_pass']), initial_order=int(task['initial_order'] or 0))
             if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
             pending_count=_pending_detail_count(conn,tid)
             event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status,'pending_count':int(pending_count)}
@@ -831,7 +846,7 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
                 'application_destination': 'observed_distinct_destination' if apply_url else 'unknown_board_destination',
                 'remote_filter_intent': bool(task['remote_required']),
             }
-            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=apply_url,title=title,company=company,location_raw=location,remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_intent':bool(task['remote_required']),'source_payload':raw,'_discovery_company':j.clean_text(raw.get('search_card',{}).get('company') if isinstance(raw.get('search_card'),dict) else '')})
+            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=apply_url,title=title,company=company,location_raw=location,remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'strategy_profile':task['strategy_profile'],'strategy_profile_version':task['strategy_profile_version'],'query_family':task['query_family'],'query_kind':task['query_kind'],'query_pass':task['query_pass'],'initial_order':task['initial_order'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_intent':bool(task['remote_required']),'source_payload':raw,'_discovery_company':j.clean_text(raw.get('search_card',{}).get('company') if isinstance(raw.get('search_card'),dict) else '')})
             setattr(job,'_mode','deep');j.score_job(job,strategy,cfg.get('candidate',{}));ledger_status=store.upsert(job,commit=False)
             fields={'new':'jobs_new','updated':'jobs_updated','unchanged':'jobs_unchanged'}
             if ledger_status in fields:

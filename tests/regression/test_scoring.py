@@ -35,7 +35,13 @@ class ScoringRegressionTests(unittest.TestCase):
         description = "Fully remote US healthcare role. Required Qualifications: 2 years of relevant operations experience. Full-time permanent employee with benefits. HIPAA documentation and Excel workflows."
         for title in titles:
             with self.subTest(title=title):
-                self.assertIn(scored(title, description).recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"})
+                # Positive title families remain discoverable. The shared fixture
+                # intentionally omits employer salary, open status, and complete
+                # no-presence evidence, so it must not be promoted as actionable.
+                result = scored(title, description)
+                self.assertNotEqual(result.recommendation, "OUT_OF_SCOPE")
+                self.assertTrue(result.search_profile)
+                self.assertNotIn(result.recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"})
 
     def test_growth_roles_do_not_reward_job_owned_technical_skills(self) -> None:
         sql = scored("Healthcare Data Analyst", "Fully remote full-time healthcare analytics. Required Qualifications: SQL and 3 years of healthcare reporting.")
@@ -61,11 +67,14 @@ class ScoringRegressionTests(unittest.TestCase):
         self.assertNotIn("MBA", sales.required_qualifications)
         self.assertNotIn(sales.recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"})
 
-    def test_complete_trusted_primary_detail_can_enter_qualified_queue(self) -> None:
+    def test_trusted_primary_detail_stays_in_review_until_hard_gates_are_evidenced(self) -> None:
         description = "Fully remote US healthcare enrollment role. Required Qualifications: 2 years relevant operations experience. Full-time permanent employee with benefits. HIPAA, Excel, patient communication, intake, and documentation accuracy. " * 5
         job = scored("Patient Enrollment Specialist", description, source="linkedin")
         self.assertGreaterEqual(job.extraction_confidence, 85)
-        self.assertIn(job.recommendation, {"APPLY_NOW", "APPLY_VOLUME"})
+        self.assertEqual(job.recommendation, "REVIEW")
+        self.assertEqual(job.qualification_gates["base_pay_floor"]["status"], "review")
+        self.assertEqual(job.qualification_gates["open_current"]["status"], "review")
+        self.assertEqual(job.qualification_gates["mandatory_presence"]["status"], "review")
 
     def test_remote_clinical_management_and_employment_gates(self) -> None:
         linkedin_shape = scored("Patient Access Specialist", "Healthcare enrollment operations role.", location="Remote", source="linkedin", remote_status="unknown")

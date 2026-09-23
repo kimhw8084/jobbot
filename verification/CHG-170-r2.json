@@ -1,0 +1,122 @@
+{
+  "request_id": "CHG-170-r2",
+  "project": "jobbot / kimhw8084/jobbot",
+  "target_branch": "main",
+  "working_branch": "codex/jobbot-CHG-170-r2",
+  "base_commit": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+  "r1_inherited_candidate": {
+    "fabric_job": "CF-3304fe7962072c854253f769",
+    "tested_code_commit": "8c8a0515c23a81b584089db4e2a43aaefcf78f8b",
+    "exact_candidate_head": "0afb92845e5138cf5d172733693624701797fa86",
+    "evidence_commit": "999aebd57179f97669f5c86fac75892cee43c259",
+    "carry_forward": "Fast-forwarded codex/jobbot-CHG-170-r2 through the exact R1 candidate. The fresh target is its merge base; no conflict or reimplementation was needed."
+  },
+  "tested_head_commit": "80c89babb711fad2dee7be3fdb05853f1fd32f87",
+  "candidate_commit_message": "CHG-170-r2: reconcile work authorization qualification",
+  "candidate_authorization": {
+    "canonical_truth": "Authorized without sponsorship",
+    "normalized_config_value": "authorized_no_sponsorship",
+    "normalization": "Existing recognized token already supported by work_auth_analysis().",
+    "readiness": "Configured; candidate-check reports work authorization configured and has 0 decision-quality warnings."
+  },
+  "work_authorization_gate_matrix": [
+    {
+      "candidate_status": "authorized_no_sponsorship",
+      "posting_evidence": "Explicit no-sponsorship / must-be-authorized requirement",
+      "legacy_job_work_auth_gate": "pass",
+      "qualification_gate": "pass",
+      "recommendation": "May remain actionable when the other CHG-170 gates pass"
+    },
+    {
+      "candidate_status": "needs_sponsorship",
+      "posting_evidence": "Explicit sponsorship prohibition",
+      "legacy_job_work_auth_gate": "reject",
+      "qualification_gate": "fail",
+      "recommendation": "Non-actionable hard gate"
+    },
+    {
+      "candidate_status": "unknown",
+      "posting_evidence": "Explicit authorization / sponsorship requirement",
+      "legacy_job_work_auth_gate": "review",
+      "qualification_gate": "review",
+      "recommendation": "Non-actionable review"
+    },
+    {
+      "candidate_status": "authorized_no_sponsorship",
+      "posting_evidence": "No explicit sponsorship restriction",
+      "legacy_job_work_auth_gate": "unknown with empty work_authorization_requirement",
+      "qualification_gate": "pass (not applicable)",
+      "recommendation": "No work-authorization review is introduced"
+    }
+  ],
+  "backward_compatibility": {
+    "preserved_fields": [
+      "job.work_auth_gate",
+      "job.work_authorization_requirement"
+    ],
+    "qualification_evidence_key": "work_authorization",
+    "gate_status_vocabulary": [
+      "pass",
+      "fail",
+      "review"
+    ]
+  },
+  "changed_files": [
+    "config/candidate.toml",
+    "src/jobbot/legacy_engine.py",
+    "tests/unit/test_qualification_gates.py",
+    "verification/CHG-170-r2.json"
+  ],
+  "tests": [
+    {
+      "command": "rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest tests.unit.test_strategy tests.unit.test_qualification_gates tests.regression.test_scoring tests.integration.test_database_ledger tests.integration.test_browser_tasks -v",
+      "result": "PASS — 44 passed, 1 skipped (45 total); the optional local historical-ledger test was skipped because no local historical ledger exists."
+    },
+    {
+      "command": "rtk env PYTHONPATH=src /opt/anaconda3/bin/python -m unittest discover -s tests",
+      "result": "PASS — 132 passed, 1 skipped (133 total); the optional local historical-ledger test was skipped because no local historical ledger exists."
+    }
+  ],
+  "candidate_readiness_check": {
+    "result": "PASS — authorized_no_sponsorship reported as configured; 0 decision-quality warnings.",
+    "isolated_from_database": true
+  },
+  "test_isolation": {
+    "focused_suite_worktree": "/tmp/jobbot-chg170-r2-isolated",
+    "full_suite_worktree": "/tmp/jobbot-chg170-r2-full",
+    "primary_worktree_cleanup": "A first full-suite invocation created a new data/jobs.sqlite3 at the project's default path, which was absent before testing. The file was removed after discovery. No preexisting ledger existed or was read; the final focused and full suite runs used disposable worktrees."
+  },
+  "search_plan_evidence": {
+    "mode": "staged",
+    "profile": "jobbot-broad-qualified-yield",
+    "profile_version": "2026-09-22.1",
+    "total_tasks": 140,
+    "tasks_by_platform": {
+      "linkedin": 56,
+      "indeed": 42,
+      "glassdoor": 42
+    },
+    "enabled_families": 7,
+    "all_enabled_families_have_deep_coverage_on": [
+      "linkedin",
+      "indeed",
+      "glassdoor"
+    ],
+    "byte_identical_to_r1_artifacts": {
+      "json": true,
+      "csv": true,
+      "html": true
+    },
+    "compared_against": [
+      "verification/CHG-170-r1/after-search-plan.json",
+      "verification/CHG-170-r1/after-search-plan.csv",
+      "verification/CHG-170-r1/after-search-plan.html"
+    ],
+    "generated_in": "/tmp/jobbot-chg170-r2-plan",
+    "search_families_or_order_retuned": false
+  },
+  "production_ledger_validation": "NOT_USED — no preexisting production ledger existed or was read. The first non-isolated full-suite attempt created a fresh scratch database at the project default path; it was removed. Final focused and full suite runs were isolated in disposable worktrees, and database/browser-task fixtures use temporary data.",
+  "live_big_three_validation": "NOT_RUN — no LinkedIn, Indeed or Glassdoor live-site acceptance or production browsing was attempted.",
+  "request_binding": "Project OS FIX for JobBot CHG-170-r2: carry forward exact R1 candidate 0afb92845e5138cf5d172733693624701797fa86 from codex/jobbot-CHG-170-r1 onto codex/jobbot-CHG-170-r2 with target/main base c9bcbe7bf63431601597cbf55eef452489c0b141, preserving candidate ancestry and applying only the bounded work-authorization correction. Never merge or move main.",
+  "evidence_commit_note": "This artifact follows the R1 evidence pattern: it records the exact tested R2 code head above and is committed after that code commit because a commit cannot contain its own final SHA. The final remote branch head is the verification-artifact commit and is reported from Git after push."
+}

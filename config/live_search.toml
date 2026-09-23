@@ -1,0 +1,117 @@
+[profile]
+id = "jobbot-broad-qualified-yield"
+version = "2026-09-22.1"
+label = "Broad qualified-yield live search"
+remote_required = true
+fast_max_initial_order = 3
+
+[profile.preferences]
+positive_terms = ["records", "documentation", "data validation", "quality review", "audit", "reconciliation", "deadline", "case processing", "workflow", "policy", "academic operations", "student records", "health system", "university", "college"]
+negative_terms = ["high-volume call center", "call queue", "phone queue", "live intake", "continuous calls", "continuous chat", "customer success", "admissions sales", "sales quota"]
+established_terms = ["established organization", "public university", "state university", "public college", "health system", "hospital system", "serving since"]
+maximum_adjustment = 6
+
+[[families]]
+id = "provider_lifecycle_credentialing_data"
+label = "Provider lifecycle, credentialing, enrollment, and provider data"
+career_lane = "HEALTHCARE_OPS_ACCESS"
+enabled = true
+minimum_deep_recall = true
+initial_order = 1
+fast_days = 7
+deep_days = 30
+linkedin_intent_queries = ["provider lifecycle, credentialing, enrollment and provider data maintenance roles at health plans", "healthcare credentialing operations including provider onboarding and roster maintenance"]
+linkedin_title_queries = ["\"provider enrollment\" OR \"provider credentialing\" specialist coordinator", "\"provider data\" credentialing roster specialist"]
+indeed_phrase_queries = ["\"provider enrollment specialist\"", "\"credentialing coordinator\""]
+indeed_boolean_queries = ["\"provider roster\" OR \"provider data\""]
+glassdoor_title_queries = ["provider enrollment specialist", "credentialing coordinator", "provider data specialist"]
+
+[[families]]
+id = "healthcare_quality_data_documentation_compliance"
+label = "Nonclinical healthcare quality, data, documentation, and compliance"
+career_lane = "HEALTHCARE_QUALITY_DATA"
+enabled = true
+minimum_deep_recall = true
+initial_order = 2
+fast_days = 7
+deep_days = 30
+linkedin_intent_queries = ["nonclinical healthcare quality documentation audit and compliance operations", "health information records accuracy data quality and documentation review"]
+linkedin_title_queries = ["\"healthcare quality\" OR \"documentation quality\" specialist coordinator", "\"health information\" records compliance quality specialist"]
+indeed_phrase_queries = ["\"healthcare quality specialist\"", "\"medical records specialist\""]
+indeed_boolean_queries = ["\"health information\" OR \"documentation audit\""]
+glassdoor_title_queries = ["healthcare quality specialist", "medical records coordinator", "documentation quality specialist"]
+
+[[families]]
+id = "healthcare_project_implementation_program_support"
+label = "Healthcare project, implementation, and program support"
+career_lane = "HEALTHCARE_IMPLEMENTATION"
+enabled = true
+minimum_deep_recall = true
+initial_order = 3
+fast_days = 7
+deep_days = 30
+linkedin_intent_queries = ["healthcare implementation and project coordination workflow support", "healthcare program operations project tracking and implementation support"]
+linkedin_title_queries = ["\"healthcare project coordinator\" OR \"implementation coordinator\"", "healthcare program implementation operations specialist"]
+indeed_phrase_queries = ["\"healthcare project coordinator\"", "\"implementation coordinator healthcare\""]
+indeed_boolean_queries = ["\"healthcare implementation\" OR \"project coordinator\" healthcare"]
+glassdoor_title_queries = ["healthcare project coordinator", "healthcare implementation coordinator", "healthcare program coordinator"]
+
+[[families]]
+id = "higher_ed_academic_back_office"
+label = "Higher education academic back-office and EdTech operations"
+career_lane = "HIGHER_ED_EDTECH"
+enabled = true
+minimum_deep_recall = true
+initial_order = 4
+fast_days = 7
+deep_days = 45
+linkedin_intent_queries = ["higher education academic records transcript evaluation and registrar operations", "university back-office enrollment records application processing and learning operations"]
+linkedin_title_queries = ["\"academic records\" OR registrar coordinator university", "\"transcript evaluator\" OR \"application processor\" higher education"]
+indeed_phrase_queries = ["\"academic records specialist\"", "\"registrar coordinator\""]
+indeed_boolean_queries = ["\"academic records\" OR registrar university"]
+glassdoor_title_queries = ["academic records coordinator", "registrar specialist", "EdTech learning operations coordinator"]
+
+[[families]]
+id = "bounded_transferable_records_data_process_ops"
+label = "Bounded transferable records, data, and process operations"
+career_lane = "FALLBACK_TRANSFERABLE"
+enabled = true
+minimum_deep_recall = true
+initial_order = 5
+fast_days = 7
+deep_days = 30
+linkedin_intent_queries = ["records accuracy data validation and documentation operations", "process operations focused on reconciliation, records integrity and data quality"]
+linkedin_title_queries = ["\"data integrity specialist\" OR \"data validation specialist\"", "\"records operations\" documentation quality coordinator"]
+indeed_phrase_queries = ["\"data integrity specialist\"", "\"data validation specialist\""]
+indeed_boolean_queries = ["\"data integrity\" OR \"data validation\" records"]
+glassdoor_title_queries = ["data integrity specialist", "data validation coordinator", "records quality specialist"]
+
+[[families]]
+id = "backoffice_patient_access_eligibility_enrollment"
+label = "Back-office patient access, eligibility, and enrollment"
+career_lane = "HEALTHCARE_OPS_ACCESS"
+enabled = true
+minimum_deep_recall = true
+initial_order = 6
+fast_days = 7
+deep_days = 30
+linkedin_intent_queries = ["patient access eligibility and enrollment processing documentation operations", "healthcare benefits verification patient registration and enrollment workflow support"]
+linkedin_title_queries = ["\"patient access specialist\" OR \"eligibility specialist\" healthcare", "\"patient enrollment coordinator\" registration verification"]
+indeed_phrase_queries = ["\"patient access specialist\"", "\"eligibility specialist healthcare\""]
+indeed_boolean_queries = ["\"patient enrollment\" OR \"eligibility specialist\""]
+glassdoor_title_queries = ["patient access specialist", "eligibility coordinator healthcare", "patient enrollment coordinator"]
+
+[[families]]
+id = "bilingual_ai_content_quality"
+label = "Bilingual AI and content quality"
+career_lane = "CONTENT_AI_QUALITY"
+enabled = true
+minimum_deep_recall = true
+initial_order = 7
+fast_days = 7
+deep_days = 21
+linkedin_intent_queries = ["bilingual English Spanish content quality review and language evaluation", "Spanish language AI evaluator rubric-based content quality review"]
+linkedin_title_queries = ["\"Spanish content reviewer\" OR \"Spanish language reviewer\"", "\"AI evaluator\" bilingual content quality analyst"]
+indeed_phrase_queries = ["\"Spanish content reviewer\"", "\"bilingual language reviewer\""]
+indeed_boolean_queries = ["\"Spanish content reviewer\" OR \"AI evaluator\""]
+glassdoor_title_queries = ["Spanish content reviewer", "bilingual language quality analyst", "AI content evaluator Spanish"]

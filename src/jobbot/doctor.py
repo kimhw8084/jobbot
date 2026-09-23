@@ -85,7 +85,7 @@ def run(bundle: ConfigBundle) -> tuple[bool, list[Check]]:
         and not detect_required_credential("Requirements: do the work well.", "DO", bundle.strategy)
         and years_required("8+ years of program management") == 8
         and _score(bundle, "Senior AI Engineer", "Remote healthcare quality workflow.").recommendation == "OUT_OF_SCOPE"
-        and _score(bundle, "Patient Enrollment Specialist", "Fully remote healthcare enrollment. Required Qualifications: 2 years of relevant experience.").recommendation == "APPLY_NOW"
+        and _score(bundle, "Patient Enrollment Specialist", "Fully remote healthcare enrollment. Required Qualifications: 2 years of relevant experience.").recommendation == "REVIEW"
         and _score(bundle, "Patient Access Specialist", "#LI-Remote. Mandatory hybrid schedule with three office days.").recommendation == "SKIP_HARD_GATE"
         and _score(bundle, "Patient Enrollment Specialist — Offshore Philippines", "Remote role.", location="United States").recommendation == "SKIP_HARD_GATE"
     )
