@@ -23,6 +23,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0017_chg159_human_wait",
     "jobbot.migrations.m0018_chg170_live_search_provenance",
     "jobbot.migrations.m0019_chg113_evidence_readiness",
+    "jobbot.migrations.m0020_chg114_search_quality",
 )
 
 

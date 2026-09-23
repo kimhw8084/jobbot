@@ -20,6 +20,8 @@ Fast mode uses the initial-order prefix in the active profile as a calibration p
 
 The active family set covers provider lifecycle/credentialing/provider data; nonclinical healthcare quality/data/documentation/compliance; healthcare project/implementation/program support; higher-ed academic back-office; bounded transferable records/data/process operations; back-office patient access/eligibility/enrollment; and bilingual AI/content quality. Search tasks carry strategy-profile/query-family provenance into `browser_search_tasks`, durable search sightings, and source occurrences. Cards are persisted before qualification; active family membership also puts its cards into the existing detail/qualification queue. CHG-114 remains the owner of yield/cost telemetry, adaptive ordering, duplicate clustering, and field-provenance UX.
 
+At runtime, CHG-114 may reorder tasks only within the same phase and platform, after exact-query evidence-ready history passes configurable sample and confidence guardrails. The compiled plan itself stays deterministic and complete; a new run freezes its effective rank when queued. See [Search quality](SEARCH_QUALITY.md) for the API views, defaults, and proof boundaries.
+
 ## Qualification and ranking
 
 Retrieval does not use preference-only signals as exclusion gates. Higher-ed/institutional settings and task/deadline-oriented back-office duties can rank higher; continuous phone/chat/live-intake demand, admissions sales, and customer-success patterns can rank lower. A preference mismatch does not remove a discovery.

@@ -12,6 +12,7 @@ from . import legacy_engine as j
 from .config import PROJECT_ROOT, load_bundle
 from .db import Database, apply_pending
 from .search_plan import _task_key, build_search_url, compile_plan, compile_staged_plan, normalize_search_query
+from .search_ordering import config_for_bundle, order_tasks
 from .strategy_runtime import fallback_activation_enabled
 
 V3_VERSION = "3.2.1"
@@ -62,6 +63,33 @@ def glassdoor_search_url(query: str, days: int) -> str:
 
 def search_url(platform: str, query: str, days: int) -> str:
     return build_search_url(platform, normalize_search_query(query), days)
+
+
+def _freeze_search_order(conn: sqlite3.Connection, tasks: list[Any], bundle: Any) -> tuple[dict[tuple[str, str], dict[str, Any]], dict[str, Any]]:
+    payloads = []
+    for task in tasks:
+        if isinstance(task, dict):
+            value = dict(task)
+            value.setdefault("query_text", value.get("query", ""))
+            value.setdefault("window_days", value.get("age_days", 0))
+        else:
+            value = {
+                "task_key": task.task_key, "strategy_profile": task.strategy_profile,
+                "strategy_profile_version": task.strategy_profile_version, "query_family": task.query_family,
+                "query_kind": task.query_kind, "query_pass": task.query_pass, "platform": task.platform,
+                "query_text": task.query, "window_days": task.age_days, "phase": task.phase,
+                "priority": task.priority, "execution_rank": task.execution_rank,
+            }
+        payloads.append(value)
+    ordered, metadata = order_tasks(conn, payloads, config_for_bundle(bundle))
+    fields = {(str(item.get("task_key") or ""), str(item.get("phase") or "")): {
+        "baseline_execution_rank": item["baseline_execution_rank"],
+        "effective_execution_rank": item["effective_execution_rank"],
+        "learned_order_reason": item["learned_order_reason"],
+        "learned_order_sample_size": item["learned_order_sample_size"],
+        "ordering_algorithm_version": item["ordering_algorithm_version"],
+    } for item in ordered}
+    return fields, metadata
 
 
 def iter_strategy_tasks(strategy: dict[str, Any], mode: str, platforms: list[str]) -> list[dict[str, Any]]:
@@ -124,6 +152,7 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
         "priority": task.priority, "search_url": task.search_url,
         "execution_rank": task.execution_rank, "phase": task.phase,
     } for task in planned]
+    ordering_fields, ordering_metadata = _freeze_search_order(store.conn, tasks, bundle)
     now = j.now_iso()
     cur = store.conn.execute(
         "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
@@ -131,6 +160,7 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
          f"Platform-first exhaustive search. {len(tasks)} persistent tasks; no strategic result-count limit."),
     )
     rid = int(cur.lastrowid)
+    store.conn.execute("UPDATE browser_runs SET ordering_config_json=? WHERE browser_run_id=?", (json.dumps(ordering_metadata, sort_keys=True), rid))
     for platform in chosen:
         n = sum(1 for t in tasks if t["platform"] == platform)
         store.conn.execute(
@@ -142,11 +172,13 @@ def enqueue_production(base: Path, mode: str = "deep", platforms: list[str] | No
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
               search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
-              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order,
+              baseline_execution_rank,effective_execution_rank,learned_order_reason,learned_order_sample_size,ordering_algorithm_version
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, t["platform"], t["query_text"], 1, t["window_days"], "date", t["search_url"], None, "queued", now,
              t["search_profile"], t["career_lane"], t["resume_variant"], t["priority"], t["execution_rank"], 1, t["task_key"], t["phase"],
-             t["strategy_profile"], t["strategy_profile_version"], t["query_family"], t["query_kind"], t["query_pass"], t["initial_order"]),
+             t["strategy_profile"], t["strategy_profile_version"], t["query_family"], t["query_kind"], t["query_pass"], t["initial_order"],
+             *ordering_fields[(t["task_key"], t["phase"])].values()),
         )
     store.conn.commit(); store.close()
     return rid
@@ -195,11 +227,13 @@ def enqueue_validation_sample(
         selected.append(task)
         counts[key] = counts.get(key, 0) + 1
     store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
+    ordering_fields, ordering_metadata = _freeze_search_order(store.conn, selected, active_bundle)
     rid = int(store.conn.execute(
         "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
         (V3_VERSION, "validation_sample", ",".join(chosen), "queued", now,
          f"Bounded representative A/B/C validation sample; {len(selected)} of the uncapped production definitions."),
     ).lastrowid)
+    store.conn.execute("UPDATE browser_runs SET ordering_config_json=? WHERE browser_run_id=?", (json.dumps(ordering_metadata, sort_keys=True), rid))
     for platform in chosen:
         n = sum(1 for task in selected if task.platform == platform)
         store.conn.execute(
@@ -211,11 +245,13 @@ def enqueue_validation_sample(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
               search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
-              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order,
+              baseline_execution_rank,effective_execution_rank,learned_order_reason,learned_order_sample_size,ordering_algorithm_version
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, task.platform, task.query, 1, task.age_days, task.sort_mode, task.search_url, None, "queued", now,
              task.profile, task.career_lane, task.resume_variant, task.priority, task.execution_rank, 1, task.task_key, task.phase,
-             task.strategy_profile, task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order),
+             task.strategy_profile, task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order,
+             *ordering_fields[(task.task_key, task.phase)].values()),
         )
     store.conn.commit(); store.close()
     return rid
@@ -226,22 +262,33 @@ def enqueue_gate(base: Path, platform: str = "indeed", days: int = 7, max_result
     bundle = load_bundle(base)
     planned = compile_plan(bundle, "fast", [platform])[:3]
     store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
+    gate_tasks = [{
+        "task_key": _task_key(platform, task.query, days), "strategy_profile": task.strategy_profile,
+        "strategy_profile_version": task.strategy_profile_version, "query_family": task.query_family,
+        "query_kind": task.query_kind, "query_pass": task.query_pass, "platform": platform,
+        "query_text": task.query, "window_days": days, "phase": "ACCEPTANCE_SMOKE",
+        "priority": task.priority, "execution_rank": task.execution_rank,
+    } for task in planned]
+    ordering_fields, ordering_metadata = _freeze_search_order(store.conn, gate_tasks, bundle)
     rid = int(store.conn.execute(
         "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
         (V3_VERSION, "acceptance", platform, "queued", now, "Acceptance: auth + pagination + multi-query"),
     ).lastrowid)
+    store.conn.execute("UPDATE browser_runs SET ordering_config_json=? WHERE browser_run_id=?", (json.dumps(ordering_metadata, sort_keys=True), rid))
     store.conn.execute("INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,?)", (rid, platform, len(planned)))
     for task in planned:
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
               search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
-              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order,
+              baseline_execution_rank,effective_execution_rank,learned_order_reason,learned_order_sample_size,ordering_algorithm_version
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, platform, task.query, 1, days, "date", search_url(platform, task.query, days), max_results, "queued", now,
              task.profile, task.career_lane, task.resume_variant, task.priority, task.execution_rank, 1,
              _task_key(platform, task.query, days), "ACCEPTANCE_SMOKE", task.strategy_profile,
-             task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order),
+             task.strategy_profile_version, task.query_family, task.query_kind, task.query_pass, task.initial_order,
+             *ordering_fields[(_task_key(platform, task.query, days), "ACCEPTANCE_SMOKE")].values()),
         )
     store.conn.commit(); store.close(); return rid
 
@@ -256,23 +303,34 @@ def enqueue_validation(base: Path, platforms: list[str] | None = None, *, max_re
     db = active_bundle.database_path
     Database(active_bundle).migrate()
     store = j.PrecisionStore(db); init_browser_schema(store.conn); now = j.now_iso()
+    planned = [(platform, compile_plan(active_bundle, "fast", [platform])[0]) for platform in chosen]
+    ordering_payloads = [{
+        "task_key": task.task_key, "strategy_profile": task.strategy_profile,
+        "strategy_profile_version": task.strategy_profile_version, "query_family": task.query_family,
+        "query_kind": task.query_kind, "query_pass": task.query_pass, "platform": platform,
+        "query_text": task.query, "window_days": task.age_days, "phase": "VALIDATION_MICRO",
+        "priority": task.priority, "execution_rank": task.execution_rank,
+    } for platform, task in planned]
+    ordering_fields, ordering_metadata = _freeze_search_order(store.conn, ordering_payloads, active_bundle)
     rid = int(store.conn.execute(
         "INSERT INTO browser_runs(version,mode,platform,status,created_at,notes) VALUES(?,?,?,?,?,?)",
         (V3_VERSION, "validation_micro", ",".join(chosen), "queued", now, "Bounded <=5 minute production proof; runtime bounds the validation; production retrieval remains uncapped."),
     ).lastrowid)
+    store.conn.execute("UPDATE browser_runs SET ordering_config_json=? WHERE browser_run_id=?", (json.dumps(ordering_metadata, sort_keys=True), rid))
     store.conn.executemany("INSERT OR REPLACE INTO browser_platform_runs(browser_run_id,platform,tasks_total) VALUES(?,?,1)", [(rid, p) for p in chosen])
-    for platform in chosen:
-        task = compile_plan(active_bundle, "fast", [platform])[0]
+    for platform, task in planned:
         store.conn.execute(
             """INSERT INTO browser_search_tasks(
               browser_run_id,platform,query_text,remote_required,window_days,sort_order,search_url,max_results,status,created_at,
               search_profile,career_lane,resume_variant,priority,execution_rank,skip_old_cards,task_key,phase,
-              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+              strategy_profile,strategy_profile_version,query_family,query_kind,query_pass,initial_order,
+              baseline_execution_rank,effective_execution_rank,learned_order_reason,learned_order_sample_size,ordering_algorithm_version
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (rid, platform, task.query, 1, task.age_days, "date", task.search_url, max_results, "queued", now,
              task.profile, task.career_lane, task.resume_variant, task.priority, task.execution_rank, 1,
              task.task_key, "VALIDATION_MICRO", task.strategy_profile, task.strategy_profile_version,
-             task.query_family, task.query_kind, task.query_pass, task.initial_order),
+             task.query_family, task.query_kind, task.query_pass, task.initial_order,
+             *ordering_fields[(task.task_key, "VALIDATION_MICRO")].values()),
         )
     store.conn.commit(); store.close(); return rid
 

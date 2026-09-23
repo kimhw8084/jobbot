@@ -84,6 +84,15 @@ Trusted detail changes flow through the existing score then ledger upsert path;
 strategy-only rescoring updates derived state without manufacturing an
 employer-content version.
 
+CHG-114 derives search-quality metrics from that task/result/job/event ledger
+and freezes any evidence-supported execution order on each enqueued task. The
+RPC still advances phases and platform waves before applying the frozen rank
+within a phase/platform lane. Its sibling groups are read-only review hints;
+they never change canonical job identity or occurrence ownership. The dashboard
+surfaces field provenance and search-quality/frozen-order summaries while
+retaining raw evidence JSON. See [`SEARCH_QUALITY.md`](SEARCH_QUALITY.md) for
+metric definitions, funnel attribution, and ordering guardrails.
+
 Requested and observed search URLs are stored separately. Redirects and lost
 query context are `INCOMPLETE` recovery states, never exhaustion. Bridge
 retries use the same request identity and bounded attempts for transient local

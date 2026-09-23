@@ -1022,8 +1022,8 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
         and job.source_verification not in {"identity_mismatch","unverified_discovery"}
     )
     promotable_source=verified or trusted_primary_detail
-    if job.qualification_gates.get("no_repeat",{}).get("status")=="fail": job.recommendation="ALREADY_HANDLED"
-    elif job.hard_reject_reasons: job.recommendation="SKIP_HARD_GATE"
+    no_repeat_failed = job.qualification_gates.get("no_repeat",{}).get("status")=="fail"
+    if job.hard_reject_reasons: job.recommendation="SKIP_HARD_GATE"
     elif job.source_verification in {"identity_mismatch"}: job.recommendation="SKIP_HARD_GATE"
     elif job.employment_class in {"independent_contractor","freelance","temporary","seasonal"}: job.recommendation="CONTRACT_REVIEW"
     elif job.employment_class=="fixed_term_employee": job.recommendation="FIXED_TERM_REVIEW"
@@ -1032,12 +1032,14 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     elif not promotable_source: job.recommendation="REVIEW"
     elif job.remote_gate=="review": job.recommendation="REVIEW_REMOTE"
     elif job.work_auth_gate=="review": job.recommendation="REVIEW"
-    elif any(value["status"]!="pass" for value in job.qualification_gates.values()): job.recommendation="REVIEW"
+    elif any(value["status"]!="pass" for name,value in job.qualification_gates.items() if name!="no_repeat"): job.recommendation="REVIEW"
     elif rel>=float(sc.get("minimum_relevance_for_apply",80)) and q>=float(sc.get("minimum_qualification_for_apply",72)) and job.landing_score>=float(sc.get("minimum_landing_for_apply",74)) and job.career_score>=float(sc.get("minimum_career_for_apply",55)) and not critical and not soft_hits and stable_employment: job.recommendation="APPLY_NOW"
     elif rel>=72 and q>=float(sc.get("minimum_landing_for_volume_apply",68)) and job.landing_score>=float(sc.get("minimum_landing_for_volume_apply",68)) and job.career_score>=float(sc.get("minimum_career_for_volume_apply",50)) and not critical and stable_employment: job.recommendation="APPLY_VOLUME"
     elif rel>=76 and job.career_score>=float(sc.get("high_value_stretch_min_career",78)) and job.landing_score>=float(sc.get("high_value_stretch_min_landing",52)) and not critical and stable_employment: job.recommendation="HIGH_VALUE_STRETCH"
     elif job.door_score>=float(sc.get("review_final_score",62)): job.recommendation="REVIEW"
     else: job.recommendation="LOW_PRIORITY"
+    intrinsic_recommendation = job.recommendation
+    if no_repeat_failed: job.recommendation="ALREADY_HANDLED"
     sig=strategy.get("strategy",{}).get("signals",{}); text=job.title+" "+job.description
     job.matched_positive=phrase_hits(sig.get("strong_positive",[]),text); job.matched_accelerators=phrase_hits(sig.get("career_accelerators",[]),text); job.matched_bilingual=phrase_hits(sig.get("bilingual_bonus",[]),text); job.matched_evidence=list(a["matches"])
     job.score_reasons=[f"family={family}",f"relevance={rel:.1f}",f"qualification={q:.1f}",f"landing-fit={job.landing_score:.1f}",f"career={job.career_score:.1f}",f"remote-confidence={job.remote_confidence:.0f}",f"urgency={job.urgency_score:.0f}",f"application-friction={job.application_friction_score:.0f}"]
@@ -1055,6 +1057,8 @@ def score_job(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> Jo
     if gate_reviews: job.score_reasons.append("hard-gate review: "+", ".join(gate_reviews))
     job.score_components={"role_relevance":job.relevance_score,"qualification_fit":job.qualification_score,"landing_fit":job.landing_score,"career_value":job.career_score,"door_score":job.door_score,"freshness":job.urgency_score,"application_friction":job.application_friction_score,"source_confidence":job.source_confidence,"remote_confidence":job.remote_confidence,"preference_adjustment":job.preference_adjustment}
     apply_evidence_readiness(job)
+    job.evidence_readiness = dict(getattr(job, "evidence_readiness", {}) or {})
+    job.evidence_readiness["intrinsic_recommendation"] = intrinsic_recommendation
     job.score_reasons.append(job.evidence_recommendation_reason)
     return job
 

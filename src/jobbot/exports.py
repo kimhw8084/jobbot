@@ -6,6 +6,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
+from .provenance import field_provenance_summary
+
 
 EXPORT_COLUMNS = (
     "job_id", "recommendation", "title", "company", "career_lane", "canonical_source_site",
@@ -15,10 +17,11 @@ EXPORT_COLUMNS = (
     "discovery_url", "board_detail_url", "observed_board_apply_url", "employer_job_url",
     "ats_requisition_url", "verified_application_url", "identity_evidence_state", "detail_evidence_state",
     "requirements_evidence_state", "source_verification_state", "application_destination_verification_state",
-    "evidence_readiness_state", "qualification_readiness_state", "evidence_missing_json", "evidence_blocking_json", "evidence_readiness_json",
+    "evidence_readiness_state", "qualification_readiness_state", "evidence_missing_json", "evidence_blocking_json", "evidence_readiness_json", "evidence_provenance_json",
     "description", "required_qualifications", "preferred_qualifications", "requirement_matches_json",
     "requirement_gaps_json", "remote_evidence_json", "schedule_requirement", "score_components_json", "score_reasons_json",
     "salary_annual_min", "qualification_gates_json", "preference_signals_json", "preference_adjustment",
+    "field_provenance_json",
 )
 
 DISCOVERY_COLUMNS = (
@@ -45,7 +48,17 @@ def safe_cell(value: Any) -> Any:
 
 
 def _rows(conn: sqlite3.Connection, where: str = "1=1", args: Sequence[Any] = ()) -> list[sqlite3.Row]:
-    return list(conn.execute(f"SELECT {','.join(EXPORT_COLUMNS)} FROM jobs WHERE {where} ORDER BY door_score DESC,last_seen DESC", args))
+    columns = tuple(dict.fromkeys(
+        (column for column in EXPORT_COLUMNS if column != "field_provenance_json")
+    ).keys())
+    columns = tuple(dict.fromkeys((*columns, "remote_status", "posting_status", "required_qualifications", "employment_type")))
+    return list(conn.execute(f"SELECT {','.join(columns)} FROM jobs WHERE {where} ORDER BY door_score DESC,last_seen DESC", args))
+
+
+def _export_value(row: sqlite3.Row, column: str) -> Any:
+    if column == "field_provenance_json":
+        return json.dumps(field_provenance_summary(dict(row)), ensure_ascii=False, sort_keys=True)
+    return row[column] if column in row.keys() else ""
 
 
 def _csv(path: Path, rows: Iterable[sqlite3.Row]) -> None:
@@ -53,7 +66,7 @@ def _csv(path: Path, rows: Iterable[sqlite3.Row]) -> None:
         writer = csv.writer(handle)
         writer.writerow(EXPORT_COLUMNS)
         for row in rows:
-            writer.writerow([safe_cell(row[column]) for column in EXPORT_COLUMNS])
+            writer.writerow([safe_cell(_export_value(row, column)) for column in EXPORT_COLUMNS])
 
 
 def _write_columns(path: Path, columns: Sequence[str], rows: Iterable[sqlite3.Row]) -> None:
@@ -61,7 +74,7 @@ def _write_columns(path: Path, columns: Sequence[str], rows: Iterable[sqlite3.Ro
         writer = csv.writer(handle)
         writer.writerow(columns)
         for row in rows:
-            writer.writerow([safe_cell(row[column]) for column in columns])
+            writer.writerow([safe_cell(_export_value(row, column)) for column in columns])
 
 
 def export_selected(conn: sqlite3.Connection, output_dir: Path, job_ids: Sequence[str]) -> Path:
@@ -120,7 +133,7 @@ def export_all(conn: sqlite3.Connection, output_dir: Path, *, batch_size: int = 
     jsonl_path = output_dir / "jobs.jsonl"
     with jsonl_path.open("w", encoding="utf-8") as handle:
         for row in _rows(conn):
-            handle.write(json.dumps({column: row[column] for column in EXPORT_COLUMNS}, ensure_ascii=False) + "\n")
+            handle.write(json.dumps({column: _export_value(row, column) for column in EXPORT_COLUMNS}, ensure_ascii=False) + "\n")
     paths[jsonl_path.name] = jsonl_path
 
     batch_rows = _rows(conn, qualified + f" AND upper(application_status) NOT IN {terminal}")[:max(1, batch_size)]

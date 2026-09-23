@@ -146,7 +146,7 @@ do not point unattended tests at `data/jobs.sqlite3`.
 - Migrations run integrity checks before and after, and use SQLite’s backup API before changing an existing schema.
 - Logs are written under `out/logs/`; exports and plan/audit reports are under `out/`.
 
-The durable career architecture is 55% Healthcare Regulated Operations & Data Quality, 25% Healthcare Analytics/Project/Implementation, 15% Education/Learning/EdTech, and 5% Bilingual AI/Content Quality. Active live retrieval uses a separate versioned profile: its calibration order does not set permanent query quotas, and deep/staged plans recall every enabled credible family. See [Career strategy](docs/CAREER_STRATEGY.md) and [Search plan](docs/SEARCH_PLAN.md).
+The durable career architecture is 55% Healthcare Regulated Operations & Data Quality, 25% Healthcare Analytics/Project/Implementation, 15% Education/Learning/EdTech, and 5% Bilingual AI/Content Quality. Active live retrieval uses a separate versioned profile: its calibration order does not set permanent query quotas, and deep/staged plans recall every enabled credible family. See [Career strategy](docs/CAREER_STRATEGY.md), [Search plan](docs/SEARCH_PLAN.md), and [Search quality](docs/SEARCH_QUALITY.md).
 
 ## Tests and release
 
