@@ -1,0 +1,175 @@
+{
+  "request_binding": {
+    "change": "Project OS FIX for JobBot CHG-114-r2",
+    "repository": "kimhw8084/jobbot",
+    "target_branch": "codex/jobbot-CHG-114-r2",
+    "required_main_base": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "exact_r1_candidate_to_inherit": "16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c",
+    "scope": "Carry the exact CHG-114-r1 candidate forward with its ancestry, then correct historical qualified yield so application handling/no-repeat does not erase intrinsic search quality while all current substantive evidence gates remain fail-closed.",
+    "constraints": [
+      "Do not merge or move main.",
+      "Preserve the exact R1 candidate and its ancestry; do not recreate R1 from memory.",
+      "Preserve R1 telemetry, dimensions, funnel attribution, migration 20, frozen effective ordering, 140-task recall invariant, advisory sibling clustering, provenance APIs/exports/dashboard, documentation, and runtime boundaries.",
+      "Current ALREADY_HANDLED/no-repeat surfacing behavior remains intact.",
+      "Application stage events are not qualification proof; downstream funnel attribution remains unchanged.",
+      "Final isolated verification must use disposable data; live Big-3 remains NOT_RUN."
+    ]
+  },
+  "source_state": {
+    "base": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "inherited_r1_candidate_head": "16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c",
+    "tested_r2_head": "76063ffabfe853deeed4752eb6f885becbe57a88",
+    "tested_r2_head_parent": "16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c",
+    "r1_candidate_is_ancestor": true,
+    "base_is_merge_base": true,
+    "local_main_sha_unchanged": "c9bcbe7bf63431601597cbf55eef452489c0b141",
+    "origin_main_sha_unchanged": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "main_mutated": false,
+    "verification_artifact_is_follow_up_commit": true
+  },
+  "r1_facts_preserved": {
+    "fabric_job": "CF-2dfb9d8992f47f17eec4fbcf",
+    "tested_implementation_commit": "239051b6dcdf382f54fd1a48b48f7e625108b018",
+    "tested_implementation_parent": "e290106ebdceba6eecf8b2b381a4e45317e233b2",
+    "exact_candidate_head": "16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c",
+    "deterministic_evidence_commit": "704c2c2845f745d733541fb8fd4624bd6785695d",
+    "deterministic_evidence_parent": "16e4efb845fbacb5d9e6d9f57a48ab20018a8a9c",
+    "preserved_r1_evidence": {
+      "focused_tests": "62 PASS",
+      "full_tests": "151 PASS",
+      "compileall": "PASS",
+      "dashboard_javascript_syntax": "PASS",
+      "production_ledger": "NOT_USED in R1 validation",
+      "live_big_3": "NOT_RUN"
+    },
+    "preserved_surfaces": [
+      "R1 telemetry and task/family dimensions",
+      "existing downstream funnel attribution",
+      "migration 20",
+      "frozen effective ordering and its sample/Wilson/shrinkage guardrails",
+      "140-task universe and deep-recall coverage",
+      "advisory probable-sibling clustering",
+      "provenance APIs, exports, and dashboard",
+      "documentation and runtime boundaries"
+    ]
+  },
+  "changed_files_from_inherited_r1_candidate": [
+    "docs/SEARCH_QUALITY.md",
+    "src/jobbot/legacy_engine.py",
+    "src/jobbot/qualified_yield.py",
+    "src/jobbot/search_ordering.py",
+    "src/jobbot/search_quality.py",
+    "src/jobbot/web/dashboard.html",
+    "src/jobbot/web/dashboard.js",
+    "tests/integration/test_chg114_search_quality.py",
+    "verification/CHG-114-r2.json"
+  ],
+  "trusted_qualified_yield": {
+    "metric_definition_version": "chg114-search-quality-v2",
+    "ordering_algorithm_version": "chg114-yield-v2",
+    "shared_predicate": "src/jobbot/qualified_yield.py:trusted_qualified_yield",
+    "definition": "Count only when current evidence_readiness_state is READY; identity evidence is COMPLETE; source verification is one of verified_direct_ats/verified_canonical_ats/verified_jsonld; application destination is VERIFIED_ATS or VERIFIED_EMPLOYER; remote_gate passes; employment_class is full_time_employee or full_time_permanent; posting_status is active and is_active is 1; hard_reject_reasons_json is a valid empty array; all required substantive gates exist and every gate except no_repeat passes; and qualification_readiness_state is READY or is BLOCKED solely alongside a failed no_repeat gate. The current recommendation must be actionable, or be ALREADY_HANDLED with a non-NEW application status and a durable actionable intrinsic_recommendation (legacy records may use their pre-handling evidence_readiness_json recommendation).",
+    "required_substantive_gates": [
+      "evidence_readiness",
+      "home_remote",
+      "work_authorization",
+      "texas_eligibility",
+      "full_time",
+      "permanent_employee",
+      "base_pay_floor",
+      "mandatory_presence",
+      "open_current",
+      "requirements_supported",
+      "responsibility_domain"
+    ],
+    "fail_closed": "Every current qualification gate other than no_repeat must pass, including any additional gate names. Missing or malformed required evidence does not qualify.",
+    "no_repeat_reason": "no_repeat is a resurfacing constraint. It is omitted only from the historical intrinsic-yield predicate; the current actionable reservoir still uses current readiness/recommendation and application marking still sets ALREADY_HANDLED/no_repeat fail.",
+    "not_application_event_proof": true,
+    "dynamic_current_truth": "The predicate reads current durable job fields and recalculated gates on each call. A later trusted source update that fails a substantive gate, invalidates verification/currentness, or makes evidence non-READY removes credit. No immutable ever-qualified flag is stored.",
+    "metric_separation": {
+      "current_actionable_count": "Alias of the existing actionable_count semantics; handled jobs are excluded.",
+      "trusted_qualified_yield_count": "Distinct linked canonical jobs passing the shared intrinsic predicate.",
+      "dashboard": "Displays current actionable inventory and trusted historical qualified yield in separate columns."
+    },
+    "scorer_support": "Rescoring computes the recommendation with no_repeat excluded from substantive gate checks, retains intrinsic_recommendation in evidence_readiness_json, and keeps current ALREADY_HANDLED when no_repeat fails."
+  },
+  "regression_fixtures": {
+    "handled_success": {
+      "seed": "Evidence-ready, all substantive gates passing actionable job linked to completed task query A; a later query B also links the same job.",
+      "ordering_history_before_application": {"trusted_qualified_yield_jobs": 1},
+      "after_applied": {
+        "current_recommendation": "ALREADY_HANDLED",
+        "no_repeat_gate": "fail",
+        "current_actionable_count": 0,
+        "trusted_qualified_yield_count": 1
+      },
+      "stage_advancement": {
+        "statuses_marked_in_order": ["APPLIED", "SCREEN", "INTERVIEW", "OFFER"],
+        "trusted_qualified_yield_count_stable": 1,
+        "funnel_counts_at_earliest_query": {"application_count": 1, "screen_count": 1, "interview_count": 1, "offer_count": 1},
+        "later_query_receives_funnel_credit": false
+      }
+    },
+    "handled_failure_fixtures": {
+      "manually_handled_review_with_other_gates_passing": "APPLIED event present; intrinsic scorer recommendation REVIEW; trusted yield remains 0.",
+      "hard_fail": "APPLIED event present; base_pay_floor fail and hard-reject evidence; trusted yield remains 0.",
+      "evidence_incomplete_identity_mismatch_shape": "APPLIED event present; evidence REVIEW, identity PARTIAL, source unverified, and destination missing; trusted yield remains 0.",
+      "trusted_source_update": "An initially actionable handled job is rescored from trusted ATS evidence after its employment changes to part-time. Current evidence remains READY, qualification readiness becomes BLOCKED, full_time fails, intrinsic recommendation becomes PART_TIME_REVIEW, current label remains ALREADY_HANDLED, and telemetry/ordering yield falls from 1 to 0."
+    },
+    "no_repeat_surfacing": "Existing CHG-170 handled-opportunity non-resurfacing tests pass unchanged."
+  },
+  "ordering_and_telemetry": {
+    "predicate_consistency": "search_ordering._history and search_quality_metrics both call trusted_qualified_yield.",
+    "telemetry_definitions_versioned": true,
+    "existing_actionable_count_redefined": false,
+    "task_family_dimensions_unchanged": true,
+    "funnel_attribution_code_changed": false,
+    "ordering_guardrails_unchanged": {
+      "minimum_evaluated_jobs": 8,
+      "prior_strength": 8.0,
+      "confidence_z": 1.96,
+      "minimum_effect_per_cost": 0.02,
+      "maximum_rank_displacement": 20,
+      "phase_platform_grouping": "unchanged",
+      "baseline_rank_freezing": "unchanged"
+    },
+    "r1_ordering_cluster_provenance_fixtures": "Existing learned-order, insufficient/overlapping sample fallback, sibling determinism, and provenance/API/export fixtures pass; only qualified-yield semantics changed."
+  },
+  "task_universe_and_recall": {
+    "compiled_task_count": 140,
+    "ordered_task_count": 140,
+    "task_identity_sets_equal": true,
+    "enabled_deep_recall_family_count": 7,
+    "configured_platforms": ["linkedin", "indeed", "glassdoor"],
+    "required_deep_recall_family_platform_pairs_present": true,
+    "effective_ordering_changes_only_execution_order": true,
+    "proof": "The existing isolated plan test compiled the integrated CHG-170 plan, compared task identity sets before/after ordering, checked all enabled minimum_deep_recall family/platform pairs in C_DEEP_BACKFILL, and retained baseline ranks when samples were insufficient."
+  },
+  "tests": {
+    "focused_command": "PYTHONPATH=src python -m unittest tests.integration.test_chg114_search_quality tests.integration.test_browser_tasks tests.integration.test_dashboard_exports_application tests.integration.test_database_ledger tests.unit.test_chg113_evidence_readiness tests.unit.test_qualification_gates tests.unit.test_strategy tests.regression.test_scoring -q",
+    "focused_isolated_result": "71 PASS, 1 SKIP (72 run); the historical-ledger migration test skipped because the clean archive contains no data/jobs.sqlite3 fixture.",
+    "full_command": "PYTHONPATH=src python -m unittest discover -s tests -q",
+    "full_isolated_result": "153 PASS, 1 SKIP (154 run); the historical-ledger migration test skipped because the clean archive contains no data/jobs.sqlite3 fixture.",
+    "full_isolated_elapsed_seconds": 35.760,
+    "compileall": "python -m compileall -q src tests passed.",
+    "dashboard_javascript": "node --check src/jobbot/web/dashboard.js passed.",
+    "migration_20": "Existing migration idempotence and durable task-order columns tests passed; no migration was added."
+  },
+  "validation_boundary": {
+    "final_test_checkout": "Temporary clean git archive of tested R2 head 76063ffabfe853deeed4752eb6f885becbe57a88; no data/jobs.sqlite3 was present.",
+    "isolated_validation_ledger": "NOT_USED; all test databases were created in disposable fixtures.",
+    "earlier_active_worktree_test_run": {
+      "status": "READ_ONLY_BACKUP_SOURCE_USED",
+      "path": "/Users/haewonkim/.codex-fabric/worktrees/CF-24f203b709c687e9ba544300/data/jobs.sqlite3",
+      "test": "tests.integration.test_database_ledger.test_existing_ledger_migration_uses_sqlite_backup_and_preserves_count",
+      "operation": "The repository test opened this worktree-local file and copied it to a temporary target for migration validation; the test code does not write to its source.",
+      "interpretation": "If this worktree-local file is classified as production data/jobs.sqlite3, the NOT_USED constraint was not satisfied by that earlier run. The final isolated reruns did not access it."
+    },
+    "central_repository_ledger": {
+      "path": "/Users/haewonkim/.codex-fabric/repos/jobbot/data/jobs.sqlite3",
+      "status": "NOT_USED"
+    },
+    "live_big_3": "NOT_RUN",
+    "live_platform_or_chrome_actions": "NOT_RUN"
+  }
+}
