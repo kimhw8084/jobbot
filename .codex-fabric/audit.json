@@ -1,0 +1,499 @@
+{
+  "accepted_at": "2026-09-23T17:44:42Z",
+  "changed_files": [
+    {
+      "additions": 5,
+      "deletions": 1,
+      "path": "extension/common.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/glassdoor.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/indeed.js",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "extension/linkedin.js",
+      "status": "M"
+    },
+    {
+      "additions": 31,
+      "deletions": 1,
+      "path": "extension/manifest.json",
+      "status": "M"
+    },
+    {
+      "additions": 33,
+      "deletions": 0,
+      "path": "extension/receiver_bootstrap.js",
+      "status": "A"
+    },
+    {
+      "additions": 377,
+      "deletions": 33,
+      "path": "extension/service_worker.js",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_bootstrap_compatibility_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 4,
+      "path": "tests/extension_chg146_supervisor_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 46,
+      "deletions": 0,
+      "path": "tests/extension_receiver_bootstrap_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 128,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_chg166_delayed_receiver_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 92,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_receiver_isolation_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 29,
+      "deletions": 24,
+      "path": "tests/extension_service_worker_receiver_recovery_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 144,
+      "deletions": 0,
+      "path": "tests/extension_service_worker_receiver_regeneration_test.js",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/extension_startup_lifecycle_test.js",
+      "status": "M"
+    },
+    {
+      "additions": 26,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_bridge.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_extension_refresh.py",
+      "status": "M"
+    },
+    {
+      "additions": 258,
+      "deletions": 0,
+      "path": "verification/CHG-166-r5.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'PROJECT_ROOT / \\\"data\\\" / \\\"jobs.sqlite3\\\"|data/jobs\\\\.sqlite3|validation_db|_assert_isolated|def test_' tests/integration/test_chg112_production_integrity.py tests/integration/test_database_ledger.py tests/integration/test_validator.py tests/integration/test_extension_refresh.py tests/integration/test_launcher_environment.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '45,72p' tests/integration/test_database_ledger.py && rtk sed -n '94,112p' tests/integration/test_validator.py && rtk sed -n '70,100p' src/jobbot/validator.py && rtk cat src/jobbot/config.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '60,98p' tests/integration/test_validator.py && rtk rg -n 'subprocess.*git|git.*branch|git.*rev-parse' src/jobbot/validator.py tests/integration/test_validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '136,160p' src/jobbot/validator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node tests/extension_chg146_supervisor_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m unittest tests.integration.test_extension_bridge'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m unittest tests.integration.test_extension_refresh'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy mktemp -d /tmp/jobbot-chg166-r5.XXXXXX'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy rsync -a --exclude='data/' --exclude='out/' --exclude='__pycache__/' --exclude='.pytest_cache/' --exclude='.venv/' --exclude='node_modules/' --exclude='.DS_Store' ./ /tmp/jobbot-chg166-r5.gYbvTg/\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=src rtk python -m unittest discover -s tests'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy pwd && rtk proxy ls -ld /tmp/jobbot-chg166-r5.gYbvTg /tmp/jobbot-chg166-r5.gYbvTg/src /tmp/jobbot-chg166-r5.gYbvTg/.git && rtk proxy which rtk && rtk proxy which python'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python -m unittest discover -s /tmp/jobbot-chg166-r5.gYbvTg/tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '140|qualification|trusted-qualified-yield|evidence readiness|CHG-170|query compiler' tests/unit tests/integration/test_chg114_search_quality.py tests/integration/test_chg146_workers_cache.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python - <<'PY'\nfrom pathlib import Path\nimport subprocess\nimport sys\nroot = Path('/tmp/jobbot-chg166-r5.gYbvTg')\nfailed = []\nfor path in sorted((root / 'tests').glob('extension_*_test.js')):\n    result = subprocess.run(['node', str(path)], cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)\n    print(f'[{result.returncode}] {path.name}')\n    if result.stdout.strip():\n        print(result.stdout.strip())\n    if result.returncode:\n        failed.append(path.name)\nif failed:\n    print('FAILED:', ', '.join(failed))\n    sys.exit(1)\nprint(f'All {len(list((root / \\\"tests\\\").glob(\\\"extension_*_test.js\\\")))} extension JavaScript fixtures passed.')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python -m unittest discover -s /tmp/jobbot-chg166-r5.gYbvTg/tests/unit -p test_strategy.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python -m unittest discover -s /tmp/jobbot-chg166-r5.gYbvTg/tests/unit -p test_chg113_evidence_readiness.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python -m unittest discover -s /tmp/jobbot-chg166-r5.gYbvTg/tests/unit -p test_qualification_gates.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python -m unittest discover -s /tmp/jobbot-chg166-r5.gYbvTg/tests/integration -p test_chg114_search_quality.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --unified=2 tests/integration/test_extension_bridge.py tests/integration/test_extension_refresh.py tests/extension_bootstrap_compatibility_test.js tests/extension_startup_lifecycle_test.js tests/extension_chg146_supervisor_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --unified=2 extension/service_worker.js | rtk sed -n '391,850p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- extension/manifest.json extension/receiver_bootstrap.js extension/common.js extension/linkedin.js extension/indeed.js extension/glassdoor.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --unified=2 extension/service_worker.js | rtk sed -n '1,390p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --stat && rtk git diff --name-status'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk node --check tests/extension_service_worker_receiver_isolation_test.js && rtk node tests/extension_service_worker_receiver_isolation_test.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy rsync -a --exclude='data/' --exclude='out/' --exclude='__pycache__/' --exclude='.pytest_cache/' --exclude='.venv/' --exclude='node_modules/' --exclude='.DS_Store' ./ /tmp/jobbot-chg166-r5.gYbvTg/\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python -m unittest discover -s /tmp/jobbot-chg166-r5.gYbvTg/tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python - <<'PY'\nfrom pathlib import Path\nimport subprocess, sys\nroot=Path('/tmp/jobbot-chg166-r5.gYbvTg')\nspecs=[('tests/unit','test_strategy.py'),('tests/unit','test_chg113_evidence_readiness.py'),('tests/unit','test_qualification_gates.py'),('tests/integration','test_chg114_search_quality.py')]\nfor directory,pattern in specs:\n    cmd=['python','-m','unittest','discover','-s',str(root/directory),'-p',pattern]\n    result=subprocess.run(cmd,cwd=root,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)\n    print(f'[{result.returncode}] {pattern}')\n    print(result.stdout.strip())\n    if result.returncode: sys.exit(result.returncode)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src rtk proxy python - <<'PY'\nfrom pathlib import Path\nimport subprocess, sys\nroot=Path('/tmp/jobbot-chg166-r5.gYbvTg')\npaths=sorted((root/'tests').glob('extension_*_test.js'))\nfailed=[]\nfor path in paths:\n    result=subprocess.run(['node',str(path)],cwd=root,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)\n    print(f'[{result.returncode}] {path.name}')\n    if result.stdout.strip(): print(result.stdout.strip())\n    if result.returncode: failed.append(path.name)\nif failed:\n    print('FAILED:',', '.join(failed));sys.exit(1)\nprint(f'All {len(paths)} extension JavaScript fixtures passed.')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import glob,os; print(glob.glob(\\\"/tmp/jobbot-chg166-r5.*\\\"))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --check && rtk git diff --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git rev-parse HEAD && rtk proxy git rev-parse main && rtk proxy git ls-remote origin refs/heads/codex/jobbot-CHG-166-r5 refs/heads/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy rsync -a --exclude=.git --exclude=data/ --exclude=out/ --exclude=.venv/ --exclude=node_modules/ --exclude='__pycache__/' --exclude='*.pyc' ./ /tmp/jobbot-chg166-r5.gYbvTg/\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -lc 'for f in tests/extension_*_test.js; do rtk node \\\"\"'$f\" || exit $?; done'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff -- extension/manifest.json extension/common.js extension/receiver_bootstrap.js extension/service_worker.js'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '3\\\\.2\\\\.2-prod-ready\\\\.672cf88\\\\.(23|25|26)|chrome\\\\.scripting|executeScript' extension tests/extension_receiver_bootstrap_test.js tests/extension_service_worker_chg166_delayed_receiver_test.js tests/extension_service_worker_receiver_regeneration_test.js tests/extension_service_worker_receiver_isolation_test.js tests/integration/test_extension_bridge.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import glob; print(len(glob.glob(\\\"tests/extension_*_test.js\\\"))); print(\\\"\\\\n\\\".join(sorted(glob.glob(\\\"tests/extension_*_test.js\\\"))))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --name-only && rtk proxy git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git add extension/common.js extension/glassdoor.js extension/indeed.js extension/linkedin.js extension/manifest.json extension/receiver_bootstrap.js extension/service_worker.js tests/extension_bootstrap_compatibility_test.js tests/extension_chg146_supervisor_test.js tests/extension_receiver_bootstrap_test.js tests/extension_service_worker_chg166_delayed_receiver_test.js tests/extension_service_worker_receiver_isolation_test.js tests/extension_service_worker_receiver_recovery_test.js tests/extension_service_worker_receiver_regeneration_test.js tests/extension_startup_lifecycle_test.js tests/integration/test_extension_bridge.py tests/integration/test_extension_refresh.py && rtk git commit -m 'Port CHG-166 receiver lifecycle to integrated main' && rtk git rev-parse HEAD && rtk git show -s --format='%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=/tmp/jobbot-chg166-r5.gYbvTg/src python3 -m unittest discover -s tests -q'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la verification'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import json; p=\\\"verification/CHG-114-r2.json\\\"; d=json.load(open(p)); print(json.dumps({k:(list(v) if isinstance(v,dict) else type(v).__name__) for k,v in d.items()},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import json; d=json.load(open(\\\"verification/CHG-114-r2.json\\\")); print(json.dumps({k:d[k] for k in (\\\"request_binding\\\",\\\"source_state\\\",\\\"tests\\\",\\\"validation_boundary\\\")},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --name-status c9bcbe7bf63431601597cbf55eef452489c0b141 638f2c1a19f2fdaef15daa7989eb3a9e1eedebab -- extension'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import json; d=json.load(open(\\\"verification/CHG-166-r5.json\\\")); print(\\\"json keys:\\\", \\\", \\\".join(d)); print(\\\"changed files:\\\",len(d[\\\"changed_files\\\"])); print(\\\"reconciliation rows:\\\",len(d[\\\"semantic_reconciliation\\\"])); print(\\\"receiver fixtures:\\\",len(d[\\\"deterministic_receiver_fixtures\\\"]))' && rtk git diff --check && rtk node --check extension/service_worker.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -m json.tool verification/CHG-166-r5.json >/dev/null && rtk git diff --check && rtk git status --short --branch && rtk git add verification/CHG-166-r5.json && rtk git commit -m 'Record CHG-166-r5 receiver lifecycle evidence' && rtk git show -s --format='%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-166-r5 refs/heads/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push -u origin codex/jobbot-CHG-166-r5'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git merge-base --is-ancestor c7590ceee393b8806d14b04903a100140c8f3019 HEAD && rtk git diff --check HEAD''^ HEAD && rtk proxy python3 -m json.tool verification/CHG-166-r5.json >/dev/null'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git rev-parse HEAD && rtk git show -s --format='%H %P %s' HEAD && rtk git show -s --format='%H %P %s' HEAD\"'^'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-166-r5 refs/heads/main'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-6-luna",
+    "event_count": 297,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.38,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 13213184,
+      "fresh_input_tokens": 355255,
+      "input_tokens": 13568439,
+      "non_reasoning_output_tokens": 37200,
+      "output_tokens": 108475,
+      "reasoning_output_tokens": 71275,
+      "total_processed_tokens": 13676914
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "100c189b4a4fded7520f9702e98cad531b00e960",
+      "subject": "Record CHG-166-r5 receiver lifecycle evidence"
+    },
+    {
+      "sha": "45157baf6b226bfbb0fc90900a3d2d3583a3d06e",
+      "subject": "Port CHG-166 receiver lifecycle to integrated main"
+    }
+  ],
+  "diff": {
+    "additions": 1182,
+    "changed_files": 18,
+    "commit_count": 2,
+    "deletions": 67
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 2,
+    "items": [
+      {
+        "bytes": 2534,
+        "path": "extension/manifest.json",
+        "sha256": "bf39d169927a203a642cf2bd7b2e5c071c7fd449727ba5333a483b577abffe19"
+      },
+      {
+        "bytes": 13246,
+        "path": "verification/CHG-166-r5.json",
+        "sha256": "3500a10ff740bacff478fee7c0602fd63765f9bac65f3b41b222a6e19b6c3b4d"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-23T18:34:18Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "c7590ceee393b8806d14b04903a100140c8f3019",
+    "branch": "codex/jobbot-CHG-166-r5",
+    "detached_verify": false,
+    "head_sha": "100c189b4a4fded7520f9702e98cad531b00e960",
+    "remote_exact_head": true,
+    "remote_head_sha": "100c189b4a4fded7520f9702e98cad531b00e960",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "c7590ceee393b8806d14b04903a100140c8f3019",
+    "work_branch": "codex/jobbot-CHG-166-r5",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-912bbdd2d0491b19f7f5f230",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-166-r5",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-166-r5"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "cfc765f3211c37c7967a138f3b2d89a99341939b15b2623f92744d007f625d6f"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-166-r5",
+  "schema_version": 1,
+  "started_at": "2026-09-23T17:44:43Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 2975,
+    "queue_seconds": 1,
+    "total_seconds": 2976
+  },
+  "transport": {
+    "bytes": 8306,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 8027,
+    "prompt_sha256": "7ecfd4cba95ac346c9fc8377f8de206ea8f015988249b606a77d872fc254ad24",
+    "sha256": "912bbdd2d0491b19f7f5f2303c063dcabfc574021864bd47a1e177e06f98705e"
+  }
+}
