@@ -23,6 +23,16 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertNotIn("nativeMessaging", manifest["permissions"])
         self.assertIn("windows", manifest["permissions"])
         self.assertIn("http://127.0.0.1/*", manifest["host_permissions"])
+        bootstrap_platforms = {"linkedin", "indeed", "glassdoor"}
+        early_bootstraps = [item for item in manifest.get("content_scripts", []) if item.get("js") == ["receiver_bootstrap.js"] and item.get("run_at") == "document_start"]
+        self.assertEqual(len(early_bootstraps), 3)
+        for platform in bootstrap_platforms:
+            matching = [item for item in early_bootstraps if f"https://{platform}.com/*" in item.get("matches", []) and f"https://*.{platform}.com/*" in item.get("matches", [])]
+            self.assertEqual(len(matching), 1, f"missing document_start bootstrap for {platform}")
+            idle_receiver = [item for item in manifest.get("content_scripts", []) if item.get("run_at") == "document_idle" and f"{platform}.js" in item.get("js", [])]
+            self.assertEqual(len(idle_receiver), 1, f"document_idle business receiver changed for {platform}")
+        self.assertEqual({relative for item in early_bootstraps for relative in item.get("js", [])}, {"receiver_bootstrap.js"})
+        self.assertFalse(any(item.get("run_at") == "document_start" and "linkedin.js" in item.get("js", []) for item in manifest.get("content_scripts", [])))
         referenced_scripts = []
         for content_script in manifest.get("content_scripts", []):
             for relative in content_script.get("js", []):
@@ -36,7 +46,10 @@ class ExtensionBridgeTests(unittest.TestCase):
                 self.assertTrue((PROJECT_ROOT / "extension" / relative).is_file(), relative)
         self.assertNotIn("linkedin-inject.js", json.dumps(manifest))
         self.assertFalse((PROJECT_ROOT / "extension" / "linkedin-inject.js").exists())
-        self.assertEqual(set(referenced_scripts), {"selectors.js", "common.js", "linkedin.js", "indeed.js", "glassdoor.js"})
+        self.assertEqual(set(referenced_scripts), {"receiver_bootstrap.js", "selectors.js", "common.js", "linkedin.js", "indeed.js", "glassdoor.js"})
+        extension_sources = "\n".join(path.read_text(encoding="utf-8") for path in (PROJECT_ROOT / "extension").glob("*.js"))
+        self.assertNotIn("chrome.scripting", extension_sources)
+        self.assertNotIn("executeScript", extension_sources)
         node = subprocess.run(["node", "--version"], capture_output=True)
         if node.returncode: self.skipTest("Node is unavailable")
         for path in sorted((PROJECT_ROOT / "extension").glob("*.js")):
@@ -60,6 +73,14 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertEqual(target_lifecycle.returncode, 0, target_lifecycle.stderr or target_lifecycle.stdout)
         receiver_recovery = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_receiver_recovery_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(receiver_recovery.returncode, 0, receiver_recovery.stderr or receiver_recovery.stdout)
+        receiver_bootstrap = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_receiver_bootstrap_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(receiver_bootstrap.returncode, 0, receiver_bootstrap.stderr or receiver_bootstrap.stdout)
+        delayed_receiver = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_chg166_delayed_receiver_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(delayed_receiver.returncode, 0, delayed_receiver.stderr or delayed_receiver.stdout)
+        receiver_regeneration = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_receiver_regeneration_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(receiver_regeneration.returncode, 0, receiver_regeneration.stderr or receiver_regeneration.stdout)
+        receiver_isolation = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_service_worker_receiver_isolation_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
+        self.assertEqual(receiver_isolation.returncode, 0, receiver_isolation.stderr or receiver_isolation.stdout)
         primary_scope = subprocess.run(["node", str(PROJECT_ROOT / "tests/extension_primary_scope_test.js")], capture_output=True, text=True, cwd=PROJECT_ROOT)
         self.assertEqual(primary_scope.returncode, 0, primary_scope.stderr or primary_scope.stdout)
         dashboard = (PROJECT_ROOT / "extension" / "dashboard.html").read_text(encoding="utf-8")
@@ -100,6 +121,10 @@ class ExtensionBridgeTests(unittest.TestCase):
         self.assertIn("JOBBOT_INSPECT_SEARCH_PANE", worker)
         self.assertIn("receiver_recovery", worker)
         self.assertIn("chrome.tabs.reload", worker)
+        self.assertIn("POST_RELOAD_RECEIVER_READY_TIMEOUT_MS", worker)
+        self.assertIn("target_regeneration_receiver_deadline_exhausted", worker)
+        self.assertIn("receiver_attachment_min_sequence", worker)
+        self.assertIn("Promise.allSettled([...workerPromises.values()])", worker)
         self.assertNotIn("chrome.scripting", worker)
         self.assertNotIn("executeScript", worker)
         self.assertIn("JOBBOT_INSPECT_SEARCH_EVENTUALLY", worker)

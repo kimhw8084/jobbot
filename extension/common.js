@@ -63,6 +63,10 @@
     if(error)return{surface:'error',reason:error};
     return{surface:'job',reason:''};
   };
+  const receiverReady = (platform) => {
+    const surface=pageSurface();
+    return{receiver_ready:true,platform:String(platform||''),page_url:String(location.href||'').slice(0,1000),surface:surface.surface,surface_reason:surface.reason,challenged:surface.surface==='challenge',login_required:surface.surface==='login'};
+  };
   const parseAgeDays = (raw) => {
     const s=clean(raw).toLowerCase(); if(!s) return null;
     if(/just posted|today|new job|minutes? ago|\b\d+\s*m(?:in)?\b/.test(s)) return 0;
@@ -104,5 +108,5 @@
     const reason=[...phrases,...defaults].map(x=>clean(x).toLowerCase()).find(x=>x&&body.includes(x));
     return {exhausted:!!reason,reason:reason||''};
   };
-  globalThis.JobBotCommon={clean,clip,normalizeTitle,textOf,firstText,headingSectionText,firstAttr,absoluteUrl,challengeInfo,authWallInfo,positiveAuthInfo,pageSurface,parseAgeDays,parseJsonLdJob,scrollResults,exhaustionInfo};
+  globalThis.JobBotCommon={clean,clip,normalizeTitle,textOf,firstText,headingSectionText,firstAttr,absoluteUrl,challengeInfo,authWallInfo,positiveAuthInfo,pageSurface,receiverReady,parseAgeDays,parseJsonLdJob,scrollResults,exhaustionInfo};
 })();
