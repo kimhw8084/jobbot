@@ -1,0 +1,548 @@
+{
+  "accepted_at": "2026-09-24T01:20:52Z",
+  "changed_files": [
+    {
+      "additions": 10,
+      "deletions": 7,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 131,
+      "deletions": 0,
+      "path": "docs/BRIGHTDATA_PROVIDER.md",
+      "status": "A"
+    },
+    {
+      "additions": 3,
+      "deletions": 1,
+      "path": "src/jobbot/acquisition/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 829,
+      "deletions": 0,
+      "path": "src/jobbot/acquisition/brightdata.py",
+      "status": "A"
+    },
+    {
+      "additions": 20,
+      "deletions": 7,
+      "path": "src/jobbot/acquisition/coordinator.py",
+      "status": "M"
+    },
+    {
+      "additions": 13,
+      "deletions": 1,
+      "path": "src/jobbot/acquisition/models.py",
+      "status": "M"
+    },
+    {
+      "additions": 42,
+      "deletions": 2,
+      "path": "src/jobbot/cli.py",
+      "status": "M"
+    },
+    {
+      "additions": 9,
+      "deletions": 0,
+      "path": "src/jobbot/exports.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/__init__.py",
+      "status": "M"
+    },
+    {
+      "additions": 18,
+      "deletions": 0,
+      "path": "src/jobbot/migrations/m0022_provider_runtime_diagnostics.py",
+      "status": "A"
+    },
+    {
+      "additions": 20,
+      "deletions": 3,
+      "path": "src/jobbot/search_quality.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "src/jobbot/web/dashboard.html",
+      "status": "M"
+    },
+    {
+      "additions": 4,
+      "deletions": 0,
+      "path": "src/jobbot/web/dashboard.js",
+      "status": "M"
+    },
+    {
+      "additions": 611,
+      "deletions": 0,
+      "path": "tests/integration/test_brightdata_jobs.py",
+      "status": "A"
+    },
+    {
+      "additions": 3,
+      "deletions": 1,
+      "path": "tests/integration/test_chg112_production_integrity.py",
+      "status": "M"
+    },
+    {
+      "additions": 1,
+      "deletions": 1,
+      "path": "tests/integration/test_dashboard_exports_application.py",
+      "status": "M"
+    },
+    {
+      "additions": 2,
+      "deletions": 1,
+      "path": "tests/integration/test_database_ledger.py",
+      "status": "M"
+    },
+    {
+      "additions": 175,
+      "deletions": 0,
+      "path": "verification/CHG-200-r2.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1230,1460p' src/jobbot/legacy_engine.py && rtk rg -n 'canonicalize_job|upsert_job|canonical_job_id' src/jobbot/acquisition/ingestion.py src/jobbot/discoveries.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -A18 'def occurrence_key|def source_identity' src/jobbot/canonical.py src/jobbot/legacy_engine.py && rtk rg -n -A40 'def persist_detail' src/jobbot/acquisition/ingestion.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '160,335p' src/jobbot/acquisition/ingestion.py && rtk rg -n -A30 'def upsert_card' src/jobbot/discoveries.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p test_brightdata_jobs.py -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -A16 'def _static|DASHBOARD_HTML|DISCOVERY_COLUMNS' src/jobbot/dashboard.py && rtk rg -n 'metric_definition_version|provider_diagnostics|export_all\\\\(' tests\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p test_brightdata_jobs.py -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p test_brightdata_jobs.py -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '455,565p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p test_brightdata_jobs.py -v && rtk git diff --check && rtk python -m compileall -q src/jobbot tests/integration/test_brightdata_jobs.py'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '338,365p' tests/integration/test_brightdata_jobs.py && rtk sed -n '550,590p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p test_brightdata_jobs.py -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'data/jobs\\\\.sqlite3|jobs\\\\.sqlite3|production' tests scripts/validate_production.py\"",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,100p' tests/integration/test_database_ledger.py && rtk sed -n '1,140p' src/jobbot/db.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'range\\\\(1,|provider_metadata_json' tests/integration/test_database_ledger.py && rtk git status --short --branch && rtk git diff --stat\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport os\nimport shutil\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nsource = Path.cwd()\ntmp_root = Path(tempfile.mkdtemp(prefix=\\\"jobbot-chg-200-r2-suite-\\\"))\nproject = tmp_root / \\\"project\\\"\nruntime = tmp_root / \\\"runtime\\\"\nruntime.mkdir()\nignore = shutil.ignore_patterns(\n    \\\".git\\\", \\\"data\\\", \\\".venv\\\", \\\"venv\\\", \\\"node_modules\\\", \\\"__pycache__\\\",\n    \\\".pytest_cache\\\", \\\".mypy_cache\\\", \\\".ruff_cache\\\", \\\"out\\\", \\\"logs\\\",\n)\nshutil.copytree(source, project, ignore=ignore)\nenv = os.environ.copy()\nenv[\\\"PYTHONPATH\\\"] = str(project / \\\"src\\\")\nenv[\\\"JOBBOT_DATABASE_PATH\\\"] = str(runtime / \\\"jobs.sqlite3\\\")\nenv[\\\"JOBBOT_OUTPUT_DIR\\\"] = str(runtime / \\\"out\\\")\nenv[\\\"JOBBOT_CRAWL_OBSERVATIONS_PATH\\\"] = str(runtime / \\\"crawl_observations.sqlite3\\\")\nprint(f\\\"Disposable suite project: {project}\\\", flush=True)\nprint(f\\\"Disposable runtime data: {runtime}\\\", flush=True)\ntry:\n    result = subprocess.run(\n        [sys.executable, \\\"-m\\\", \\\"unittest\\\", \\\"discover\\\", \\\"-s\\\", \\\"tests\\\", \\\"-v\\\"],\n        cwd=project,\n        env=env,\n        check=False,\n    )\n    print(f\\\"FULL_SUITE_EXIT={result.returncode}\\\", flush=True)\n    raise SystemExit(result.returncode)\nfinally:\n    shutil.rmtree(tmp_root, ignore_errors=True)\nPY\"",
+      "exit_code": 1,
+      "test_result": {
+        "exit_code": 1,
+        "framework": "pytest",
+        "outcome": "test_failures",
+        "output_bytes": 72263,
+        "output_sha256": "fc21d556360b6d2abc7ef7799c402e6ba423d26feae3e315740da73003b045a3",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,150p' src/jobbot/config.py && rtk sed -n '1,120p' tests/integration/test_database_ledger.py && rtk sed -n '1,110p' tests/integration/test_acquisition_v2.py && rtk sed -n '1,120p' tests/integration/test_dashboard_exports_application.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_acquisition_v2 -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_dashboard_exports_application.DashboardExportApplicationTests.test_exports_formula_safety_application_history_and_funnel -v && rtk python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport os\nimport re\nimport shutil\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nsource = Path.cwd()\ntmp_root = Path(tempfile.mkdtemp(prefix=\\\"jobbot-chg-200-r2-suite-\\\"))\nproject = tmp_root / \\\"project\\\"\nignore = shutil.ignore_patterns(\n    \\\".git\\\", \\\"data\\\", \\\".venv\\\", \\\"venv\\\", \\\"node_modules\\\", \\\"__pycache__\\\",\n    \\\".pytest_cache\\\", \\\".mypy_cache\\\", \\\".ruff_cache\\\", \\\"out\\\", \\\"logs\\\",\n)\nshutil.copytree(source, project, ignore=ignore)\n(project / \\\"data\\\").mkdir()\n(project / \\\"out\\\").mkdir()\nenv = os.environ.copy()\nenv[\\\"PYTHONPATH\\\"] = str(project / \\\"src\\\")\nfor key in (\n    \\\"JOBBOT_DATABASE_PATH\\\", \\\"JOBBOT_OUTPUT_DIR\\\", \\\"JOBBOT_CRAWL_OBSERVATIONS_PATH\\\",\n    \\\"JOBBOT_DASHBOARD_PORT\\\", \\\"BRIGHTDATA_API_TOKEN\\\", \\\"JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG\\\",\n    \\\"JOBBOT_BRIGHTDATA_INDEED_CONFIG\\\", \\\"JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG\\\",\n):\n    env.pop(key, None)\ntry:\n    result = subprocess.run(\n        [sys.executable, \\\"-m\\\", \\\"unittest\\\", \\\"discover\\\", \\\"-s\\\", \\\"tests\\\", \\\"-v\\\"],\n        cwd=project,\n        env=env,\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=False,\n    )\n    lines = result.stdout.splitlines()\n    summary = [line for line in lines if line.startswith((\\\"Ran \\\", \\\"OK\\\", \\\"FAILED (\\\"))]\n    print(\\\"FULL SUITE SUMMARY:\\\")\n    print(\\\"\\\\n\\\".join(summary[-3:]) if summary else \\\"no unittest summary found\\\")\n    failures = list(re.finditer(r\\\"\"'^(ERROR|FAIL): ([''^'\"\\\\n]+)\\\\n(.*?)(?=\"'^(?:ERROR|FAIL): |''^Ran '\"\\\\d+ tests|\"'^OK$|''^FAILED '\"\\\\(|\\\\Z)\\\", result.stdout, re.M | re.S))\n    if failures:\n        print(f\\\"FAILURE DETAILS ({len(failures)}):\\\")\n        for item in failures:\n            detail = [line for line in item.group(3).splitlines() if line.strip()]\n            print(f\\\"{item.group(1)} {item.group(2)} :: {detail[-1] if detail else 'no detail'}\\\")\n    if result.returncode:\n        print(\\\"TAIL:\\\")\n        print(\\\"\\\\n\\\".join(lines[-30:]))\n    else:\n        print(\\\"All Python tests passed in the sanitized copy; no Bright Data credentials/config were inherited.\\\")\n    raise SystemExit(result.returncode)\nfinally:\n    shutil.rmtree(tmp_root, ignore_errors=True)\nPY\"",
+      "exit_code": 1,
+      "test_result": {
+        "exit_code": 1,
+        "framework": "pytest",
+        "outcome": "test_failures",
+        "output_bytes": 3688,
+        "output_sha256": "dbb80e1e8673996f5dca0fa32476066a4860ee80c34790db7fcd9f4168096dae",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '280,365p' tests/integration/test_chg112_production_integrity.py && rtk rg -n 'migration_requeues_historical|identity_only|RETRYABLE' src/jobbot/migrations src/jobbot\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,120p' src/jobbot/migrations/__init__.py && rtk sed -n '1,110p' src/jobbot/migrations/m0017_chg159_human_wait.py && rtk rg -n 'human.gated|re-enrichment|VERSION = 17|version 17' src/jobbot/migrations tests/integration/test_chg112_production_integrity.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_chg112_production_integrity.Chg112ProductionIntegrityTests.test_migration_requeues_historical_identity_only_rows_without_losing_versions -v && rtk env PYTHONPATH=src python -m unittest tests.integration.test_brightdata_jobs -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport os\nimport re\nimport shutil\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nsource = Path.cwd()\ntmp_root = Path(tempfile.mkdtemp(prefix=\\\"jobbot-chg-200-r2-suite-\\\"))\nproject = tmp_root / \\\"project\\\"\nignore = shutil.ignore_patterns(\n    \\\".git\\\", \\\"data\\\", \\\".venv\\\", \\\"venv\\\", \\\"node_modules\\\", \\\"__pycache__\\\",\n    \\\".pytest_cache\\\", \\\".mypy_cache\\\", \\\".ruff_cache\\\", \\\"out\\\", \\\"logs\\\",\n)\nshutil.copytree(source, project, ignore=ignore)\n(project / \\\"data\\\").mkdir()\n(project / \\\"out\\\").mkdir()\nenv = os.environ.copy()\nenv[\\\"PYTHONPATH\\\"] = str(project / \\\"src\\\")\nfor key in (\n    \\\"JOBBOT_DATABASE_PATH\\\", \\\"JOBBOT_OUTPUT_DIR\\\", \\\"JOBBOT_CRAWL_OBSERVATIONS_PATH\\\",\n    \\\"JOBBOT_DASHBOARD_PORT\\\", \\\"BRIGHTDATA_API_TOKEN\\\", \\\"JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG\\\",\n    \\\"JOBBOT_BRIGHTDATA_INDEED_CONFIG\\\", \\\"JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG\\\",\n):\n    env.pop(key, None)\ntry:\n    result = subprocess.run(\n        [sys.executable, \\\"-m\\\", \\\"unittest\\\", \\\"discover\\\", \\\"-s\\\", \\\"tests\\\", \\\"-v\\\"],\n        cwd=project,\n        env=env,\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=False,\n    )\n    lines = result.stdout.splitlines()\n    summary = [line for line in lines if line.startswith((\\\"Ran \\\", \\\"OK\\\", \\\"FAILED (\\\"))]\n    print(\\\"FULL SUITE SUMMARY:\\\")\n    print(\\\"\\\\n\\\".join(summary[-3:]) if summary else \\\"no unittest summary found\\\")\n    failures = list(re.finditer(r\\\"\"'^(ERROR|FAIL): ([''^'\"\\\\n]+)\\\\n(.*?)(?=\"'^(?:ERROR|FAIL): |''^Ran '\"\\\\d+ tests|\"'^OK$|''^FAILED '\"\\\\(|\\\\Z)\\\", result.stdout, re.M | re.S))\n    if failures:\n        print(f\\\"FAILURE DETAILS ({len(failures)}):\\\")\n        for item in failures:\n            detail = [line for line in item.group(3).splitlines() if line.strip()]\n            print(f\\\"{item.group(1)} {item.group(2)} :: {detail[-1] if detail else 'no detail'}\\\")\n    if result.returncode:\n        print(\\\"TAIL:\\\")\n        print(\\\"\\\\n\\\".join(lines[-30:]))\n    else:\n        print(\\\"All Python tests passed in the sanitized copy; no Bright Data credentials/config were inherited.\\\")\n    raise SystemExit(result.returncode)\nfinally:\n    shutil.rmtree(tmp_root, ignore_errors=True)\nPY\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 157,
+        "output_sha256": "423cde5dd943bb440ca80758537f8e0abf7b9db40fa9e6804aecfbea914683f7",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' src/jobbot/acquisition/brightdata.py && rtk sed -n '240,500p' src/jobbot/acquisition/brightdata.py && rtk sed -n '500,700p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '500,680p' src/jobbot/acquisition/brightdata.py && rtk sed -n '1,280p' src/jobbot/acquisition/coordinator.py && rtk sed -n '1,220p' src/jobbot/acquisition/models.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '640,820p' src/jobbot/acquisition/brightdata.py && rtk sed -n '250,330p' src/jobbot/acquisition/coordinator.py && rtk sed -n '1,180p' src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport subprocess\nfrom pathlib import Path\nfiles = sorted(Path(\\\"extension\\\").rglob(\\\"*.js\\\"))\nif not files:\n    raise SystemExit(\\\"no extension JavaScript files found\\\")\nfor path in files:\n    subprocess.run([\\\"node\\\", \\\"--check\\\", str(path)], check=True)\nprint(f\\\"SYNTAX_ONLY_OK files={len(files)}\\\")\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,260p' docs/BRIGHTDATA_PROVIDER.md && rtk git diff -- README.md docs/ARCHITECTURE.md src/jobbot/cli.py src/jobbot/search_quality.py src/jobbot/exports.py src/jobbot/web/dashboard.html src/jobbot/web/dashboard.js\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '_reported_cost\\\\(' src/jobbot/acquisition/brightdata.py && rtk rg -n 'reported_cost' src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,190p' tests/integration/test_brightdata_jobs.py && rtk sed -n '235,290p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_brightdata_jobs -v && rtk git diff --check && rtk python -m compileall -q src tests'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.integration.test_brightdata_jobs -v && rtk git diff --check && rtk python -m compileall -q src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport os\nimport re\nimport shutil\nimport subprocess\nimport sys\nimport tempfile\nfrom pathlib import Path\n\nsource = Path.cwd()\ntmp_root = Path(tempfile.mkdtemp(prefix=\\\"jobbot-chg-200-r2-suite-\\\"))\nproject = tmp_root / \\\"project\\\"\nignore = shutil.ignore_patterns(\n    \\\".git\\\", \\\"data\\\", \\\".venv\\\", \\\"venv\\\", \\\"node_modules\\\", \\\"__pycache__\\\",\n    \\\".pytest_cache\\\", \\\".mypy_cache\\\", \\\".ruff_cache\\\", \\\"out\\\", \\\"logs\\\",\n)\nshutil.copytree(source, project, ignore=ignore)\n(project / \\\"data\\\").mkdir()\n(project / \\\"out\\\").mkdir()\nenv = os.environ.copy()\nenv[\\\"PYTHONPATH\\\"] = str(project / \\\"src\\\")\nfor key in (\n    \\\"JOBBOT_DATABASE_PATH\\\", \\\"JOBBOT_OUTPUT_DIR\\\", \\\"JOBBOT_CRAWL_OBSERVATIONS_PATH\\\",\n    \\\"JOBBOT_DASHBOARD_PORT\\\", \\\"BRIGHTDATA_API_TOKEN\\\", \\\"JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG\\\",\n    \\\"JOBBOT_BRIGHTDATA_INDEED_CONFIG\\\", \\\"JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG\\\",\n):\n    env.pop(key, None)\ntry:\n    result = subprocess.run(\n        [sys.executable, \\\"-m\\\", \\\"unittest\\\", \\\"discover\\\", \\\"-s\\\", \\\"tests\\\", \\\"-v\\\"],\n        cwd=project,\n        env=env,\n        text=True,\n        stdout=subprocess.PIPE,\n        stderr=subprocess.STDOUT,\n        check=False,\n    )\n    lines = result.stdout.splitlines()\n    summary = [line for line in lines if line.startswith((\\\"Ran \\\", \\\"OK\\\", \\\"FAILED (\\\"))]\n    print(\\\"FULL SUITE SUMMARY:\\\")\n    print(\\\"\\\\n\\\".join(summary[-3:]) if summary else \\\"no unittest summary found\\\")\n    failures = list(re.finditer(r\\\"\"'^(ERROR|FAIL): ([''^'\"\\\\n]+)\\\\n(.*?)(?=\"'^(?:ERROR|FAIL): |''^Ran '\"\\\\d+ tests|\"'^OK$|''^FAILED '\"\\\\(|\\\\Z)\\\", result.stdout, re.M | re.S))\n    if failures:\n        print(f\\\"FAILURE DETAILS ({len(failures)}):\\\")\n        for item in failures:\n            detail = [line for line in item.group(3).splitlines() if line.strip()]\n            print(f\\\"{item.group(1)} {item.group(2)} :: {detail[-1] if detail else 'no detail'}\\\")\n    if result.returncode:\n        print(\\\"TAIL:\\\")\n        print(\\\"\\\\n\\\".join(lines[-25:]))\n    else:\n        print(\\\"All Python tests passed in the sanitized copy; no Bright Data credentials/config were inherited.\\\")\n    raise SystemExit(result.returncode)\nfinally:\n    shutil.rmtree(tmp_root, ignore_errors=True)\nPY\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 157,
+        "output_sha256": "0de6d806d923abe934cd945f3d42a5a82e90b6e9243a220dc8cb408c157c741e",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --stat && rtk git diff --name-only && rtk git diff --check && rtk git rev-parse HEAD && rtk git branch --show-current && rtk git remote -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add README.md docs/ARCHITECTURE.md docs/BRIGHTDATA_PROVIDER.md src/jobbot/acquisition/__init__.py src/jobbot/acquisition/brightdata.py src/jobbot/acquisition/coordinator.py src/jobbot/acquisition/models.py src/jobbot/cli.py src/jobbot/exports.py src/jobbot/migrations/__init__.py src/jobbot/migrations/m0022_provider_runtime_diagnostics.py src/jobbot/search_quality.py src/jobbot/web/dashboard.html src/jobbot/web/dashboard.js tests/integration/test_brightdata_jobs.py tests/integration/test_chg112_production_integrity.py tests/integration/test_dashboard_exports_application.py tests/integration/test_database_ledger.py && rtk git diff --cached --check && rtk git diff --cached --stat && rtk git commit -m \"CHG-200-r2 add Bright Data jobs provider\"'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git log -1 --format='%H%n%s' && rtk git diff --cached --stat\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit -m \"CHG-200-r2 add Bright Data jobs provider\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git log -1 --format='%H%n%s' && rtk git show --stat --oneline --summary HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport json\nfrom pathlib import Path\n\nreport = {\n    \\\"change\\\": \\\"CHG-200-r2\\\",\n    \\\"request\\\": \\\"Add Bright Data Jobs Scraper API as the first production-candidate managed acquisition adapter behind the CHG-200-r1 acquisition-v2 seam; build/test only.\\\",\n    \\\"branch\\\": \\\"codex/jobbot-CHG-200-r2\\\",\n    \\\"base_commit\\\": \\\"5a55d9f6328c4dd5a36292eb938ef2cd1400ff07\\\",\n    \\\"validated_code_commit\\\": \\\"392848192315c35ad6c70b888035740f8bb05bab\\\",\n    \\\"adapter\\\": {\n        \\\"name\\\": \\\"brightdata-jobs\\\",\n        \\\"provider_identity_is_separate_from_source_surface\\\": True,\n        \\\"source_surfaces\\\": [\\\"linkedin\\\", \\\"indeed\\\", \\\"glassdoor\\\"],\n        \\\"contract\\\": \\\"ProviderAdapter.fetch(SearchTask) -> ProviderBatch through acquisition-v2 coordinator and shared identity-first ingestion\\\",\n        \\\"dataset_ids_and_field_names\\\": \\\"runtime-configurable per platform; no account-specific IDs or schemas are hard-coded\\\",\n        \\\"secret_key\\\": \\\"BRIGHTDATA_API_TOKEN\\\",\n        \\\"platform_config_keys\\\": {\n            \\\"linkedin\\\": \\\"JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG\\\",\n            \\\"indeed\\\": \\\"JOBBOT_BRIGHTDATA_INDEED_CONFIG\\\",\n            \\\"glassdoor\\\": \\\"JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG\\\"\n        },\n        \\\"offline_preflight\\\": \\\"presence and JSON/schema validity only; token validity is explicitly not checked; no network or ledger access\\\"\n    },\n    \\\"task_mapping\\\": {\n        \\\"preserved_provenance\\\": [\\\"task_key\\\", \\\"query_text\\\", \\\"window_days\\\", \\\"platform\\\", \\\"query_family\\\", \\\"query_pass\\\", \\\"phase\\\", \\\"execution_rank\\\"],\n        \\\"request_fields\\\": \\\"keyword is required; optional location, remote and window fields are emitted only when explicitly configured by that platform schema\\\",\n        \\\"home_only_intent\\\": \\\"configured home_state/home_metro and remote intent are request filters only; unsupported filters are omitted and no eligibility evidence is fabricated\\\",\n        \\\"mock_schema_coverage\\\": {\n            \\\"linkedin\\\": \\\"configured keyword, home_state location, remote literal and integer freshness mapping\\\",\n            \\\"indeed\\\": \\\"configured keyword, home_metro location and freshness template mapping\\\",\n            \\\"glassdoor\\\": \\\"configured keyword-only mapping\\\"\n        },\n        \\\"schema_note\\\": \\\"Field names above describe mocked test configurations only, not Bright Data account defaults.\\\"\n    },\n    \\\"sanitized_request_contract\\\": {\n        \\\"trigger\\\": \\\"POST /datasets/v3/trigger; configured dataset_id, documented type=discover_new and discover_by=keyword, include_errors=true, format=json, limit_multiple_results=remaining budget; body contains only configured keyword/filter fields\\\",\n        \\\"progress\\\": \\\"GET /datasets/v3/progress/{snapshot_id}; bounded polling for starting/running/ready/failed/canceled\\\",\n        \\\"parts\\\": \\\"GET /datasets/v3/snapshot/{snapshot_id}/parts with configured batch_size >= 1000\\\",\n        \\\"results\\\": \\\"GET /datasets/v3/snapshot/{snapshot_id} for every reported part using JSON, batch_size and part\\\",\n        \\\"metadata\\\": \\\"Exact sanitized trigger/progress/parts/result request shape and canonical SHA-256 request fingerprint; no Authorization header or token\\\",\n        \\\"field_policy\\\": \\\"Normalize only explicitly mapped observed fields; preserve sanitized raw rows; ignore provider verification claims. Missing values remain unknown.\\\"\n    },\n    \\\"lifecycle_and_completion\\\": {\n        \\\"states\\\": [\\\"triggered/submitted\\\", \\\"starting/running pending\\\", \\\"ready terminal success\\\", \\\"failed\\\", \\\"canceled\\\", \\\"result retrieval\\\"],\n        \\\"completion_rule\\\": \\\"COMPLETE only after terminal ready, valid part count, every part retrieved and parsed, no provider error rows, malformed identity rows, continuation markers, missing parts or budget cap, plus explicit completion evidence\\\",\n        \\\"completion_evidence_fields\\\": [\\\"platform\\\", \\\"task_key\\\", \\\"provider snapshot ID\\\", \\\"terminal state\\\", \\\"part totals and retrieved part numbers\\\", \\\"record count\\\", \\\"continuation markers\\\", \\\"request fingerprint\\\"],\n        \\\"incomplete_cases\\\": [\\\"snapshot acknowledgement alone\\\", \\\"pending or poll timeout\\\", \\\"429/5xx\\\", \\\"missing result parts\\\", \\\"malformed results\\\", \\\"cursors or truncation\\\", \\\"provider row errors\\\", \\\"record budget cap\\\"],\n        \\\"failure_classes\\\": \\\"authorization, configuration, schema, transport, timeout, ambiguous cursor, partial batch, invalid response and unknown are recorded without exhausting incomplete tasks\\\",\n        \\\"retry_bounds\\\": \\\"provider-local bounded transient retries and polling; no legacy Chrome fallback\\\"\n    },\n    \\\"budget_and_accounting\\\": {\n        \\\"cli\\\": \\\"--max-records is a required positive explicit validation budget with --provider brightdata-jobs; live transport also requires --live-transport\\\",\n        \\\"budget_effect\\\": \\\"sent through documented total-result limit; exact-cap tasks remain incomplete; once exhausted, remaining planned tasks are checkpointed incomplete without more provider calls\\\",\n        \\\"no_arbitrary_static_result_cap\\\": True,\n        \\\"persisted_accounting\\\": [\\\"trigger submissions\\\", \\\"records delivered\\\", \\\"failure/completion state\\\", \\\"failure class\\\", \\\"budget stops\\\", \\\"provider-returned cost/credits only\\\"],\n        \\\"cost_policy\\\": \\\"no estimated charges; secret echoes in provider row/cost values are rejected or redacted before persistence\\\"\n    },\n    \\\"diagnostics\\\": {\n        \\\"database_fields\\\": [\\\"provider_metadata_json\\\", \\\"provider_requests_submitted\\\", \\\"provider_records_delivered\\\", \\\"provider_reported_cost_json\\\"],\n        \\\"surfaces\\\": [\\\"dashboard provider diagnostics\\\", \\\"provider_diagnostics.json\\\", \\\"live_discoveries.csv\\\", \\\"search-quality provider metrics\\\"],\n        \\\"chg114_ordering\\\": \\\"learned-order dimensions and frozen execution ranks are unchanged\\\"\n    },\n    \\\"tests\\\": {\n        \\\"full_python_suite\\\": {\n            \\\"command\\\": \\\"python -m unittest discover -s tests -v\\\",\n            \\\"result\\\": \\\"PASS\\\",\n            \\\"passed\\\": 177,\n            \\\"skipped\\\": 1,\n            \\\"skip_reason\\\": \\\"Historical-ledger migration fixture skipped because sanitized copy intentionally excludes local data/jobs.sqlite3.\\\",\n            \\\"execution\\\": \\\"sanitized disposable project copy with disposable default data/out paths; production data directory excluded; Bright Data token/config environment variables removed\\\"\n        },\n        \\\"brightdata_provider_tests\\\": {\\\"result\\\": \\\"PASS\\\", \\\"passed\\\": 16, \\\"network_calls\\\": 0},\n        \\\"python_compileall\\\": \\\"PASS\\\",\n        \\\"git_diff_check\\\": \\\"PASS\\\",\n        \\\"extension_javascript_syntax\\\": {\\\"result\\\": \\\"PASS\\\", \\\"files_checked_with_node_check_only\\\": 9},\n        \\\"browser_runtime\\\": \\\"NOT_RUN; no Chrome or Big-3 browser runtime\\\",\n        \\\"invariant_regressions\\\": [\n            \\\"CHG-200-r1 provider-neutral seam/shared ingestion/browser RPC compatibility\\\",\n            \\\"CHG-170 frozen 140-task universe and 21 deep pairs\\\",\n            \\\"CHG-113 evidence/readiness trust gates\\\",\n            \\\"CHG-114 yield/funnel/learned-order dimensions\\\",\n            \\\"mixed card/detail identity-before-detail, repeated snapshot dedupe, distinct requisitions, and validation-budget incomplete checkpointing\\\"\n        ]\n    },\n    \\\"safety_boundary\\\": {\n        \\\"bright_data_live_calls\\\": \\\"NONE\\\",\n        \\\"paid_credentials\\\": \\\"NOT_USED\\\",\n        \\\"production_data/jobs.sqlite3\\\": {\\\"status\\\": \\\"NOT_USED / NOT_READ / NOT_MUTATED\\\"},\n        \\\"RUN_NOW\\\": \\\"UNCHANGED\\\",\n        \\\"browser_acquisition\\\": \\\"FROZEN LEGACY\\\",\n        \\\"production_approval\\\": \\\"NOT APPROVED; separate live qualification and production selection required\\\"\n    },\n    \\\"product_reference_review\\\": {\n        \\\"reviewed_at\\\": \\\"2026-09-23\\\",\n        \\\"notes\\\": \\\"Product coverage and marketing pricing (including advertised free-tier quantities) may change and must be reverified during live qualification; marketing is not treated as API contract.\\\",\n        \\\"sources\\\": [\n            \\\"https://brightdata.com/products/web-scraper/jobs-scraper\\\",\n            \\\"https://docs.brightdata.com/api-reference/rest-api/scraper/asynchronous-requests\\\",\n            \\\"https://docs.brightdata.com/api-reference/scrapers/management-apis/monitor-progress\\\",\n            \\\"https://docs.brightdata.com/api-reference/scrapers/management-apis/get-snapshot-delivery-parts\\\"\n        ]\n    },\n    \\\"LIVE_PROVIDER_QUALIFICATION\\\": \\\"PENDING\\\"\n}\nPath(\\\"verification/CHG-200-r2.json\\\").write_text(json.dumps(report, indent=2, ensure_ascii=False) + \\\"\\\\n\\\", encoding=\\\"utf-8\\\")\nPY\nrtk git add verification/CHG-200-r2.json && rtk git diff --cached --check && rtk git commit -m \\\"Add CHG-200-r2 verification evidence\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git log -2 --format='%H%n%P%n%s' && rtk git diff --check && rtk git diff 5a55d9f6328c4dd5a36292eb938ef2cd1400ff07..HEAD --stat && rtk git push origin HEAD:refs/heads/codex/jobbot-CHG-200-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-200-r2 && rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse 5a55d9f6328c4dd5a36292eb938ef2cd1400ff07'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '6,23p' docs/BRIGHTDATA_PROVIDER.md && rtk rg -n 'notes' verification/CHG-200-r2.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c 'import json; from pathlib import Path; r=json.loads(Path(\\\"verification/CHG-200-r2.json\\\").read_text()); assert r[\\\"LIVE_PROVIDER_QUALIFICATION\\\"] == \\\"PENDING\\\"; print(\\\"verification JSON OK\\\")' && rtk git diff --check && rtk git status --short --branch && rtk git diff --stat && rtk git add docs/BRIGHTDATA_PROVIDER.md verification/CHG-200-r2.json && rtk git diff --cached --check && rtk git commit -m \\\"Clarify Bright Data qualification pricing boundary\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push origin HEAD:refs/heads/codex/jobbot-CHG-200-r2 && rtk git ls-remote origin refs/heads/codex/jobbot-CHG-200-r2 && rtk git status --short --branch && rtk git rev-parse HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files verification | head -30 && rtk rg -n 'base_commit|head_commit|validated_code_commit|\\\"head\\\"' verification\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,45p' verification/CHG-200-r1.json && rtk sed -n '1,24p' verification/CHG-170-r2.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python - <<'PY'\nimport json\nfrom pathlib import Path\npath = Path(\\\"verification/CHG-200-r2.json\\\")\nreport = json.loads(path.read_text(encoding=\\\"utf-8\\\"))\nreport[\\\"request\\\"] = {\n    \\\"objective\\\": \\\"Project OS BUILD for JobBot CHG-200-r2 on exact integrated main 5a55d9f6328c4dd5a36292eb938ef2cd1400ff07: add Bright Data Jobs Scraper API as first production-candidate managed adapter behind CHG-200-r1 acquisition-v2, build/test only.\\\",\n    \\\"baseline_commit\\\": \\\"5a55d9f6328c4dd5a36292eb938ef2cd1400ff07\\\",\n    \\\"work_branch\\\": \\\"codex/jobbot-CHG-200-r2\\\",\n    \\\"main_must_not_be_moved_or_merged\\\": True,\n    \\\"production_entrypoint_switch\\\": False\n}\nreport.pop(\\\"branch\\\", None)\nreport.pop(\\\"base_commit\\\", None)\nreport.pop(\\\"validated_code_commit\\\", None)\nreport[\\\"git\\\"] = {\n    \\\"branch\\\": \\\"codex/jobbot-CHG-200-r2\\\",\n    \\\"base_commit\\\": \\\"5a55d9f6328c4dd5a36292eb938ef2cd1400ff07\\\",\n    \\\"tested_head_commit\\\": \\\"392848192315c35ad6c70b888035740f8bb05bab\\\",\n    \\\"main_mutated\\\": False,\n    \\\"merge_performed\\\": False\n}\npath.write_text(json.dumps(report, indent=2, ensure_ascii=False) + \\\"\\\\n\\\", encoding=\\\"utf-8\\\")\nPY\nrtk python -c 'import json; from pathlib import Path; r=json.loads(Path(\\\"verification/CHG-200-r2.json\\\").read_text()); assert r[\\\"git\\\"][\\\"tested_head_commit\\\"] == \\\"392848192315c35ad6c70b888035740f8bb05bab\\\"; assert r[\\\"LIVE_PROVIDER_QUALIFICATION\\\"] == \\\"PENDING\\\"; print(\\\"verification JSON OK\\\")' && rtk git diff --check && rtk git add verification/CHG-200-r2.json && rtk git diff --cached --check && rtk git commit -m \\\"Record exact CHG-200-r2 validation head\\\" && rtk git push origin HEAD:refs/heads/codex/jobbot-CHG-200-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-CHG-200-r2 && rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^ && rtk git diff 5a55d9f6328c4dd5a36292eb938ef2cd1400ff07..HEAD --check'",
+      "exit_code": 2,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.155.1",
+    "configured_model": "gpt-6-luna",
+    "event_count": 240,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.2,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 15099392,
+      "fresh_input_tokens": 434225,
+      "input_tokens": 15533617,
+      "non_reasoning_output_tokens": 48500,
+      "output_tokens": 123522,
+      "reasoning_output_tokens": 75022,
+      "total_processed_tokens": 15657139
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "9298efb5998b2c1304f271a8351c67e92afb9b02",
+      "subject": "Record exact CHG-200-r2 validation head"
+    },
+    {
+      "sha": "7b8ad496184b9700d9be05cb10a4d1b40073a712",
+      "subject": "Clarify Bright Data qualification pricing boundary"
+    },
+    {
+      "sha": "07d461019129a84e1d2301d119dccafcdaa7fa8b",
+      "subject": "Add CHG-200-r2 verification evidence"
+    },
+    {
+      "sha": "392848192315c35ad6c70b888035740f8bb05bab",
+      "subject": "CHG-200-r2 add Bright Data jobs provider"
+    }
+  ],
+  "diff": {
+    "additions": 1894,
+    "changed_files": 19,
+    "commit_count": 4,
+    "deletions": 26
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 5,
+    "items": [
+      {
+        "bytes": 10166,
+        "path": "README.md",
+        "sha256": "85f2d6eab68c6d0f7a5c5cf5fc236a14f055e7b6a44a2a702b33a178ea5852af"
+      },
+      {
+        "bytes": 10672,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "e28d851734abb53a6f1c8fd9f5bb768d385144dc8b721a8d3656f4adebdea5c9"
+      },
+      {
+        "bytes": 6869,
+        "path": "docs/BRIGHTDATA_PROVIDER.md",
+        "sha256": "3a58b278e2ece0ddfe97e142da559da473b54bdb7a03e9c1f620fdf5931af710"
+      },
+      {
+        "bytes": 13378,
+        "path": "src/jobbot/web/dashboard.html",
+        "sha256": "bbc0de1fbfe4520a49630fb4a2b6eb502b19066908db5fc3a9289231ce9d7396"
+      },
+      {
+        "bytes": 8541,
+        "path": "verification/CHG-200-r2.json",
+        "sha256": "c56e39686d887ab4bb926a7cd29270b0cb334e183671803cdcc50402fd19c873"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-24T02:18:33Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "5a55d9f6328c4dd5a36292eb938ef2cd1400ff07",
+    "branch": "codex/jobbot-CHG-200-r2",
+    "detached_verify": false,
+    "head_sha": "9298efb5998b2c1304f271a8351c67e92afb9b02",
+    "remote_exact_head": true,
+    "remote_head_sha": "9298efb5998b2c1304f271a8351c67e92afb9b02",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "5a55d9f6328c4dd5a36292eb938ef2cd1400ff07",
+    "work_branch": "codex/jobbot-CHG-200-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-b90889e4692fd71897b7b71f",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-200-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-200-r2"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-200-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-24T01:20:52Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 3461,
+    "queue_seconds": 0,
+    "total_seconds": 3461
+  },
+  "transport": {
+    "bytes": 8260,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 7979,
+    "prompt_sha256": "8cc0ae87eb570d33820d5df7df625ee5988fca16d3ab55cb2d322e92e48db4a4",
+    "sha256": "b90889e4692fd71897b7b71f5417bc98fccae58fba2dddb5b5db965b81932d90"
+  }
+}
