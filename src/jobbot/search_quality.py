@@ -201,7 +201,8 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
           cards_extracted,cards_persistence_succeeded,duplicate_cards,pages_visited,scroll_generation,detail_count_read,
           challenge_reason,last_error,safety_stop_reason,search_profile,strategy_profile,strategy_profile_version,
           query_family,query_kind,query_pass,initial_order,acquisition_provider,acquisition_mode,provider_run_id,
-          provider_completion_state,provider_failure_class
+          provider_completion_state,provider_failure_class,provider_metadata_json,
+          provider_requests_submitted,provider_records_delivered,provider_reported_cost_json
         FROM browser_search_tasks ORDER BY task_id""").fetchall()
     tasks: dict[int, dict[str, Any]] = {}
     task_accs: dict[tuple[Any, ...], dict[str, Any]] = {}
@@ -227,7 +228,8 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
             "platform": provider_key[2], "task_count": 0, "task_complete_count": 0,
             "task_incomplete_count": 0, "task_retryable_count": 0, "provider_failure_count": 0,
             "card_count": 0, "provider_record_ids": set(), "canonical_jobs": set(),
-            "trusted_qualified_yield_jobs": set(),
+            "trusted_qualified_yield_jobs": set(), "requests_submitted": 0,
+            "records_delivered": 0, "budget_stop_task_count": 0, "provider_reported_costs": [],
         })
         provider_metric["task_count"] += 1
         provider_state = str(row.get("provider_completion_state") or "").upper()
@@ -235,6 +237,20 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
         provider_metric["task_incomplete_count"] += int(provider_state == "INCOMPLETE")
         provider_metric["task_retryable_count"] += int(provider_state == "RETRYABLE")
         provider_metric["provider_failure_count"] += int(bool(row.get("provider_failure_class")))
+        provider_metric["requests_submitted"] += _number(row.get("provider_requests_submitted"))
+        provider_metric["records_delivered"] += _number(row.get("provider_records_delivered"))
+        try:
+            provider_metadata = json.loads(str(row.get("provider_metadata_json") or "{}"))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            provider_metadata = {}
+        if isinstance(provider_metadata, dict) and provider_metadata.get("budget_stop") is True:
+            provider_metric["budget_stop_task_count"] += 1
+        try:
+            reported_cost = json.loads(str(row.get("provider_reported_cost_json") or "{}"))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            reported_cost = {}
+        if isinstance(reported_cost, dict) and reported_cost:
+            provider_metric["provider_reported_costs"].append({"task_id": task_id, **reported_cost})
         tacc = task_accs.setdefault(tdim, _accumulator())
         facc = family_accs.setdefault(fdim, _accumulator())
         for acc in (tacc, facc):
@@ -294,7 +310,8 @@ def search_quality_metrics(conn: Any, *, limit: int = 500) -> dict[str, Any]:
             "platform": provider_key[2], "task_count": 0, "task_complete_count": 0,
             "task_incomplete_count": 0, "task_retryable_count": 0, "provider_failure_count": 0,
             "card_count": 0, "provider_record_ids": set(), "canonical_jobs": set(),
-            "trusted_qualified_yield_jobs": set(),
+            "trusted_qualified_yield_jobs": set(), "requests_submitted": 0,
+            "records_delivered": 0, "budget_stop_task_count": 0, "provider_reported_costs": [],
         })
         provider_metric["card_count"] += 1
         if row.get("provider_record_id"):

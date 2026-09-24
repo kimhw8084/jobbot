@@ -18,14 +18,22 @@ class ProviderFailureClass(StrEnum):
     PARTIAL_BATCH = "PARTIAL_BATCH"
     INVALID_RESPONSE = "INVALID_RESPONSE"
     AUTHORIZATION = "AUTHORIZATION"
+    CONFIGURATION = "CONFIGURATION"
+    SCHEMA = "SCHEMA"
     UNKNOWN = "UNKNOWN"
 
 
 class ProviderFailure(RuntimeError):
-    def __init__(self, classification: ProviderFailureClass, message: str, *, retryable: bool = True):
+    def __init__(self, classification: ProviderFailureClass, message: str, *, retryable: bool = True,
+                 provider_metadata: Mapping[str, Any] | None = None, requests_submitted: int = 0,
+                 records_delivered: int = 0, reported_cost: Mapping[str, Any] | None = None):
         super().__init__(message)
         self.classification = classification
         self.retryable = retryable
+        self.provider_metadata = dict(provider_metadata or {})
+        self.requests_submitted = max(0, int(requests_submitted))
+        self.records_delivered = max(0, int(records_delivered))
+        self.reported_cost = dict(reported_cost or {})
 
 
 @dataclass(frozen=True)
@@ -87,6 +95,10 @@ class ProviderBatch:
     completion_evidence: Mapping[str, Any] = field(default_factory=dict)
     failure_class: ProviderFailureClass | None = None
     provider_task_id: str = ""
+    provider_metadata: Mapping[str, Any] = field(default_factory=dict)
+    requests_submitted: int = 0
+    records_delivered: int = 0
+    reported_cost: Mapping[str, Any] = field(default_factory=dict)
 
     @property
     def proven_complete(self) -> bool:

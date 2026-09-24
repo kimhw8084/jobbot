@@ -1,0 +1,175 @@
+{
+  "change": "CHG-200-r2",
+  "request": {
+    "objective": "Project OS BUILD for JobBot CHG-200-r2 on exact integrated main 5a55d9f6328c4dd5a36292eb938ef2cd1400ff07: add Bright Data Jobs Scraper API as first production-candidate managed adapter behind CHG-200-r1 acquisition-v2, build/test only.",
+    "baseline_commit": "5a55d9f6328c4dd5a36292eb938ef2cd1400ff07",
+    "work_branch": "codex/jobbot-CHG-200-r2",
+    "main_must_not_be_moved_or_merged": true,
+    "production_entrypoint_switch": false
+  },
+  "adapter": {
+    "name": "brightdata-jobs",
+    "provider_identity_is_separate_from_source_surface": true,
+    "source_surfaces": [
+      "linkedin",
+      "indeed",
+      "glassdoor"
+    ],
+    "contract": "ProviderAdapter.fetch(SearchTask) -> ProviderBatch through acquisition-v2 coordinator and shared identity-first ingestion",
+    "dataset_ids_and_field_names": "runtime-configurable per platform; no account-specific IDs or schemas are hard-coded",
+    "secret_key": "BRIGHTDATA_API_TOKEN",
+    "platform_config_keys": {
+      "linkedin": "JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG",
+      "indeed": "JOBBOT_BRIGHTDATA_INDEED_CONFIG",
+      "glassdoor": "JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG"
+    },
+    "offline_preflight": "presence and JSON/schema validity only; token validity is explicitly not checked; no network or ledger access"
+  },
+  "task_mapping": {
+    "preserved_provenance": [
+      "task_key",
+      "query_text",
+      "window_days",
+      "platform",
+      "query_family",
+      "query_pass",
+      "phase",
+      "execution_rank"
+    ],
+    "request_fields": "keyword is required; optional location, remote and window fields are emitted only when explicitly configured by that platform schema",
+    "home_only_intent": "configured home_state/home_metro and remote intent are request filters only; unsupported filters are omitted and no eligibility evidence is fabricated",
+    "mock_schema_coverage": {
+      "linkedin": "configured keyword, home_state location, remote literal and integer freshness mapping",
+      "indeed": "configured keyword, home_metro location and freshness template mapping",
+      "glassdoor": "configured keyword-only mapping"
+    },
+    "schema_note": "Field names above describe mocked test configurations only, not Bright Data account defaults."
+  },
+  "sanitized_request_contract": {
+    "trigger": "POST /datasets/v3/trigger; configured dataset_id, documented type=discover_new and discover_by=keyword, include_errors=true, format=json, limit_multiple_results=remaining budget; body contains only configured keyword/filter fields",
+    "progress": "GET /datasets/v3/progress/{snapshot_id}; bounded polling for starting/running/ready/failed/canceled",
+    "parts": "GET /datasets/v3/snapshot/{snapshot_id}/parts with configured batch_size >= 1000",
+    "results": "GET /datasets/v3/snapshot/{snapshot_id} for every reported part using JSON, batch_size and part",
+    "metadata": "Exact sanitized trigger/progress/parts/result request shape and canonical SHA-256 request fingerprint; no Authorization header or token",
+    "field_policy": "Normalize only explicitly mapped observed fields; preserve sanitized raw rows; ignore provider verification claims. Missing values remain unknown."
+  },
+  "lifecycle_and_completion": {
+    "states": [
+      "triggered/submitted",
+      "starting/running pending",
+      "ready terminal success",
+      "failed",
+      "canceled",
+      "result retrieval"
+    ],
+    "completion_rule": "COMPLETE only after terminal ready, valid part count, every part retrieved and parsed, no provider error rows, malformed identity rows, continuation markers, missing parts or budget cap, plus explicit completion evidence",
+    "completion_evidence_fields": [
+      "platform",
+      "task_key",
+      "provider snapshot ID",
+      "terminal state",
+      "part totals and retrieved part numbers",
+      "record count",
+      "continuation markers",
+      "request fingerprint"
+    ],
+    "incomplete_cases": [
+      "snapshot acknowledgement alone",
+      "pending or poll timeout",
+      "429/5xx",
+      "missing result parts",
+      "malformed results",
+      "cursors or truncation",
+      "provider row errors",
+      "record budget cap"
+    ],
+    "failure_classes": "authorization, configuration, schema, transport, timeout, ambiguous cursor, partial batch, invalid response and unknown are recorded without exhausting incomplete tasks",
+    "retry_bounds": "provider-local bounded transient retries and polling; no legacy Chrome fallback"
+  },
+  "budget_and_accounting": {
+    "cli": "--max-records is a required positive explicit validation budget with --provider brightdata-jobs; live transport also requires --live-transport",
+    "budget_effect": "sent through documented total-result limit; exact-cap tasks remain incomplete; once exhausted, remaining planned tasks are checkpointed incomplete without more provider calls",
+    "no_arbitrary_static_result_cap": true,
+    "persisted_accounting": [
+      "trigger submissions",
+      "records delivered",
+      "failure/completion state",
+      "failure class",
+      "budget stops",
+      "provider-returned cost/credits only"
+    ],
+    "cost_policy": "no estimated charges; secret echoes in provider row/cost values are rejected or redacted before persistence"
+  },
+  "diagnostics": {
+    "database_fields": [
+      "provider_metadata_json",
+      "provider_requests_submitted",
+      "provider_records_delivered",
+      "provider_reported_cost_json"
+    ],
+    "surfaces": [
+      "dashboard provider diagnostics",
+      "provider_diagnostics.json",
+      "live_discoveries.csv",
+      "search-quality provider metrics"
+    ],
+    "chg114_ordering": "learned-order dimensions and frozen execution ranks are unchanged"
+  },
+  "tests": {
+    "full_python_suite": {
+      "command": "python -m unittest discover -s tests -v",
+      "result": "PASS",
+      "passed": 177,
+      "skipped": 1,
+      "skip_reason": "Historical-ledger migration fixture skipped because sanitized copy intentionally excludes local data/jobs.sqlite3.",
+      "execution": "sanitized disposable project copy with disposable default data/out paths; production data directory excluded; Bright Data token/config environment variables removed"
+    },
+    "brightdata_provider_tests": {
+      "result": "PASS",
+      "passed": 16,
+      "network_calls": 0
+    },
+    "python_compileall": "PASS",
+    "git_diff_check": "PASS",
+    "extension_javascript_syntax": {
+      "result": "PASS",
+      "files_checked_with_node_check_only": 9
+    },
+    "browser_runtime": "NOT_RUN; no Chrome or Big-3 browser runtime",
+    "invariant_regressions": [
+      "CHG-200-r1 provider-neutral seam/shared ingestion/browser RPC compatibility",
+      "CHG-170 frozen 140-task universe and 21 deep pairs",
+      "CHG-113 evidence/readiness trust gates",
+      "CHG-114 yield/funnel/learned-order dimensions",
+      "mixed card/detail identity-before-detail, repeated snapshot dedupe, distinct requisitions, and validation-budget incomplete checkpointing"
+    ]
+  },
+  "safety_boundary": {
+    "bright_data_live_calls": "NONE",
+    "paid_credentials": "NOT_USED",
+    "production_data/jobs.sqlite3": {
+      "status": "NOT_USED / NOT_READ / NOT_MUTATED"
+    },
+    "RUN_NOW": "UNCHANGED",
+    "browser_acquisition": "FROZEN LEGACY",
+    "production_approval": "NOT APPROVED; separate live qualification and production selection required"
+  },
+  "product_reference_review": {
+    "reviewed_at": "2026-09-23",
+    "notes": "The Jobs Scraper page currently advertises a 5,000-record monthly free tier and pay only for successfully delivered results. Product coverage, pricing and account-specific terms may change and must be reverified during live qualification; plan any qualification within the then-current verified free-tier balance. Marketing is not treated as API contract.",
+    "sources": [
+      "https://brightdata.com/products/web-scraper/jobs-scraper",
+      "https://docs.brightdata.com/api-reference/rest-api/scraper/asynchronous-requests",
+      "https://docs.brightdata.com/api-reference/scrapers/management-apis/monitor-progress",
+      "https://docs.brightdata.com/api-reference/scrapers/management-apis/get-snapshot-delivery-parts"
+    ]
+  },
+  "LIVE_PROVIDER_QUALIFICATION": "PENDING",
+  "git": {
+    "branch": "codex/jobbot-CHG-200-r2",
+    "base_commit": "5a55d9f6328c4dd5a36292eb938ef2cd1400ff07",
+    "tested_head_commit": "392848192315c35ad6c70b888035740f8bb05bab",
+    "main_mutated": false,
+    "merge_performed": false
+  }
+}

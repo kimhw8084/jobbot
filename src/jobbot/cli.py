@@ -13,6 +13,10 @@ from pathlib import Path
 from . import __version__, browser_tasks, legacy_engine
 from .application import add_note, history, mark
 from .acquisition.coordinator import acquire as run_acquisition
+from .acquisition.brightdata import (
+    BrightDataConfigurationError, BrightDataHTTPTransport, BrightDataJobsProvider,
+    brightdata_preflight, brightdata_runtime_config,
+)
 from .acquisition.providers import JSONFileProvider, JSONLProvider
 from .audit import collect as collect_audit, render_terminal, write_reports
 from .config import PROJECT_ROOT, load_bundle
@@ -125,8 +129,41 @@ def command_run_now(args: argparse.Namespace) -> int:
 
 def command_acquire(args: argparse.Namespace) -> int:
     bundle = _bundle()
+    if args.provider == "brightdata-jobs":
+        platforms = args.platform or list(browser_tasks.PLATFORMS)
+        preflight = brightdata_preflight(platforms)
+        if args.preflight:
+            print(json.dumps(preflight, indent=2, ensure_ascii=False))
+            return 0 if preflight["valid"] else 2
+        if not args.live_transport:
+            print("Bright Data requires explicit --live-transport opt-in; no run was created.", file=sys.stderr)
+            return 2
+        if args.max_records is None or args.max_records < 1:
+            print("Bright Data requires a positive --max-records validation budget; no run was created.", file=sys.stderr)
+            return 2
+        if not preflight["valid"]:
+            print("Bright Data runtime configuration is missing or invalid; no run was created.", file=sys.stderr)
+            return 2
+        try:
+            runtime_config = brightdata_runtime_config(platforms)
+            provider = BrightDataJobsProvider(
+                runtime_config, candidate=bundle.candidate["candidate"], max_records=args.max_records,
+                transport=BrightDataHTTPTransport(), run_id=args.provider_run_id or "",
+            )
+        except BrightDataConfigurationError as exc:
+            print(f"Bright Data configuration error: {exc}; no run was created.", file=sys.stderr)
+            return 2
+        result = run_acquisition(bundle, provider, mode=args.mode, platforms=platforms)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["status"] == "completed" else 2
+    if args.preflight:
+        print("--preflight is available only for brightdata-jobs.", file=sys.stderr)
+        return 2
+    if args.live_transport:
+        print("--live-transport is available only for brightdata-jobs.", file=sys.stderr)
+        return 2
     if args.provider not in {"jsonl-file", "json-file"}:
-        print("managed-http is an injected-transport adapter boundary; R1 exposes no live HTTP transport.", file=sys.stderr)
+        print("unsupported acquisition provider", file=sys.stderr)
         return 2
     if not args.path:
         print("--path is required for the jsonl-file provider.", file=sys.stderr)
@@ -353,9 +390,12 @@ def parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run"); run.add_argument("--mode", choices=("fast", "deep"), default="fast"); run.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); run.add_argument("--enqueue-only", action="store_true"); run.add_argument("--no-open", action="store_true"); run.add_argument("--primary-only", action="store_true"); run.set_defaults(func=command_run)
     run_now = sub.add_parser("run-now"); run_now.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); run_now.add_argument("--enqueue-only", action="store_true"); run_now.add_argument("--no-open", action="store_true"); run_now.set_defaults(func=command_run_now)
     acquire = sub.add_parser("acquire", help="ingest through acquisition-v2 using an offline provider file")
-    acquire.add_argument("--provider", choices=("jsonl-file", "json-file", "managed-http"), default="jsonl-file")
+    acquire.add_argument("--provider", choices=("jsonl-file", "json-file", "managed-http", "brightdata-jobs"), default="jsonl-file")
     acquire.add_argument("--path", help="JSON/JSONL fixture/import file; required for a file provider")
     acquire.add_argument("--provider-run-id", default="")
+    acquire.add_argument("--preflight", action="store_true", help="check Bright Data runtime presence/schema without network or ledger access")
+    acquire.add_argument("--live-transport", action="store_true", help="explicitly permit live Bright Data API calls")
+    acquire.add_argument("--max-records", type=int, help="required hard record-validation budget for Bright Data")
     acquire.add_argument("--mode", choices=("staged", "staged_recent", "staged_deep", "fast", "deep"), default="staged")
     acquire.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS)
     acquire.set_defaults(func=command_acquire)

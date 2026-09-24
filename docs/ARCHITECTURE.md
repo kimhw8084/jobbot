@@ -124,7 +124,7 @@ Big-3 browsing never uses Playwright, Selenium, Puppeteer, Chrome-for-Testing, c
 - `db.py`, `migrations/`: database connection policy, online backups, integrity checks, sequential schema changes.
 - `ledger.py`, `canonical.py`, `versioning.py`: canonical jobs, cross-source occurrences, immutable versions, field diffs, and lifecycle.
 - `requirements.py`, `remote.py`, `employment.py`, `scoring.py`: deterministic qualification pipeline.
-- `acquisition/`: normalized provider records, adapter protocol, offline JSON/JSONL file and injected-transport HTTP adapters, and the acquisition coordinator.
+- `acquisition/`: normalized provider records, adapter protocol, offline JSON/JSONL adapters, injected-transport Bright Data Jobs Scraper adapter, and the acquisition coordinator.
 - `browser_tasks.py`, `bridge/`, `sources/browser.py`: retained legacy task queue, loopback RPC, browser adapters, and static fixture parser. Browser RPC and acquisition-v2 call the same card/detail persistence service.
 - `dashboard.py`, `audit.py`, `exports.py`, `application.py`, `funnel.py`: local warehouse UX and application learning.
 - `legacy_engine.py`, `legacy_core.py`: retained, tested supplemental feed/ATS retrieval and proven ledger/scoring implementation behind focused public modules. These do not automate Big-3 browsing.

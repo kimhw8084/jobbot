@@ -4,11 +4,13 @@ JobBot is a local, read-only, remote-only career search ledger. LinkedIn, Indeed
 
 The search objective is exhaustive coverage of the configured query/platform/age universe. The 10–20 application target is a human workload target, never a discovery cap.
 
-Acquisition-v2 is an adapter-boundary build. The normal-Chrome Big-3 crawler
-and RUN NOW remain for compatibility, but are frozen legacy/deprecated pending
-provider qualification and a later production-selection change. R1 does not
-authorize or select a managed provider for production. Public ATS/employer
-retrieval remains an independent verification and enrichment path.
+Acquisition-v2 is an adapter-boundary build. Bright Data Jobs Scraper API is
+the first managed production-candidate adapter, built behind that seam; it is
+not production-approved or selected. The normal-Chrome Big-3 crawler and RUN
+NOW remain unchanged and frozen legacy/deprecated pending separate provider
+qualification and production selection. Public ATS/employer retrieval remains
+an independent verification and enrichment path. See
+[Bright Data candidate setup](docs/BRIGHTDATA_PROVIDER.md).
 
 ## Fresh macOS installation
 
@@ -105,8 +107,9 @@ For an offline JSON or JSONL fixture, point JobBot at a disposable database:
     JOBBOT_DATABASE_PATH=/tmp/jobbot-acquisition.sqlite3 python -m jobbot acquire --provider jsonl-file --path fixture.jsonl
 
 Each file-provider task needs a separate completion row with non-empty
-completion_evidence before it can be marked exhausted. R1 exposes no live
-vendor transport.
+completion_evidence before it can be marked exhausted. Bright Data setup,
+offline preflight, runtime schema keys, and the later qualification boundary
+are documented in [Bright Data candidate setup](docs/BRIGHTDATA_PROVIDER.md).
 
 The crawl uses one serial worker and one reused search tab per active Big-3
 platform. It selects each card into that platform's embedded detail pane and
