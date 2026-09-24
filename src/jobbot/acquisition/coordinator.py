@@ -136,7 +136,9 @@ def acquire(
         except ProviderFailure as exc:
             failures += 1
             _finish_task(conn, run_id, task_id, task.platform, ProviderCompletionState.RETRYABLE if exc.retryable else ProviderCompletionState.INCOMPLETE,
-                         exc.classification, str(exc), {}, provider_task_id="")
+                         exc.classification, str(exc), {}, provider_task_id="",
+                         provider_metadata=exc.provider_metadata, requests_submitted=exc.requests_submitted,
+                         records_delivered=exc.records_delivered, reported_cost=exc.reported_cost)
             continue
         except Exception as exc:
             failures += 1
@@ -205,10 +207,14 @@ def acquire(
             failures += 1
             state = ProviderCompletionState.RETRYABLE if failure.retryable else ProviderCompletionState.INCOMPLETE
             _finish_task(conn, run_id, task_id, task.platform, state, failure.classification, str(failure), {},
-                         provider_task_id=batch.provider_task_id)
+                         provider_task_id=batch.provider_task_id, provider_metadata=batch.provider_metadata,
+                         requests_submitted=batch.requests_submitted, records_delivered=batch.records_delivered,
+                         reported_cost=batch.reported_cost)
         elif batch.proven_complete:
             _finish_task(conn, run_id, task_id, task.platform, ProviderCompletionState.COMPLETE, None, "",
-                         dict(batch.completion_evidence), provider_task_id=batch.provider_task_id)
+                         dict(batch.completion_evidence), provider_task_id=batch.provider_task_id,
+                         provider_metadata=batch.provider_metadata, requests_submitted=batch.requests_submitted,
+                         records_delivered=batch.records_delivered, reported_cost=batch.reported_cost)
         else:
             failures += 1
             state = batch.completion_state
@@ -217,7 +223,9 @@ def acquire(
             _finish_task(conn, run_id, task_id, task.platform, state,
                          batch.failure_class or ProviderFailureClass.PARTIAL_BATCH,
                          "provider supplied no explicit completion evidence", {},
-                         provider_task_id=batch.provider_task_id)
+                         provider_task_id=batch.provider_task_id, provider_metadata=batch.provider_metadata,
+                         requests_submitted=batch.requests_submitted, records_delivered=batch.records_delivered,
+                         reported_cost=batch.reported_cost)
 
     now = _now()
     exhausted = int(conn.execute("SELECT COUNT(*) FROM browser_search_tasks WHERE browser_run_id=? AND status='exhausted'", (run_id,)).fetchone()[0])
@@ -254,7 +262,9 @@ def acquire(
 
 def _finish_task(conn: sqlite3.Connection, run_id: int, task_id: int, platform: str,
                  state: ProviderCompletionState, failure_class: ProviderFailureClass | None,
-                 message: str, evidence: dict[str, Any], *, provider_task_id: str) -> None:
+                 message: str, evidence: dict[str, Any], *, provider_task_id: str,
+                 provider_metadata: dict[str, Any] | None = None, requests_submitted: int = 0,
+                 records_delivered: int = 0, reported_cost: dict[str, Any] | None = None) -> None:
     now = _now()
     complete = state == ProviderCompletionState.COMPLETE and bool(evidence)
     task_status = "exhausted" if complete else "incomplete"
@@ -264,12 +274,15 @@ def _finish_task(conn: sqlite3.Connection, run_id: int, task_id: int, platform: 
     conn.execute(
         """UPDATE browser_search_tasks SET status=?,completed_at=?,exhausted=?,exhaustion_reason=?,
            safety_stop_reason=?,last_error=?,provider_completion_state=?,provider_failure_class=?,
-           completion_evidence_json=?,provider_task_id=?,lease_owner='',lease_until=?,last_progress_at=?
+           completion_evidence_json=?,provider_task_id=?,provider_metadata_json=?,provider_requests_submitted=?,
+           provider_records_delivered=?,provider_reported_cost_json=?,lease_owner='',lease_until=?,last_progress_at=?
            WHERE task_id=? AND browser_run_id=?""",
         (task_status, now, int(complete), json.dumps(evidence, ensure_ascii=False, sort_keys=True) if complete else "{}",
          message if not complete else "", message if failure_class else "", durable_state,
          str(failure_class.value if failure_class else ""), json.dumps(evidence, ensure_ascii=False, sort_keys=True),
-         provider_task_id, None, now, task_id, run_id),
+         provider_task_id, json.dumps(provider_metadata or {}, ensure_ascii=False, sort_keys=True),
+         max(0, int(requests_submitted)), max(0, int(records_delivered)),
+         json.dumps(reported_cost or {}, ensure_ascii=False, sort_keys=True), None, now, task_id, run_id),
     )
     conn.execute(
         "INSERT INTO browser_events(browser_run_id,task_id,event_at,event_type,message,payload_json) VALUES(?,?,?,?,?,?)",

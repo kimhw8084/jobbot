@@ -321,7 +321,9 @@ class Chg112ProductionIntegrityTests(unittest.TestCase):
             migrations = all_migrations()
             # Recreate the historical schema immediately before the human-gated
             # re-enrichment migration, then apply it and all later migrations.
-            for migration in migrations[:-5]:
+            for migration in migrations:
+                if migration.VERSION >= 17:
+                    break
                 migration.upgrade(conn)
                 conn.execute("INSERT INTO schema_migrations VALUES(?,?,?)", (migration.VERSION, migration.NAME, "2026-09-17T00:00:00+00:00"))
             now = "2026-09-17T00:00:00+00:00"

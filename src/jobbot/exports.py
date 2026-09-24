@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 from .provenance import field_provenance_summary
+from .search_quality import search_quality_metrics
 
 
 EXPORT_COLUMNS = (
@@ -124,6 +125,14 @@ def export_all(conn: sqlite3.Connection, output_dir: Path, *, batch_size: int = 
         conn.execute(f"SELECT {','.join(DISCOVERY_COLUMNS)} FROM search_task_results ORDER BY result_id"),
     )
     paths[discoveries_path.name] = discoveries_path
+
+    provider_diagnostics_path = output_dir / "provider_diagnostics.json"
+    diagnostics = search_quality_metrics(conn)
+    provider_diagnostics_path.write_text(
+        json.dumps({"provider_metrics": diagnostics["provider_metrics"]}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    paths[provider_diagnostics_path.name] = provider_diagnostics_path
 
     history_path = output_dir / "application_history.csv"
     _write_columns(

@@ -25,6 +25,7 @@ MIGRATION_MODULES = (
     "jobbot.migrations.m0019_chg113_evidence_readiness",
     "jobbot.migrations.m0020_chg114_search_quality",
     "jobbot.migrations.m0021_acquisition_v2",
+    "jobbot.migrations.m0022_provider_runtime_diagnostics",
 )
 
 

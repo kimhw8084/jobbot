@@ -21,6 +21,7 @@ const STATUS_LABEL = {
 };
 const DISCOVERY_COLUMNS = [
   ['title_hint', 'Discovery'], ['platform', 'Platform'], ['company_hint', 'Company'],
+  ['acquisition_provider', 'Provider'], ['provider_record_id', 'Provider record'],
   ['location_hint', 'Location'], ['card_metadata_status', 'Card'], ['content_state', 'Content'],
   ['detail_status', 'Detail'], ['observed_at', 'Observed'],
 ];
@@ -105,6 +106,9 @@ function renderSearchQuality(value) {
   const metricColumns = [['platform','Platform'],['query_family','Family'],['phase','Phase'],['age_window_days','Age days'],['cards_persisted','Persisted cards'],['unique_source_ids','Source IDs'],['unique_canonical_jobs','Canonical jobs'],['duplicate_sighting_ratio','Duplicate ratio'],['detail_completions','Details complete'],['evidence_ready_count','Evidence ready'],['qualification_ready_count','Qualification ready'],['current_actionable_count','Current actionable'],['trusted_qualified_yield_count','Trusted qualified yield'],['application_count','Applications'],['screen_count','Screens'],['interview_count','Interviews'],['offer_count','Offers'],['cost_per_trusted_qualified_yield','Cost/trusted qualified']];
   setChildren($('qualityHead'), metricColumns.map(([, label]) => Object.assign(document.createElement('th'), { textContent: label })));
   setChildren($('qualityBody'), (value.family_metrics || []).map((metric) => { const tr = document.createElement('tr'); metricColumns.forEach(([key]) => { const td = document.createElement('td'); td.textContent = key === 'duplicate_sighting_ratio' && metric[key] !== null ? `${(number(metric[key]) * 100).toFixed(1)}%` : text(metric[key]); tr.append(td); }); return tr; }));
+  const providerColumns = [['acquisition_provider','Provider'],['platform','Platform'],['task_count','Tasks'],['task_complete_count','Complete'],['task_incomplete_count','Incomplete'],['task_retryable_count','Retryable'],['requests_submitted','Requests submitted'],['records_delivered','Records delivered'],['card_count','Cards persisted'],['budget_stop_task_count','Budget stops'],['provider_reported_costs','Reported cost/credits']];
+  setChildren($('providerHead'), providerColumns.map(([, label]) => Object.assign(document.createElement('th'), { textContent: label })));
+  setChildren($('providerBody'), (value.provider_metrics || []).map((metric) => { const tr = document.createElement('tr'); providerColumns.forEach(([key]) => { const td = document.createElement('td'); td.textContent = key === 'provider_reported_costs' ? JSON.stringify(metric[key] || []) : text(metric[key]); tr.append(td); }); return tr; }));
   const orderColumns = [['platform','Platform'],['phase','Phase'],['query_family','Family'],['query_kind','Query kind'],['query_pass','Pass'],['query_text','Exact query'],['baseline_execution_rank','Baseline rank'],['effective_execution_rank','Effective rank'],['learned_order_sample_size','Sample'],['learned_order_reason','Reason']];
   setChildren($('orderHead'), orderColumns.map(([, label]) => Object.assign(document.createElement('th'), { textContent: label })));
   setChildren($('orderBody'), (value.current_order || []).map((task) => { const tr = document.createElement('tr'); orderColumns.forEach(([key]) => { const td = document.createElement('td'); td.textContent = text(task[key]); tr.append(td); }); return tr; }));

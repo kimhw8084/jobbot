@@ -20,7 +20,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bundle = bundle_with_database(Path(td) / "jobs.sqlite3")
             result = Database(bundle).migrate()
-            self.assertEqual(result.applied, tuple(range(1, 22)))
+            self.assertEqual(result.applied, tuple(range(1, 23)))
             conn = Database(bundle).connect()
             try:
                 self.assertEqual(conn.execute("PRAGMA integrity_check").fetchone()[0], "ok")
@@ -39,6 +39,7 @@ class DatabaseLedgerIntegrationTests(unittest.TestCase):
                 self.assertTrue({"cards_extracted", "cards_persistence_succeeded", "execution_rank", "phase"} <= task_fields)
                 self.assertTrue({"strategy_profile", "query_family", "query_kind", "query_pass", "initial_order"} <= task_fields)
                 self.assertTrue({"baseline_execution_rank", "effective_execution_rank", "learned_order_reason", "learned_order_sample_size", "ordering_algorithm_version"} <= task_fields)
+                self.assertTrue({"provider_metadata_json", "provider_requests_submitted", "provider_records_delivered", "provider_reported_cost_json"} <= task_fields)
                 self.assertTrue({"strategy_profile", "query_family", "query_kind", "query_pass", "initial_order"} <= occurrence_fields)
                 job_fields = {row[1] for row in conn.execute("PRAGMA table_info(jobs)")}
                 self.assertTrue({"discovery_url", "board_detail_url", "observed_board_apply_url", "employer_job_url", "ats_requisition_url", "verified_application_url"} <= job_fields)
