@@ -1,9 +1,12 @@
 {
   "change": "CHG-200-r2",
-  "request": "Add Bright Data Jobs Scraper API as the first production-candidate managed acquisition adapter behind the CHG-200-r1 acquisition-v2 seam; build/test only.",
-  "branch": "codex/jobbot-CHG-200-r2",
-  "base_commit": "5a55d9f6328c4dd5a36292eb938ef2cd1400ff07",
-  "validated_code_commit": "392848192315c35ad6c70b888035740f8bb05bab",
+  "request": {
+    "objective": "Project OS BUILD for JobBot CHG-200-r2 on exact integrated main 5a55d9f6328c4dd5a36292eb938ef2cd1400ff07: add Bright Data Jobs Scraper API as first production-candidate managed adapter behind CHG-200-r1 acquisition-v2, build/test only.",
+    "baseline_commit": "5a55d9f6328c4dd5a36292eb938ef2cd1400ff07",
+    "work_branch": "codex/jobbot-CHG-200-r2",
+    "main_must_not_be_moved_or_merged": true,
+    "production_entrypoint_switch": false
+  },
   "adapter": {
     "name": "brightdata-jobs",
     "provider_identity_is_separate_from_source_surface": true,
@@ -153,7 +156,7 @@
   },
   "product_reference_review": {
     "reviewed_at": "2026-09-23",
-        "notes": "The Jobs Scraper page currently advertises a 5,000-record monthly free tier and pay only for successfully delivered results. Product coverage, pricing and account-specific terms may change and must be reverified during live qualification; plan any qualification within the then-current verified free-tier balance. Marketing is not treated as API contract.",
+    "notes": "The Jobs Scraper page currently advertises a 5,000-record monthly free tier and pay only for successfully delivered results. Product coverage, pricing and account-specific terms may change and must be reverified during live qualification; plan any qualification within the then-current verified free-tier balance. Marketing is not treated as API contract.",
     "sources": [
       "https://brightdata.com/products/web-scraper/jobs-scraper",
       "https://docs.brightdata.com/api-reference/rest-api/scraper/asynchronous-requests",
@@ -161,5 +164,12 @@
       "https://docs.brightdata.com/api-reference/scrapers/management-apis/get-snapshot-delivery-parts"
     ]
   },
-  "LIVE_PROVIDER_QUALIFICATION": "PENDING"
+  "LIVE_PROVIDER_QUALIFICATION": "PENDING",
+  "git": {
+    "branch": "codex/jobbot-CHG-200-r2",
+    "base_commit": "5a55d9f6328c4dd5a36292eb938ef2cd1400ff07",
+    "tested_head_commit": "392848192315c35ad6c70b888035740f8bb05bab",
+    "main_mutated": false,
+    "merge_performed": false
+  }
 }
