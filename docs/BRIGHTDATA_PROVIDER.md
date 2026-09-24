@@ -10,11 +10,15 @@ coverage, account limits, pricing, and the selected scraper's exact input and
 output schema. Product coverage and pricing can change. The current product
 pages advertise LinkedIn Jobs, Indeed Jobs, Glassdoor Jobs, keyword discovery,
 and a 5,000-record/month free tier; that marketing information is not treated
-as an API contract or embedded as a budget assumption in JobBot. See the
+as an API contract or embedded as a budget assumption in JobBot. The pricing
+page also advertises pay only for successfully delivered results. Reverify both
+the offer and its account-specific terms during live qualification. See the
 [Jobs Scraper product page](https://brightdata.com/products/web-scraper/jobs-scraper),
 [async trigger contract](https://docs.brightdata.com/api-reference/rest-api/scraper/asynchronous-requests),
 [progress contract](https://docs.brightdata.com/api-reference/scrapers/management-apis/monitor-progress),
 and [snapshot parts contract](https://docs.brightdata.com/api-reference/scrapers/management-apis/get-snapshot-delivery-parts).
+Plan any later live qualification within the then-current verified free-tier
+balance; do not infer remaining balance from the public marketing page.
 
 ## Runtime configuration
 
