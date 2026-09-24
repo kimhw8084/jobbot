@@ -1,5 +1,23 @@
 # CHG-114 search quality
 
+## Provider diagnostics
+
+Acquisition-v2 adds provider/mode/platform diagnostics alongside the existing
+search-quality dimensions. The provider metrics report task completion and
+failure counts, persisted cards, provider record IDs, canonical jobs, and
+trusted qualified yield. Provider partitioning does not change task/family
+metric identity, frozen ordering, or its minimum-sample and confidence
+guardrails. Runs, tasks, discovery receipts, and source occurrences expose
+durable provider provenance. Historical rows are labeled legacy-browser with
+unknown acquisition mode.
+
+R1 establishes the adapter boundary only; it does not authorize or select a
+managed provider for production. The custom normal-Chrome Big-3 runner is
+frozen legacy/deprecated pending migration. Public ATS/employer retrieval
+continues as independent verification/enrichment. Future browser-agent
+services are fallback providers only and cannot independently establish
+Actionable evidence.
+
 CHG-114 measures search yield from the durable CHG-170 task/query ledger and the CHG-113 evidence and qualification states. It does not add a strategy profile, modify query families, or replace qualification or application-destination provenance. Metrics are derived from SQLite source rows on request; there is no materialized metric cache.
 
 ## Metric definitions

@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import json
-import hashlib
-import re
 import secrets
 import sqlite3
 import sys
@@ -17,7 +15,9 @@ from .. import legacy_engine as j
 from .. import browser_tasks as v3
 from .. import crawl_observations
 from .. import diagnostics
-from ..discoveries import block_detail, claim_next_detail, fail_detail, finish_detail, upsert_card
+from ..discoveries import block_detail, claim_next_detail, fail_detail
+from ..acquisition.ingestion import persist_card, persist_detail
+from ..acquisition.models import AcquisitionRecord
 from ..extension_identity import extension_build as expected_extension_build
 from ..runtime_binding import deployment_diagnostics
 from ..strategy_runtime import fallback_activation_enabled, with_fallback_activation
@@ -413,27 +413,6 @@ def _overall_auth_state(states: list[str]) -> str:
     return 'unchecked'
 
 
-def _recall_decision(
-    strategy: dict[str, Any], platform: str, title: str, source_job_id: str, source_url: str,
-    query_family: str = "",
-) -> tuple[bool, bool, str, int]:
-    """Use the existing high-recall prefilter only for enrichment ordering."""
-    configured_families = {
-        str(family.get("id")) for family in strategy.get("_live_search_profile", {}).get("families", [])
-        if family.get("enabled", True) and family.get("minimum_deep_recall", False)
-    }
-    probe = j.Job(source_site=platform, source_job_id=source_job_id,
-                  canonical_url=source_url, title=title, remote_status="unknown")
-    selected, reason = j.recall_prefilter(probe, strategy)
-    sample_key = f"{platform}|{source_job_id}|{source_url}".encode("utf-8", errors="ignore")
-    qa_sample = int(hashlib.sha256(sample_key).hexdigest()[:8], 16) % 20 == 0
-    if query_family and query_family in configured_families:
-        if reason in {"excluded occupation family", "explicit out-of-scope title"}:
-            return False, bool(qa_sample), j.clean_text(reason), 1 if qa_sample else 2
-        return True, False, f"active live-search family recall: {query_family}", 0
-    return bool(selected), bool(qa_sample), j.clean_text(reason), 0 if selected else (1 if qa_sample else 2)
-
-
 def _pending_detail_count(conn, task_id: int) -> int:
     return int(conn.execute(
         "SELECT COUNT(*) FROM search_task_results WHERE task_id=? "
@@ -441,19 +420,6 @@ def _pending_detail_count(conn, task_id: int) -> int:
         (task_id,),
     ).fetchone()[0] or 0)
 
-
-def _unsafe_detail_reason(detail: dict[str, Any], title: str, page_url: str) -> str:
-    surface = j.clean_text(detail.get("page_type") or detail.get("surface") or "").lower()
-    haystack = " ".join((surface, title, page_url, j.clean_text(detail.get("challenge_reason") or ""))).lower()
-    markers = (
-        "tunnel connection failed", "could not establish connection", "receiving end does not exist",
-        "page load timed out", "sign in", "log in", "login", "checkpoint", "authwall",
-        "captcha", "challenge", "access denied", "security check", "temporarily unavailable",
-    )
-    if surface in {"error", "login", "challenge", "interstitial"}:
-        return surface
-    hit = next((marker for marker in markers if marker in haystack), "")
-    return hit
 
 def refresh_task_counters(conn, rid:int)->None:
     """Derive status counters from durable task rows after resume/state changes."""
@@ -752,30 +718,33 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             task_value['worker_generation']=int(worker_row['worker_generation'] or 0) if worker_row else 0
             return {'ok':True,'task':task_value}
         if action=='record_result':
-            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'));url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
-            if not source or not (sid or url):return {'ok':False,'error':'insufficient_result_identity'}
-            task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=? AND platform=?",(tid,rid,source)).fetchone()
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0)
+            task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
             if not task:return {'ok':False,'error':'task_not_found'}
-            try: posted_age=float(msg['posted_age_days']) if msg.get('posted_age_days') is not None else None
-            except (TypeError,ValueError): posted_age=None
+            source=j.clean_text(msg.get('source_site'));sid=j.clean_text(msg.get('source_job_id'))
+            url=j.canonical_url(j.clean_text(msg.get('source_url') or ''))
             card=msg.get('card') if isinstance(msg.get('card'),dict) else {}
-            selected,qa_sample,recall_reason,enrichment_priority=_recall_decision(
-                strategy, source, j.clean_text(msg.get('title_hint') or card.get('title')),
-                sid, url, j.clean_text(task['query_family']),
-            )
-            discovery,duplicate=upsert_card(conn,run_id=rid,task_id=tid,platform=source,source_job_id=sid,source_url=url,
-                title_hint=j.clean_text(msg.get('title_hint') or card.get('title')),company_hint=j.clean_text(msg.get('company_hint') or card.get('company')),
-                location_hint=j.clean_text(msg.get('location_hint') or card.get('location')),posted_text=j.clean_text(msg.get('posted_text') or card.get('posted_text')),
-                posted_age_days=posted_age,card=card,eligible_for_detail=bool(msg.get('eligible_for_detail',True)),
-                recall_selected=selected,recall_qa_sample=qa_sample,recall_reason=recall_reason,
-                enrichment_priority=enrichment_priority,
-                strategy_profile=j.clean_text(task['strategy_profile']),
-                strategy_profile_version=j.clean_text(task['strategy_profile_version']),
-                query_family=j.clean_text(task['query_family']), query_kind=j.clean_text(task['query_kind']),
-                query_pass=j.clean_text(task['query_pass']), initial_order=int(task['initial_order'] or 0))
-            if duplicate: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
-            pending_count=_pending_detail_count(conn,tid)
-            event(conn,rid,tid,'result_discovered',f'{source}: {sid or url}',msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'duplicate':duplicate,'result_id':discovery.result_id,'detail_status':discovery.detail_status,'pending_count':int(pending_count)}
+            card={**card,'title':j.clean_text(msg.get('title_hint') or card.get('title')),
+                  'company':j.clean_text(msg.get('company_hint') or card.get('company')),
+                  'location':j.clean_text(msg.get('location_hint') or card.get('location')),
+                  'posted_text':j.clean_text(msg.get('posted_text') or card.get('posted_text')),
+                  'posted_age_days':msg.get('posted_age_days'),
+                  'eligible_for_detail':bool(msg.get('eligible_for_detail',True))}
+            try: card['posted_age_days']=float(card['posted_age_days']) if card['posted_age_days'] is not None else None
+            except (TypeError,ValueError): card['posted_age_days']=None
+            record=AcquisitionRecord(source_surface=source,source_job_id=sid,
+                source_urls={'discovery_url':url},query_task_key=str(task['task_key'] or ''),
+                provider_record_id=j.clean_text(msg.get('provider_record_id') or ''),
+                card=card,raw_metadata=msg.get('provider_metadata') if isinstance(msg.get('provider_metadata'),dict) else {})
+            provider_name=j.clean_text(task['acquisition_provider'] or 'legacy-browser')
+            provider_run_id=j.clean_text(task['provider_run_id'] or f'legacy-browser-run:{rid}')
+            writer=lambda c,r,t,typ,message,payload:event(c,r,t,typ,message,payload,out)
+            result=persist_card(conn,run_id=rid,task=task,strategy=strategy,record=record,
+                provider_name=provider_name,provider_run_id=provider_run_id,
+                acquisition_mode=j.clean_text(task['acquisition_mode'] or 'unknown'),
+                event=writer,reconcile=refresh_result_reconciliation)
+            if result.get('ok'): conn.commit()
+            return result
         if action=='next_pending_detail':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);owner=j.clean_text(msg.get('worker_id') or f'run:{rid}')
             lease_seconds=int(cfg.get('runtime',{}).get('lease_seconds',180) or 180)
@@ -800,116 +769,26 @@ def handle(msg:dict[str,Any])->dict[str,Any]:
             conn.execute("UPDATE search_task_results SET last_seen_at=? WHERE result_id=? OR (task_id=? AND source_site=? AND source_job_id=? AND source_url=?)",(now,int(msg.get('result_id') or 0),tid,source,sid,url))
             event(conn,rid,tid,'detail_read',f'{source}: {sid or url}',msg,out);conn.commit();return {'ok':True}
         if action=='record_job':
-            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);raw=msg.get('job') or {}
+            rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0)
+            raw=msg.get('job') or {}
             if not isinstance(raw,dict):return {'ok':False,'error':'invalid_job'}
-            task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
-            if not task:return {'ok':False,'error':'task_not_found'}
-            title=j.clean_text(raw.get('title'));company=j.clean_text(raw.get('company'));desc=j.strip_html(raw.get('description') or '')[:180000]
-            url=j.canonical_url(j.clean_text(raw.get('canonical_url') or raw.get('url') or ''));sid=j.clean_text(raw.get('source_job_id') or '')
-            if not title or not url:return {'ok':False,'error':'insufficient_job_identity'}
             evidence=msg.get('detail_evidence') if isinstance(msg.get('detail_evidence'),dict) else {}
             if not evidence and isinstance(raw.get('detail_evidence'),dict): evidence=raw['detail_evidence']
-            discovery_url=url
-            if result_id:
-                observed=conn.execute("SELECT source_job_id,source_url FROM search_task_results WHERE result_id=? AND task_id=?",(result_id,tid)).fetchone()
-                if observed is None:
-                    return {'ok':False,'error':'result_not_found'}
-                if observed['source_job_id'] and sid and str(observed['source_job_id']) != sid:
-                    return {'ok':False,'error':'detail_identity_mismatch'}
-                discovery_url=j.canonical_url(j.clean_text(observed['source_url'] or '')) or url
-                acquisition=evidence.get('detail_acquisition') if isinstance(evidence.get('detail_acquisition'),dict) else {}
-                mode=j.clean_text(acquisition.get('mode') or evidence.get('acquisition_mode') or '')
-                if mode and mode not in {'search_pane','cache','user_reenrichment'}:
-                    return {'ok':False,'error':'detail_acquisition_mode_not_allowed','mode':mode}
-            unsafe=_unsafe_detail_reason(evidence,title,j.clean_text(raw.get('page_url') or url))
-            if unsafe:
-                if result_id: block_detail(conn,result_id,f"detail surface rejected as {unsafe}")
-                event(conn,rid,tid,'unsafe_detail_rejected',f"{unsafe}: {title}",msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit()
-                return {'ok':False,'error':'unsafe_detail_surface','surface':unsafe}
-            if not desc:
-                detail_status=fail_detail(conn,result_id,'detail identity had no substantive description',max_attempts=int(cfg.get('runtime',{}).get('watchdog_retries',3) or 3)) if result_id else 'RETRYABLE'
-                event(conn,rid,tid,'detail_content_missing',f"{title}: substantive description missing",msg,out);refresh_result_reconciliation(conn,rid,tid);conn.commit()
-                return {'ok':False,'error':'content_incomplete','detail_status':detail_status}
-            source_site=j.clean_text(task['platform'])
-            location=j.clean_text(raw.get('location') or '')
-            if location.casefold() in {'[object object]', 'undefined', 'null'}:
-                location=''
-            remote_status=j.clean_text(raw.get('remote_status') or 'unknown').lower()
-            if remote_status in {'remote','fully remote','100 remote','us remote'} and not (location or re.search(r'\bremote\b|work[ -]?from[ -]?home|\bwfh\b',desc,re.I)):
-                remote_status='unknown'
-            apply_candidate=j.canonical_url(j.clean_text(raw.get('apply_url') or ''))
-            apply_url=apply_candidate if apply_candidate and apply_candidate != url else ''
-            provenance={
-                'source_type': 'board_detail',
-                'detail_source_type': 'board_detail',
-                'identity': 'observed_detail_identity',
-                'card_metadata': 'search_card' if raw.get('search_card') else 'detail_surface',
-                'description': 'observed_substantive_detail',
-                'location': 'observed' if location else 'unknown',
-                'location_source_type': 'board_detail',
-                'remote': 'observed_detail_text' if remote_status in {'remote','fully remote','100 remote','us remote'} else 'unknown',
-                'remote_source_type': 'board_detail',
-                'salary': 'observed_detail_text' if j.clean_text(raw.get('salary_text') or '') else 'unknown',
-                'salary_source_type': 'board_detail',
-                'employment_type': 'observed_detail_text' if j.clean_text(raw.get('employment_type') or '') else 'unknown',
-                'employment_type_source_type': 'board_detail',
-                'posted_at': 'observed_search_card_or_detail' if j.clean_text(raw.get('posted_at') or '') else 'unknown',
-                'posted_at_source_type': 'search_card' if raw.get('search_card') else 'board_detail',
-                'requirements': 'employer_description_requirement_extraction',
-                'requirements_source_type': 'board_detail',
-                'application_destination': 'observed_distinct_destination' if apply_url else 'unknown_board_destination',
-                'remote_filter_intent': bool(task['remote_required']),
-            }
-            job_raw={'browser_v3':True,'browser_run_id':rid,'browser_task_id':tid,'platform':source_site,'query_text':task['query_text'],'search_profile':task['search_profile'],'career_lane':task['career_lane'],'strategy_profile':task['strategy_profile'],'strategy_profile_version':task['strategy_profile_version'],'query_family':task['query_family'],'query_kind':task['query_kind'],'query_pass':task['query_pass'],'initial_order':task['initial_order'],'page_url':j.clean_text(raw.get('page_url') or url),'valid_through':j.clean_text(raw.get('valid_through') or ''),'remote_filter_intent':bool(task['remote_required']),'source_payload':raw,'_discovery_company':j.clean_text(raw.get('search_card',{}).get('company') if isinstance(raw.get('search_card'),dict) else ''),'discovery_url':discovery_url,'board_detail_url':url,'observed_board_apply_url':apply_candidate}
-            job=j.Job(source_site=source_site,source_job_id=sid,canonical_url=url,apply_url=apply_url,title=title,company=company,location_raw=location,remote_status=remote_status,employment_type=j.clean_text(raw.get('employment_type') or ''),salary_text=j.clean_text(raw.get('salary_text') or ''),posted_at=j.clean_text(raw.get('posted_at') or ''),description=desc,category=j.clean_text(raw.get('category') or ''),tags=[j.clean_text(x) for x in(raw.get('tags') or []) if j.clean_text(x)],raw=job_raw)
-            setattr(job,'_mode','deep');j.score_job(job,strategy,cfg.get('candidate',{}));ledger_status=store.upsert(job,commit=False)
-            fields={'new':'jobs_new','updated':'jobs_updated','unchanged':'jobs_unchanged'}
-            if ledger_status in fields:
-                f=fields[ledger_status];conn.execute(f"UPDATE browser_search_tasks SET jobs_recorded=jobs_recorded+1,{f}={f}+1 WHERE task_id=?",(tid,));conn.execute(f"UPDATE browser_runs SET jobs_recorded=jobs_recorded+1,{f}={f}+1 WHERE browser_run_id=?",(rid,));conn.execute("UPDATE browser_platform_runs SET jobs_recorded=jobs_recorded+1 WHERE browser_run_id=? AND platform=?",(rid,source_site))
-            if ledger_status=='new': conn.execute("UPDATE browser_search_tasks SET unique_jobs_recorded=unique_jobs_recorded+1 WHERE task_id=?",(tid,))
-            else: conn.execute("UPDATE browser_search_tasks SET duplicate_sightings=duplicate_sightings+1 WHERE task_id=?",(tid,))
-            jid=store.resolve_job_id(job)
-            description_state='COMPLETE' if len(desc)>=250 else ('PARTIAL_TOO_SHORT' if desc else 'MISSING')
-            content_state='COMPLETE' if description_state=='COMPLETE' else 'PARTIAL'
-            enrichment_status='ENRICHED' if content_state=='COMPLETE' else 'PARTIAL'
-            location_state='OBSERVED' if location else 'UNKNOWN'
-            remote_state='OBSERVED' if provenance['remote'] != 'unknown' else 'UNKNOWN'
-            apply_state='OBSERVED' if apply_url else 'UNKNOWN'
-            conn.execute("""UPDATE jobs SET description_state=?,content_state=?,enrichment_status=?,enrichment_last_error='',
-              location_evidence_state=?,remote_evidence_state=?,apply_destination_state=?,evidence_provenance_json=?
-              WHERE job_id=?""",(description_state,content_state,enrichment_status,location_state,remote_state,apply_state,json.dumps(provenance,ensure_ascii=False),jid))
-            result_evidence=(job.identity_evidence_state,job.detail_evidence_state,job.requirements_evidence_state,job.source_verification,job.application_destination_verification_state,job.evidence_readiness_state,json.dumps(job.evidence_missing,ensure_ascii=False),json.dumps(job.evidence_blocking,ensure_ascii=False))
-            if result_id:
-                finish_detail(conn,result_id,jid,content_state=content_state)
-                conn.execute("""UPDATE search_task_results SET discovery_url=?,board_detail_url=?,observed_board_apply_url=?,
-                  ats_requisition_url=?,verified_application_url=?,identity_evidence_state=?,detail_evidence_state=?,requirements_evidence_state=?,
-                  source_verification_state=?,application_destination_verification_state=?,evidence_readiness_state=?,evidence_missing_json=?,evidence_blocking_json=?
-                  WHERE result_id=?""",(discovery_url,url,apply_candidate,job.ats_requisition_url,job.verified_application_url,*result_evidence,result_id))
-            else: conn.execute("""UPDATE search_task_results SET canonical_job_id=?,detail_read=1,detail_status=?,content_state=?,detail_completed_at=?,
-              discovery_url=?,board_detail_url=?,observed_board_apply_url=?,ats_requisition_url=?,verified_application_url=?,
-              identity_evidence_state=?,detail_evidence_state=?,requirements_evidence_state=?,source_verification_state=?,
-              application_destination_verification_state=?,evidence_readiness_state=?,evidence_missing_json=?,evidence_blocking_json=?
-              WHERE task_id=? AND source_site=? AND source_job_id=? AND source_url=?""",(jid,'COMPLETE' if content_state=='COMPLETE' else 'PARTIAL',content_state,j.now_iso(),discovery_url,url,apply_candidate,job.ats_requisition_url,job.verified_application_url,*result_evidence,tid,source_site,sid,url))
-            acquisition_value=evidence.get('detail_acquisition') if isinstance(evidence.get('detail_acquisition'),dict) else {}
-            conn.execute("UPDATE browser_search_tasks SET detail_acquisition_mode=? WHERE task_id=?", (j.clean_text(acquisition_value.get('mode') or evidence.get('acquisition_mode') or 'search_pane'), tid))
-            cache_published=False
-            if content_state == 'COMPLETE':
-                try:
-                    card_row=conn.execute("SELECT card_json,title_hint,company_hint,location_hint FROM search_task_results WHERE result_id=?",(result_id,)).fetchone() if result_id else None
-                    cache_published=crawl_observations.publish(
-                        _cache_bundle(), platform=source_site, source_job_id=sid, source_url=url,
-                        card=json.loads(card_row['card_json'] or '{}') if card_row else {},
-                        title=title, company=company, location=location, job={
-                            'source_job_id':sid,'canonical_url':url,'title':title,'company':company,'location':location,
-                            'remote_status':remote_status,'employment_type':j.clean_text(raw.get('employment_type') or ''),
-                            'salary_text':j.clean_text(raw.get('salary_text') or ''),'posted_at':j.clean_text(raw.get('posted_at') or ''),
-                            'description':desc,'valid_through':j.clean_text(raw.get('valid_through') or ''),
-                        }, evidence={'detail_acquisition': evidence.get('detail_acquisition', {}) if isinstance(evidence, dict) else {}},
-                        source_build=_safe_source_build(),
-                    )
-                except (OSError, ValueError, sqlite3.Error, json.JSONDecodeError):
-                    cache_published=False
-            event(conn,rid,tid,'job_recorded',f'{ledger_status}: {job.title} — {job.company}',{'job_id':jid,'ledger_status':ledger_status,'recommendation':job.recommendation,'content_state':content_state,'apply_destination_state':apply_state,'cache_published':cache_published},out);refresh_result_reconciliation(conn,rid,tid);conn.commit();return {'ok':True,'ledger_status':ledger_status,'job_id':jid,'recommendation':job.recommendation,'title':job.title,'company':job.company,'content_state':content_state,'enrichment_status':enrichment_status,'cache_published':cache_published}
+            task=conn.execute("SELECT * FROM browser_search_tasks WHERE task_id=? AND browser_run_id=?",(tid,rid)).fetchone()
+            if not task:return {'ok':False,'error':'task_not_found'}
+            provider_name=j.clean_text(task['acquisition_provider'] or 'legacy-browser')
+            provider_run_id=j.clean_text(task['provider_run_id'] or f'legacy-browser-run:{rid}')
+            writer=lambda c,r,t,typ,message,payload:event(c,r,t,typ,message,payload,out)
+            result=persist_detail(conn,store,run_id=rid,task_id=tid,
+                result_id=int(msg.get('result_id') or 0),raw=raw,evidence=evidence,cfg=cfg,
+                strategy=strategy,candidate=cfg.get('candidate',{}),provider_name=provider_name,
+                provider_run_id=provider_run_id,acquisition_mode=j.clean_text(task['acquisition_mode'] or 'unknown'),
+                provider_record_id=j.clean_text(msg.get('provider_record_id') or ''),
+                provider_metadata=msg.get('provider_metadata') if isinstance(msg.get('provider_metadata'),dict) else {},
+                event=writer,reconcile=refresh_result_reconciliation,cache_bundle=_cache_bundle(),
+                source_build=_safe_source_build())
+            conn.commit()
+            return result
         if action=='job_error':
             rid=int(msg.get('run_id') or 0);tid=int(msg.get('task_id') or 0);result_id=int(msg.get('result_id') or 0);message=j.clean_text(msg.get('message') or '')
             detail_status='FAILED'

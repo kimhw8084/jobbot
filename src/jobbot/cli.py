@@ -12,6 +12,8 @@ from pathlib import Path
 
 from . import __version__, browser_tasks, legacy_engine
 from .application import add_note, history, mark
+from .acquisition.coordinator import acquire as run_acquisition
+from .acquisition.providers import JSONFileProvider, JSONLProvider
 from .audit import collect as collect_audit, render_terminal, write_reports
 from .config import PROJECT_ROOT, load_bundle
 from .dashboard import serve as serve_dashboard
@@ -119,6 +121,21 @@ def command_run_now(args: argparse.Namespace) -> int:
     if outcome.status in {"completed", "partial"}:
         supplemental_ok = run_supplemental_stage(bundle, run_id, "deep")
     return 0 if outcome.status == "completed" and supplemental_ok else 2
+
+
+def command_acquire(args: argparse.Namespace) -> int:
+    bundle = _bundle()
+    if args.provider not in {"jsonl-file", "json-file"}:
+        print("managed-http is an injected-transport adapter boundary; R1 exposes no live HTTP transport.", file=sys.stderr)
+        return 2
+    if not args.path:
+        print("--path is required for the jsonl-file provider.", file=sys.stderr)
+        return 2
+    provider_type = JSONFileProvider if args.provider == "json-file" else JSONLProvider
+    provider = provider_type(Path(args.path), run_id=args.provider_run_id or "")
+    result = run_acquisition(bundle, provider, mode=args.mode, platforms=args.platform or None)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["status"] == "completed" else 2
 
 
 def command_watch(args: argparse.Namespace) -> int:
@@ -335,6 +352,13 @@ def parser() -> argparse.ArgumentParser:
     plan = sub.add_parser("search-plan"); plan.add_argument("--mode", choices=("fast", "deep", "staged"), default="deep"); plan.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); plan.add_argument("--open", action="store_true"); plan.set_defaults(func=command_search_plan)
     run = sub.add_parser("run"); run.add_argument("--mode", choices=("fast", "deep"), default="fast"); run.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); run.add_argument("--enqueue-only", action="store_true"); run.add_argument("--no-open", action="store_true"); run.add_argument("--primary-only", action="store_true"); run.set_defaults(func=command_run)
     run_now = sub.add_parser("run-now"); run_now.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); run_now.add_argument("--enqueue-only", action="store_true"); run_now.add_argument("--no-open", action="store_true"); run_now.set_defaults(func=command_run_now)
+    acquire = sub.add_parser("acquire", help="ingest through acquisition-v2 using an offline provider file")
+    acquire.add_argument("--provider", choices=("jsonl-file", "json-file", "managed-http"), default="jsonl-file")
+    acquire.add_argument("--path", help="JSON/JSONL fixture/import file; required for a file provider")
+    acquire.add_argument("--provider-run-id", default="")
+    acquire.add_argument("--mode", choices=("staged", "staged_recent", "staged_deep", "fast", "deep"), default="staged")
+    acquire.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS)
+    acquire.set_defaults(func=command_acquire)
     watch = sub.add_parser("watch"); watch.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); watch.add_argument("--once", action="store_true"); watch.add_argument("--enqueue-only", action="store_true"); watch.add_argument("--poll-seconds", type=int, default=60); watch.add_argument("--no-open", action="store_true"); watch.set_defaults(func=command_watch)
     resume_p = sub.add_parser("resume"); resume_p.add_argument("--run-id", type=int); resume_p.add_argument("--enqueue-only", action="store_true"); resume_p.add_argument("--no-open", action="store_true"); resume_p.set_defaults(func=command_resume)
     enrich = sub.add_parser("re-enrich", help="queue user-invoked detail re-enrichment for durable identity-only discoveries"); enrich.add_argument("--run-id", type=int); enrich.add_argument("--platform", action="append", choices=browser_tasks.PLATFORMS); enrich.set_defaults(func=command_re_enrich)

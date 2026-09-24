@@ -1262,7 +1262,11 @@ class PrecisionStore(c.Store):
                 if isinstance(job.raw,dict): job.raw["_reconciliation_identity_mismatch"]=conflict
                 return self._mismatch_job_id(job)
             return clean_text(r["job_id"])
-        urls=[canonical_url(x) for x in (job.apply_url,job.canonical_url) if canonical_url(x)]
+        raw_roles=job.raw if isinstance(job.raw,dict) else {}
+        urls=[canonical_url(x) for x in (
+            job.apply_url,job.canonical_url,raw_roles.get("ats_requisition_url"),
+            raw_roles.get("employer_job_url"),
+        ) if canonical_url(x)]
         for u in urls:
             if not is_job_specific_url(u): continue
             r=self.conn.execute("SELECT * FROM jobs WHERE canonical_url=? OR apply_url=? OR ats_requisition_url=? LIMIT 1",(u,u,u)).fetchone()
@@ -1282,8 +1286,12 @@ class PrecisionStore(c.Store):
         # Strong exact cross-source fingerprint: same company + title + essentially identical description.
         if job.company and job.title and len(job.description or "")>500:
             dh=hashlib.sha256(norm(job.description)[:12000].encode()).hexdigest()[:20]
-            candidates=self.conn.execute("SELECT job_id,description FROM jobs WHERE lower(company)=lower(?) AND lower(title)=lower(?) LIMIT 20",(job.company,job.title)).fetchall()
+            incoming_ats=canonical_url(raw_roles.get("ats_requisition_url") or "")
+            candidates=self.conn.execute("SELECT job_id,description,ats_requisition_url FROM jobs WHERE lower(company)=lower(?) AND lower(title)=lower(?) LIMIT 20",(job.company,job.title)).fetchall()
             for x in candidates:
+                existing_ats=canonical_url(x["ats_requisition_url"] or "")
+                if incoming_ats and existing_ats and incoming_ats != existing_ats:
+                    continue
                 if x["description"] and hashlib.sha256(norm(x["description"])[:12000].encode()).hexdigest()[:20]==dh:
                     return clean_text(x["job_id"])
         return job.job_id
@@ -1492,6 +1500,17 @@ class PrecisionStore(c.Store):
         provenance={key:clean_text((job.raw or {}).get(key) or "") for key in (
             "strategy_profile","strategy_profile_version","query_family","query_kind","query_pass")}
         provenance["initial_order"]=int((job.raw or {}).get("initial_order") or 0)
+        acquisition_provenance = job.raw.get("acquisition_provenance") if isinstance(job.raw, dict) and isinstance(job.raw.get("acquisition_provenance"), dict) else {}
+        provider_provenance = (
+            clean_text(job.raw.get("acquisition_provider") or acquisition_provenance.get("provider_name") or "legacy-browser"),
+            clean_text(job.raw.get("acquisition_mode") or acquisition_provenance.get("acquisition_mode") or "unknown"),
+            clean_text(job.raw.get("provider_run_id") or acquisition_provenance.get("provider_run_id") or ""),
+            clean_text(job.raw.get("provider_record_id") or acquisition_provenance.get("provider_record_id") or ""),
+            clean_text(job.raw.get("provider_observed_at") or acquisition_provenance.get("provider_observed_at") or ""),
+            json.dumps(job.raw.get("provider_metadata") or acquisition_provenance.get("provider_metadata") or {}, ensure_ascii=False, sort_keys=True),
+            clean_text(job.raw.get("query_task_key") or ""),
+            clean_text(job.raw.get("phase") or ""),
+        )
         occurrence_roles=self._url_role_values(job)
         occurrence_source_url=occurrence_roles.get("board_detail_url") or occurrence_roles.get("discovery_url") or job.canonical_url
         occurrence_states={
@@ -1511,12 +1530,14 @@ class PrecisionStore(c.Store):
                 strategy_profile_version=?,query_family=?,query_kind=?,query_pass=?,initial_order=?,
                 discovery_url=?,board_detail_url=?,observed_board_apply_url=?,employer_job_url=?,ats_requisition_url=?,verified_application_url=?,
                 identity_evidence_state=?,detail_evidence_state=?,requirements_evidence_state=?,source_verification_state=?,
-                application_destination_verification_state=?,evidence_readiness_state=?,evidence_missing_json=?,evidence_blocking_json=?
+                application_destination_verification_state=?,evidence_readiness_state=?,evidence_missing_json=?,evidence_blocking_json=?,
+                acquisition_provider=?,acquisition_mode=?,provider_run_id=?,provider_record_id=?,provider_observed_at=?,
+                provider_metadata_json=?,query_task_key=?,phase=?
                 WHERE occurrence_key=?""",
                 (jid,occurrence_source_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),now,board,h,run_id,
                  provenance["strategy_profile"],provenance["strategy_profile_version"],provenance["query_family"],
                  provenance["query_kind"],provenance["query_pass"],provenance["initial_order"],
-                 *occurrence_roles.values(),*occurrence_states.values(),ok))
+                 *occurrence_roles.values(),*occurrence_states.values(),*provider_provenance,ok))
         else:
             self.conn.execute("""INSERT INTO source_occurrences(
                 occurrence_key,job_id,source_site,source_job_id,source_url,apply_url,raw_json,first_seen,last_seen,
@@ -1524,12 +1545,14 @@ class PrecisionStore(c.Store):
                 strategy_profile_version,query_family,query_kind,query_pass,initial_order,
                 discovery_url,board_detail_url,observed_board_apply_url,employer_job_url,ats_requisition_url,verified_application_url,
                 identity_evidence_state,detail_evidence_state,requirements_evidence_state,source_verification_state,
-                application_destination_verification_state,evidence_readiness_state,evidence_missing_json,evidence_blocking_json
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                application_destination_verification_state,evidence_readiness_state,evidence_missing_json,evidence_blocking_json,
+                acquisition_provider,acquisition_mode,provider_run_id,provider_record_id,provider_observed_at,
+                provider_metadata_json,query_task_key,phase
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (ok,jid,job.source_site,job.source_job_id,occurrence_source_url,job.apply_url,json.dumps(job.raw,ensure_ascii=False),
                  now,now,1,board,h,1,0,run_id,provenance["strategy_profile"],provenance["strategy_profile_version"],
                  provenance["query_family"],provenance["query_kind"],provenance["query_pass"],provenance["initial_order"],
-                 *occurrence_roles.values(),*occurrence_states.values()))
+                 *occurrence_roles.values(),*occurrence_states.values(),*provider_provenance))
         self.conn.execute("UPDATE jobs SET seen_count=seen_count+? WHERE job_id=?",(0 if existing is None else 1,jid))
         if commit: self.conn.commit()
         return status

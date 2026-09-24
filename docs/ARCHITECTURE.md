@@ -1,6 +1,24 @@
 # Architecture
 
-## Runtime boundary
+## Acquisition boundary
+
+Acquisition-v2 separates provider identity from source surface/platform and
+routes normalized card/detail observations through one shared SQLite
+ingestion service. The service retains the canonical ledger, CHG-170 task and
+qualification rules, CHG-113 evidence readiness, and CHG-114 telemetry.
+Provider payloads remain observations; they cannot set source verification or
+application-destination verification to VERIFIED.
+
+The normal-Chrome Big-3 runner is frozen legacy/deprecated pending migration.
+R1 keeps RUN NOW unchanged for compatibility and does not authorize a managed
+provider for production. Use python -m jobbot acquire --provider jsonl-file
+with an offline fixture. A later change will select a production provider after
+qualification. Public ATS/employer retrieval remains independent
+verification/enrichment; future browser-agent services are fallback providers
+only and can never be the sole authority for Actionable evidence. Application
+execution remains human-only.
+
+## Legacy runtime boundary
 
 The primary discovery path is ordinary installed Google Chrome → Manifest V3 extension → token-authenticated loopback bridge → Python/SQLite. The bridge binds only to `127.0.0.1`, chooses an available high port per run, requires a cryptographically random token on every request, and accepts the stable extension origin. SQLite is the source of truth after extension service-worker suspension or process failure.
 
@@ -36,7 +54,7 @@ maintenance without starting a run. `JOBBOT_BOOTSTRAP_START` is not a required
 upgrade path. A durable `jobbot_bootstrap_handoff` marker makes replayed
 transient pages close without issuing a second reload or start.
 
-Each active Big-3 platform owns one serial worker, one ordinary Chrome window,
+The retained compatibility runner assigns each active Big-3 platform one serial worker, one ordinary Chrome window,
 and one reused search tab. Cards are committed to `search_task_results` before
 detail work. Detail acquisition selects the card in that search page and waits
 for the embedded pane; identity, pane provenance, and substantive description
@@ -106,7 +124,8 @@ Big-3 browsing never uses Playwright, Selenium, Puppeteer, Chrome-for-Testing, c
 - `db.py`, `migrations/`: database connection policy, online backups, integrity checks, sequential schema changes.
 - `ledger.py`, `canonical.py`, `versioning.py`: canonical jobs, cross-source occurrences, immutable versions, field diffs, and lifecycle.
 - `requirements.py`, `remote.py`, `employment.py`, `scoring.py`: deterministic qualification pipeline.
-- `browser_tasks.py`, `bridge/`, `sources/browser.py`: persistent task queue, loopback RPC, platform adapter contracts, static fixture parser.
+- `acquisition/`: normalized provider records, adapter protocol, offline JSON/JSONL file and injected-transport HTTP adapters, and the acquisition coordinator.
+- `browser_tasks.py`, `bridge/`, `sources/browser.py`: retained legacy task queue, loopback RPC, browser adapters, and static fixture parser. Browser RPC and acquisition-v2 call the same card/detail persistence service.
 - `dashboard.py`, `audit.py`, `exports.py`, `application.py`, `funnel.py`: local warehouse UX and application learning.
 - `legacy_engine.py`, `legacy_core.py`: retained, tested supplemental feed/ATS retrieval and proven ledger/scoring implementation behind focused public modules. These do not automate Big-3 browsing.
 

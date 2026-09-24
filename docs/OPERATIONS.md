@@ -1,5 +1,19 @@
 # Operations
 
+The normal-Chrome Big-3 crawler commands below are frozen legacy/deprecated
+pending acquisition-provider migration. R1 leaves RUN NOW unchanged for
+compatibility and selects no managed provider for production. Public
+ATS/employer retrieval remains a separate verification/enrichment path.
+
+For offline JSON or JSONL fixture ingestion, use an explicit disposable database path:
+
+    JOBBOT_DATABASE_PATH=/tmp/jobbot-acquisition.sqlite3 python -m jobbot acquire --provider jsonl-file --path fixture.jsonl
+
+The file provider only marks a task exhausted when the file contains explicit
+completion evidence for that task. Missing proof, partial batches, timeouts,
+and provider errors leave tasks incomplete/retryable. R1 has no live managed
+provider transport and never falls back to Chrome.
+
 Run `python -m jobbot doctor` before live work. Inspect `python -m jobbot search-plan --mode deep --open` before starting. Complete a per-platform acceptance run before the full strategy.
 
 Complete the one-time bootstrap with `./INSTALL_MAC.command
