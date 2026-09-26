@@ -1,0 +1,260 @@
+{
+  "accepted_at": "2026-09-26T19:46:30Z",
+  "changed_files": [
+    {
+      "additions": 35,
+      "deletions": 25,
+      "path": "README.md",
+      "status": "M"
+    },
+    {
+      "additions": 15,
+      "deletions": 12,
+      "path": "docs/ARCHITECTURE.md",
+      "status": "M"
+    },
+    {
+      "additions": 77,
+      "deletions": 63,
+      "path": "docs/BRIGHTDATA_PROVIDER.md",
+      "status": "M"
+    },
+    {
+      "additions": 17,
+      "deletions": 7,
+      "path": "docs/OPERATIONS.md",
+      "status": "M"
+    },
+    {
+      "additions": 8,
+      "deletions": 4,
+      "path": "docs/SEARCH_QUALITY.md",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'cat /Users/haewonkim/.codex/RTK.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'cat /Users/haewonkim/.codex/law.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'pwd && git rev-parse --show-toplevel && git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1 && rtk git rev-parse refs/heads/codex/CHG-275-r1-docs && rtk git rev-parse 81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6 && rtk git rev-parse 1e57ca567218deac282d845cf3bdaab099cd2295 && rtk git rev-list --count 81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6..refs/heads/codex/CHG-275-r1-docs && rtk git diff --name-only 81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6 1e57ca567218deac282d845cf3bdaab099cd2295'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git checkout --detach 1e57ca567218deac282d845cf3bdaab099cd2295 && rtk git rev-parse HEAD && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,1000p' 'README.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,1000p' 'docs/ARCHITECTURE.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,1000p' 'docs/BRIGHTDATA_PROVIDER.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,1000p' 'docs/OPERATIONS.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,1000p' 'docs/SEARCH_QUALITY.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cat 'docs/ARCHITECTURE.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cat 'docs/BRIGHTDATA_PROVIDER.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cat 'docs/OPERATIONS.md'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'bright.?data.{0,100}(unselected|was not selected|not selected|rejected)|unselected.{0,100}bright.?data' README.md docs/ARCHITECTURE.md docs/BRIGHTDATA_PROVIDER.md docs/OPERATIONS.md docs/SEARCH_QUALITY.md\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'chrome.{0,100}(selected production|production direction|production path|intended production)|production.{0,100}chrome' README.md docs/ARCHITECTURE.md docs/BRIGHTDATA_PROVIDER.md docs/OPERATIONS.md docs/SEARCH_QUALITY.md\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'qualification.{0,100}(passed|complete|approved|ready)|qualified.{0,100}(production|approved|ready)|production readiness.{0,50}(established|confirmed)|successful live operation' README.md docs/ARCHITECTURE.md docs/BRIGHTDATA_PROVIDER.md docs/OPERATIONS.md docs/SEARCH_QUALITY.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check 81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6 1e57ca567218deac282d845cf3bdaab099cd2295'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse 1e57ca567218deac282d845cf3bdaab099cd2295''^ && rtk git rev-parse refs/heads/codex/CHG-275-r1-docs && rtk git rev-parse HEAD && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 43,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 84.98,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 163840,
+      "fresh_input_tokens": 28968,
+      "input_tokens": 192808,
+      "non_reasoning_output_tokens": 1855,
+      "output_tokens": 6303,
+      "reasoning_output_tokens": 4448,
+      "total_processed_tokens": 199111
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "1e57ca567218deac282d845cf3bdaab099cd2295",
+      "subject": "fabric: capture completed model changes [CF-7b674b9dd5fa4dd0bebbfb0e]"
+    }
+  ],
+  "diff": {
+    "additions": 152,
+    "changed_files": 5,
+    "commit_count": 1,
+    "deletions": 111
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 5,
+    "items": [
+      {
+        "bytes": 10551,
+        "path": "README.md",
+        "sha256": "3cc9671719f0cb00a5bf261800198ff1b8927acfdabd99e5bbef33828a44ca3a"
+      },
+      {
+        "bytes": 11033,
+        "path": "docs/ARCHITECTURE.md",
+        "sha256": "98fb5590e917ecc52cc20fc5e11a4ecdc29f95ad5d0a246859368838ca233655"
+      },
+      {
+        "bytes": 7713,
+        "path": "docs/BRIGHTDATA_PROVIDER.md",
+        "sha256": "728b143f225f51b0aef4284f89ad1b4570e1008e44d2bcfc58316b5a77ef02f6"
+      },
+      {
+        "bytes": 5725,
+        "path": "docs/OPERATIONS.md",
+        "sha256": "af842af8c305ef65d1bd3f23f091518fd63634980560b5a196fa3322a0970c10"
+      },
+      {
+        "bytes": 12822,
+        "path": "docs/SEARCH_QUALITY.md",
+        "sha256": "caa510499cbbfcd1eb04327c16976e1107aeeda1952b521c3b8226c2151de133"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-26T19:48:39Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "branch": "codex/CHG-275-r1-docs-verify",
+    "detached_verify": true,
+    "head_sha": "1e57ca567218deac282d845cf3bdaab099cd2295",
+    "remote_exact_head": true,
+    "remote_head_sha": "1e57ca567218deac282d845cf3bdaab099cd2295",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "work_branch": "codex/CHG-275-r1-docs-verify",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-125c2462ca7faa54d9e87551",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-275-r1-docs-independent-verify",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-275-r1-docs-independent-verify"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-275-r1-docs-independent-verify",
+  "schema_version": 1,
+  "started_at": "2026-09-26T19:46:30Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 129,
+    "queue_seconds": 0,
+    "total_seconds": 129
+  },
+  "transport": {
+    "bytes": 3021,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2708,
+    "prompt_sha256": "e34b417f921bb3d780142d2c9da5cf6b646786acbcd2dbc52f89786c8b9fa429",
+    "sha256": "125c2462ca7faa54d9e87551d4852be499f4754329b3cf82c4f5c6e0f1bfe528"
+  }
+}
