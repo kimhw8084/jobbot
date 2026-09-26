@@ -1,0 +1,192 @@
+{
+  "accepted_at": "2026-09-26T20:12:50Z",
+  "changed_files": [
+    {
+      "additions": 8,
+      "deletions": 3,
+      "path": "src/jobbot/search_plan.py",
+      "status": "M"
+    },
+    {
+      "additions": 25,
+      "deletions": 0,
+      "path": "tests/unit/test_strategy.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'cat /Users/haewonkim/.codex/RTK.md && cat /Users/haewonkim/.codex/law.md && pwd && git status --short && git rev-parse HEAD && git log -1 --oneline'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files | rtk sed -n '1,240p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex/plugins/cache/openai-curated-remote/notion/0.1.8/skills/notion-spec-to-implementation/SKILL.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"glassdoor|remoteWorkType|fromAge|age_days|search_url|search_url\" src tests'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"glassdoor|remoteWorkType|fromAge|age_days\" src/jobbot/search_plan.py src/jobbot/browser_tasks.py src/jobbot/config.py src/jobbot/strategy_runtime.py tests/unit tests/integration/test_browser_tasks.py tests/integration/test_acquisition_v2.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' src/jobbot/search_plan.py && rtk sed -n '1,190p' tests/unit/test_strategy.py && rtk sed -n '620,670p' src/jobbot/browser_tasks.py && rtk cat pyproject.toml\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk python -m unittest tests.unit.test_strategy.StrategyTests.test_glassdoor_urls_apply_remote_and_each_task_age_window'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- src/jobbot/search_plan.py tests/unit/test_strategy.py && rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m unittest tests.unit.test_strategy.StrategyTests.test_glassdoor_urls_apply_remote_and_each_task_age_window'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk nl -ba src/jobbot/search_plan.py | rtk sed -n '55,165p' && rtk nl -ba tests/unit/test_strategy.py | rtk sed -n '135,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 40,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 90.77,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 500736,
+      "fresh_input_tokens": 50907,
+      "input_tokens": 551643,
+      "non_reasoning_output_tokens": 2800,
+      "output_tokens": 10318,
+      "reasoning_output_tokens": 7518,
+      "total_processed_tokens": 561961
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "bc2235ce2258f13c7c84386b24fa5dc9fdc0dec5",
+      "subject": "fabric: capture completed model changes [CF-07e3b8fc1967934c850f13b9]"
+    }
+  ],
+  "diff": {
+    "additions": 33,
+    "changed_files": 2,
+    "commit_count": 1,
+    "deletions": 3
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": true,
+    "commit_message": "fabric: capture completed model changes [CF-07e3b8fc1967934c850f13b9]",
+    "commit_sha": "bc2235ce2258f13c7c84386b24fa5dc9fdc0dec5",
+    "paths_before": 2,
+    "status_before": [
+      " M src/jobbot/search_plan.py",
+      " M tests/unit/test_strategy.py"
+    ],
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-26T20:17:05Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "branch": "codex/CHG-276-r1-glassdoor-filters",
+    "detached_verify": false,
+    "head_sha": "bc2235ce2258f13c7c84386b24fa5dc9fdc0dec5",
+    "remote_exact_head": true,
+    "remote_head_sha": "bc2235ce2258f13c7c84386b24fa5dc9fdc0dec5",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "work_branch": "codex/CHG-276-r1-glassdoor-filters",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-07e3b8fc1967934c850f13b9",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-276-r1-glassdoor-filters",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-276-r1-glassdoor-filters"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-276-r1-glassdoor-filters",
+  "schema_version": 1,
+  "started_at": "2026-09-26T20:12:51Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 254,
+    "queue_seconds": 1,
+    "total_seconds": 255
+  },
+  "transport": {
+    "bytes": 1687,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 1375,
+    "prompt_sha256": "73467a45c525f43c2eba7beb6391314af6a3e081b28a6848ca36ed8da966098b",
+    "sha256": "07e3b8fc1967934c850f13b9843b819ab835a1b5bec57150bc57eecb7be23112"
+  }
+}
