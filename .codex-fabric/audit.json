@@ -1,0 +1,148 @@
+{
+  "accepted_at": "2026-09-26T19:52:03Z",
+  "changed_files": [],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'cat /Users/haewonkim/.codex/RTK.md && cat /Users/haewonkim/.codex/law.md && git status --short --branch && git rev-parse HEAD && git rev-parse --verify 81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6''^{commit} && git show -s --format='\"'%H%n%D%n%s' 81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6 && rg -n \\\"preflight|brightdata-jobs|BRIGHTDATA_API_TOKEN|JOBBOT_BRIGHTDATA_\\\" .\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '115,175p' src/jobbot/cli.py && rtk sed -n '1,95p' src/jobbot/acquisition/brightdata.py && rtk sed -n '175,275p' src/jobbot/acquisition/brightdata.py && rtk sed -n '350,445p' src/jobbot/acquisition/brightdata.py && rtk sed -n '65,105p' docs/BRIGHTDATA_PROVIDER.md && rtk sed -n '380,415p' src/jobbot/cli.py && rtk sed -n '1,80p' src/jobbot/__main__.py && rtk rg -n \\\"logging|logger|print\\\\(|raise .*Error|redact|token|config\\\" src/jobbot/acquisition/brightdata.py src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,125p' src/jobbot/cli.py && rtk sed -n '420,445p' src/jobbot/cli.py && rtk rg -n \\\"def load_bundle|JOBBOT_DATABASE_PATH|def _bundle|def database|sqlite3.connect|connect\\\\(\\\" src/jobbot/config.py src/jobbot/cli.py src/jobbot | head -n 120 && rtk sed -n '1,180p' src/jobbot/config.py && rtk sed -n '370,410p' src/jobbot/cli.py && rtk sed -n '1,120p' pyproject.toml && rtk ls -la\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk which rtk python python3 && rtk python --version && rtk python3 --version && rtk ls -ld .venv venv /private/tmp /private/tmp/jobbot-brightdata-preflight-20260926.sqlite3 2>/dev/null; rtk git status --porcelain=v1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"from pathlib import Path; print('project_venv_present=' + str(Path('.venv/bin/python').exists())); print('project_venv_alt_present=' + str(Path('venv/bin/python').exists())); print('scratch_database_preexisting=' + str(Path('/private/tmp/jobbot-brightdata-preflight-20260926.sqlite3').exists()))\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import json,os,subprocess,sys; env=os.environ.copy(); env[\\\"PYTHONPATH\\\"]=\\\"src\\\"; env[\\\"JOBBOT_DATABASE_PATH\\\"]=\\\"/private/tmp/jobbot-brightdata-preflight-20260926.sqlite3\\\"; ok=True\nfor platform in (\\\"linkedin\\\",\\\"indeed\\\",\\\"glassdoor\\\"):\n p=subprocess.run([sys.executable,\\\"-m\\\",\\\"jobbot\\\",\\\"acquire\\\",\\\"--provider\\\",\\\"brightdata-jobs\\\",\\\"--preflight\\\",\\\"--platform\\\",platform],capture_output=True,text=True,env=env)\n try:\n  data=json.loads(p.stdout); config=data[\\\"platform_configs\\\"][platform]; token_present=data[\\\"token_present\\\"]; config_present=config[\\\"present\\\"]; config_valid=config[\\\"valid\\\"]; valid=data[\\\"valid\\\"]\n  assert type(token_present) is bool and type(config_present) is bool and type(config_valid) is bool and type(valid) is bool\n  assert data[\\\"token_validity\\\"]==\\\"not_checked_offline\\\" and valid==(token_present and config_valid)\n  assert p.returncode==(0 if valid else 2)\n  row={\\\"platform\\\":platform,\\\"token_present\\\":token_present,\\\"token_validity\\\":\\\"not_checked_offline\\\",\\\"config_present\\\":config_present,\\\"config_valid\\\":config_valid}\n except Exception:\n  row={\\\"platform\\\":platform,\\\"status\\\":\\\"unavailable\\\"}; ok=False\n print(json.dumps(row,separators=(\\\",\\\",\\\":\\\")))\nsys.exit(0 if ok else 1)'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c \\\"from pathlib import Path; print('scratch_database_created=' + str(Path('/private/tmp/jobbot-brightdata-preflight-20260926.sqlite3').exists()))\\\" && rtk git status --short --branch && rtk rg -n -i \\\"dollar|cost cap|maximum.*record|max-records|budget\\\" docs/BRIGHTDATA_PROVIDER.md verification/CHG-200-r2.json README.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,22p' docs/BRIGHTDATA_PROVIDER.md && rtk sed -n '107,135p' docs/BRIGHTDATA_PROVIDER.md && rtk sed -n '86,104p' verification/CHG-200-r2.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 24,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 88.04,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 274176,
+      "fresh_input_tokens": 37258,
+      "input_tokens": 311434,
+      "non_reasoning_output_tokens": 2461,
+      "output_tokens": 11924,
+      "reasoning_output_tokens": 9463,
+      "total_processed_tokens": 323358
+    },
+    "warnings": []
+  },
+  "commits": [],
+  "diff": {
+    "additions": 0,
+    "changed_files": 0,
+    "commit_count": 0,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-26T19:55:56Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "branch": "codex/CHG-275-r1-preflight-verify",
+    "detached_verify": false,
+    "head_sha": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "remote_exact_head": true,
+    "remote_head_sha": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "work_branch": "codex/CHG-275-r1-preflight-verify",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-b0809262b4866705a81666e1",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-275-r1-offline-preflight",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-275-r1-offline-preflight"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-275-r1-offline-preflight",
+  "schema_version": 1,
+  "started_at": "2026-09-26T19:52:03Z",
+  "status": "EXECUTED_NO_CHANGE",
+  "timing": {
+    "execution_seconds": 233,
+    "queue_seconds": 0,
+    "total_seconds": 233
+  },
+  "transport": {
+    "bytes": 3222,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2910,
+    "prompt_sha256": "87a0a9e487cb09fa9b7123b8789bb0fa6bcaa22026643a3fe507d5f9097247c4",
+    "sha256": "b0809262b4866705a81666e17c20eb8c402026d21e6d10d75daefada2e2c5da0"
+  }
+}
