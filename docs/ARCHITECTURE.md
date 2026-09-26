@@ -9,18 +9,21 @@ qualification rules, CHG-113 evidence readiness, and CHG-114 telemetry.
 Provider payloads remain observations; they cannot set source verification or
 application-destination verification to VERIFIED.
 
-The normal-Chrome Big-3 runner is frozen legacy/deprecated pending migration.
-R1 keeps RUN NOW unchanged for compatibility and does not authorize a managed
-provider for production. Use python -m jobbot acquire --provider jsonl-file
-with an offline fixture. A later change will select a production provider after
-qualification. Public ATS/employer retrieval remains independent
-verification/enrichment; future browser-agent services are fallback providers
-only and can never be the sole authority for Actionable evidence. Application
-execution remains human-only.
+Managed/API acquisition through this shared provider-neutral boundary is the
+selected Big-3 production direction. The Bright Data Jobs adapter is integrated
+behind acquisition-v2 but remains unqualified and is not production-approved
+until bounded qualification for all three platforms passes independent review.
+CHG-275 remains open pending local account configuration and an explicit
+maximum-record or dollar cap. RUN_NOW has not switched: it remains on the
+retained legacy Chrome/MV3 route, frozen for compatibility only and not the
+selected production direction. Public ATS/employer retrieval remains a
+separate verification/enrichment path. Future browser-agent services are
+fallback providers only and can never be the sole authority for Actionable
+evidence. Application execution remains human-only.
 
-## Legacy runtime boundary
+## Legacy runtime boundary (RUN_NOW compatibility route)
 
-The primary discovery path is ordinary installed Google Chrome → Manifest V3 extension → token-authenticated loopback bridge → Python/SQLite. The bridge binds only to `127.0.0.1`, chooses an available high port per run, requires a cryptographically random token on every request, and accepts the stable extension origin. SQLite is the source of truth after extension service-worker suspension or process failure.
+RUN_NOW currently uses ordinary installed Google Chrome → Manifest V3 extension → token-authenticated loopback bridge → Python/SQLite. This is the retained frozen compatibility route, not the selected Big-3 production direction. The bridge binds only to `127.0.0.1`, chooses an available high port per run, requires a cryptographically random token on every request, and accepts the stable extension origin. SQLite is the source of truth after extension service-worker suspension or process failure.
 
 Routine extension freshness uses that same control plane. The repository-owned
 extension is first copied by `sync-extension` to the machine-local stable

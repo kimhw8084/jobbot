@@ -11,10 +11,14 @@ guardrails. Runs, tasks, discovery receipts, and source occurrences expose
 durable provider provenance. Historical rows are labeled legacy-browser with
 unknown acquisition mode.
 
-R1 establishes the adapter boundary only; it does not authorize or select a
-managed provider for production. The custom normal-Chrome Big-3 runner is
-frozen legacy/deprecated pending migration. Public ATS/employer retrieval
-continues as independent verification/enrichment. Future browser-agent
+Managed/API acquisition through acquisition-v2's shared provider-neutral
+boundary is the selected Big-3 production direction. The Bright Data Jobs
+adapter is integrated behind that boundary but remains unqualified and is not
+production-approved until bounded qualification for all three platforms passes
+independent review; CHG-275 remains open pending local account configuration
+and an explicit maximum-record or dollar cap. RUN_NOW has not switched and
+remains on the frozen legacy Chrome/MV3 compatibility route. Public ATS/employer
+retrieval continues as separate verification/enrichment. Future browser-agent
 services are fallback providers only and cannot independently establish
 Actionable evidence.
 

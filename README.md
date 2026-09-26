@@ -1,20 +1,28 @@
 # JobBot v3.2
 
-JobBot is a local, read-only, remote-only career search ledger. LinkedIn, Indeed, and Glassdoor are traversed in the user’s ordinary installed Google Chrome session through a Manifest V3 extension and a token-authenticated `127.0.0.1` Python bridge. SQLite is authoritative; the extension never submits an application, fills a form, handles credentials, or bypasses a challenge.
+JobBot is a local, read-only, remote-only career search ledger. Managed/API
+acquisition through acquisition-v2's shared provider-neutral boundary is the
+selected Big-3 production direction. The Bright Data Jobs adapter is integrated
+behind that boundary but remains unqualified and is not production-approved
+until bounded qualification for LinkedIn, Indeed, and Glassdoor passes
+independent review. CHG-275 remains open pending local account configuration
+and an explicit maximum-record or dollar cap. SQLite remains authoritative;
+JobBot does not submit applications, fill forms, handle credentials, or bypass
+challenges.
 
 The search objective is exhaustive coverage of the configured query/platform/age universe. The 10–20 application target is a human workload target, never a discovery cap.
 
-Acquisition-v2 is an adapter-boundary build. Bright Data Jobs Scraper API is
-the first managed production-candidate adapter, built behind that seam; it is
-not production-approved or selected. The normal-Chrome Big-3 crawler and RUN
-NOW remain unchanged and frozen legacy/deprecated pending separate provider
-qualification and production selection. Public ATS/employer retrieval remains
-an independent verification and enrichment path. See
-[Bright Data candidate setup](docs/BRIGHTDATA_PROVIDER.md).
+RUN_NOW has not switched and currently remains on the retained legacy
+Chrome/Manifest V3 compatibility route. That route is frozen for compatibility
+only and is not the selected production direction. Public ATS/employer
+retrieval remains a separate verification and enrichment path. See
+[Bright Data adapter setup](docs/BRIGHTDATA_PROVIDER.md).
 
-## Fresh macOS installation
+## Legacy RUN_NOW compatibility setup (Chrome/MV3)
 
-Requirements: macOS, Python 3.11 or newer, normal Google Chrome, and enough disk space for the cumulative ledger.
+The requirements and steps below apply only to the retained legacy RUN_NOW
+compatibility route: macOS, Python 3.11 or newer, normal Google Chrome, and
+enough disk space for the cumulative ledger.
 
 The requirements above apply to the retained legacy crawler.
 
@@ -69,10 +77,11 @@ remain unknown, and a board detail URL is a source occurrence rather than a
 verified application destination. Dashboard scores are triage signals until
 substantive detail evidence is complete.
 
-## Today’s fast path
+## Current RUN_NOW compatibility behavior
 
-After the extension is loaded and the desired sites are signed in, use the
-single production entry point:
+RUN_NOW has not switched to managed/API acquisition. After the extension is
+loaded and the desired sites are signed in, this existing local compatibility
+entry point continues to invoke the frozen Chrome/MV3 route:
 
 ```bash
 ./RUN_NOW.command
@@ -97,10 +106,10 @@ The **Live discoveries** panel is the durable intake receipt: it can contain a
 card whose detail is still pending, while the Jobs table contains the
 deduplicated, enriched canonical record.
 
-These browser commands are legacy/deprecated and remain for compatibility and
-regression tests. Future browser-agent services may be fallback providers only
-and cannot be the sole authority for Actionable evidence. Application
-execution remains human-only.
+The browser commands above are frozen compatibility-only behavior, not the
+selected Big-3 production direction. Future browser-agent services may be
+fallback providers only and cannot be the sole authority for Actionable
+evidence. Application execution remains human-only.
 
 For an offline JSON or JSONL fixture, point JobBot at a disposable database:
 
@@ -108,13 +117,14 @@ For an offline JSON or JSONL fixture, point JobBot at a disposable database:
 
 Each file-provider task needs a separate completion row with non-empty
 completion_evidence before it can be marked exhausted. Bright Data setup,
-offline preflight, runtime schema keys, and the later qualification boundary
-are documented in [Bright Data candidate setup](docs/BRIGHTDATA_PROVIDER.md).
+offline preflight, runtime schema keys, and the qualification boundary are
+documented in [Bright Data adapter setup](docs/BRIGHTDATA_PROVIDER.md).
 
-The crawl uses one serial worker and one reused search tab per active Big-3
-platform. It selects each card into that platform's embedded detail pane and
-commits the observation immediately. Standalone per-job tabs are not routine
-crawl behavior. Stop with `./STOP_SEARCH.command`; resume with
+On the retained compatibility route, the crawl uses one serial worker and one
+reused search tab per active Big-3 platform. It selects each card into that
+platform's embedded detail pane and commits the observation immediately.
+Standalone per-job tabs are not routine crawl behavior. Stop with
+`./STOP_SEARCH.command`; resume with
 `./RESUME_SEARCH.command` or the dashboard’s **Resume checkpoint** button.
 
 ## Canonical cross-platform CLI
@@ -151,7 +161,7 @@ recent/deep phases, checkpoints the cycle in SQLite, waits conservatively, and
 resumes only due work. `--once` is useful for an isolated acceptance database;
 do not point unattended tests at `data/jobs.sqlite3`.
 
-## macOS launchers
+## Legacy Chrome/MV3 macOS launchers
 
 - `RUN_FULL_SEARCH.command` — deep Big-3 search followed by supplemental feeds; uses `caffeinate` only for the process lifetime.
 - `RUN_FAST_SEARCH.command` — overlapping seven-day P0/P1 search plus supplemental feeds.

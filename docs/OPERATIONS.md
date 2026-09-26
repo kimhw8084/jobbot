@@ -1,9 +1,14 @@
 # Operations
 
-The normal-Chrome Big-3 crawler commands below are frozen legacy/deprecated
-pending acquisition-provider migration. R1 leaves RUN NOW unchanged for
-compatibility and selects no managed provider for production. Public
-ATS/employer retrieval remains a separate verification/enrichment path.
+Managed/API acquisition through acquisition-v2's shared provider-neutral
+boundary is the selected Big-3 production direction. The Bright Data Jobs
+adapter is integrated behind that boundary but remains unqualified and is not
+production-approved until bounded qualification for all three platforms passes
+independent review. CHG-275 remains open pending local account configuration
+and an explicit maximum-record or dollar cap. RUN_NOW has not switched: the
+normal-Chrome commands below describe its retained legacy Chrome/MV3 route,
+which is frozen for compatibility only. Public ATS/employer retrieval remains
+a separate verification/enrichment path.
 
 For offline JSON or JSONL fixture ingestion, use an explicit disposable database path:
 
@@ -11,10 +16,15 @@ For offline JSON or JSONL fixture ingestion, use an explicit disposable database
 
 The file provider only marks a task exhausted when the file contains explicit
 completion evidence for that task. Missing proof, partial batches, timeouts,
-and provider errors leave tasks incomplete/retryable. R1 has no live managed
-provider transport and never falls back to Chrome.
+and provider errors leave tasks incomplete/retryable. The Bright Data adapter
+is integrated, but account/schema compatibility and live provider operation
+remain unqualified. Any qualification must use a disposable database, never
+the production SQLite database; offline preflight does not establish provider
+readiness.
 
-Run `python -m jobbot doctor` before live work. Inspect `python -m jobbot search-plan --mode deep --open` before starting. Complete a per-platform acceptance run before the full strategy.
+For the retained legacy Chrome/MV3 route, run `python -m jobbot doctor` before
+live work. Inspect `python -m jobbot search-plan --mode deep --open` before
+starting. Complete a per-platform acceptance run before the full strategy.
 
 Complete the one-time bootstrap with `./INSTALL_MAC.command
 --profile-directory "<final component from chrome://version Profile Path>"`.

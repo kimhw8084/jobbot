@@ -1,43 +1,47 @@
-# Bright Data Jobs Scraper candidate
+# Bright Data Jobs Scraper adapter
 
-Bright Data Jobs Scraper API is JobBot's first production-candidate managed
-acquisition adapter. It is a build/test integration only in CHG-200-r2 and is
-not approved or selected for production. RUN NOW and the browser crawler remain
-unchanged; browser acquisition is frozen legacy work under CHG-39-r16.
+Managed/API acquisition through acquisition-v2's shared provider-neutral
+boundary is the selected Big-3 production direction. The Bright Data Jobs
+Scraper adapter is integrated behind that boundary, but remains unqualified
+and is not production-approved until bounded LinkedIn, Indeed, and Glassdoor
+qualification passes independent review. CHG-275 remains open pending local
+account configuration and an explicit maximum-record or dollar cap. No
+successful live operation, production readiness, ROI, or exhaustive live
+coverage is established here. RUN_NOW has not switched and remains on the
+retained legacy Chrome/MV3 compatibility route, frozen for compatibility only.
+Public ATS/employer retrieval remains a separate verification and enrichment
+path.
 
-Before any later live qualification, verify current Bright Data product
-coverage, account limits, pricing, and the selected scraper's exact input and
-output schema. Product coverage and pricing can change. The current product
-pages advertise LinkedIn Jobs, Indeed Jobs, Glassdoor Jobs, keyword discovery,
-and a 5,000-record/month free tier; that marketing information is not treated
-as an API contract or embedded as a budget assumption in JobBot. The pricing
-page also advertises pay only for successfully delivered results. Reverify both
-the offer and its account-specific terms during live qualification. See the
+Before bounded qualification, verify the locally configured account's access,
+limits, pricing, and each selected scraper's exact input and output schema.
+No account-specific dataset ID, schema, coverage, or pricing is assumed here.
+Public product and pricing pages are not account evidence or an API contract;
+verify current account-specific terms during qualification. See the
 [Jobs Scraper product page](https://brightdata.com/products/web-scraper/jobs-scraper),
 [async trigger contract](https://docs.brightdata.com/api-reference/rest-api/scraper/asynchronous-requests),
 [progress contract](https://docs.brightdata.com/api-reference/scrapers/management-apis/monitor-progress),
-and [snapshot parts contract](https://docs.brightdata.com/api-reference/scrapers/management-apis/get-snapshot-delivery-parts).
-Plan any later live qualification within the then-current verified free-tier
-balance; do not infer remaining balance from the public marketing page.
+and [snapshot parts contract](https://docs.brightdata.com/api-reference/scrapers/management-apis/get-snapshot-delivery-parts). Qualification requires an explicit maximum-record or dollar cap and a disposable database; it does not use the production SQLite database.
 
 ## Runtime configuration
 
-The token is read only from the environment variable `BRIGHTDATA_API_TOKEN`.
+If qualification is authorized, the token is read only from the environment
+variable `BRIGHTDATA_API_TOKEN`.
 Store it in the operator's secret manager or shell environment. Do not add it
 to TOML, JSON fixtures, logs, exports, task metadata, or source control.
 
-Provide one JSON runtime configuration environment variable for each selected
-platform:
+For each platform included in qualification, provide a JSON runtime
+configuration environment variable only after verifying that account's exact
+schema:
 
 - `JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG`
 - `JOBBOT_BRIGHTDATA_INDEED_CONFIG`
 - `JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG`
 
-Each value must contain the account's exact `dataset_id`, a required keyword
-input field, optional supported filters, and exact row output fields. Example
-shape only; replace each angle-bracket value with the exact field/schema value
-shown for the selected account scraper. No dataset ID or per-account field name
-is assumed by JobBot:
+If configured, each value must contain the account's exact `dataset_id`, a
+required keyword input field, optional supported filters, and exact row output
+fields. The following is a placeholder shape only; use actual account/schema
+values only after verifying them during qualification. No dataset ID or
+per-account field name is assumed by JobBot:
 
 ```json
 {
@@ -62,31 +66,36 @@ is assumed by JobBot:
 }
 ```
 
-`location.source` may be `home_state` or `home_metro` and reads the configured
-candidate facts (currently Texas / Austin metro). A freshness field can use
+In a verified account configuration, `location.source` may be `home_state` or
+`home_metro` and reads the configured candidate facts (currently Texas / Austin
+metro). A verified freshness field can use
 `{"field":"...","type":"integer"}` for a day count, or a configured
-`template` containing `{days}` for the scraper's exact representation. Remote
-input is sent only when the frozen task says remote is required. Omit a filter
-when that scraper schema does not support it; the request never becomes
-location, remote, salary, employment, posting, or application evidence.
+`template` containing `{days}` for that scraper's exact representation. Remote
+input is sent only when the frozen task says remote is required and the
+qualified schema supports it. Omit a filter when that scraper schema does not
+support it; the request never becomes location, remote, salary, employment,
+posting, or application evidence.
 
-`output_schema` is a mapping from JobBot's allowed observed-field names to the
-exact output keys for that scraper. At least `source_job_id` or `source_url`
-must be mapped. If the result is wrapped in an account-specific object instead
-of a root array, set `result_rows_key` to its exact row-array property. Provider
-verification claims are ignored and cannot be mapped into trusted evidence.
+For a verified account configuration, `output_schema` maps JobBot's allowed
+observed-field names to that scraper's exact output keys. At least
+`source_job_id` or `source_url` must be mapped. If the qualified result is
+wrapped in an account-specific object instead of a root array, set
+`result_rows_key` to its exact row-array property. Provider verification claims
+are ignored and cannot be mapped into trusted evidence.
 
 The offline preflight reports only presence/validity flags. It does not contact
-Bright Data and cannot validate whether a non-empty API token is active:
+Bright Data, cannot validate whether a non-empty API token is active, and does
+not qualify the adapter:
 
 ```bash
 python -m jobbot acquire --provider brightdata-jobs --preflight --platform linkedin
 ```
 
 The live transport requires explicit opt-in and a caller-supplied maximum
-record-validation budget. Use a disposable database during any separately
-approved qualification; a budget stop leaves unfinished tasks incomplete and
-does not establish exhaustion:
+record-validation budget. This illustrative command uses a disposable
+database; `100` is an example only, not a selected cap or authorization. A
+budget stop leaves unfinished tasks incomplete and does not establish
+exhaustion:
 
 ```bash
 JOBBOT_DATABASE_PATH=/tmp/jobbot-brightdata-qualification.sqlite3 \
@@ -94,35 +103,40 @@ python -m jobbot acquire --provider brightdata-jobs --live-transport \
   --max-records 100 --mode fast --platform linkedin
 ```
 
-CHG-200-r2 does not make that live call. Tests inject a mock transport and make
-zero network requests.
+This documentation reconciliation makes no live call and establishes no live
+qualification result. Adapter tests inject a mock transport and make zero
+network requests.
 
 ## Lifecycle and evidence
 
-The adapter uses the documented dataset flow: `POST /datasets/v3/trigger`,
+The adapter targets the documented dataset flow: `POST /datasets/v3/trigger`,
 bounded `GET /datasets/v3/progress/{snapshot_id}` polling, a snapshot-part
-count, and retrieval of every reported part. A snapshot ID alone is not
-completion. A task becomes complete only after terminal `ready`, a valid part
-count, all parts retrieved and parsed, no reported row errors or continuation
-markers, and sanitized completion evidence containing platform, CHG-170 task
-key, snapshot ID, terminal state, part information, and request fingerprint.
+count, and retrieval of every reported part. Qualification must verify that
+the configured account and schema support the expected live behavior. A
+snapshot ID alone is not completion. The task completion gate requires
+terminal `ready`, a valid part count, all reported parts retrieved and parsed,
+no reported row errors or continuation markers, and sanitized completion
+evidence containing platform, CHG-170 task key, snapshot ID, terminal state,
+part information, and request fingerprint.
 Transient timeouts, 429/5xx, missing results, malformed data, unsupported
 cursors, uncertain truncation, and exact-budget caps stay retryable/incomplete.
 Retries and pending polls have provider-local bounds.
 
-The `max_records` budget is caller supplied and is sent as Bright Data's
-documented `limit_multiple_results`; it is not a hard-coded provider or
-marketing-page cap. If the response reaches the remaining budget, the task is
-incomplete because collection may have been truncated. Provider-reported cost
-or credits are persisted only when the API actually returns them.
+The `max_records` budget is caller supplied and the adapter maps it to Bright
+Data's documented `limit_multiple_results`; confirm that the configured
+account accepts the expected limit behavior during qualification. It is not a
+hard-coded provider or marketing-page cap. If a response reaches the remaining
+budget, the task is incomplete because collection may have been truncated.
+Provider-reported cost or credits are persisted only if the API returns them.
 
-Normalized fields are observations only: source ID/URL, title, company,
-location, posting date/text, employment type, description/summary, salary, and
-present application/employer/ATS URLs. Missing fields remain unknown. Source
-surface remains `linkedin`, `indeed`, or `glassdoor`; acquisition provider is
-`brightdata-jobs`. The exact sanitized trigger/result request shape and task
-provenance are persisted with provider metadata. Authentication headers and
-token values are never persisted.
+When records are returned, normalized fields are observations only: source
+ID/URL, title, company, location, posting date/text, employment type,
+description/summary, salary, and present application/employer/ATS URLs. Missing
+fields remain unknown. Source surface remains `linkedin`, `indeed`, or
+`glassdoor`; acquisition provider is `brightdata-jobs`. The exact sanitized
+trigger/result request shape and task provenance are designed to be persisted
+with provider metadata when the qualified adapter runs. Authentication headers
+and token values are never persisted.
 
 Provider diagnostics are available in the dashboard Search quality section,
 `provider_diagnostics.json`, and `live_discoveries.csv`. They add provider
