@@ -88,6 +88,23 @@ class ScoringRegressionTests(unittest.TestCase):
         self.assertEqual(scored("Patient Enrollment Specialist", "Fully remote role.", employment="12-month contract").recommendation, "FIXED_TERM_REVIEW")
         self.assertEqual(scored("Patient Enrollment Specialist", "Fully remote role.", employment="Part-time").recommendation, "PART_TIME_REVIEW")
 
+    def test_remote_after_training_is_rejected_despite_remote_metadata(self) -> None:
+        onsite_now = scored(
+            "Patient Scheduler",
+            "This role is onsite now, with a future opportunity to work remotely once trained.",
+            source="indeed",
+            remote_status="remote",
+        )
+        self.assertEqual(onsite_now.remote_gate, "reject")
+
+        fully_remote = scored(
+            "Patient Scheduler",
+            "This role is fully remote.",
+            source="indeed",
+            remote_status="remote",
+        )
+        self.assertEqual(fully_remote.remote_gate, "pass")
+
     def test_boundary_and_requirement_parser_regressions(self) -> None:
         self.assertFalse(phrase_present("SIS", "analysis"))
         self.assertFalse(phrase_present("Lean", "clean"))
