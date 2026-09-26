@@ -1,0 +1,245 @@
+{
+  "accepted_at": "2026-09-26T23:13:12Z",
+  "changed_files": [
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "src/jobbot/legacy_engine.py",
+      "status": "M"
+    },
+    {
+      "additions": 17,
+      "deletions": 0,
+      "path": "tests/regression/test_scoring.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && rg --files -g 'AGENTS.md' -g '\"'!node_modules'\"' -g '\"'!vendor'\"' . /Users/haewonkim/.codex 2>/dev/null | head -80 && git status --short --branch && git rev-parse HEAD && git branch --show-current && git remote -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"cat /Users/haewonkim/.codex/AGENTS.md && cat /Users/haewonkim/.codex/RTK.md && cat /Users/haewonkim/.codex/law.md && git show -s --format='%H%n%P%n%s' HEAD && rg -n \\\"remote_gate|currently remote|onsite|hybrid\\\" src/jobbot/legacy_engine.py tests\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git show -s --format='%H %P %s' HEAD && rtk git branch -a --contains 81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6 && rtk git status --porcelain && rtk rg -n \\\"def remote_gate|class .*Remote|remote_gate\\\" tests\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy ls -la && rtk rg -n \\\"CHG-280|onsite now|once trained|work remotely|after training|remote_gate\\\" .codex-fabric .github tests src 2>/dev/null | head -160 && rtk sed -n '285,380p' src/jobbot/legacy_engine.py && rtk rg -n \\\"remote_gate\\\\(\\\" tests\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy ls -la /Users/haewonkim/.codex-fabric && rtk proxy find /Users/haewonkim/.codex-fabric -maxdepth 3 -type f -print && rtk git log --all --oneline --decorate --grep='CHG-280' -n 20 && rtk rg -n -i 'CHG-280|onsite now|future opportunity|remote once trained|once trained|training' /Users/haewonkim/.codex-fabric 2>/dev/null | head -120 && rtk rg --files tests | rtk rg 'remote|gate|scoring'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy ls -la /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d && rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d -maxdepth 2 -type f -print && rtk rg -n -i 'CHG-280|onsite now|future opportunity|remote once trained|once trained' /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d /Users/haewonkim/.codex-fabric/results/CF-b807197c31afc29b38968d9d /Users/haewonkim/.codex-fabric/evidence 2>/dev/null | head -100 && rtk rg --files tests | rtk rg 'remote|gate|scoring'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cat /Users/haewonkim/.codex-fabric/projects.yaml && rtk proxy ls -lt /Users/haewonkim/.codex-fabric/jobs | head -30 && rtk rg -n -i 'CHG-280|onsite now|future opportunity|remote once trained|once trained' /Users/haewonkim/.codex-fabric/jobs /Users/haewonkim/.codex-fabric/results /Users/haewonkim/.codex-fabric/evidence --glob '*.json' --glob '*.md' --glob '*.txt' --glob '*.yaml' --glob '*.log' 2>/dev/null | head -100\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d.running -maxdepth 3 -type f -print && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d.running/job.json && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d.running/prompt.md && rtk proxy ls -la /Users/haewonkim/.codex-fabric/evidence/jobbot'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -i 'remote.?gate|remote-only|explicitly requires onsite|fully remote' tests --glob '*.py' && rtk sed -n '1,240p' tests/unit/test_qualification_gates.py && rtk sed -n '1,140p' tests/regression/test_scoring.py && rtk sed -n '2290,2385p' src/jobbot/legacy_engine.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,115p' tests/regression/test_scoring.py && rtk sed -n '285,420p' src/jobbot/legacy_engine.py && rtk rg -n 'def scored|class .*Tests' tests/regression/test_scoring.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,170p' tests/helpers.py && rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d.running -maxdepth 2 -type f -print && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-b807197c31afc29b38968d9d.running/lease.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- src/jobbot/legacy_engine.py tests/regression/test_scoring.py && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk pytest -q tests/regression/test_scoring.py::ScoringRegressionTests::test_remote_after_training_is_rejected_despite_remote_metadata'",
+      "exit_code": 4,
+      "test_result": {
+        "exit_code": 4,
+        "framework": "pytest",
+        "outcome": "usage_error",
+        "output_bytes": 102,
+        "output_sha256": "28192583d8f17dc5436faaa3b2e52df89f719e9b98fb3f5ed59fb48c21ac8346",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cat pyproject.toml && rtk cat '/Users/haewonkim/Library/Application Support/rtk/tee/1790464582_pytest.log' && rtk proxy ls -la tests/regression\"",
+      "exit_code": 0,
+      "test_result": {
+        "counts": {
+          "errors": 1
+        },
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 1835,
+        "output_sha256": "bc14829783bea732b49c2ff43899295ff87957543adfec2fc064f17ae1f269e7",
+        "summary_detected": true
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m unittest -v tests.regression.test_scoring.ScoringRegressionTests.test_remote_after_training_is_rejected_despite_remote_metadata'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD && rtk git rev-parse refs/remotes/origin/main && rtk git branch --show-current'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git diff --stat && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add src/jobbot/legacy_engine.py tests/regression/test_scoring.py && rtk git commit -m \"CHG-280: reject remote roles after training\"'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git show --check --oneline --stat HEAD && rtk git show -s --format='%H%n%P%n%s' HEAD && rtk git rev-parse refs/remotes/origin/main && rtk git branch --show-current && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 53,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 93.86,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 1155328,
+      "fresh_input_tokens": 75627,
+      "input_tokens": 1230955,
+      "non_reasoning_output_tokens": 3772,
+      "output_tokens": 13260,
+      "reasoning_output_tokens": 9488,
+      "total_processed_tokens": 1244215
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "fc135568e5857276c51aad852b7632f62d36bbcb",
+      "subject": "CHG-280: reject remote roles after training"
+    }
+  ],
+  "diff": {
+    "additions": 18,
+    "changed_files": 2,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-26T23:17:55Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "branch": "codex/CHG-280-r1-onsite-remote",
+    "detached_verify": false,
+    "head_sha": "fc135568e5857276c51aad852b7632f62d36bbcb",
+    "remote_exact_head": true,
+    "remote_head_sha": "fc135568e5857276c51aad852b7632f62d36bbcb",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "81c5a8acb70ca03a23cfd00543edfdbb2aff2fc6",
+    "work_branch": "codex/CHG-280-r1-onsite-remote",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-b807197c31afc29b38968d9d",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-280-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-280-r1"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-280-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-26T23:13:12Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 283,
+    "queue_seconds": 0,
+    "total_seconds": 283
+  },
+  "transport": {
+    "bytes": 1994,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 1613,
+    "prompt_sha256": "92fbd7ad07c03c8ab895c3c254f11da33a6073abcb99acf407e0ab02d702c620",
+    "sha256": "b807197c31afc29b38968d9d744c03750ce068006ce950dccff110ce88dffe92"
+  }
+}
