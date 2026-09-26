@@ -139,6 +139,31 @@ class StrategyTests(unittest.TestCase):
         self.assertEqual(indeed_query["sort"], ["date"])
         self.assertIn("/Job/remote-patient-access-specialist-jobs-", build_search_url("glassdoor", "patient access specialist", 7))
 
+    def test_glassdoor_urls_apply_remote_and_each_task_age_window(self) -> None:
+        live_search = copy.deepcopy(self.bundle.live_search)
+        family = live_search["families"][0]
+        family["fast_days"] = 7
+        family["deep_days"] = 45
+        bundle = ConfigBundle(self.bundle.root, self.bundle.strategy, self.bundle.candidate, self.bundle.runtime, live_search)
+
+        for mode, expected_age in (("fast", 7), ("deep", 45)):
+            tasks = compile_plan(bundle, mode, ["glassdoor"], priority_min=1, priority_max=1)
+            self.assertTrue(tasks)
+            for task in tasks:
+                with self.subTest(mode=mode, query=task.query):
+                    parsed = urllib.parse.urlsplit(task.search_url)
+                    params = urllib.parse.parse_qs(parsed.query)
+                    self.assertTrue(task.remote_required)
+                    self.assertEqual(task.age_days, expected_age)
+                    self.assertEqual(params["remoteWorkType"], ["1"])
+                    self.assertEqual(params["fromAge"], [str(task.age_days)])
+                    self.assertTrue(parsed.path.startswith("/Job/remote-"))
+
+        non_remote_url = urllib.parse.urlsplit(
+            build_search_url("glassdoor", "patient access specialist", 30, remote_required=False)
+        )
+        self.assertEqual(urllib.parse.parse_qs(non_remote_url.query), {"fromAge": ["30"]})
+
     def test_strategy_validator_rejects_career_architecture_drift(self) -> None:
         strategy = copy.deepcopy(self.bundle.strategy)
         strategy["lanes"][0]["allocation_percent"] = 34

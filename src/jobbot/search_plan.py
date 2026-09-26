@@ -55,7 +55,7 @@ def normalize_profile_query(query: str) -> str:
     return " ".join(str(query).split())
 
 
-def build_search_url(platform: str, query: str, age_days: int) -> str:
+def build_search_url(platform: str, query: str, age_days: int, *, remote_required: bool = True) -> str:
     encoded = urllib.parse.quote_plus(query)
     if platform == "linkedin":
         seconds = max(1, age_days) * 86400
@@ -68,7 +68,10 @@ def build_search_url(platform: str, query: str, age_days: int) -> str:
     if platform == "glassdoor":
         slug = "-".join(query.lower().replace("&", " and ").replace("—", " ").split())
         end = 7 + len(query)
-        return f"https://www.glassdoor.com/Job/remote-{urllib.parse.quote(slug)}-jobs-SRCH_IL.0,6_IS11047_KO7,{end}.htm"
+        url = f"https://www.glassdoor.com/Job/remote-{urllib.parse.quote(slug)}-jobs-SRCH_IL.0,6_IS11047_KO7,{end}.htm"
+        filters = ["remoteWorkType=1"] if remote_required else []
+        filters.append(f"fromAge={age_days}")
+        return f"{url}?{'&'.join(filters)}"
     raise ValueError(f"unsupported platform: {platform}")
 
 
@@ -150,7 +153,9 @@ def compile_plan(
                         query=query, remote_required=bool(profile_meta.get("remote_required", True)),
                         age_days=age_days, sort_mode="newest", enabled=True,
                         resume_variant=str(lane["resume_variant"]),
-                        search_url=build_search_url(platform, query, age_days), phase=phase_name, max_results=None,
+                        search_url=build_search_url(
+                            platform, query, age_days, remote_required=bool(profile_meta.get("remote_required", True)),
+                        ), phase=phase_name, max_results=None,
                     ))
     tasks.sort(key=lambda x: (PLATFORM_ORDER[x.platform], x.execution_rank, x.query_family, x.query.casefold(), x.age_days))
     return tasks
