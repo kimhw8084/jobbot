@@ -339,6 +339,7 @@ def remote_gate(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> 
         r"must (?:report|commute|work).{0,100}(?:office|onsite|on-site)",
         r"expected to work (?:onsite|on-site|in[- ]office)\s+(?:three|four|five|[2-5])\s+days",
         r"(?:onsite|on-site|in[- ]office)\s+(?:three|four|five|[2-5])\s+days(?: per week| a week)?",
+        r"\bremote(?:ly)?\b.{0,60}\b(?:once|after)\s+(?:you are\s+)?trained\b",
     ]
     for sent in sentences:
         low=norm(sent)
