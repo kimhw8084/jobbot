@@ -1,0 +1,404 @@
+{
+  "accepted_at": "2026-09-27T14:54:33Z",
+  "changed_files": [
+    {
+      "additions": 7,
+      "deletions": 0,
+      "path": "docs/BRIGHTDATA_PROVIDER.md",
+      "status": "M"
+    },
+    {
+      "additions": 343,
+      "deletions": 100,
+      "path": "src/jobbot/acquisition/brightdata.py",
+      "status": "M"
+    },
+    {
+      "additions": 279,
+      "deletions": 18,
+      "path": "tests/integration/test_brightdata_jobs.py",
+      "status": "M"
+    },
+    {
+      "additions": 81,
+      "deletions": 0,
+      "path": "verification/CHG-286-r1.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"pwd && git status --short --branch && git branch --show-current && git rev-parse HEAD && git rev-parse main && cat /Users/haewonkim/.codex/RTK.md && cat /Users/haewonkim/.codex/law.md && rg --files -g 'AGENTS.md' -g '*CHG-286*' -g '*286*' -g '*brightdata*' -g '*bright_data*'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g 'AGENTS.md' -g 'README*' -g '*CHANGE*' -g '*change*' -g '*Project*' -g '*project*' -g 'pyproject.toml' -g 'Makefile' -g 'justfile' -g 'pytest.ini' -g 'tox.ini' -g '.github/**' && rtk rg -n \\\"CHG-286|Bright Data|BrightData|RUN_NOW|evidence gate|shared coordinator|operation/validation\\\" .\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 18664,
+        "output_sha256": "40bac752e410dde466e51adb2cafe86676cb67b22893267311e18fcdc04c1526",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk cat README.md && rtk cat docs/BRIGHTDATA_PROVIDER.md && rtk cat pyproject.toml && rtk sed -n '1,260p' tests/integration/test_brightdata_jobs.py && rtk sed -n '360,820p' src/jobbot/acquisition/brightdata.py && rtk rg -n \\\"def acquire|ProviderFailure|partial|retryable|timeout|coordinator|acquisition\\\" src/jobbot/acquisition src/jobbot tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,180p' docs/BRIGHTDATA_PROVIDER.md && rtk cat pyproject.toml && rtk sed -n '1,180p' src/jobbot/acquisition/brightdata.py && rtk sed -n '350,680p' src/jobbot/acquisition/brightdata.py && rtk sed -n '680,810p' src/jobbot/acquisition/brightdata.py && rtk rg -n \\\"class ProviderFailure|def acquire|except ProviderFailure|completion_evidence|provider.*failure|iter_records\\\" src/jobbot/acquisition\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '20,125p' src/jobbot/acquisition/models.py && rtk sed -n '35,225p' src/jobbot/acquisition/coordinator.py && rtk sed -n '390,550p' src/jobbot/acquisition/brightdata.py && rtk sed -n '550,675p' src/jobbot/acquisition/brightdata.py && rtk sed -n '1,220p' tests/integration/test_brightdata_jobs.py && rtk sed -n '220,440p' tests/integration/test_brightdata_jobs.py && rtk sed -n '440,640p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"requests_submitted|provider_requests_submitted|len\\\\(.*calls|def request\\\\(self, method|_get\\\\(|task_timeout|sleep\\\" tests src/jobbot/acquisition README.md docs/BRIGHTDATA_PROVIDER.md && rtk sed -n '355,680p' src/jobbot/acquisition/brightdata.py && rtk sed -n '1,150p' tests/integration/test_brightdata_jobs.py && rtk sed -n '130,235p' tests/integration/test_brightdata_jobs.py && rtk sed -n '130,330p' src/jobbot/acquisition/coordinator.py && rtk rg -n \\\"unittest|pytest|validate-production|offline preflight|python -m jobbot\\\" README.md docs pyproject.toml\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 4334,
+        "output_sha256": "0010468ad2b69c4a1743df692a4d0da280a8c8f6f94d0e56e1a6dc91bed6362d",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '215,340p' tests/integration/test_brightdata_jobs.py && rtk sed -n '485,540p' tests/integration/test_brightdata_jobs.py && rtk sed -n '585,615p' tests/integration/test_brightdata_jobs.py && rtk sed -n '160,188p' README.md && rtk sed -n '1,100p' docs/OPERATIONS.md && rtk sed -n '1,45p' src/jobbot/acquisition/coordinator.py && rtk sed -n '1,75p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '65,165p' tests/integration/test_brightdata_jobs.py && rtk sed -n '1,300p' src/jobbot/acquisition/brightdata.py && rtk sed -n '700,810p' src/jobbot/acquisition/brightdata.py && rtk git status --short --branch && rtk git show -s --format='%H%n%P%n%s' HEAD && rtk git diff --stat main...HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '430,690p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '690,865p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '160,225p' tests/integration/test_brightdata_jobs.py && rtk sed -n '300,380p' tests/integration/test_brightdata_jobs.py && rtk sed -n '455,475p' tests/integration/test_brightdata_jobs.py && rtk sed -n '545,615p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '220,270p' tests/integration/test_brightdata_jobs.py && rtk sed -n '630,700p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"requests_submitted|provider_requests_submitted|def request\\\\(self, method|.request\\\\(\\\" tests/integration/test_brightdata_jobs.py src/jobbot/acquisition/brightdata.py && rtk sed -n '1,170p' src/jobbot/acquisition/brightdata.py && rtk sed -n '520,785p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -l .venv/bin/python && rtk .venv/bin/python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"self\\\\._failure|self\\\\.transport\\\\.request|self\\\\.sleep|task_timeout|elapsed_seconds|requests_submitted =\\\" src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py && rtk git diff --check && rtk git diff -- src/jobbot/acquisition/brightdata.py docs/BRIGHTDATA_PROVIDER.md tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git diff --check && rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '120,175p' src/jobbot/cli.py && rtk sed -n '390,406p' src/jobbot/cli.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg286-preflight-$$.sqlite3 BRIGHTDATA_API_TOKEN=offline-placeholder JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG='\"'{\\\"dataset_id\\\":\\\"offline-dataset\\\",\\\"input_schema\\\":{\\\"keyword\\\":\\\"kw\\\"},\\\"output_schema\\\":{\\\"source_job_id\\\":\\\"id\\\"}}' python -m jobbot acquire --provider brightdata-jobs --preflight --platform linkedin\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,100p' verification/CHG-200-r2.json && rtk sed -n '130,190p' verification/CHG-200-r2.json && rtk rg -n \\\"candidate_head|branch|validation|limitations|production.*limitation|artifact\\\" verification/CHG-*.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m compileall -q src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --stat && rtk git diff --check && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c 'import http.client, inspect; print(inspect.getsource(http.client.HTTPResponse.read1)); print(inspect.getsource(http.client.HTTPResponse._read1)); print(inspect.getsource(http.client.HTTPResponse._read1_chunked))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c 'import http.client, inspect; print(inspect.getsource(http.client.HTTPResponse._read1_chunked))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src python -m compileall -q src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg286-preflight-$$.sqlite3 BRIGHTDATA_API_TOKEN=offline-placeholder JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG='\"'{\\\"dataset_id\\\":\\\"offline-dataset\\\",\\\"input_schema\\\":{\\\"keyword\\\":\\\"kw\\\"},\\\"output_schema\\\":{\\\"source_job_id\\\":\\\"id\\\"}}' python -m jobbot acquire --provider brightdata-jobs --preflight --platform linkedin\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add docs/BRIGHTDATA_PROVIDER.md src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git commit -m 'CHG-286: bound Bright Data task runtime'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^ && rtk git show -s --format='\"'%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c 'import json, pathlib; json.loads(pathlib.Path(\\\"verification/CHG-286-r1.json\\\").read_text()); print(\\\"JSON valid\\\")'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '52,63p' verification/CHG-286-r1.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk python -c 'import json, pathlib; json.loads(pathlib.Path(\\\"verification/CHG-286-r1.json\\\").read_text()); print(\\\"JSON valid\\\")'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-286-r1.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --check && rtk git diff --cached --stat && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git commit -m 'CHG-286: record verification evidence'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git rev-parse HEAD && rtk git rev-parse HEAD''^ && rtk git rev-parse HEAD''^''^ && rtk git show -s --format='\"'%H%n%P%n%s' HEAD\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 168,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 97.79,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 11194624,
+      "fresh_input_tokens": 253064,
+      "input_tokens": 11447688,
+      "non_reasoning_output_tokens": 25462,
+      "output_tokens": 89381,
+      "reasoning_output_tokens": 63919,
+      "total_processed_tokens": 11537069
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+      "subject": "CHG-286: record verification evidence"
+    },
+    {
+      "sha": "2f8e2d687ae0a5f5988d0632e98da5864f4a894f",
+      "subject": "CHG-286: bound Bright Data task runtime"
+    }
+  ],
+  "diff": {
+    "additions": 710,
+    "changed_files": 4,
+    "commit_count": 2,
+    "deletions": 118
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 2,
+    "items": [
+      {
+        "bytes": 7286,
+        "path": "docs/BRIGHTDATA_PROVIDER.md",
+        "sha256": "bdd8f244d6e7096d869a51ca2767910e43868f8f0ee47d45fab1a7c4b21f8fc3"
+      },
+      {
+        "bytes": 4498,
+        "path": "verification/CHG-286-r1.json",
+        "sha256": "e1454257f02d81f0b98b14892802beb36e915f772715c80f1f6f227c72916846"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-27T15:35:55Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-r1",
+    "detached_verify": false,
+    "head_sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+    "remote_exact_head": true,
+    "remote_head_sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-a5d777f1e16da7b790235f15",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-r1"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-task-deadline-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-27T14:54:33Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 2482,
+    "queue_seconds": 0,
+    "total_seconds": 2482
+  },
+  "transport": {
+    "bytes": 2879,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2543,
+    "prompt_sha256": "72a2e680d42f5ef700a6fd38c5b1aa727436ae575550c12ab1ba1d3197f7babb",
+    "sha256": "a5d777f1e16da7b790235f1552495250bab44d6c14d258a4b2334b7a95f0650d"
+  }
+}
