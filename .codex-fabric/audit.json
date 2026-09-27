@@ -1,0 +1,220 @@
+{
+  "accepted_at": "2026-09-27T04:45:58Z",
+  "changed_files": [
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "src/jobbot/legacy_engine.py",
+      "status": "M"
+    },
+    {
+      "additions": 28,
+      "deletions": 0,
+      "path": "tests/regression/test_scoring.py",
+      "status": "M"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'cat /Users/haewonkim/.codex/RTK.md && cat /Users/haewonkim/.codex/law.md && git status --short --branch && git rev-parse HEAD && git branch --show-current && rg -n \"remote_gate|remote-after-training|hybrid|onsite\" src/jobbot/legacy_engine.py tests/regression/test_scoring.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '270,390p' src/jobbot/legacy_engine.py && rtk sed -n '1,145p' tests/regression/test_scoring.py && rtk rg -n \\\"class Job|def scored|source_remote_declared|source_remote\\\" src/jobbot/legacy_engine.py tests/regression/test_scoring.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g 'AGENTS.md' -g 'README*' -g 'pyproject.toml' -g 'Makefile' -g 'tox.ini' -g 'setup.cfg' -g 'pytest.ini' && rtk sed -n '1,180p' tests/helpers.py && rtk rg -n \\\"unittest|test_scoring|regression\\\" README* pyproject.toml Makefile tests 2>/dev/null\"",
+      "exit_code": 2,
+      "test_result": {
+        "exit_code": 2,
+        "framework": "pytest",
+        "outcome": "interrupted",
+        "output_bytes": 11297,
+        "output_sha256": "29770387f67b1844e91d4e7511fab0b63d9523b2adb4988ac6b145ef3486d54d",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '166,186p' README.md && rtk rg -n \\\"remote.*(?:except|states|TX|state)|eligible states|remote restricted|onsite_now|hybrid required\\\" tests/regression tests/unit\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"''^def norm|def norm'\"\\\\(\\\" src/jobbot/legacy_engine.py src/jobbot/scoring.py && rtk sed -n '1,35p' src/jobbot/legacy_engine.py && rtk sed -n '370,420p' src/jobbot/legacy_engine.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"norm\\\\s*=|def norm\\\" src/jobbot/legacy_core.py src/jobbot\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '100,117p' src/jobbot/legacy_core.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk .venv/bin/python -m unittest discover -s tests -p 'test_scoring.py' -v\"",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- src/jobbot/legacy_engine.py tests/regression/test_scoring.py && rtk git status --short --branch && rtk git rev-parse HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -ld .venv .venv/bin 2>&1 && rtk which python3 && rtk proxy python3 -m unittest discover -s tests -p 'test_scoring.py' -v\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -m unittest discover -s tests -p 'test_scoring.py' -v\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk proxy python3 -m unittest discover -s tests -p 'test_scoring.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '970,1045p' src/jobbot/legacy_engine.py && rtk git diff --check && rtk git status --short --branch && rtk git rev-parse HEAD && rtk git branch --show-current\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check && rtk git status --short --branch && rtk git rev-parse HEAD && rtk git branch --show-current && rtk git diff --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"PYTHONPATH=src rtk proxy python3 -m unittest discover -s tests -p 'test_scoring.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 44,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 92.6,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 451584,
+      "fresh_input_tokens": 36064,
+      "input_tokens": 487648,
+      "non_reasoning_output_tokens": 2571,
+      "output_tokens": 8329,
+      "reasoning_output_tokens": 5758,
+      "total_processed_tokens": 495977
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "a4e85138555b6f83de2694994e94bee770b85080",
+      "subject": "fabric: capture completed model changes [CF-56633b7b72005d60d798bcfe]"
+    }
+  ],
+  "diff": {
+    "additions": 30,
+    "changed_files": 2,
+    "commit_count": 1,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": true,
+    "commit_message": "fabric: capture completed model changes [CF-56633b7b72005d60d798bcfe]",
+    "commit_sha": "a4e85138555b6f83de2694994e94bee770b85080",
+    "paths_before": 2,
+    "status_before": [
+      " M src/jobbot/legacy_engine.py",
+      " M tests/regression/test_scoring.py"
+    ],
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-27T04:49:16Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "e1c01a165057a7a7d618022f38ee5fef3130a7de",
+    "branch": "codex/CHG-284-r1-remote-title-gate",
+    "detached_verify": false,
+    "head_sha": "a4e85138555b6f83de2694994e94bee770b85080",
+    "remote_exact_head": true,
+    "remote_head_sha": "a4e85138555b6f83de2694994e94bee770b85080",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "e1c01a165057a7a7d618022f38ee5fef3130a7de",
+    "work_branch": "codex/CHG-284-r1-remote-title-gate",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-56633b7b72005d60d798bcfe",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-284-r1-remote-title-gate",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-284-r1-remote-title-gate"
+  },
+  "operation": "BUILD",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-284-r1-remote-title-gate",
+  "schema_version": 1,
+  "started_at": "2026-09-27T04:45:58Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 198,
+    "queue_seconds": 0,
+    "total_seconds": 198
+  },
+  "transport": {
+    "bytes": 2012,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 1700,
+    "prompt_sha256": "17527c07707e46d5cac5307b13a1fa1c8acb6cd19a89962edca24a7bc235e09d",
+    "sha256": "56633b7b72005d60d798bcfed9ad1f375510d2f09524b41f8f4999045c55c061"
+  }
+}
