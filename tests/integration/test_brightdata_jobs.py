@@ -7,16 +7,20 @@ import contextlib
 import io
 import os
 import shutil
+import socket
 import tempfile
+import time
 import unittest
 from collections import deque
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest import mock
 
 from jobbot.acquisition.brightdata import (
-    BrightDataHTTPResponse, BrightDataJobsProvider, BrightDataRuntimeConfig,
-    brightdata_preflight, parse_platform_config,
+    BrightDataHTTPResponse, BrightDataHTTPTransport, BrightDataJobsProvider,
+    BrightDataRuntimeConfig, brightdata_preflight, brightdata_runtime_config,
+    parse_platform_config,
 )
 from jobbot.acquisition.models import ProviderCompletionState, ProviderFailure, ProviderFailureClass
 from jobbot import cli
@@ -32,14 +36,89 @@ from jobbot.search_quality import search_quality_metrics
 SECRET = "build-only-brightdata-secret-value"
 
 
+class FakeClock:
+    def __init__(self, now=0.0):
+        self.now = now
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
+class FakeSocket:
+    def __init__(self):
+        self.timeout = None
+        self.timeout_history = []
+
+    def settimeout(self, timeout):
+        self.timeout = timeout
+        self.timeout_history.append(timeout)
+
+
+class FakeURLResponse:
+    def __init__(self, body, *, clock, delay_seconds=0.0, chunked=False):
+        self.status = 200
+        self.headers = {}
+        self.socket = FakeSocket()
+        self.chunks = deque(body)
+        self.clock = clock
+        self.delay_seconds = delay_seconds
+        self.fp = SimpleNamespace(
+            fp=SimpleNamespace(
+                raw=SimpleNamespace(_sock=self.socket),
+                read1=self.read1,
+            ),
+            chunked=chunked,
+            length=None if chunked else sum(len(chunk) for chunk in body),
+        )
+        self.fp.read1 = self.read_http_body
+
+    def read1(self, _size):
+        if not self.chunks:
+            return b""
+        if self.delay_seconds > self.socket.timeout:
+            self.clock.advance(self.socket.timeout)
+            raise socket.timeout()
+        self.clock.advance(self.delay_seconds)
+        chunk = self.chunks[0]
+        result = chunk[:_size]
+        if len(result) == len(chunk):
+            self.chunks.popleft()
+        else:
+            self.chunks[0] = chunk[len(result):]
+        return result
+
+    def read_http_body(self, size):
+        if self.fp.length is not None:
+            size = min(size, self.fp.length)
+        chunk = self.fp.fp.read1(size)
+        if self.fp.length is not None:
+            self.fp.length -= len(chunk)
+        return chunk
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+
 class MockTransport:
-    def __init__(self, responses):
+    def __init__(self, responses, *, on_request=None):
         self.responses = deque(responses)
         self.calls: list[dict[str, Any]] = []
+        self.on_request = on_request
 
-    def request(self, method, path, *, params, json_body, token):
-        self.calls.append({"method": method, "path": path, "params": dict(params),
-                           "json_body": json_body, "token": token})
+    def request(self, method, path, *, params, json_body, token, timeout_seconds, task_deadline, on_attempt):
+        on_attempt()
+        call = {"method": method, "path": path, "params": dict(params),
+                "json_body": json_body, "token": token,
+                "timeout_seconds": timeout_seconds, "task_deadline": task_deadline}
+        self.calls.append(call)
+        if self.on_request is not None:
+            self.on_request(call)
         if not self.responses:
             raise AssertionError(f"unexpected transport request: {method} {path}")
         value = self.responses.popleft()
@@ -58,9 +137,11 @@ class SnapshotSequenceTransport:
         self.snapshot_number = 0
         self.calls = []
 
-    def request(self, method, path, *, params, json_body, token):
+    def request(self, method, path, *, params, json_body, token, timeout_seconds, task_deadline, on_attempt):
+        on_attempt()
         self.calls.append({"method": method, "path": path, "params": dict(params),
-                           "json_body": json_body, "token": token})
+                           "json_body": json_body, "token": token,
+                           "timeout_seconds": timeout_seconds, "task_deadline": task_deadline})
         if method == "POST" and path.endswith("/trigger"):
             self.snapshot_number += 1
             return response(200, {"snapshot_id": f"snapshot-{self.snapshot_number}"})
@@ -135,14 +216,17 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         return compile_plan(self.bundle, "fast", [platform])[0]
 
     def provider(self, platform, transport, *, max_records=100, max_polls=5,
-                 retries=2, rows_key=""):
+                 retries=2, rows_key="", task_timeout_seconds=300, monotonic=time.monotonic,
+                 poll_interval_seconds=0, sleep=None):
         runtime = BrightDataRuntimeConfig(
             token=SECRET, platforms={platform: platform_config(platform, rows_key=rows_key)},
+            task_timeout_seconds=task_timeout_seconds,
         )
         return BrightDataJobsProvider(
             runtime, candidate=self.bundle.candidate["candidate"], max_records=max_records,
             transport=transport, max_polls=max_polls, max_transient_retries=retries,
-            poll_interval_seconds=0, sleep=lambda _seconds: None,
+            poll_interval_seconds=poll_interval_seconds,
+            sleep=sleep or (lambda _seconds: None), monotonic=monotonic,
         )
 
     def row(self, platform, *, job_id="job-101", suffix=""):
@@ -178,7 +262,36 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertFalse(status["valid"])
         self.assertNotIn(SECRET, encoded)
         runtime = BrightDataRuntimeConfig(SECRET, {"linkedin": platform_config("linkedin")})
+        self.assertEqual(runtime.task_timeout_seconds, 300)
         self.assertNotIn(SECRET, repr(runtime))
+
+    def test_task_timeout_configuration_must_be_positive_finite_and_secret_safe(self):
+        env = {
+            "BRIGHTDATA_API_TOKEN": "offline-placeholder",
+            "JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG": json.dumps({
+                "dataset_id": "offline-dataset", "input_schema": {"keyword": "kw"},
+                "output_schema": {"source_job_id": "id"},
+            }),
+        }
+        configured = brightdata_runtime_config(["linkedin"], environ={
+            **env, "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS": "12.5",
+        })
+        self.assertEqual(configured.task_timeout_seconds, 12.5)
+        for value in ("0", "-1", "NaN", "Infinity", "secret-setting"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError) as raised:
+                    brightdata_runtime_config(["linkedin"], environ={
+                        **env, "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS": value,
+                    })
+                self.assertNotIn(value, str(raised.exception))
+                status = brightdata_preflight(["linkedin"], {
+                    **env, "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS": value,
+                })
+                self.assertFalse(status["task_timeout_valid"])
+                self.assertFalse(status["valid"])
+
+        with self.assertRaises(ValueError):
+            BrightDataRuntimeConfig(SECRET, {}, task_timeout_seconds=float("inf"))
 
     def test_all_platform_keyword_mappings_and_observed_field_mappers(self):
         expected_inputs = {
@@ -195,6 +308,11 @@ class BrightDataJobsProviderTests(unittest.TestCase):
                 batch = provider.fetch(task)
                 self.assertTrue(batch.proven_complete)
                 self.assertEqual(batch.completion_state, ProviderCompletionState.COMPLETE)
+                self.assertEqual(batch.requests_submitted, len(transport.calls))
+                self.assertEqual(batch.requests_submitted, 4)
+                self.assertEqual(batch.provider_metadata["requests_submitted"], 4)
+                self.assertEqual(batch.provider_metadata["task_timeout_seconds"], 300)
+                self.assertTrue(all(call["timeout_seconds"] == 45 for call in transport.calls))
                 self.assertEqual(transport.calls[0]["json_body"], [expected_inputs[platform](task)])
                 self.assertEqual(transport.calls[0]["params"]["type"], "discover_new")
                 self.assertEqual(transport.calls[0]["params"]["discover_by"], "keyword")
@@ -227,7 +345,8 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertEqual(batch.completion_evidence["batch"]["parts_retrieved"], 2)
         self.assertEqual(batch.completion_evidence["batch"]["part_numbers"], [1, 2])
         self.assertEqual(sum(call["path"].endswith("/progress/snapshot-build-1") for call in transport.calls), 3)
-        self.assertEqual(batch.requests_submitted, 1)
+        self.assertEqual(batch.requests_submitted, len(transport.calls))
+        self.assertEqual(batch.requests_submitted, 7)
         self.assertEqual(batch.records_delivered, 2)
         self.assertEqual(transport.calls[0]["token"], SECRET)
         self.assertNotIn(SECRET, json.dumps(batch.provider_metadata))
@@ -245,6 +364,8 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         batch = self.provider(platform, transport, retries=2).fetch(self.task(platform))
         self.assertTrue(batch.proven_complete)
         self.assertEqual(sum(call["path"].endswith("/progress/snapshot-build-1") for call in transport.calls), 3)
+        self.assertEqual(batch.requests_submitted, len(transport.calls))
+        self.assertEqual(batch.requests_submitted, 6)
 
         exhausted = MockTransport([
             response(200, {"snapshot_id": "snapshot-build-2"}),
@@ -255,6 +376,8 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertEqual(raised.exception.classification, ProviderFailureClass.TRANSPORT)
         self.assertTrue(raised.exception.retryable)
         self.assertEqual(len(exhausted.calls), 4)
+        self.assertEqual(raised.exception.requests_submitted, len(exhausted.calls))
+        self.assertEqual(raised.exception.provider_metadata["requests_submitted"], 4)
 
     def test_returned_cost_credits_are_preserved_without_estimation(self):
         platform = "glassdoor"
@@ -296,6 +419,9 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertTrue(raised.exception.retryable)
         self.assertNotIn(SECRET, str(raised.exception))
         self.assertNotIn(SECRET, json.dumps(raised.exception.provider_metadata))
+        self.assertEqual(raised.exception.requests_submitted, 3)
+        self.assertEqual(raised.exception.provider_metadata["requests_submitted"], 3)
+        self.assertEqual(raised.exception.provider_metadata["task_timeout_seconds"], 300)
 
         auth_transport = MockTransport([response(401, {"error": SECRET})])
         with self.assertRaises(ProviderFailure) as raised:
@@ -310,6 +436,84 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertEqual(raised.exception.classification, ProviderFailureClass.SCHEMA)
         self.assertFalse(raised.exception.retryable)
         self.assertNotIn(SECRET, json.dumps(raised.exception.provider_metadata))
+
+    def test_task_deadline_caps_readiness_sleep_and_prevents_later_poll(self):
+        clock = FakeClock()
+        sleeps = []
+
+        def advance_request(call):
+            clock.advance(0.25 if call["method"] == "POST" else 0.4)
+
+        transport = MockTransport([
+            response(200, {"snapshot_id": "snapshot-build-1"}),
+            response(200, {"status": "running"}),
+        ], on_request=advance_request)
+
+        def sleep(seconds):
+            sleeps.append(seconds)
+            clock.advance(seconds)
+
+        with self.assertRaises(ProviderFailure) as raised:
+            self.provider("linkedin", transport, task_timeout_seconds=1, monotonic=clock,
+                          poll_interval_seconds=5, sleep=sleep).fetch(self.task("linkedin"))
+
+        self.assertEqual(raised.exception.classification, ProviderFailureClass.TIMEOUT)
+        self.assertEqual(raised.exception.requests_submitted, 2)
+        self.assertEqual(len(transport.calls), 2)
+        self.assertEqual(len(sleeps), 1)
+        self.assertAlmostEqual(sleeps[0], 0.35)
+        self.assertEqual([call["timeout_seconds"] for call in transport.calls], [1, 0.75])
+        self.assertEqual(clock(), 1)
+        metadata = raised.exception.provider_metadata
+        self.assertEqual(metadata["requests_submitted"], 2)
+        self.assertEqual(metadata["task_timeout_seconds"], 1)
+        self.assertEqual(metadata["task_elapsed_seconds"], 1)
+        self.assertNotIn(SECRET, json.dumps(metadata))
+
+    def test_urllib_body_reads_stop_at_total_deadline_and_keep_prior_result_part(self):
+        platform = "linkedin"
+        clock = FakeClock()
+        urlopen_calls = []
+        responses = []
+
+        def urlopen(request, *, timeout):
+            urlopen_calls.append((request.full_url, timeout))
+            endpoint = request.full_url.split("?", 1)[0]
+            if endpoint.endswith("/trigger"):
+                body, delay = [b'{"snapshot_id":"snapshot-build-1"}'], 0
+            elif "/progress/" in endpoint:
+                body, delay = [b'{"status":"ready"}'], 0
+            elif endpoint.endswith("/parts"):
+                body, delay = [b'{"parts":2}'], 0
+            elif "part=1" in request.full_url:
+                body, delay = [json.dumps([self.row(platform, job_id="body-part-1")]).encode()], 0
+            else:
+                body, delay = [b"[", b"]"], 0.6
+            response_obj = FakeURLResponse(
+                body, clock=clock, delay_seconds=delay,
+            )
+            responses.append(response_obj)
+            return response_obj
+
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        provider = self.provider(platform, transport, task_timeout_seconds=1, monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.urllib.request.urlopen", side_effect=urlopen):
+            batch = provider.fetch(self.task(platform))
+
+        self.assertEqual(batch.completion_state, ProviderCompletionState.RETRYABLE)
+        self.assertEqual(batch.failure_class, ProviderFailureClass.TIMEOUT)
+        self.assertEqual([record.source_job_id for record in batch.records], ["body-part-1"])
+        self.assertEqual(batch.completion_evidence, {})
+        self.assertNotIn("completion_observation", batch.provider_metadata)
+        self.assertEqual(batch.requests_submitted, 5)
+        self.assertEqual(batch.provider_metadata["requests_submitted"], 5)
+        self.assertEqual(batch.provider_metadata["task_timeout_seconds"], 1)
+        self.assertEqual(batch.provider_metadata["task_elapsed_seconds"], 1)
+        self.assertEqual(len(urlopen_calls), 5)
+        self.assertEqual(responses[-1].socket.timeout_history[0], 1)
+        self.assertEqual(responses[-1].socket.timeout_history[-1], 0.4)
+        self.assertTrue(all(timeout <= 45 for _url, timeout in urlopen_calls))
+        self.assertNotIn(SECRET, json.dumps(batch.provider_metadata))
 
     def test_snapshot_ack_is_not_completion_and_missing_parts_are_ambiguous(self):
         platform = "glassdoor"
@@ -345,6 +549,9 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertEqual([record.source_job_id for record in batch.records], ["persist-part-1"])
         self.assertEqual(batch.records_delivered, 1)
         self.assertEqual(batch.provider_metadata["parts_retrieved"], 1)
+        self.assertEqual(batch.requests_submitted, len(transport.calls))
+        self.assertEqual(batch.requests_submitted, 7)
+        self.assertEqual(batch.provider_metadata["requests_submitted"], 7)
         self.assertFalse(batch.proven_complete)
 
     def test_cursor_truncation_and_malformed_rows_never_complete(self):
@@ -439,12 +646,16 @@ class BrightDataSharedIngestionTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def provider(self, transport, *, run_id="brightdata-test-run", max_records=100):
+    def provider(self, transport, *, run_id="brightdata-test-run", max_records=100,
+                 task_timeout_seconds=300, monotonic=time.monotonic):
         return BrightDataJobsProvider(
-            BrightDataRuntimeConfig(SECRET, {"linkedin": platform_config("linkedin")}),
+            BrightDataRuntimeConfig(
+                SECRET, {"linkedin": platform_config("linkedin")},
+                task_timeout_seconds=task_timeout_seconds,
+            ),
             candidate=self.bundle.candidate["candidate"], max_records=max_records,
             transport=transport, run_id=run_id, poll_interval_seconds=0,
-            sleep=lambda _seconds: None,
+            sleep=lambda _seconds: None, monotonic=monotonic,
         )
 
     def provider_row(self, job_id, provider_record_id, *, description="", location="", salary="",
@@ -514,7 +725,7 @@ class BrightDataSharedIngestionTests(unittest.TestCase):
             "SELECT * FROM browser_search_tasks WHERE browser_run_id=? AND task_id=?",
             (result["browser_run_id"], task_id),
         ).fetchone()
-        self.assertEqual(first_task["provider_requests_submitted"], 1)
+        self.assertEqual(first_task["provider_requests_submitted"], 4)
         self.assertEqual(first_task["provider_records_delivered"], 2)
         self.assertEqual(first_task["provider_reported_cost_json"], "{}")
         self.assertIn("request_shape", json.loads(first_task["provider_metadata_json"]))
@@ -529,7 +740,7 @@ class BrightDataSharedIngestionTests(unittest.TestCase):
         self.assertEqual(dashboard_detail["acquisition_provider"], "brightdata-jobs")
         metrics = search_quality_metrics(conn)
         diagnostic = next(item for item in metrics["provider_metrics"] if item["acquisition_provider"] == "brightdata-jobs")
-        self.assertEqual(diagnostic["requests_submitted"], len(compile_plan(self.bundle, "fast", ["linkedin"])))
+        self.assertEqual(diagnostic["requests_submitted"], 4 * len(compile_plan(self.bundle, "fast", ["linkedin"])))
         self.assertEqual(diagnostic["records_delivered"], 2)
         self.assertEqual(metrics["metric_definition_version"], "chg114-search-quality-v2")
         order_row = next(item for item in metrics["current_order"] if item["task_id"] == task_id)
@@ -543,6 +754,56 @@ class BrightDataSharedIngestionTests(unittest.TestCase):
         self.assertIn("brightdata-jobs", {row["acquisition_providers"] for row in exports})
         export_metadata = json.loads(paths["provider_diagnostics.json"].read_text(encoding="utf-8"))
         self.assertIn("brightdata-jobs", {item["acquisition_provider"] for item in export_metadata["provider_metrics"]})
+        conn.close()
+
+    def test_deadline_after_result_part_persists_partial_records_without_completion_evidence(self):
+        clock = FakeClock()
+        task = compile_plan(self.bundle, "fast", ["linkedin"])[0]
+        transport = MockTransport([
+            response(200, {"snapshot_id": "snapshot-partial-1"}),
+            response(200, {"status": "ready"}), response(200, {"parts": 2}),
+            response(200, [self.provider_row("partial-501", "partial-row")]),
+        ])
+        provider = self.provider(
+            transport, run_id="brightdata-deadline-run", task_timeout_seconds=1, monotonic=clock,
+        )
+        from jobbot.acquisition.brightdata import map_linkedin_row
+
+        def map_then_expire(*args):
+            record = map_linkedin_row(*args)
+            clock.advance(1)
+            return record
+
+        with mock.patch("jobbot.acquisition.coordinator.compile_plan", return_value=[task]), \
+             mock.patch("jobbot.acquisition.brightdata.map_linkedin_row", side_effect=map_then_expire):
+            result = acquire(self.bundle, provider, mode="fast", platforms=["linkedin"])
+
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["task_complete_count"], 0)
+        self.assertEqual(result["task_incomplete_count"], 1)
+        self.assertEqual(len(transport.calls), 4)
+        conn = self.database.connect()
+        stored = conn.execute(
+            "SELECT status,exhausted,provider_completion_state,provider_failure_class,"
+            "provider_requests_submitted,provider_metadata_json,completion_evidence_json "
+            "FROM browser_search_tasks WHERE browser_run_id=?",
+            (result["browser_run_id"],),
+        ).fetchone()
+        self.assertEqual(stored["status"], "incomplete")
+        self.assertEqual(stored["exhausted"], 0)
+        self.assertEqual(stored["provider_completion_state"], "RETRYABLE")
+        self.assertEqual(stored["provider_failure_class"], "TIMEOUT")
+        self.assertEqual(stored["provider_requests_submitted"], 4)
+        self.assertEqual(json.loads(stored["completion_evidence_json"]), {})
+        metadata = json.loads(stored["provider_metadata_json"])
+        self.assertEqual(metadata["requests_submitted"], 4)
+        self.assertEqual(metadata["task_timeout_seconds"], 1)
+        self.assertGreaterEqual(metadata["task_elapsed_seconds"], 1)
+        self.assertNotIn("completion_observation", metadata)
+        self.assertEqual(
+            conn.execute("SELECT COUNT(*) FROM search_task_results WHERE source_job_id='partial-501'").fetchone()[0],
+            1,
+        )
         conn.close()
 
     def test_repeated_snapshots_dedupe_requisition_and_preserve_provider_rows(self):
@@ -601,7 +862,7 @@ class BrightDataSharedIngestionTests(unittest.TestCase):
         self.assertEqual(len(rows), len(tasks))
         self.assertTrue(all(row["status"] == "incomplete" for row in rows))
         self.assertTrue(all(row["provider_completion_state"] == "INCOMPLETE" for row in rows))
-        self.assertEqual(sum(row["provider_requests_submitted"] for row in rows), 1)
+        self.assertEqual(sum(row["provider_requests_submitted"] for row in rows), 4)
         self.assertTrue(any(json.loads(row["provider_metadata_json"]).get("budget_stop") for row in rows))
         self.assertEqual(conn.execute("SELECT COUNT(*) FROM search_task_results WHERE source_job_id='budget-401'").fetchone()[0], 1)
         conn.close()

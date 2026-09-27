@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
+import math
 import os
 import socket
 import time
@@ -22,6 +24,10 @@ from .models import (
 
 API_ROOT = "https://api.brightdata.com"
 TOKEN_ENV = "BRIGHTDATA_API_TOKEN"
+TASK_TIMEOUT_ENV = "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS"
+DEFAULT_TASK_TIMEOUT_SECONDS = 300.0
+DEFAULT_HTTP_TIMEOUT_SECONDS = 45.0
+RESPONSE_READ_CHUNK_SIZE = 64 * 1024
 PLATFORM_ENV = {
     "linkedin": "JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG",
     "indeed": "JOBBOT_BRIGHTDATA_INDEED_CONFIG",
@@ -73,17 +79,64 @@ class BrightDataHTTPResponse:
 
 class BrightDataTransport(Protocol):
     def request(self, method: str, path: str, *, params: Mapping[str, Any],
-                json_body: Any, token: str) -> BrightDataHTTPResponse: ...
+                json_body: Any, token: str, timeout_seconds: float,
+                task_deadline: float, on_attempt: Callable[[], None]) -> BrightDataHTTPResponse: ...
+
+
+class _DeadlineBodyReader:
+    def __init__(self, stream: Any, network_socket: Any, timeout_seconds: float,
+                 task_deadline: float, monotonic: Callable[[], float]):
+        self.stream = stream
+        self.network_socket = network_socket
+        self.timeout_seconds = timeout_seconds
+        self.task_deadline = task_deadline
+        self.monotonic = monotonic
+
+    def read1(self, size: int = -1) -> bytes:
+        remaining = self.task_deadline - self.monotonic()
+        if remaining <= 0:
+            raise TimeoutError from None
+        self.network_socket.settimeout(min(self.timeout_seconds, remaining))
+        chunk = self.stream.read1(size)
+        if self.monotonic() >= self.task_deadline:
+            raise TimeoutError from None
+        return chunk
+
+    def readline(self, size: int = -1) -> bytes:
+        line = bytearray()
+        while size < 0 or len(line) < size:
+            byte = self.read1(1)
+            if not byte:
+                break
+            line.extend(byte)
+            if byte == b"\n":
+                break
+        return bytes(line)
+
+    def close(self) -> None:
+        self.stream.close()
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.stream, name)
 
 
 class BrightDataHTTPTransport:
     """Small urllib transport for Bright Data's documented dataset workflow."""
 
-    def __init__(self, *, timeout_seconds: float = 45):
-        self.timeout_seconds = timeout_seconds
+    def __init__(self, *, timeout_seconds: float = DEFAULT_HTTP_TIMEOUT_SECONDS,
+                 monotonic: Callable[[], float] = time.monotonic):
+        try:
+            timeout = float(timeout_seconds)
+        except (TypeError, ValueError):
+            raise BrightDataConfigurationError("Bright Data HTTP timeout must be a positive finite number") from None
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise BrightDataConfigurationError("Bright Data HTTP timeout must be a positive finite number")
+        self.timeout_seconds = timeout
+        self.monotonic = monotonic
 
     def request(self, method: str, path: str, *, params: Mapping[str, Any],
-                json_body: Any, token: str) -> BrightDataHTTPResponse:
+                json_body: Any, token: str, timeout_seconds: float,
+                task_deadline: float, on_attempt: Callable[[], None]) -> BrightDataHTTPResponse:
         query = urllib.parse.urlencode({key: _query_value(value) for key, value in params.items()})
         url = f"{API_ROOT}{path}" + (f"?{query}" if query else "")
         data = None if json_body is None else json.dumps(json_body, ensure_ascii=False).encode("utf-8")
@@ -91,25 +144,92 @@ class BrightDataHTTPTransport:
             url, data=data, method=method,
             headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         )
+        remaining = task_deadline - self.monotonic()
+        if remaining <= 0:
+            raise TimeoutError from None
+        request_timeout = min(self.timeout_seconds, timeout_seconds, remaining)
+        on_attempt()
         try:
-            response = urllib.request.urlopen(request, timeout=self.timeout_seconds)
+            response = urllib.request.urlopen(request, timeout=request_timeout)
         except urllib.error.HTTPError as exc:
-            raw = exc.read()
-            return BrightDataHTTPResponse(exc.code, _decode_payload(raw), dict(exc.headers.items()))
+            with exc:
+                raw = self._read_body(exc, task_deadline)
+                payload = _decode_payload(raw)
+                if self.monotonic() >= task_deadline:
+                    raise TimeoutError from None
+                return BrightDataHTTPResponse(exc.code, payload, dict(exc.headers.items()))
         except urllib.error.URLError as exc:
-            if isinstance(exc.reason, (TimeoutError, socket.timeout)):
+            if isinstance(exc.reason, (TimeoutError, socket.timeout)) or self.monotonic() >= task_deadline:
                 raise TimeoutError from None
             raise OSError(type(exc.reason).__name__) from None
         with response:
+            raw = self._read_body(response, task_deadline)
+            payload = _decode_payload(raw)
+            if self.monotonic() >= task_deadline:
+                raise TimeoutError from None
             return BrightDataHTTPResponse(
-                response.status, _decode_payload(response.read()), dict(response.headers.items()),
+                response.status, payload, dict(response.headers.items()),
             )
+
+    def _read_body(self, response: Any, task_deadline: float) -> bytes:
+        # urllib's timeout is per socket operation; read1 lets each body read receive a fresh deadline cap.
+        http_response = getattr(response, "fp", None)
+        buffered = getattr(http_response, "fp", None)
+        raw = getattr(buffered, "raw", None)
+        network_socket = getattr(raw, "_sock", None)
+        if network_socket is None or not callable(getattr(buffered, "read1", None)):
+            raise OSError("Bright Data response stream does not expose bounded reads")
+        http_response.fp = _DeadlineBodyReader(
+            buffered, network_socket, self.timeout_seconds, task_deadline, self.monotonic,
+        )
+        body: list[bytes] = []
+        while True:
+            chunk = http_response.read1(RESPONSE_READ_CHUNK_SIZE)
+            if not chunk:
+                content_length = getattr(http_response, "length", None)
+                if isinstance(content_length, int) and content_length > 0:
+                    raise http.client.IncompleteRead(b"".join(body), content_length)
+                return b"".join(body)
+            body.append(chunk)
 
 
 @dataclass(frozen=True)
 class BrightDataRuntimeConfig:
     token: str = field(repr=False)
     platforms: Mapping[str, BrightDataPlatformConfig] = field(default_factory=dict)
+    task_timeout_seconds: float = DEFAULT_TASK_TIMEOUT_SECONDS
+
+    def __post_init__(self) -> None:
+        if isinstance(self.task_timeout_seconds, bool):
+            raise BrightDataConfigurationError("Bright Data task timeout must be a positive finite number of seconds")
+        try:
+            timeout = float(self.task_timeout_seconds)
+        except (TypeError, ValueError):
+            raise BrightDataConfigurationError("Bright Data task timeout must be a positive finite number of seconds") from None
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise BrightDataConfigurationError("Bright Data task timeout must be a positive finite number of seconds")
+        object.__setattr__(self, "task_timeout_seconds", timeout)
+
+
+@dataclass(frozen=True)
+class _TaskDeadline:
+    started_at: float
+    budget_seconds: float
+    monotonic: Callable[[], float]
+
+    @property
+    def expires_at(self) -> float:
+        return self.started_at + self.budget_seconds
+
+    def remaining(self) -> float:
+        return self.expires_at - self.monotonic()
+
+    def diagnostics(self, requests_submitted: int) -> dict[str, Any]:
+        return {
+            "task_timeout_seconds": self.budget_seconds,
+            "task_elapsed_seconds": round(max(0.0, self.monotonic() - self.started_at), 3),
+            "requests_submitted": requests_submitted,
+        }
 
 
 def _query_value(value: Any) -> str:
@@ -125,6 +245,21 @@ def _decode_payload(raw: bytes) -> Any:
         return json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError):
         return raw.decode("utf-8", errors="replace")
+
+
+def _runtime_task_timeout_seconds(environ: Mapping[str, str]) -> float:
+    raw = environ.get(TASK_TIMEOUT_ENV, str(DEFAULT_TASK_TIMEOUT_SECONDS))
+    try:
+        timeout = float(raw)
+    except (TypeError, ValueError):
+        raise BrightDataConfigurationError(
+            "Bright Data task timeout must be a positive finite number of seconds",
+        ) from None
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise BrightDataConfigurationError(
+            "Bright Data task timeout must be a positive finite number of seconds",
+        )
+    return timeout
 
 
 def _safe_field(raw: Any, where: str) -> str:
@@ -229,6 +364,12 @@ def brightdata_preflight(platforms: list[str], environ: Mapping[str, str] | None
     """Offline presence/schema check; never verifies a credential with the network."""
     env = os.environ if environ is None else environ
     token_present = bool(str(env.get(TOKEN_ENV, "")).strip())
+    try:
+        _runtime_task_timeout_seconds(env)
+    except BrightDataConfigurationError:
+        task_timeout_valid = False
+    else:
+        task_timeout_valid = True
     configured: dict[str, dict[str, bool]] = {}
     for platform in platforms:
         key = PLATFORM_ENV.get(platform)
@@ -244,8 +385,8 @@ def brightdata_preflight(platforms: list[str], environ: Mapping[str, str] | None
     return {
         "provider": "brightdata-jobs", "token_present": token_present,
         "token_validity": "not_checked_offline",
-        "platform_configs": configured,
-        "valid": token_present and all(value["valid"] for value in configured.values()),
+        "task_timeout_valid": task_timeout_valid, "platform_configs": configured,
+        "valid": token_present and task_timeout_valid and all(value["valid"] for value in configured.values()),
     }
 
 
@@ -263,7 +404,9 @@ def brightdata_runtime_config(platforms: list[str], *, environ: Mapping[str, str
         if not raw:
             raise BrightDataConfigurationError(f"{variable} is required for the selected source surface")
         configs[platform] = parse_platform_config(platform, raw)
-    return BrightDataRuntimeConfig(token=token, platforms=configs)
+    return BrightDataRuntimeConfig(
+        token=token, platforms=configs, task_timeout_seconds=_runtime_task_timeout_seconds(env),
+    )
 
 
 def _canonical_json(value: Any) -> str:
@@ -367,6 +510,7 @@ class BrightDataJobsProvider:
         transport: BrightDataTransport | None = None, run_id: str = "", max_polls: int = 20,
         max_transient_retries: int = 2, poll_interval_seconds: float = 5,
         sleep: Callable[[float], None] = time.sleep, batch_size: int = 1000,
+        monotonic: Callable[[], float] = time.monotonic,
     ):
         if int(max_records) < 1:
             raise BrightDataConfigurationError("max_records must be a positive explicit validation budget")
@@ -378,7 +522,17 @@ class BrightDataJobsProvider:
         self.platforms = dict(runtime.platforms)
         self.candidate = dict(candidate)
         self.max_records = int(max_records)
-        self.transport = transport or BrightDataHTTPTransport()
+        self.monotonic = monotonic
+        self.transport = transport or BrightDataHTTPTransport(monotonic=monotonic)
+        transport_timeout = getattr(self.transport, "timeout_seconds", DEFAULT_HTTP_TIMEOUT_SECONDS)
+        try:
+            transport_timeout = float(transport_timeout)
+        except (TypeError, ValueError):
+            raise BrightDataConfigurationError("Bright Data HTTP timeout must be a positive finite number") from None
+        if not math.isfinite(transport_timeout) or transport_timeout <= 0:
+            raise BrightDataConfigurationError("Bright Data HTTP timeout must be a positive finite number")
+        self.socket_timeout_seconds = min(DEFAULT_HTTP_TIMEOUT_SECONDS, transport_timeout)
+        self.task_timeout_seconds = runtime.task_timeout_seconds
         self.run_id = run_id or f"brightdata:{uuid.uuid4()}"
         self.max_polls = int(max_polls)
         self.max_transient_retries = int(max_transient_retries)
@@ -392,10 +546,13 @@ class BrightDataJobsProvider:
         return self._records_delivered_total
 
     def fetch(self, task: SearchTask) -> ProviderBatch:
+        deadline = _TaskDeadline(self.monotonic(), self.task_timeout_seconds, self.monotonic)
+        requests_submitted = 0
         config = self.platforms.get(task.platform)
         if config is None:
             raise ProviderFailure(ProviderFailureClass.CONFIGURATION,
-                                  "Bright Data platform configuration is missing", retryable=False)
+                                  "Bright Data platform configuration is missing", retryable=False,
+                                  provider_metadata=deadline.diagnostics(requests_submitted))
         remaining = self.max_records - self._records_delivered_total
         task_provenance = {
             "task_key": task.task_key, "query_text": task.query, "window_days": task.age_days,
@@ -404,13 +561,18 @@ class BrightDataJobsProvider:
         }
         if remaining <= 0:
             metadata = {"task_provenance": task_provenance, "budget_stop": True,
-                        "records_budget": self.max_records, "records_delivered_total": self._records_delivered_total}
+                        "records_budget": self.max_records, "records_delivered_total": self._records_delivered_total,
+                        **deadline.diagnostics(requests_submitted)}
             return ProviderBatch(
                 completion_state=ProviderCompletionState.INCOMPLETE,
                 failure_class=ProviderFailureClass.PARTIAL_BATCH,
                 provider_task_id="", provider_metadata=metadata,
             )
-        input_row = self._input_row(task, config)
+        try:
+            input_row = self._input_row(task, config)
+        except ProviderFailure as exc:
+            exc.provider_metadata.update(deadline.diagnostics(requests_submitted))
+            raise
         trigger_params: dict[str, Any] = {
             "dataset_id": config.dataset_id, "type": "discover_new", "discover_by": "keyword",
             "include_errors": True, "format": "json", "limit_multiple_results": remaining,
@@ -419,13 +581,13 @@ class BrightDataJobsProvider:
                          "query": dict(trigger_params), "body": [dict(input_row)]}
         if _contains_token(trigger_shape, self._token):
             raise ProviderFailure(ProviderFailureClass.CONFIGURATION,
-                                  "Bright Data request configuration contains a secret value", retryable=False)
+                                  "Bright Data request configuration contains a secret value", retryable=False,
+                                  provider_metadata=deadline.diagnostics(requests_submitted))
         fingerprint = hashlib.sha256(_canonical_json(trigger_shape).encode("utf-8")).hexdigest()
         shape: dict[str, Any] = {
             "trigger": trigger_shape,
             "progress_checks": [], "parts_request": None, "result_requests": [],
         }
-        requests_submitted = 1
         provider_task_id = ""
         actual_records = 0
         reported_cost: dict[str, Any] = {}
@@ -433,60 +595,108 @@ class BrightDataJobsProvider:
             "task_provenance": task_provenance, "request_shape": shape,
             "request_fingerprint": fingerprint, "records_budget": self.max_records,
             "records_delivered_before_task": self._records_delivered_total,
+            **deadline.diagnostics(requests_submitted),
         }
-        try:
-            triggered = self.transport.request(
-                "POST", trigger_shape["path"], params=trigger_params,
-                json_body=[dict(input_row)], token=self._token,
+
+        def fail(classification: ProviderFailureClass, message: str,
+                 metadata: Mapping[str, Any], records_delivered: int,
+                 cost: Mapping[str, Any], *, retryable: bool = True) -> ProviderFailure:
+            diagnostics = deadline.diagnostics(requests_submitted)
+            base_metadata.update(diagnostics)
+            failure_metadata = dict(metadata)
+            failure_metadata.update(diagnostics)
+            return self._failure(
+                classification, message, failure_metadata, requests_submitted,
+                records_delivered, cost, retryable=retryable,
             )
+
+        def request(method: str, path: str, params: Mapping[str, Any], json_body: Any) -> BrightDataHTTPResponse:
+            nonlocal requests_submitted
+            remaining_seconds = deadline.remaining()
+            if remaining_seconds <= 0:
+                raise TimeoutError from None
+
+            def record_attempt() -> None:
+                nonlocal requests_submitted
+                if deadline.remaining() <= 0:
+                    raise TimeoutError from None
+                requests_submitted += 1
+
+            response = self.transport.request(
+                method, path, params=params, json_body=json_body, token=self._token,
+                timeout_seconds=min(self.socket_timeout_seconds, remaining_seconds),
+                task_deadline=deadline.expires_at, on_attempt=record_attempt,
+            )
+            if deadline.remaining() <= 0:
+                raise TimeoutError from None
+            return response
+
+        def bounded_sleep(seconds: float) -> None:
+            remaining_seconds = deadline.remaining()
+            if remaining_seconds <= 0:
+                raise TimeoutError from None
+            duration = min(max(0.0, seconds), remaining_seconds)
+            consumes_budget = duration >= remaining_seconds
+            if duration:
+                self.sleep(duration)
+            if consumes_budget or deadline.remaining() <= 0:
+                raise TimeoutError from None
+
+        try:
+            triggered = request("POST", trigger_shape["path"], trigger_params, [dict(input_row)])
         except (TimeoutError, socket.timeout):
-            raise self._failure(ProviderFailureClass.TIMEOUT, "Bright Data trigger timed out",
-                                base_metadata, requests_submitted, 0, reported_cost) from None
+            raise fail(ProviderFailureClass.TIMEOUT, "Bright Data trigger timed out",
+                       base_metadata, 0, reported_cost) from None
         except Exception as exc:
-            raise self._failure(ProviderFailureClass.TRANSPORT,
-                                f"Bright Data trigger transport failed ({type(exc).__name__})",
-                                base_metadata, requests_submitted, 0, reported_cost) from None
+            raise fail(ProviderFailureClass.TRANSPORT,
+                       f"Bright Data trigger transport failed ({type(exc).__name__})",
+                       base_metadata, 0, reported_cost) from None
         reported_cost.update(_reported_cost(triggered.payload, token=self._token))
         if triggered.status in (401, 403):
-            raise self._failure(ProviderFailureClass.AUTHORIZATION,
-                                f"Bright Data trigger returned HTTP {triggered.status}",
-                                base_metadata, requests_submitted, 0, reported_cost, retryable=False)
+            raise fail(ProviderFailureClass.AUTHORIZATION,
+                       f"Bright Data trigger returned HTTP {triggered.status}",
+                       base_metadata, 0, reported_cost, retryable=False)
         if triggered.status in (429,) or 500 <= triggered.status <= 599:
-            raise self._failure(ProviderFailureClass.TRANSPORT,
-                                f"Bright Data trigger returned transient HTTP {triggered.status}",
-                                base_metadata, requests_submitted, 0, reported_cost)
+            raise fail(ProviderFailureClass.TRANSPORT,
+                       f"Bright Data trigger returned transient HTTP {triggered.status}",
+                       base_metadata, 0, reported_cost)
         if triggered.status in (400, 422):
-            raise self._failure(ProviderFailureClass.SCHEMA,
-                                f"Bright Data rejected configured input with HTTP {triggered.status}",
-                                base_metadata, requests_submitted, 0, reported_cost, retryable=False)
+            raise fail(ProviderFailureClass.SCHEMA,
+                       f"Bright Data rejected configured input with HTTP {triggered.status}",
+                       base_metadata, 0, reported_cost, retryable=False)
         if triggered.status == 404:
-            raise self._failure(ProviderFailureClass.CONFIGURATION,
-                                "Bright Data dataset configuration was not found (HTTP 404)",
-                                base_metadata, requests_submitted, 0, reported_cost, retryable=False)
+            raise fail(ProviderFailureClass.CONFIGURATION,
+                       "Bright Data dataset configuration was not found (HTTP 404)",
+                       base_metadata, 0, reported_cost, retryable=False)
         if triggered.status not in (200, 202) or not isinstance(triggered.payload, Mapping):
-            raise self._failure(ProviderFailureClass.INVALID_RESPONSE,
-                                "Bright Data trigger returned an invalid acknowledgement",
-                                base_metadata, requests_submitted, 0, reported_cost, retryable=False)
+            raise fail(ProviderFailureClass.INVALID_RESPONSE,
+                       "Bright Data trigger returned an invalid acknowledgement",
+                       base_metadata, 0, reported_cost, retryable=False)
         provider_task_id = _scalar(triggered.payload.get("snapshot_id"))
         if not provider_task_id or self._token in provider_task_id:
-            raise self._failure(ProviderFailureClass.INVALID_RESPONSE,
-                                "Bright Data trigger acknowledgement omitted a safe snapshot_id",
-                                base_metadata, requests_submitted, 0, reported_cost, retryable=False)
+            raise fail(ProviderFailureClass.INVALID_RESPONSE,
+                       "Bright Data trigger acknowledgement omitted a safe snapshot_id",
+                       base_metadata, 0, reported_cost, retryable=False)
         base_metadata["snapshot_id"] = provider_task_id
 
         for poll_index in range(self.max_polls):
             if poll_index:
-                self.sleep(self.poll_interval_seconds)
+                try:
+                    bounded_sleep(self.poll_interval_seconds)
+                except (TimeoutError, socket.timeout):
+                    raise fail(ProviderFailureClass.TIMEOUT,
+                               "Bright Data task deadline expired during readiness polling",
+                               base_metadata, actual_records, reported_cost) from None
             progress_path = f"/datasets/v3/progress/{urllib.parse.quote(provider_task_id, safe='')}"
             progress_request = {"method": "GET", "path": progress_path, "query": {}}
             shape["progress_checks"].append(progress_request)
-            progress = self._get(progress_path, {}, base_metadata, requests_submitted,
-                                 actual_records, reported_cost, "progress")
+            progress = self._get(progress_path, {}, base_metadata, actual_records,
+                                 reported_cost, "progress", deadline=deadline, request=request, fail=fail)
             reported_cost.update(_reported_cost(progress.payload, token=self._token))
             if progress.status != 200 or not isinstance(progress.payload, Mapping):
-                raise self._failure(ProviderFailureClass.INVALID_RESPONSE,
-                                    "Bright Data progress response was malformed",
-                                    base_metadata, requests_submitted, actual_records, reported_cost, retryable=False)
+                raise fail(ProviderFailureClass.INVALID_RESPONSE,
+                           "Bright Data progress response was malformed",
+                           base_metadata, actual_records, reported_cost, retryable=False)
             progress_status = str(progress.payload.get("status") or "").casefold()
             if progress_status in {"starting", "running"}:
                 continue
@@ -495,28 +705,28 @@ class BrightDataJobsProvider:
                     progress_status, _scalar(progress.payload.get("error_message")),
                 )
                 reported_cost.update(_reported_cost(progress.payload, token=self._token))
-                raise self._failure(classification, message, base_metadata, requests_submitted,
-                                    actual_records, reported_cost, retryable=False)
+                raise fail(classification, message, base_metadata, actual_records,
+                           reported_cost, retryable=False)
             if progress_status != "ready":
-                raise self._failure(ProviderFailureClass.INVALID_RESPONSE,
-                                    "Bright Data progress returned an unknown terminal state",
-                                    base_metadata, requests_submitted, actual_records, reported_cost, retryable=False)
+                raise fail(ProviderFailureClass.INVALID_RESPONSE,
+                           "Bright Data progress returned an unknown terminal state",
+                           base_metadata, actual_records, reported_cost, retryable=False)
 
             parts_path = f"/datasets/v3/snapshot/{urllib.parse.quote(provider_task_id, safe='')}/parts"
             parts_params = {"batch_size": self.batch_size}
             shape["parts_request"] = {"method": "GET", "path": parts_path, "query": dict(parts_params)}
-            parts_response = self._get(parts_path, parts_params, base_metadata, requests_submitted,
-                                       actual_records, reported_cost, "parts")
+            parts_response = self._get(parts_path, parts_params, base_metadata, actual_records,
+                                       reported_cost, "parts", deadline=deadline, request=request, fail=fail)
             reported_cost.update(_reported_cost(parts_response.payload, token=self._token))
             if parts_response.status != 200 or not isinstance(parts_response.payload, Mapping):
-                raise self._failure(ProviderFailureClass.AMBIGUOUS_CURSOR,
-                                    "Bright Data did not provide snapshot part-completion evidence",
-                                    base_metadata, requests_submitted, actual_records, reported_cost)
+                raise fail(ProviderFailureClass.AMBIGUOUS_CURSOR,
+                           "Bright Data did not provide snapshot part-completion evidence",
+                           base_metadata, actual_records, reported_cost)
             parts_total = parts_response.payload.get("parts")
             if isinstance(parts_total, bool) or not isinstance(parts_total, int) or parts_total < 1:
-                raise self._failure(ProviderFailureClass.AMBIGUOUS_CURSOR,
-                                    "Bright Data snapshot part count was missing or invalid",
-                                    base_metadata, requests_submitted, actual_records, reported_cost)
+                raise fail(ProviderFailureClass.AMBIGUOUS_CURSOR,
+                           "Bright Data snapshot part count was missing or invalid",
+                           base_metadata, actual_records, reported_cost)
             base_metadata["parts_total"] = parts_total
             mapped_records: list[AcquisitionRecord] = []
             part_numbers: list[int] = []
@@ -532,6 +742,7 @@ class BrightDataJobsProvider:
                     "parts_retrieved": len(part_numbers), "part_numbers": list(part_numbers),
                     "provider_error_rows": provider_errors, "invalid_rows": invalid_rows,
                     "result_failure_class": failure.classification.value,
+                    **deadline.diagnostics(requests_submitted),
                 })
                 return ProviderBatch(
                     records=tuple(mapped_records[:remaining_for_task]),
@@ -552,44 +763,50 @@ class BrightDataJobsProvider:
                 result_params = {"format": "json", "batch_size": self.batch_size, "part": part}
                 shape["result_requests"].append({"method": "GET", "path": result_path, "query": dict(result_params)})
                 try:
-                    result = self._get(result_path, result_params, base_metadata, requests_submitted,
-                                       actual_records, reported_cost, "result")
+                    result = self._get(result_path, result_params, base_metadata, actual_records,
+                                       reported_cost, "result", deadline=deadline, request=request, fail=fail)
                 except ProviderFailure as exc:
                     return partial_result_failure(exc)
                 reported_cost.update(_reported_cost(result.payload, token=self._token))
+                if deadline.remaining() <= 0:
+                    return partial_result_failure(fail(
+                        ProviderFailureClass.TIMEOUT,
+                        "Bright Data task deadline expired during result retrieval",
+                        base_metadata, actual_records, reported_cost,
+                    ))
                 if result.status in (202, 404, 409):
-                    return partial_result_failure(self._failure(
+                    return partial_result_failure(fail(
                         ProviderFailureClass.PARTIAL_BATCH,
                         "Bright Data snapshot result part is not available",
-                        base_metadata, requests_submitted, actual_records, reported_cost,
+                        base_metadata, actual_records, reported_cost,
                     ))
                 if result.status == 200 and result.payload in (None, ""):
-                    return partial_result_failure(self._failure(
+                    return partial_result_failure(fail(
                         ProviderFailureClass.PARTIAL_BATCH,
                         "Bright Data snapshot result part was empty or unavailable",
-                        base_metadata, requests_submitted, actual_records, reported_cost,
+                        base_metadata, actual_records, reported_cost,
                     ))
                 if result.status != 200:
-                    return partial_result_failure(self._failure(
+                    return partial_result_failure(fail(
                         ProviderFailureClass.INVALID_RESPONSE,
                         "Bright Data snapshot result returned an invalid HTTP status",
-                        base_metadata, requests_submitted, actual_records, reported_cost,
+                        base_metadata, actual_records, reported_cost,
                         retryable=False,
                     ))
                 if isinstance(result.payload, Mapping) and str(result.payload.get("status") or "").casefold() in {
                     "starting", "running", "building",
                 }:
-                    return partial_result_failure(self._failure(
+                    return partial_result_failure(fail(
                         ProviderFailureClass.PARTIAL_BATCH,
                         "Bright Data snapshot result part is still pending",
-                        base_metadata, requests_submitted, actual_records, reported_cost,
+                        base_metadata, actual_records, reported_cost,
                     ))
                 try:
                     rows, envelope = _row_page(result.payload, config.result_rows_key)
                 except ValueError as exc:
-                    return partial_result_failure(self._failure(
+                    return partial_result_failure(fail(
                         ProviderFailureClass.INVALID_RESPONSE, str(exc), base_metadata,
-                        requests_submitted, actual_records, reported_cost, retryable=False,
+                        actual_records, reported_cost, retryable=False,
                     ))
                 more, marker = _continuation(envelope)
                 if more:
@@ -614,6 +831,12 @@ class BrightDataJobsProvider:
                         invalid_rows += 1
                         continue
                     mapped_records.append(mapped)
+                if deadline.remaining() <= 0:
+                    return partial_result_failure(fail(
+                        ProviderFailureClass.TIMEOUT,
+                        "Bright Data task deadline expired during result processing",
+                        base_metadata, actual_records, reported_cost,
+                    ))
             actual_count = actual_records
             records_for_ingestion = mapped_records[:remaining_for_task]
             if len(mapped_records) > remaining_for_task:
@@ -628,6 +851,12 @@ class BrightDataJobsProvider:
             capped = actual_count >= remaining
             parts_missing = len(part_numbers) < parts_total
             incomplete = bool(continuation or invalid_rows or provider_errors or capped or parts_missing)
+            if deadline.remaining() <= 0:
+                return partial_result_failure(fail(
+                    ProviderFailureClass.TIMEOUT,
+                    "Bright Data task deadline expired before task completion",
+                    base_metadata, actual_records, reported_cost,
+                ))
             evidence = {
                 "platform": task.platform, "task_key": task.task_key,
                 "provider_job_id": provider_task_id, "terminal_state": progress_status,
@@ -637,6 +866,7 @@ class BrightDataJobsProvider:
                 "request_fingerprint": fingerprint,
             }
             base_metadata["completion_observation"] = evidence
+            base_metadata.update(deadline.diagnostics(requests_submitted))
             failure_class = (
                 ProviderFailureClass.INVALID_RESPONSE if invalid_rows or provider_errors
                 else ProviderFailureClass.AMBIGUOUS_CURSOR if continuation or parts_missing
@@ -654,9 +884,9 @@ class BrightDataJobsProvider:
                 reported_cost=reported_cost,
             )
 
-        raise self._failure(ProviderFailureClass.TIMEOUT,
-                            "Bright Data collection did not reach terminal ready state within the poll bound",
-                            base_metadata, requests_submitted, actual_records, reported_cost)
+        raise fail(ProviderFailureClass.TIMEOUT,
+                   "Bright Data collection did not reach terminal ready state within the poll bound",
+                   base_metadata, actual_records, reported_cost)
 
     def _input_row(self, task: SearchTask, config: BrightDataPlatformConfig) -> dict[str, Any]:
         row: dict[str, Any] = {config.keyword_field: task.query}
@@ -740,44 +970,57 @@ class BrightDataJobsProvider:
         )
 
     def _get(self, path: str, params: Mapping[str, Any], metadata: Mapping[str, Any],
-             requests_submitted: int, records_delivered: int, reported_cost: Mapping[str, Any],
-             operation: str) -> BrightDataHTTPResponse:
+             records_delivered: int, reported_cost: Mapping[str, Any], operation: str, *,
+             deadline: _TaskDeadline, request: Callable[..., BrightDataHTTPResponse],
+             fail: Callable[..., ProviderFailure]) -> BrightDataHTTPResponse:
         last_error = ""
         for attempt in range(self.max_transient_retries + 1):
+            if deadline.remaining() <= 0:
+                raise fail(ProviderFailureClass.TIMEOUT,
+                           f"Bright Data task deadline expired during {operation}",
+                           metadata, records_delivered, reported_cost)
             try:
-                response = self.transport.request("GET", path, params=params, json_body=None, token=self._token)
+                response = request("GET", path, params, None)
             except (TimeoutError, socket.timeout):
+                if deadline.remaining() <= 0:
+                    raise fail(ProviderFailureClass.TIMEOUT,
+                               f"Bright Data task deadline expired during {operation}",
+                               metadata, records_delivered, reported_cost) from None
                 last_error = "timeout"
                 if attempt < self.max_transient_retries:
                     continue
-                raise self._failure(ProviderFailureClass.TIMEOUT,
-                                    f"Bright Data {operation} request timed out", metadata,
-                                    requests_submitted, records_delivered, reported_cost) from None
+                raise fail(ProviderFailureClass.TIMEOUT,
+                           f"Bright Data {operation} request timed out", metadata,
+                           records_delivered, reported_cost) from None
             except Exception as exc:
+                if deadline.remaining() <= 0:
+                    raise fail(ProviderFailureClass.TIMEOUT,
+                               f"Bright Data task deadline expired during {operation}",
+                               metadata, records_delivered, reported_cost) from None
                 last_error = type(exc).__name__
                 if attempt < self.max_transient_retries:
                     continue
-                raise self._failure(ProviderFailureClass.TRANSPORT,
-                                    f"Bright Data {operation} transport failed ({last_error})", metadata,
-                                    requests_submitted, records_delivered, reported_cost) from None
+                raise fail(ProviderFailureClass.TRANSPORT,
+                           f"Bright Data {operation} transport failed ({last_error})", metadata,
+                           records_delivered, reported_cost) from None
             if response.status in (429,) or 500 <= response.status <= 599:
                 if attempt < self.max_transient_retries:
                     continue
-                raise self._failure(ProviderFailureClass.TRANSPORT,
-                                    f"Bright Data {operation} returned transient HTTP {response.status}", metadata,
-                                    requests_submitted, records_delivered, reported_cost)
+                raise fail(ProviderFailureClass.TRANSPORT,
+                           f"Bright Data {operation} returned transient HTTP {response.status}", metadata,
+                           records_delivered, reported_cost)
             if response.status in (401, 403):
-                raise self._failure(ProviderFailureClass.AUTHORIZATION,
-                                    f"Bright Data {operation} returned HTTP {response.status}", metadata,
-                                    requests_submitted, records_delivered, reported_cost, retryable=False)
+                raise fail(ProviderFailureClass.AUTHORIZATION,
+                           f"Bright Data {operation} returned HTTP {response.status}", metadata,
+                           records_delivered, reported_cost, retryable=False)
             if response.status == 404 and operation in {"progress", "parts"}:
-                raise self._failure(ProviderFailureClass.CONFIGURATION,
-                                    f"Bright Data {operation} endpoint returned HTTP 404", metadata,
-                                    requests_submitted, records_delivered, reported_cost, retryable=False)
+                raise fail(ProviderFailureClass.CONFIGURATION,
+                           f"Bright Data {operation} endpoint returned HTTP 404", metadata,
+                           records_delivered, reported_cost, retryable=False)
             return response
-        raise self._failure(ProviderFailureClass.TRANSPORT,
-                            f"Bright Data {operation} request failed ({last_error})", metadata,
-                            requests_submitted, records_delivered, reported_cost)
+        raise fail(ProviderFailureClass.TRANSPORT,
+                   f"Bright Data {operation} request failed ({last_error})", metadata,
+                   records_delivered, reported_cost)
 
     def _failure(self, classification: ProviderFailureClass, message: str,
                  base_metadata: Mapping[str, Any], requests_submitted: int,

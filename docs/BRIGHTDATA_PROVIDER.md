@@ -33,6 +33,13 @@ platform:
 - `JOBBOT_BRIGHTDATA_INDEED_CONFIG`
 - `JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG`
 
+Each search task uses a monotonic 300-second total runtime budget by default.
+Set `JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS` to another positive finite number
+of seconds when the deployment needs a different bound. The budget covers the
+trigger, polling, retry attempts, all result parts, and response-body reads;
+each network timeout is capped by both this remaining budget and the existing
+45-second socket timeout.
+
 Each value must contain the account's exact `dataset_id`, a required keyword
 input field, optional supported filters, and exact row output fields. Example
 shape only; replace each angle-bracket value with the exact field/schema value
