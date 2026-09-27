@@ -303,6 +303,8 @@ def remote_gate(job: Job, strategy: dict[str,Any], candidate: dict[str,Any]) -> 
     full=" ".join([job.location_raw,job.remote_status,job.description])
     sentences=[clean_text(x) for x in re.split(r"(?<=[.!?])\s+|\n+",full) if clean_text(x)]
     metros=[norm(x) for x in candidate.get("metro_terms",[]) if clean_text(x)]
+    if re.search(r"\b(?:in office|onsite|on site)\b",norm(job.title)):
+        return "reject","job title explicitly identifies an onsite/in-office role",99.0
 
     # Country/region eligibility. A remote-source label does not make a Philippines/EMEA-only role US-eligible.
     locblob=norm(" ".join([job.title,job.location_raw]))
