@@ -105,6 +105,34 @@ class ScoringRegressionTests(unittest.TestCase):
         )
         self.assertEqual(fully_remote.remote_gate, "pass")
 
+    def test_remote_metadata_conflicting_with_in_office_title_is_rejected(self) -> None:
+        in_office = scored(
+            "Pre-Service Representative, Days - In Office",
+            "Patient enrollment operations role.",
+            location="Remote",
+            source="indeed",
+            remote_status="remote",
+        )
+        fully_remote = scored(
+            "Patient Enrollment Specialist",
+            "This role is fully remote.",
+            location="Remote",
+            source="indeed",
+            remote_status="remote",
+        )
+        state_limited = scored(
+            "Patient Scheduler",
+            "Remote in California only.",
+            location="Remote",
+            source="indeed",
+            remote_status="remote",
+        )
+
+        self.assertEqual(in_office.remote_gate, "reject")
+        self.assertNotIn(in_office.recommendation, {"APPLY_NOW", "APPLY_VOLUME", "HIGH_VALUE_STRETCH"})
+        self.assertEqual(fully_remote.remote_gate, "pass")
+        self.assertEqual(state_limited.remote_gate, "reject")
+
     def test_boundary_and_requirement_parser_regressions(self) -> None:
         self.assertFalse(phrase_present("SIS", "analysis"))
         self.assertFalse(phrase_present("Lean", "clean"))
