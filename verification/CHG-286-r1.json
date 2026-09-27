@@ -1,0 +1,81 @@
+{
+  "change": "CHG-286",
+  "request": {
+    "objective": "Bound each Bright Data search task with a positive finite monotonic runtime budget, count actual HTTP attempts, and durably preserve mapped partial results on timeout.",
+    "baseline_commit": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-r1",
+    "main_must_not_be_moved_or_merged": true,
+    "production_entrypoint_switch": false
+  },
+  "implementation": {
+    "runtime_budget": {
+      "default_seconds": 300,
+      "environment_variable": "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS",
+      "validation": "must be positive and finite"
+    },
+    "deadline_scope": [
+      "trigger submission",
+      "readiness polling and bounded sleeps",
+      "each GET retry attempt",
+      "snapshot parts and response-body reads",
+      "result processing and completion decision"
+    ],
+    "blocking_io": "Each urllib socket operation uses at most the lesser of the remaining task budget and the existing 45-second socket timeout. Synchronous read1 calls refresh the socket timeout against the monotonic deadline, including stdlib chunk framing; no worker is created.",
+    "diagnostics": "Provider metadata includes actual requests_submitted, task_timeout_seconds, and task_elapsed_seconds; existing token and secret-key sanitization remains applied.",
+    "partial_expiry": "Timeout during result retrieval or mapping returns earlier mapped records as RETRYABLE with TIMEOUT failure class and no completion evidence; the unchanged shared coordinator persists records before marking the task incomplete.",
+    "preserved": [
+      "record caps, mappings, provenance, truncation and error semantics",
+      "shared ingestion and evidence gates",
+      "database schema and coordinator concurrency"
+    ]
+  },
+  "touched_files": [
+    "src/jobbot/acquisition/brightdata.py",
+    "tests/integration/test_brightdata_jobs.py",
+    "docs/BRIGHTDATA_PROVIDER.md",
+    "verification/CHG-286-r1.json"
+  ],
+  "evidence_artifact": "verification/CHG-286-r1.json",
+  "validation": [
+    {
+      "command": "rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v",
+      "result": "PASS",
+      "summary": "20 tests passed; includes exact attempt counts, deadline-capped sleep, trickling urllib response-body timeout, and durable partial persistence after a successful result part."
+    },
+    {
+      "command": "rtk env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v",
+      "result": "PASS",
+      "summary": "7 tests passed for adjacent shared acquisition and ingestion behavior."
+    },
+    {
+      "command": "rtk env PYTHONPATH=src python -m compileall -q src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py",
+      "result": "PASS"
+    },
+    {
+      "command": "rtk git diff --check",
+      "result": "PASS"
+    },
+    {
+      "command": "rtk env PYTHONPATH=src JOBBOT_DATABASE_PATH=/tmp/jobbot-chg286-preflight-$$.sqlite3 BRIGHTDATA_API_TOKEN=offline-placeholder JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG='{\"dataset_id\":\"offline-dataset\",\"input_schema\":{\"keyword\":\"kw\"},\"output_schema\":{\"source_job_id\":\"id\"}}' python -m jobbot acquire --provider brightdata-jobs --preflight --platform linkedin",
+      "result": "PASS",
+      "summary": "Offline preflight reported task_timeout_valid=true and valid=true. The token value was a synthetic presence marker; preflight made no network or database access."
+    }
+  ],
+  "safety_boundary": {
+    "bright_data_live_calls": "NONE",
+    "real_credentials": "NOT_USED",
+    "production_ledger": "NOT_READ_OR_MUTATED",
+    "test_data": "Temporary test databases only; preflight path was isolated under /tmp.",
+    "RUN_NOW": "UNCHANGED",
+    "database_schema": "UNCHANGED",
+    "main_mutated": false,
+    "merge_performed": false
+  },
+  "production_limitations": "This remains an unqualified build candidate. No live Bright Data validation was performed; production qualification still requires the separately authorized provider configuration and explicit cost or record cap, followed by Project OS GO and the Integrate Accepted Change Shortcut.",
+  "git": {
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-r1",
+    "base_commit": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "tested_code_commit": "2f8e2d687ae0a5f5988d0632e98da5864f4a894f",
+    "verification_artifact_is_follow_up_commit": true
+  }
+}
