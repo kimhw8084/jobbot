@@ -1,0 +1,403 @@
+{
+  "accepted_at": "2026-09-27T18:27:19Z",
+  "changed_files": [
+    {
+      "additions": 7,
+      "deletions": 0,
+      "path": "docs/BRIGHTDATA_PROVIDER.md",
+      "status": "M"
+    },
+    {
+      "additions": 343,
+      "deletions": 100,
+      "path": "src/jobbot/acquisition/brightdata.py",
+      "status": "M"
+    },
+    {
+      "additions": 279,
+      "deletions": 18,
+      "path": "tests/integration/test_brightdata_jobs.py",
+      "status": "M"
+    },
+    {
+      "additions": 81,
+      "deletions": 0,
+      "path": "verification/CHG-286-r1.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files /Users/haewonkim/.codex-fabric/bin /Users/haewonkim/.codex-fabric/libexec /Users/haewonkim/.codex-fabric/current | rtk rg -i '(artifact|bridge|projectos)' | rtk head -120\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '2952,3054p' /Users/haewonkim/.codex-fabric/current/fabric.py && rtk cat /Users/haewonkim/.codex-fabric/projects.yaml\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mkdir -p /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/test_brightdata_jobs.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/test_brightdata_jobs.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/test_acquisition_v2.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/test_acquisition_v2.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --check 8d193e200254e42af03c22b923137ef9a1ccb83d 962d1d1885047920089b019eb19f6d23324f41e9 > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/diff_check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy python -m compileall -q src tests > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/compileall.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\npath = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py')\npath.write_text('''from __future__ import annotations\n\nimport json\nimport socketserver\nimport threading\nimport time\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\n\nfrom jobbot.acquisition import brightdata\nfrom jobbot.acquisition.brightdata import BrightDataHTTPTransport\n\n\nclass QuietHTTPServer(ThreadingHTTPServer):\n    daemon_threads = True\n    allow_reuse_address = True\n\n    def handle_error(self, request, client_address):\n        pass\n\n\ndef handler_for(mode: str):\n    class Handler(BaseHTTPRequestHandler):\n        protocol_version = \\\"HTTP/1.1\\\"\n\n        def log_message(self, format, *args):\n            pass\n\n        def write(self, data: bytes):\n            self.wfile.write(data)\n            self.wfile.flush()\n\n        def do_GET(self):\n            try:\n                if mode == \\\"slow_content_length\\\":\n                    body = b\\\"{\\\\\\\\\\\\\\\"payload\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"\\\" + b\\\"x\\\" * 80 + b\\\"\\\\\\\\\\\\\\\"}\\\"\n                    self.write(b\\\"HTTP/1.1 200 OK\\\\\\\\r\\\\\\\\nContent-Length: \\\" + str(len(body)).encode() + b\\\"\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    for offset in range(0, len(body), 10):\n                        self.write(body[offset:offset + 10])\n                        time.sleep(0.12)\n                    return\n\n                if mode == \\\"chunked_crlf_overrun\\\":\n                    self.write(b\\\"HTTP/1.1 200 OK\\\\\\\\r\\\\\\\\nTransfer-Encoding: chunked\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n2\\\\\\\\r\\\\\\\\n{}\\\")\n                    time.sleep(0.25)\n                    self.write(b\\\"\\\\\\\\r\\\")\n                    time.sleep(0.25)\n                    self.write(b\\\"\\\\\\\\n0\\\\\\\\r\\\\\\\\nX-Probe-Trailer: seen\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    return\n\n                if mode == \\\"chunked_trailers_success\\\":\n                    self.write(b\\\"HTTP/1.1 200 OK\\\\\\\\r\\\\\\\\nTransfer-Encoding: chunked\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n1\\\\\\\\r\\\\\\\\n{\\\\\\\\r\\\\\\\\n1\\\\\\\\r\\\\\\\\n}\\\\\\\\r\\\\\\\\n0\\\\\\\\r\\\\\\\\nX-Probe-Trailer: seen\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    return\n\n                if mode == \\\"slow_http_error_body\\\":\n                    body = b\\\"{\\\\\\\\\\\\\\\"error\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"offline temporary\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"padding\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"\\\" + b\\\"y\\\" * 80 + b\\\"\\\\\\\\\\\\\\\"}\\\"\n                    self.write(b\\\"HTTP/1.1 503 Service Unavailable\\\\\\\\r\\\\\\\\nContent-Length: \\\" + str(len(body)).encode() + b\\\"\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    for offset in range(0, len(body), 10):\n                        self.write(body[offset:offset + 10])\n                        time.sleep(0.12)\n                    return\n\n                if mode == \\\"slow_response_headers\\\":\n                    self.write(b\\\"HTTP/1.1 200 \\\")\n                    time.sleep(0.30)\n                    self.write(b\\\"OK\\\")\n                    time.sleep(0.30)\n                    self.write(b\\\"\\\\\\\\r\\\\\\\\nContent-Length: 2\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n{}\\\")\n                    return\n\n                raise AssertionError(mode)\n            except (BrokenPipeError, ConnectionResetError, OSError):\n                return\n\n    return Handler\n\n\ndef run_case(mode: str, budget: float):\n    server = QuietHTTPServer((\\\"127.0.0.1\\\", 0), handler_for(mode))\n    thread = threading.Thread(target=server.serve_forever, daemon=True)\n    thread.start()\n    previous_api_root = brightdata.API_ROOT\n    brightdata.API_ROOT = f\\\"http://127.0.0.1:{server.server_port}\\\"\n    attempts = []\n    started = time.monotonic()\n    outcome = None\n    detail = None\n    try:\n        transport = BrightDataHTTPTransport(timeout_seconds=45)\n        response = transport.request(\n            \\\"GET\\\", \\\"/probe\\\", params={}, json_body=None,\n            token=\\\"offline-synthetic-token\\\", timeout_seconds=budget,\n            task_deadline=started + budget, on_attempt=lambda: attempts.append(\\\"GET\\\"),\n        )\n        outcome = f\\\"response status={response.status} payload={response.payload\"'!r}\"\n    except Exception as exc:\n        outcome = f\"exception={type(exc).__name__}\"\n    finally:\n        elapsed = time.monotonic() - started\n        brightdata.API_ROOT = previous_api_root\n        server.shutdown()\n        server.server_close()\n        thread.join(timeout=1)\n    return {\n        \"case\": mode,\n        \"budget_seconds\": budget,\n        \"elapsed_seconds\": round(elapsed, 3),\n        \"overrun_seconds\": round(max(0.0, elapsed - budget), 3),\n        \"attempts\": len(attempts),\n        \"outcome\": outcome,\n    }\n\n\ndef main():\n    cases = [\n        run_case(\"slow_content_length\", 0.35),\n        run_case(\"chunked_crlf_overrun\", 0.40),\n        run_case(\"chunked_trailers_success\", 2.0),\n        run_case(\"slow_http_error_body\", 0.35),\n        run_case(\"slow_response_headers\", 0.45),\n    ]\n    for case in cases:\n        print(json.dumps(case, sort_keys=True))\n\n    observed = {case[\"case\"]: case for case in cases}\n    assert observed[\"slow_content_length\"][\"overrun_seconds\"] < 0.10, observed[\"slow_content_length\"]\n    assert observed[\"chunked_crlf_overrun\"][\"overrun_seconds\"] >= 0.05, observed[\"chunked_crlf_overrun\"]\n    assert observed[\"chunked_trailers_success\"][\"outcome\"].startswith(\"response status=200 payload={}\"), observed[\"chunked_trailers_success\"]\n    assert observed[\"slow_http_error_body\"][\"overrun_seconds\"] < 0.10, observed[\"slow_http_error_body\"]\n    assert observed[\"slow_response_headers\"][\"overrun_seconds\"] >= 0.05, observed[\"slow_response_headers\"]\n    assert all(case[\"attempts\"] == 1 for case in cases), cases\n\n\nif __name__ == \"__main__\":\n    main()\n'\"''', encoding='utf-8')\nprint(path)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.log 2>&1'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,170p' /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mv /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.log /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.initial.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\npath = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py')\ntext = path.read_text()\ntext = text.replace('outcome = f\\\"exception={type(exc).__name__}\\\"', 'outcome = f\\\"exception={type(exc).__name__}:{str(exc)[:160]}\\\"')\npath.write_text(text)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.debug.log 2>&1'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.debug.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY' > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_response_structure.log 2>&1\nimport http.server\nimport threading\nimport urllib.request\n\nclass Handler(http.server.BaseHTTPRequestHandler):\n    protocol_version = \\\"HTTP/1.1\\\"\n    def do_GET(self):\n        self.send_response(200)\n        self.send_header(\\\"Content-Length\\\", \\\"2\\\")\n        self.send_header(\\\"Connection\\\", \\\"close\\\")\n        self.end_headers()\n        self.wfile.write(b\\\"{}\\\")\n    def log_message(self, *args):\n        pass\n\nserver = http.server.ThreadingHTTPServer((\\\"127.0.0.1\\\", 0), Handler)\nthread = threading.Thread(target=server.serve_forever, daemon=True)\nthread.start()\nresponse = urllib.request.urlopen(f\\\"http://127.0.0.1:{server.server_port}/\\\")\nprint(type(response).__name__)\nprint(f\\\"response.fp={type(response.fp).__name__}\\\")\nhttp_response = response.fp\nprint(f\\\"http_response.fp={type(http_response.fp).__name__}\\\")\nbuffered = http_response.fp\nprint(f\\\"buffered.raw={type(buffered.raw).__name__}\\\")\nraw = buffered.raw\nprint(f\\\"raw._sock={getattr(raw, '_sock', '<absent>')\"'!r}\")\nprint(f\"raw.fileno={raw.fileno()}\")\nprint(f\"sock={getattr(raw, '\"'_sock', None)\"'!r}\")\nresponse.close()\nserver.shutdown()\nserver.server_close()\nPY'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_response_structure.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\npath = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py')\npath.write_text('''from __future__ import annotations\n\nimport json\nimport threading\nimport time\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\n\nfrom jobbot.acquisition import brightdata\nfrom jobbot.acquisition.brightdata import BrightDataHTTPTransport\n\n\nclass QuietHTTPServer(ThreadingHTTPServer):\n    daemon_threads = True\n    allow_reuse_address = True\n\n    def handle_error(self, request, client_address):\n        pass\n\n\nclass URLResponseAdapter:\n    \\\"\\\"\\\"Fake urllib response shape for exercising the candidate body reader.\\\"\\\"\\\"\n    def __init__(self, response):\n        self.response = response\n        self.fp = response\n        self.status = response.status\n        self.headers = response.headers\n\n    def __enter__(self):\n        return self\n\n    def __exit__(self, *_args):\n        self.response.close()\n\n\ndef handler_for(mode: str):\n    class Handler(BaseHTTPRequestHandler):\n        protocol_version = \\\"HTTP/1.1\\\"\n\n        def log_message(self, format, *args):\n            pass\n\n        def write(self, data: bytes):\n            self.wfile.write(data)\n            self.wfile.flush()\n\n        def do_GET(self):\n            try:\n                if mode == \\\"slow_content_length\\\":\n                    body = b\\\"{\\\\\\\\\\\\\\\"payload\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"\\\" + b\\\"x\\\" * 80 + b\\\"\\\\\\\\\\\\\\\"}\\\"\n                    self.write(b\\\"HTTP/1.1 200 OK\\\\\\\\r\\\\\\\\nContent-Length: \\\" + str(len(body)).encode() + b\\\"\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    for offset in range(0, len(body), 10):\n                        self.write(body[offset:offset + 10])\n                        time.sleep(0.12)\n                    return\n\n                if mode == \\\"chunked_crlf_overrun\\\":\n                    self.write(b\\\"HTTP/1.1 200 OK\\\\\\\\r\\\\\\\\nTransfer-Encoding: chunked\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n2\\\\\\\\r\\\\\\\\n{}\\\")\n                    time.sleep(0.25)\n                    self.write(b\\\"\\\\\\\\r\\\")\n                    time.sleep(0.25)\n                    self.write(b\\\"\\\\\\\\n0\\\\\\\\r\\\\\\\\nX-Probe-Trailer: seen\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    return\n\n                if mode == \\\"chunked_trailers_success\\\":\n                    self.write(b\\\"HTTP/1.1 200 OK\\\\\\\\r\\\\\\\\nTransfer-Encoding: chunked\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n1\\\\\\\\r\\\\\\\\n{\\\\\\\\r\\\\\\\\n1\\\\\\\\r\\\\\\\\n}\\\\\\\\r\\\\\\\\n0\\\\\\\\r\\\\\\\\nX-Probe-Trailer: seen\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    return\n\n                if mode == \\\"slow_http_error_body\\\":\n                    body = b\\\"{\\\\\\\\\\\\\\\"error\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"offline temporary\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"padding\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"\\\" + b\\\"y\\\" * 80 + b\\\"\\\\\\\\\\\\\\\"}\\\"\n                    self.write(b\\\"HTTP/1.1 503 Service Unavailable\\\\\\\\r\\\\\\\\nContent-Length: \\\" + str(len(body)).encode() + b\\\"\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    for offset in range(0, len(body), 10):\n                        self.write(body[offset:offset + 10])\n                        time.sleep(0.12)\n                    return\n\n                if mode == \\\"slow_response_headers\\\":\n                    self.write(b\\\"HTTP/1.1 200 \\\")\n                    time.sleep(0.30)\n                    self.write(b\\\"OK\\\")\n                    time.sleep(0.30)\n                    self.write(b\\\"\\\\\\\\r\\\\\\\\nContent-Length: 2\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n{}\\\")\n                    return\n\n                raise AssertionError(mode)\n            except (BrokenPipeError, ConnectionResetError, OSError):\n                return\n\n    return Handler\n\n\ndef run_case(mode: str, budget: float, *, adapt_success: bool = False):\n    server = QuietHTTPServer((\\\"127.0.0.1\\\", 0), handler_for(mode))\n    thread = threading.Thread(target=server.serve_forever, daemon=True)\n    thread.start()\n    previous_api_root = brightdata.API_ROOT\n    previous_urlopen = brightdata.urllib.request.urlopen\n    brightdata.API_ROOT = f\\\"http://127.0.0.1:{server.server_port}\\\"\n    if adapt_success:\n        def adapted_urlopen(*args, **kwargs):\n            return URLResponseAdapter(previous_urlopen(*args, **kwargs))\n        brightdata.urllib.request.urlopen = adapted_urlopen\n    attempts = []\n    started = time.monotonic()\n    outcome = None\n    try:\n        transport = BrightDataHTTPTransport(timeout_seconds=45)\n        response = transport.request(\n            \\\"GET\\\", \\\"/probe\\\", params={}, json_body=None,\n            token=\\\"offline-synthetic-token\\\", timeout_seconds=budget,\n            task_deadline=started + budget, on_attempt=lambda: attempts.append(\\\"GET\\\"),\n        )\n        outcome = f\\\"response status={response.status} payload={response.payload\"'!r}\"\n    except Exception as exc:\n        outcome = f\"exception={type(exc).__name__}:{str(exc)[:160]}\"\n    finally:\n        elapsed = time.monotonic() - started\n        brightdata.API_ROOT = previous_api_root\n        brightdata.urllib.request.urlopen = previous_urlopen\n        server.shutdown()\n        server.server_close()\n        thread.join(timeout=1)\n    return {\n        \"case\": mode,\n        \"urlopen_shape\": \"test_adapter\" if adapt_success else \"stdlib_direct\",\n        \"budget_seconds\": budget,\n        \"elapsed_seconds\": round(elapsed, 3),\n        \"overrun_seconds\": round(max(0.0, elapsed - budget), 3),\n        \"attempts\": len(attempts),\n        \"outcome\": outcome,\n    }\n\n\ndef main():\n    cases = [\n        run_case(\"slow_content_length\", 0.35, adapt_success=True),\n        run_case(\"chunked_crlf_overrun\", 0.40, adapt_success=True),\n        run_case(\"chunked_trailers_success\", 2.0, adapt_success=True),\n        run_case(\"slow_http_error_body\", 0.35),\n        run_case(\"slow_response_headers\", 0.45),\n        run_case(\"chunked_trailers_success\", 2.0),\n    ]\n    for case in cases:\n        print(json.dumps(case, sort_keys=True))\n\n    observed = {(case[\"case\"], case[\"urlopen_shape\"]): case for case in cases}\n    assert observed[(\"slow_content_length\", \"test_adapter\")][\"overrun_seconds\"] < 0.10\n    assert observed[(\"chunked_crlf_overrun\", \"test_adapter\")][\"overrun_seconds\"] >= 0.05\n    assert observed[(\"chunked_trailers_success\", \"test_adapter\")][\"outcome\"].startswith(\"response status=200 payload={}\")\n    assert observed[(\"slow_http_error_body\", \"stdlib_direct\")][\"overrun_seconds\"] < 0.10\n    assert observed[(\"slow_response_headers\", \"stdlib_direct\")][\"overrun_seconds\"] >= 0.05\n    direct = observed[(\"chunked_trailers_success\", \"stdlib_direct\")]\n    assert direct[\"outcome\"].startswith(\"exception=OSError:Bright Data response stream does not expose bounded reads\")\n    assert all(case[\"attempts\"] == 1 for case in cases)\n\n\nif __name__ == \"__main__\":\n    main()\n'\"''', encoding='utf-8')\nprint(path)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\npath = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py')\npath.write_text('''from __future__ import annotations\n\nimport json\nimport threading\nimport time\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\n\nfrom jobbot.acquisition import brightdata\nfrom jobbot.acquisition.brightdata import BrightDataHTTPTransport\n\n\nclass QuietHTTPServer(ThreadingHTTPServer):\n    daemon_threads = True\n    allow_reuse_address = True\n\n    def handle_error(self, request, client_address):\n        pass\n\n\nclass URLResponseAdapter:\n    \\\"\\\"\\\"Fake urllib success shape for exercising the candidate body reader.\\\"\\\"\\\"\n    def __init__(self, response):\n        self.response = response\n        self.fp = response\n        self.status = response.status\n        self.headers = response.headers\n\n    def __enter__(self):\n        return self\n\n    def __exit__(self, *_args):\n        self.response.close()\n\n\ndef handler_for(mode: str):\n    class Handler(BaseHTTPRequestHandler):\n        protocol_version = \\\"HTTP/1.1\\\"\n\n        def log_message(self, format, *args):\n            pass\n\n        def write(self, data: bytes):\n            self.wfile.write(data)\n            self.wfile.flush()\n\n        def do_GET(self):\n            try:\n                if mode == \\\"slow_content_length\\\":\n                    body = b\\\"{\\\\\\\\\\\\\\\"payload\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"\\\" + b\\\"x\\\" * 80 + b\\\"\\\\\\\\\\\\\\\"}\\\"\n                    self.write(b\\\"HTTP/1.1 200 OK\\\\\\\\r\\\\\\\\nContent-Length: \\\" + str(len(body)).encode() + b\\\"\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    for offset in range(0, len(body), 10):\n                        self.write(body[offset:offset + 10])\n                        time.sleep(0.12)\n                    return\n\n                if mode in {\\\"chunked_crlf_overrun\\\", \\\"chunked_http_error_crlf_overrun\\\"}:\n                    status = b\\\"HTTP/1.1 503 Service Unavailable\\\" if mode.startswith(\\\"chunked_http_error\\\") else b\\\"HTTP/1.1 200 OK\\\"\n                    self.write(status + b\\\"\\\\\\\\r\\\\\\\\nTransfer-Encoding: chunked\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n2\\\\\\\\r\\\\\\\\n{}\\\")\n                    time.sleep(0.25)\n                    self.write(b\\\"\\\\\\\\r\\\")\n                    time.sleep(0.25)\n                    self.write(b\\\"\\\\\\\\n0\\\\\\\\r\\\\\\\\nX-Probe-Trailer: seen\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    return\n\n                if mode in {\\\"chunked_trailers_success\\\", \\\"chunked_http_error_trailers_success\\\"}:\n                    status = b\\\"HTTP/1.1 503 Service Unavailable\\\" if mode.startswith(\\\"chunked_http_error\\\") else b\\\"HTTP/1.1 200 OK\\\"\n                    self.write(status + b\\\"\\\\\\\\r\\\\\\\\nTransfer-Encoding: chunked\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n1\\\\\\\\r\\\\\\\\n{\\\\\\\\r\\\\\\\\n1\\\\\\\\r\\\\\\\\n}\\\\\\\\r\\\\\\\\n0\\\\\\\\r\\\\\\\\nX-Probe-Trailer: seen\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    return\n\n                if mode == \\\"slow_http_error_body\\\":\n                    body = b\\\"{\\\\\\\\\\\\\\\"error\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"offline temporary\\\\\\\\\\\\\\\",\\\\\\\\\\\\\\\"padding\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"\\\" + b\\\"y\\\" * 80 + b\\\"\\\\\\\\\\\\\\\"}\\\"\n                    self.write(b\\\"HTTP/1.1 503 Service Unavailable\\\\\\\\r\\\\\\\\nContent-Length: \\\" + str(len(body)).encode() + b\\\"\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n                    for offset in range(0, len(body), 10):\n                        self.write(body[offset:offset + 10])\n                        time.sleep(0.12)\n                    return\n\n                if mode == \\\"slow_response_headers\\\":\n                    self.write(b\\\"HTTP/1.1 200 \\\")\n                    time.sleep(0.30)\n                    self.write(b\\\"OK\\\")\n                    time.sleep(0.30)\n                    self.write(b\\\"\\\\\\\\r\\\\\\\\nContent-Length: 2\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n{}\\\")\n                    return\n\n                raise AssertionError(mode)\n            except (BrokenPipeError, ConnectionResetError, OSError):\n                return\n\n    return Handler\n\n\ndef run_case(mode: str, budget: float, *, adapt_success: bool = False):\n    server = QuietHTTPServer((\\\"127.0.0.1\\\", 0), handler_for(mode))\n    thread = threading.Thread(target=server.serve_forever, daemon=True)\n    thread.start()\n    previous_api_root = brightdata.API_ROOT\n    previous_urlopen = brightdata.urllib.request.urlopen\n    brightdata.API_ROOT = f\\\"http://127.0.0.1:{server.server_port}\\\"\n    if adapt_success:\n        def adapted_urlopen(*args, **kwargs):\n            return URLResponseAdapter(previous_urlopen(*args, **kwargs))\n        brightdata.urllib.request.urlopen = adapted_urlopen\n    attempts = []\n    started = time.monotonic()\n    outcome = None\n    try:\n        transport = BrightDataHTTPTransport(timeout_seconds=45)\n        response = transport.request(\n            \\\"GET\\\", \\\"/probe\\\", params={}, json_body=None,\n            token=\\\"offline-synthetic-token\\\", timeout_seconds=budget,\n            task_deadline=started + budget, on_attempt=lambda: attempts.append(\\\"GET\\\"),\n        )\n        outcome = f\\\"response status={response.status} payload={response.payload\"'!r}\"\n    except Exception as exc:\n        outcome = f\"exception={type(exc).__name__}:{str(exc)[:160]}\"\n    finally:\n        elapsed = time.monotonic() - started\n        brightdata.API_ROOT = previous_api_root\n        brightdata.urllib.request.urlopen = previous_urlopen\n        server.shutdown()\n        server.server_close()\n        thread.join(timeout=1)\n    return {\n        \"case\": mode,\n        \"urlopen_shape\": \"test_adapter\" if adapt_success else \"stdlib_direct\",\n        \"budget_seconds\": budget,\n        \"elapsed_seconds\": round(elapsed, 3),\n        \"overrun_seconds\": round(max(0.0, elapsed - budget), 3),\n        \"attempts\": len(attempts),\n        \"outcome\": outcome,\n    }\n\n\ndef main():\n    cases = [\n        run_case(\"slow_content_length\", 0.35, adapt_success=True),\n        run_case(\"chunked_crlf_overrun\", 0.40, adapt_success=True),\n        run_case(\"chunked_trailers_success\", 2.0, adapt_success=True),\n        run_case(\"slow_http_error_body\", 0.35),\n        run_case(\"chunked_http_error_trailers_success\", 2.0),\n        run_case(\"chunked_http_error_crlf_overrun\", 0.40),\n        run_case(\"slow_response_headers\", 0.45),\n        run_case(\"chunked_trailers_success\", 2.0),\n    ]\n    for case in cases:\n        print(json.dumps(case, sort_keys=True))\n\n    observed = {(case[\"case\"], case[\"urlopen_shape\"]): case for case in cases}\n    assert observed[(\"slow_content_length\", \"test_adapter\")][\"overrun_seconds\"] < 0.10\n    assert observed[(\"chunked_crlf_overrun\", \"test_adapter\")][\"overrun_seconds\"] >= 0.05\n    assert observed[(\"chunked_trailers_success\", \"test_adapter\")][\"outcome\"].startswith(\"response status=200 payload={}\")\n    assert observed[(\"slow_http_error_body\", \"stdlib_direct\")][\"overrun_seconds\"] < 0.10\n    assert observed[(\"chunked_http_error_trailers_success\", \"stdlib_direct\")][\"outcome\"].startswith(\"response status=503 payload={}\")\n    assert observed[(\"chunked_http_error_crlf_overrun\", \"stdlib_direct\")][\"overrun_seconds\"] >= 0.05\n    assert observed[(\"slow_response_headers\", \"stdlib_direct\")][\"overrun_seconds\"] >= 0.05\n    direct = observed[(\"chunked_trailers_success\", \"stdlib_direct\")]\n    assert direct[\"outcome\"].startswith(\"exception=OSError:Bright Data response stream does not expose bounded reads\")\n    assert all(case[\"attempts\"] == 1 for case in cases)\n\n\nif __name__ == \"__main__\":\n    main()\n'\"''', encoding='utf-8')\nprint(path)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '970,1060p' src/jobbot/acquisition/brightdata.py && rtk sed -n '260,305p' src/jobbot/acquisition/coordinator.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1 && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/compileall.log && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/diff_check.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,70p' src/jobbot/acquisition/brightdata.py && rtk sed -n '190,270p' src/jobbot/acquisition/brightdata.py && rtk sed -n '345,425p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse HEAD HEAD''^{tree} origin/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1 && rtk git status --short --branch && rtk git diff --stat 8d193e200254e42af03c22b923137ef9a1ccb83d..962d1d1885047920089b019eb19f6d23324f41e9 && rtk git diff --quiet 8d193e200254e42af03c22b923137ef9a1ccb83d HEAD -- src/jobbot/acquisition/coordinator.py src/jobbot/cli.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rm -f /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.debug.log /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/slow_response_probe.initial.log /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_response_structure.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy nl -ba src/jobbot/acquisition/brightdata.py | rtk sed -n '78,205p' && rtk proxy nl -ba src/jobbot/acquisition/brightdata.py | rtk sed -n '610,655p' && rtk proxy nl -ba src/jobbot/acquisition/brightdata.py | rtk sed -n '980,1045p' && rtk proxy nl -ba src/jobbot/acquisition/coordinator.py | rtk sed -n '125,235p' && rtk proxy nl -ba src/jobbot/acquisition/coordinator.py | rtk sed -n '265,300p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\npath = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_shape_probe.py')\npath.write_text('''from __future__ import annotations\n\nimport threading\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\nfrom urllib.request import urlopen\n\n\nclass Handler(BaseHTTPRequestHandler):\n    protocol_version = \\\"HTTP/1.1\\\"\n    def do_GET(self):\n        body = b\\\"{}\\\"\n        self.send_response(200)\n        self.send_header(\\\"Content-Length\\\", str(len(body)))\n        self.send_header(\\\"Connection\\\", \\\"close\\\")\n        self.end_headers()\n        self.wfile.write(body)\n    def log_message(self, *args):\n        pass\n\n\nserver = ThreadingHTTPServer((\\\"127.0.0.1\\\", 0), Handler)\nthread = threading.Thread(target=server.serve_forever, daemon=True)\nthread.start()\ntry:\n    response = urlopen(f\\\"http://127.0.0.1:{server.server_port}/\\\", timeout=1)\n    try:\n        print(f\\\"urlopen_return={type(response).__module__}.{type(response).__name__}\\\")\n        print(f\\\"response.fp={type(response.fp).__module__}.{type(response.fp).__name__}\\\")\n        raw = getattr(response.fp, \\\"raw\\\", None)\n        print(f\\\"response.fp.raw={type(raw).__module__}.{type(raw).__name__}\\\")\n        print(f\\\"response.fp.raw_has_socket={getattr(raw, '_sock', None) is not None}\\\")\n    finally:\n        response.close()\nfinally:\n    server.shutdown()\n    server.server_close()\n    thread.join(timeout=1)\n''', encoding='utf-8')\nprint(path)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_shape_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_shape_probe.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_shape_probe.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\npath = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/redirect_accounting_probe.py')\npath.write_text('''from __future__ import annotations\n\nimport threading\nimport time\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\n\nfrom jobbot.acquisition import brightdata\nfrom jobbot.acquisition.brightdata import BrightDataHTTPTransport\n\n\nclass Server(ThreadingHTTPServer):\n    daemon_threads = True\n    allow_reuse_address = True\n    def handle_error(self, request, client_address):\n        pass\n\n\nclass Adapter:\n    def __init__(self, response):\n        self.response = response\n        self.fp = response\n        self.status = response.status\n        self.headers = response.headers\n    def __enter__(self):\n        return self\n    def __exit__(self, *_args):\n        self.response.close()\n\n\nclass Handler(BaseHTTPRequestHandler):\n    protocol_version = \\\"HTTP/1.1\\\"\n    def do_GET(self):\n        self.server.paths.append(self.path)\n        if self.path == \\\"/start\\\":\n            self.send_response(302)\n            self.send_header(\\\"Location\\\", \\\"/target\\\")\n            self.send_header(\\\"Content-Length\\\", \\\"0\\\")\n            self.send_header(\\\"Connection\\\", \\\"close\\\")\n            self.end_headers()\n            return\n        body = b\\\"{}\\\"\n        self.send_response(200)\n        self.send_header(\\\"Content-Length\\\", str(len(body)))\n        self.send_header(\\\"Connection\\\", \\\"close\\\")\n        self.end_headers()\n        self.wfile.write(body)\n    def log_message(self, *args):\n        pass\n\n\nserver = Server((\\\"127.0.0.1\\\", 0), Handler)\nserver.paths = []\nthread = threading.Thread(target=server.serve_forever, daemon=True)\nthread.start()\nold_root = brightdata.API_ROOT\nold_urlopen = brightdata.urllib.request.urlopen\nbrightdata.API_ROOT = f\\\"http://127.0.0.1:{server.server_port}\\\"\nattempt_callbacks = []\ndef adapted_urlopen(*args, **kwargs):\n    return Adapter(old_urlopen(*args, **kwargs))\nbrightdata.urllib.request.urlopen = adapted_urlopen\nstarted = time.monotonic()\ntry:\n    transport = BrightDataHTTPTransport()\n    response = transport.request(\n        \\\"GET\\\", \\\"/start\\\", params={}, json_body=None, token=\\\"offline-synthetic-token\\\",\n        timeout_seconds=2, task_deadline=started + 2,\n        on_attempt=lambda: attempt_callbacks.append(\\\"attempt\\\"),\n    )\n    print(f\\\"response_status={response.status} payload={response.payload\"'!r}\")\n    print(f\"on_attempt_callbacks={len(attempt_callbacks)}\")\n    print(f\"loopback_http_requests={len(server.paths)} paths={server.paths!r}\")\n    assert response.status == 200 and response.payload == {}\n    assert len(attempt_callbacks) == 1 and len(server.paths) == 2\nfinally:\n    brightdata.API_ROOT = old_root\n    brightdata.urllib.request.urlopen = old_urlopen\n    server.shutdown()\n    server.server_close()\n    thread.join(timeout=1)\n'\"''', encoding='utf-8')\nprint(path)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/redirect_accounting_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/redirect_accounting_probe.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/redirect_accounting_probe.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\npath = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/late_redirect_deadline_probe.py')\npath.write_text('''from __future__ import annotations\n\nimport threading\nimport time\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\n\nfrom jobbot.acquisition import brightdata\nfrom jobbot.acquisition.brightdata import BrightDataHTTPTransport\n\n\nclass Server(ThreadingHTTPServer):\n    daemon_threads = True\n    allow_reuse_address = True\n    def handle_error(self, request, client_address):\n        pass\n\n\nclass Adapter:\n    def __init__(self, response):\n        self.response = response\n        self.fp = response\n        self.status = response.status\n        self.headers = response.headers\n    def __enter__(self):\n        return self\n    def __exit__(self, *_args):\n        self.response.close()\n\n\nclass Handler(BaseHTTPRequestHandler):\n    protocol_version = \\\"HTTP/1.1\\\"\n    def do_GET(self):\n        elapsed = time.monotonic() - self.server.started_at\n        self.server.requests.append((self.path, elapsed))\n        if self.path == \\\"/slow-start\\\":\n            self.wfile.write(b\\\"HTTP/1.1 \\\")\n            self.wfile.flush()\n            time.sleep(0.30)\n            self.wfile.write(b\\\"302\\\")\n            self.wfile.flush()\n            time.sleep(0.30)\n            self.wfile.write(b\\\" Found\\\\\\\\r\\\\\\\\nLocation: /target\\\\\\\\r\\\\\\\\nContent-Length: 0\\\\\\\\r\\\\\\\\nConnection: close\\\\\\\\r\\\\\\\\n\\\\\\\\r\\\\\\\\n\\\")\n            self.wfile.flush()\n            return\n        body = b\\\"{}\\\"\n        self.send_response(200)\n        self.send_header(\\\"Content-Length\\\", str(len(body)))\n        self.send_header(\\\"Connection\\\", \\\"close\\\")\n        self.end_headers()\n        self.wfile.write(body)\n    def log_message(self, *args):\n        pass\n\n\nserver = Server((\\\"127.0.0.1\\\", 0), Handler)\nserver.requests = []\nthread = threading.Thread(target=server.serve_forever, daemon=True)\nthread.start()\nold_root = brightdata.API_ROOT\nold_urlopen = brightdata.urllib.request.urlopen\nbrightdata.API_ROOT = f\\\"http://127.0.0.1:{server.server_port}\\\"\ndef adapted_urlopen(*args, **kwargs):\n    return Adapter(old_urlopen(*args, **kwargs))\nbrightdata.urllib.request.urlopen = adapted_urlopen\nattempts = []\nbudget = 0.45\nstarted = time.monotonic()\nserver.started_at = started\ntry:\n    transport = BrightDataHTTPTransport()\n    try:\n        transport.request(\n            \\\"GET\\\", \\\"/slow-start\\\", params={}, json_body=None, token=\\\"offline-synthetic-token\\\",\n            timeout_seconds=budget, task_deadline=started + budget,\n            on_attempt=lambda: attempts.append(\\\"attempt\\\"),\n        )\n    except Exception as exc:\n        outcome = f\\\"exception={type(exc).__name__}:{str(exc)[:120]}\\\"\n    else:\n        outcome = \\\"response\\\"\n    target = next((elapsed for path, elapsed in server.requests if path == \\\"/target\\\"), None)\n    print(f\\\"budget_seconds={budget}\\\")\n    print(f\\\"on_attempt_callbacks={len(attempts)}\\\")\n    print(f\\\"loopback_requests={server.requests\"'!r}\")\n    print(f\"target_request_after_budget={target is not None and target > budget}\")\n    print(f\"outcome={outcome}\")\n    assert target is not None and target > budget\n    assert len(attempts) == 1 and len(server.requests) == 2\nfinally:\n    brightdata.API_ROOT = old_root\n    brightdata.urllib.request.urlopen = old_urlopen\n    server.shutdown()\n    server.server_close()\n    thread.join(timeout=1)\n'\"''', encoding='utf-8')\nprint(path)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/late_redirect_deadline_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/late_redirect_deadline_probe.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/late_redirect_deadline_probe.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git status --short --branch > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/verifier-git-status.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git rev-parse HEAD 'HEAD\"'^{tree}'\"' origin/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1 > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/verifier-git-refs.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --no-ext-diff --no-color --find-renames 8d193e200254e42af03c22b923137ef9a1ccb83d 962d1d1885047920089b019eb19f6d23324f41e9 > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/base-to-candidate.patch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --stat 8d193e200254e42af03c22b923137ef9a1ccb83d 962d1d1885047920089b019eb19f6d23324f41e9 > /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/base-to-candidate.stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\nimport json\nroot = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1')\nreport = '''# CHG-286 independent VERIFY\n\n**Disposition: FIX REQUIRED — NO GO.** The exact candidate was verified, but successful urllib responses fail stream-shape validation, chunked CRLF reads and response-header reads can overrun the monotonic budget, and automatic redirects can issue uncounted GETs after expiry. No source, test, or documentation files were edited during VERIFY.\n\n## Subject and evidence identities\n\n- Repository: \"'`kimhw8084/jobbot`\n- Requested base and `origin/main`: `8d193e200254e42af03c22b923137ef9a1ccb83d`\n- Tested candidate / VERIFY HEAD: `962d1d1885047920089b019eb19f6d23324f41e9`\n- Candidate tree and VERIFY tree: `b9212b7381c883e7dded5b86bd7d50c34ebbf7e6`\n- Request-owned verifier branch: `codex/jobbot-chg286-brightdata-task-deadline-verify-r1`\n- Original producer identity: Fabric job `CF-a5d777f1e16da7b790235f15`, branch `codex/jobbot-chg286-brightdata-task-deadline-r1`, candidate HEAD `962d1d1885047920089b019eb19f6d23324f41e9`.\n- This verifier identity: Fabric job `CF-cc8d7f2a7eb12423e5a3aa14`, operation `VERIFY`, branch `codex/jobbot-chg286-brightdata-task-deadline-verify-r1`.\n\nThe verifier branch started at the requested base and was advanced by `git merge --ff-only` to the exact candidate. HEAD and tree were checked before tests and again afterward. The producer branch remains at the candidate, `origin/main` remains at the base, and the verifier worktree is clean. The candidate commit is a follow-up evidence commit over implementation commit `2f8e2d687ae0a5f5988d0632e98da5864f4a894f`; all requested tests below ran at HEAD `962d1d1…`, not at that parent or at base.\n\nThe exact base-to-candidate diff contains four paths: `docs/BRIGHTDATA_PROVIDER.md`, `src/jobbot/acquisition/brightdata.py`, `tests/integration/test_brightdata_jobs.py`, and `verification/CHG-286-r1.json`. The shared coordinator and CLI/`RUN_NOW` files are unchanged. The raw patch is `base-to-candidate.patch`.\n\n## Material findings\n\n### F1 — successful urllib responses are rejected before body processing\n\n`BrightDataHTTPTransport._read_body` at `src/jobbot/acquisition/brightdata.py:174-181` assumes `response.fp` is an `HTTPResponse` containing another `.fp`. Python 3.11.7 `urllib.request.urlopen` returns `http.client.HTTPResponse`; its `.fp` is already an `_io.BufferedReader`. Thus the candidate assigns that buffer to `http_response`, finds no nested `buffered.fp`, and raises `OSError(\"Bright Data response stream does not expose bounded reads\")` for a normal successful response. The loopback shape probe records `HTTPResponse` / `BufferedReader` / `SocketIO`, and the direct successful chunked response probe reproduces that exact OSError. This breaks ordinary 2xx trigger, progress, parts, and result responses on the configured transport.\n\n### F2 — chunked CRLF framing bypasses the monotonic read guard\n\n`_DeadlineBodyReader` implements guarded `read1` and `readline`, but its `__getattr__` delegates `read` directly to the underlying buffered stream. Python 3.11 `HTTPResponse._get_chunk_left()` uses `_safe_read(2)` for the CRLF after each chunk; `_safe_read` calls `fp.read(2)`, bypassing the deadline refresh and post-read check. In the loopback probe, a 0.40-second budget took 0.504 seconds for the adapter-isolated successful chunk path and 0.511 seconds for an actual HTTP 503 error-body path. Normal chunk data, CRLF, and trailers also parsed in the successful fast cases. The 503 case shows this bypass is reachable through the candidate'\"'s actual HTTPError body handling even before F1 is fixed.\n\n### F3 — response headers are read before deadline-aware wrapping\n\nThe candidate calls \"'`urllib.request.urlopen` at line 153 and only wraps body reads after it returns. urllib parses the status and response headers during that blocking call using the request-start socket timeout, without refreshing it against the absolute task deadline. A loopback status line delivered in fragments completed at 0.608 seconds for a 0.45-second task budget, a 0.158-second overrun.\n\n### F4 — urllib redirects are uncounted and may issue GETs after expiry\n\nThe `on_attempt` callback is invoked once before `urlopen` at lines 151-153. urllib'\"'s redirect handler issues follow-up requests internally, without another callback or a fresh monotonic-budget check. A loopback 302 produced one callback for two observed GETs (\"'`/start`, `/target`). In a slow-header redirect probe, `/target` was requested at 0.621 seconds against a 0.45-second budget; the callback count was still one. This undercounts actual GET attempts and permits a new request after expiry.\n\n## Checks that passed\n\n- The configured timeout is validated as positive and finite; the default is `300.0` seconds. Candidate tests cover zero, negative, NaN, infinity, invalid text, and secret-safe configuration errors.\n- Provider-level trigger and GET retry accounting, request prechecks, deadline-capped polling sleep, secret-safe diagnostics, partial-result preservation, record caps, provenance, truncation/error handling, shared-ingestion gates, and successful-completion evidence all pass their focused tests. The shared coordinator persists cards before finishing an incomplete task; the timeout test confirms mapped rows remain with retryable/incomplete state and no exhaustion or completion evidence.\n- Both integration suites use temporary isolated SQLite databases. Provider tests use mocks; the supplementary probes bind only to `127.0.0.1` and use a synthetic token string. No Bright Data endpoint, provider credential, production database, challenge, login, or application flow was used.\n- No coordinator, schema/migration, concurrency, CLI, or `RUN_NOW` path changed in the candidate diff.\n\nThese passing checks do not override F1–F4. The candidate is not eligible for GO.\n\n## Exact commands and results\n\nThe commands were run from the candidate worktree with RTK'\"'s raw proxy prefix. Full verbose test output is preserved in the named log files.\n\n1. \"'`rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p '\"'test_brightdata_jobs.py' -v\"'` — exit 0; 20 tests passed. Output: `test_brightdata_jobs.log`.\n2. `rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p '\"'test_acquisition_v2.py' -v\"'` — exit 0; 7 tests passed. Output: `test_acquisition_v2.log`.\n3. `rtk proxy python -m compileall -q src tests` — exit 0. Empty output: `compileall.log`.\n4. `rtk proxy git diff --check 8d193e200254e42af03c22b923137ef9a1ccb83d 962d1d1885047920089b019eb19f6d23324f41e9` — exit 0. Empty output: `diff_check.log`.\n5. `rtk proxy env PYTHONPATH=src python slow_response_probe.py` — exit 0; loopback/fake-shape cases are in `slow_response_probe.log`.\n6. `rtk proxy env PYTHONPATH=src python urllib_shape_probe.py` — exit 0; direct urllib object layout is in `urllib_shape_probe.log`.\n7. `rtk proxy env PYTHONPATH=src python redirect_accounting_probe.py` — exit 0; one callback vs two GETs is in `redirect_accounting_probe.log`.\n8. `rtk proxy env PYTHONPATH=src python late_redirect_deadline_probe.py` — exit 0; post-deadline redirected GET is in `late_redirect_deadline_probe.log`.\n\n## Artifact staging blocker\n\nThis runtime exposes no callable qualified Project OS Artifact Bridge. The local `fabricctl publish-evidence` path is a Git audit-evidence publisher that creates and pushes a commit; it is not the requested Artifact Bridge and was not invoked because generated evidence commits are prohibited here. The separate `projectos-integrate-stdin` path is a post-GO integration operator and was also not invoked.\n\nTherefore there is **no successful stage/readback receipt and no Artifact Run identity**. Local manifest and bundle digests are recorded in `local-artifact-integrity.json`, but they are not an Artifact Run receipt or Fabric-published readback. Evidence remains in this verifier job'\"'s Artifact Bridge root pending the qualified bridge capability; no relay or substitute publication is claimed.\n'''\n(root / 'verification-report.md').write_text(report, encoding='utf-8')\ncommands = {\n  'candidate_sha': '962d1d1885047920089b019eb19f6d23324f41e9',\n  'candidate_tree': 'b9212b7381c883e7dded5b86bd7d50c34ebbf7e6',\n  'base_sha': '8d193e200254e42af03c22b923137ef9a1ccb83d',\n  'commands': [\n    {'command': \\\"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\\\", 'exit_code': 0, 'output': 'test_brightdata_jobs.log', 'result': '20 tests passed'},\n    {'command': \\\"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v\\\", 'exit_code': 0, 'output': 'test_acquisition_v2.log', 'result': '7 tests passed'},\n    {'command': 'rtk proxy python -m compileall -q src tests', 'exit_code': 0, 'output': 'compileall.log', 'result': 'PASS'},\n    {'command': 'rtk proxy git diff --check 8d193e200254e42af03c22b923137ef9a1ccb83d 962d1d1885047920089b019eb19f6d23324f41e9', 'exit_code': 0, 'output': 'diff_check.log', 'result': 'PASS'},\n    {'command': 'rtk proxy env PYTHONPATH=src python slow_response_probe.py', 'exit_code': 0, 'output': 'slow_response_probe.log', 'result': 'FIX findings reproduced on loopback'},\n    {'command': 'rtk proxy env PYTHONPATH=src python urllib_shape_probe.py', 'exit_code': 0, 'output': 'urllib_shape_probe.log', 'result': 'stdlib response layout captured'},\n    {'command': 'rtk proxy env PYTHONPATH=src python redirect_accounting_probe.py', 'exit_code': 0, 'output': 'redirect_accounting_probe.log', 'result': 'one callback, two GETs'},\n    {'command': 'rtk proxy env PYTHONPATH=src python late_redirect_deadline_probe.py', 'exit_code': 0, 'output': 'late_redirect_deadline_probe.log', 'result': 'redirected GET issued after task budget'},\n  ],\n}\n(root / 'command-results.json').write_text(json.dumps(commands, indent=2) + '\\\\n', encoding='utf-8')\nidentity = {\n  'repository': 'kimhw8084/jobbot',\n  'base_sha': '8d193e200254e42af03c22b923137ef9a1ccb83d',\n  'origin_main_sha_after_verification': '8d193e200254e42af03c22b923137ef9a1ccb83d',\n  'candidate_sha': '962d1d1885047920089b019eb19f6d23324f41e9',\n  'candidate_tree': 'b9212b7381c883e7dded5b86bd7d50c34ebbf7e6',\n  'candidate_parent': '2f8e2d687ae0a5f5988d0632e98da5864f4a894f',\n  'producer': {'job_id': 'CF-a5d777f1e16da7b790235f15', 'branch': 'codex/jobbot-chg286-brightdata-task-deadline-r1', 'head': '962d1d1885047920089b019eb19f6d23324f41e9'},\n  'verifier': {'job_id': 'CF-cc8d7f2a7eb12423e5a3aa14', 'operation': 'VERIFY', 'branch': 'codex/jobbot-chg286-brightdata-task-deadline-verify-r1', 'head': '962d1d1885047920089b019eb19f6d23324f41e9', 'tree': 'b9212b7381c883e7dded5b86bd7d50c34ebbf7e6'},\n  'candidate_subject_confirmed_before_testing': True,\n  'fast_forward_only': True,\n  'verifier_worktree_clean_after_testing': True,\n  'producer_branch_moved': False,\n  'main_modified': False,\n  'disposition': 'FIX_REQUIRED_NO_GO',\n}\n(root / 'repository-identity.json').write_text(json.dumps(identity, indent=2) + '\\\\n', encoding='utf-8')\nstage = {\n  'qualified_project_os_artifact_bridge_available': False,\n  'bridge_invoked': False,\n  'stage_readback_receipt': None,\n  'artifact_run_id': None,\n  'blocker': 'No callable qualified Project OS Artifact Bridge is present in this runtime. Available Fabric audit publisher would create/push a Git evidence commit and was not used because generated evidence commits are prohibited.',\n  'status': 'BLOCKED_UNSTAGED',\n}\n(root / 'stage-status.json').write_text(json.dumps(stage, indent=2) + '\\\\n', encoding='utf-8')\nprint(root)\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\nimport json\nroot = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1')\nreport_path = root / 'verification-report.md'\nreport = report_path.read_text()\nfor name in ('slow_response_probe.py', 'urllib_shape_probe.py', 'redirect_accounting_probe.py', 'late_redirect_deadline_probe.py'):\n    report = report.replace(f'python {name}', f'python {root / name}')\nreport_path.write_text(report)\nresults_path = root / 'command-results.json'\nresults = json.loads(results_path.read_text())\nfor row in results['commands']:\n    for name in ('slow_response_probe.py', 'urllib_shape_probe.py', 'redirect_accounting_probe.py', 'late_redirect_deadline_probe.py'):\n        if row['command'].endswith(f'python {name}'):\n            row['command'] = row['command'].removesuffix(name) + str(root / name)\nresults_path.write_text(json.dumps(results, indent=2) + '\\\\n')\nprint('updated exact absolute probe commands')\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1 && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/repository-identity.json && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/stage-status.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\nimport gzip\nimport hashlib\nimport io\nimport json\nimport tarfile\nroot = Path('/Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1')\nmanifest_path = root / 'local-manifest.json'\nbundle_path = root / 'verification-bundle.tar.gz'\nintegrity_path = root / 'local-artifact-integrity.json'\nexcluded = {manifest_path.name, bundle_path.name, integrity_path.name}\nitems = []\nfor path in sorted(root.iterdir(), key=lambda p: p.name):\n    if path.is_file() and path.name not in excluded:\n        data = path.read_bytes()\n        items.append({'path': path.name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})\nmanifest = {\n    'schema': 'jobbot-chg286-verify-local-manifest-v1',\n    'job_id': 'CF-cc8d7f2a7eb12423e5a3aa14',\n    'candidate_sha': '962d1d1885047920089b019eb19f6d23324f41e9',\n    'candidate_tree': 'b9212b7381c883e7dded5b86bd7d50c34ebbf7e6',\n    'stage_status': 'BLOCKED_UNSTAGED',\n    'items': items,\n}\nmanifest_bytes = (json.dumps(manifest, indent=2, sort_keys=True) + '\\\\n').encode()\nmanifest_path.write_bytes(manifest_bytes)\nwith bundle_path.open('wb') as bundle_file:\n    with gzip.GzipFile(filename='chg286-r1-verify.tar', mode='wb', fileobj=bundle_file, mtime=0) as gzip_file:\n        with tarfile.open(fileobj=gzip_file, mode='w') as archive:\n            for name in [item['path'] for item in items] + [manifest_path.name]:\n                data = (root / name).read_bytes()\n                info = tarfile.TarInfo(name)\n                info.size = len(data)\n                info.mode = 0o600\n                info.mtime = 0\n                info.uid = info.gid = 0\n                info.uname = info.gname = ''\n                archive.addfile(info, io.BytesIO(data))\nmanifest_sha = hashlib.sha256(manifest_bytes).hexdigest()\nbundle_bytes = bundle_path.read_bytes()\nbundle_sha = hashlib.sha256(bundle_bytes).hexdigest()\nintegrity = {\n    'artifact_run_id': None,\n    'stage_readback_receipt': None,\n    'stage_status': 'BLOCKED_UNSTAGED',\n    'qualified_bridge_available': False,\n    'manifest': {'path': manifest_path.name, 'sha256': manifest_sha, 'item_count': len(items)},\n    'bundle': {'path': bundle_path.name, 'bytes': len(bundle_bytes), 'sha256': bundle_sha},\n    'digest_scope': 'local job-owned evidence only; not an Artifact Bridge staging receipt or Fabric readback',\n}\nintegrity_path.write_text(json.dumps(integrity, indent=2, sort_keys=True) + '\\\\n')\nprint(json.dumps(integrity, indent=2, sort_keys=True))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,240p' /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/verification-report.md && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/local-artifact-integrity.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --short --branch && rtk git rev-parse HEAD 'HEAD\"'^{tree}'\"' origin/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1 && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/urllib_shape_probe.log && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/redirect_accounting_probe.log && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc8d7f2a7eb12423e5a3aa14.running/artifact-bridge/jobbot-chg286-brightdata-task-deadline-verify-r1/late_redirect_deadline_probe.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 194,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.76,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 6604288,
+      "fresh_input_tokens": 221492,
+      "input_tokens": 6825780,
+      "non_reasoning_output_tokens": 27337,
+      "output_tokens": 80878,
+      "reasoning_output_tokens": 53541,
+      "total_processed_tokens": 6906658
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+      "subject": "CHG-286: record verification evidence"
+    },
+    {
+      "sha": "2f8e2d687ae0a5f5988d0632e98da5864f4a894f",
+      "subject": "CHG-286: bound Bright Data task runtime"
+    }
+  ],
+  "diff": {
+    "additions": 710,
+    "changed_files": 4,
+    "commit_count": 2,
+    "deletions": 118
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 2,
+    "items": [
+      {
+        "bytes": 7286,
+        "path": "docs/BRIGHTDATA_PROVIDER.md",
+        "sha256": "bdd8f244d6e7096d869a51ca2767910e43868f8f0ee47d45fab1a7c4b21f8fc3"
+      },
+      {
+        "bytes": 4498,
+        "path": "verification/CHG-286-r1.json",
+        "sha256": "e1454257f02d81f0b98b14892802beb36e915f772715c80f1f6f227c72916846"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-27T18:58:10Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r1",
+    "detached_verify": false,
+    "head_sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+    "remote_exact_head": true,
+    "remote_head_sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-cc8d7f2a7eb12423e5a3aa14",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r1"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-task-deadline-verify-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-27T18:27:20Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1850,
+    "queue_seconds": 1,
+    "total_seconds": 1851
+  },
+  "transport": {
+    "bytes": 3248,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2897,
+    "prompt_sha256": "3d6685b4169ba6d7c6cecd517961275f28031de1426e2ad7001c81baed5e5c8a",
+    "sha256": "cc8d7f2a7eb12423e5a3aa14ae2e16c6e7d8c8b5797aec951fd2839fbba214af"
+  }
+}
