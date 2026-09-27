@@ -1,0 +1,234 @@
+{
+  "accepted_at": "2026-09-27T04:53:12Z",
+  "changed_files": [],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc 'pwd && git status --short --branch && git branch --show-current && git rev-parse HEAD && git worktree list --porcelain && cat /Users/haewonkim/.codex/RTK.md && cat /Users/haewonkim/.codex/law.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g 'AGENTS.md' -g 'README*' -g 'pyproject.toml' -g 'setup.cfg' -g 'tox.ini' -g 'pytest.ini' -g 'Makefile' -g 'requirements*.txt' -g 'test_scoring.py' -g 'legacy_engine.py'\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 86,
+        "output_sha256": "3fbebdb4a50a8fea29c9a1c4d380ca3ec6eaadf7530d002ef2a07b99792e5b3f",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git merge-base --is-ancestor e1c01a165057a7a7d618022f38ee5fef3130a7de a4e85138555b6f83de2694994e94bee770b85080; rtk git merge-base e1c01a165057a7a7d618022f38ee5fef3130a7de a4e85138555b6f83de2694994e94bee770b85080'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git branch --list 'codex/CHG-284-r1-remote-title-gate' && rtk git show-ref --verify refs/heads/codex/CHG-284-r1-remote-title-gate && rtk git show -s --format='%H%n%P%n%s' a4e85138555b6f83de2694994e94bee770b85080\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --name-status e1c01a165057a7a7d618022f38ee5fef3130a7de...a4e85138555b6f83de2694994e94bee770b85080 && rtk git log --oneline --decorate --graph --max-count=8 a4e85138555b6f83de2694994e94bee770b85080'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg --files -g 'AGENTS.md' /Users/haewonkim/.codex-fabric/repos/jobbot /Users/haewonkim/.codex-fabric/worktrees/CF-059e84396b6a9b1cb5f17868\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'pytest|unittest|test_scoring|remote|onsite|hybrid|training|in.office|on.site|title' pyproject.toml README.md tests/regression/test_scoring.py src/jobbot/legacy_engine.py\"",
+      "exit_code": 0,
+      "test_result": {
+        "exit_code": 0,
+        "framework": "pytest",
+        "outcome": "passed",
+        "output_bytes": 67502,
+        "output_sha256": "04e23c61d97b54ba25b62ba6c1600f22b45f475ff5f22af93d2f07e2521a72ca",
+        "summary_detected": false
+      },
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v1 && rtk git diff --check e1c01a165057a7a7d618022f38ee5fef3130a7de a4e85138555b6f83de2694994e94bee770b85080'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --stat e1c01a165057a7a7d618022f38ee5fef3130a7de a4e85138555b6f83de2694994e94bee770b85080 && rtk git diff --find-renames --unified=80 e1c01a165057a7a7d618022f38ee5fef3130a7de a4e85138555b6f83de2694994e94bee770b85080 -- src/jobbot/legacy_engine.py tests/regression/test_scoring.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show a4e85138555b6f83de2694994e94bee770b85080:tests/regression/test_scoring.py | sed -n '1,180p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show a4e85138555b6f83de2694994e94bee770b85080:src/jobbot/legacy_engine.py | sed -n '1,90p;280,430p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show a4e85138555b6f83de2694994e94bee770b85080:pyproject.toml | sed -n '1,220p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'CHG-284|unittest|test_scoring|norm\\\\(' README.md pyproject.toml docs tests src/jobbot/legacy_engine.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show a4e85138555b6f83de2694994e94bee770b85080:README.md | sed -n '160,188p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show a4e85138555b6f83de2694994e94bee770b85080:src/jobbot/legacy_core.py | rg -n -C 5 '\"'^def norm'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check e1c01a165057a7a7d618022f38ee5fef3130a7de a4e85138555b6f83de2694994e94bee770b85080 && rtk git status --porcelain=v1 --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git worktree add --detach /tmp/jobbot-CHG-284-candidate-a4e8513 a4e85138555b6f83de2694994e94bee770b85080'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check e1c01a165057a7a7d618022f38ee5fef3130a7de HEAD && rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests/regression -p 'test_scoring.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -c 'import re; from jobbot.legacy_engine import norm; match=re.compile(r\\\"\\\\b(?:in office|onsite|on site)\\\\b\\\"); titles=[\\\"Pre-Service Representative, Days - In Office\\\", \\\"Pre-Service Representative - In-Office\\\", \\\"Patient Access Representative - On-Site\\\", \\\"Patient Access Representative - On Site\\\", \\\"Patient Enrollment Specialist - Remote\\\", \\\"Office of Patient Access Specialist\\\"]; [print(f\\\"{title}: {bool(match.search(norm(title)))} (normalized={norm(title)\"'!r})\") for title in titles]'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git worktree remove /tmp/jobbot-CHG-284-candidate-a4e8513'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git status --porcelain=v1 --branch && rtk git rev-parse HEAD && rtk git show -s --format='candidate=%H%nparents=%P' a4e85138555b6f83de2694994e94bee770b85080 && rtk git diff --name-status e1c01a165057a7a7d618022f38ee5fef3130a7de a4e85138555b6f83de2694994e94bee770b85080 && rtk git worktree list --porcelain\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 51,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 88.99,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 346368,
+      "fresh_input_tokens": 42868,
+      "input_tokens": 389236,
+      "non_reasoning_output_tokens": 2813,
+      "output_tokens": 11038,
+      "reasoning_output_tokens": 8225,
+      "total_processed_tokens": 400274
+    },
+    "warnings": []
+  },
+  "commits": [],
+  "diff": {
+    "additions": 0,
+    "changed_files": 0,
+    "commit_count": 0,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-27T04:56:56Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "e1c01a165057a7a7d618022f38ee5fef3130a7de",
+    "branch": "codex/CHG-284-r1-remote-title-gate-verify",
+    "detached_verify": false,
+    "head_sha": "e1c01a165057a7a7d618022f38ee5fef3130a7de",
+    "remote_exact_head": true,
+    "remote_head_sha": "e1c01a165057a7a7d618022f38ee5fef3130a7de",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "e1c01a165057a7a7d618022f38ee5fef3130a7de",
+    "work_branch": "codex/CHG-284-r1-remote-title-gate-verify",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-059e84396b6a9b1cb5f17868",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/CHG-284-r1-remote-title-gate-independent-verify",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/CHG-284-r1-remote-title-gate-independent-verify"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "CHG-284-r1-remote-title-gate-independent-verify",
+  "schema_version": 1,
+  "started_at": "2026-09-27T04:53:12Z",
+  "status": "EXECUTED_NO_CHANGE",
+  "timing": {
+    "execution_seconds": 224,
+    "queue_seconds": 0,
+    "total_seconds": 224
+  },
+  "transport": {
+    "bytes": 1903,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 1564,
+    "prompt_sha256": "377069f7fb157546a5e45eedfdea68644dde6dacbbf65ccf4e6f5411136e606d",
+    "sha256": "059e84396b6a9b1cb5f1786833863299154a67cec6bf5211b6a95e44ea4ebdd1"
+  }
+}
