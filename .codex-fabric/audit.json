@@ -1,0 +1,358 @@
+{
+  "accepted_at": "2026-09-29T03:27:58Z",
+  "changed_files": [],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk proxy nl -ba /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py | rtk proxy sed -n '185,230p;495,555p;810,865p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'from pathlib import Path; p=Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\\\"); s=p.read_text(); s=s.replace(\\\"        with mock.patch.object(bd, \\\\\\\"_DNS_WORKER_SOURCE\\\\\\\", make_sleep_source(0.0)):\\\\n            begin = len(spawned)\\\", \\\"        with mock.patch.object(bd, \\\\\\\"_start_dns_worker\\\\\\\", side_effect=tracked_start_worker), \\\\\\\\\\\\n             mock.patch.object(bd, \\\\\\\"_DNS_WORKER_SOURCE\\\\\\\", make_sleep_source(0.0)):\\\\n            begin = len(spawned)\\\"); s=s.replace(\\\"        outcome = \\\\\\\"\\\\\\\"\\\\n        r3_source = (\\\", \\\"        outcome = \\\\\\\"\\\\\\\"\\\\n        elapsed = 0.0\\\\n        r3_source = (\\\"); s=s.replace(\\\"                    except Exception as exc:\\\\n                        outcome = type(exc).__name__\\\\n        finally:\\\\n            stop_server(server)\\\\n\\\\n        elapsed = time.monotonic() - started\\\", \\\"                    except Exception as exc:\\\\n                        outcome = type(exc).__name__\\\\n            elapsed = time.monotonic() - started\\\\n        finally:\\\\n            stop_server(server)\\\"); s=s.replace(\\\"        counter_file.write_text(\\\\\\\"0\\\\\\\")\\\\n        stale_source = (\\\", \\\"        counter_file.write_text(\\\\\\\"0\\\\\\\")\\\\n        closed_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\\\\n        closed_socket.bind((\\\\\\\"127.0.0.1\\\\\\\", 0))\\\\n        stale_port = closed_socket.getsockname()[1]\\\\n        closed_socket.close()\\\\n        stale_source = (\\\"); s=s.replace(\\\"            \\\\\\\"ip=\\\\'127.0.0.2\\\\' if count == 0 else \\\\'127.0.0.1\\\\'\\\\\\\\n\\\\\\\"\\\\n            \\\\\\\"row=(socket.AF_INET,socket.SOCK_STREAM,6,\\\\'\\\\',(ip,port))\\\\\\\\n\\\\\\\"\\\", \\\"            \\\\\\\"ip=\\\\'127.0.0.1\\\\'\\\\\\\\n\\\\\\\"\\\\n            f\\\\\\\"endpoint_port={stale_port\"'!r} if count == 0 else port'\"\\\\\\\\n\\\\\\\"\\\\n            \\\\\\\"row=(socket.AF_INET,socket.SOCK_STREAM,6,\\\\'\\\\',(ip,endpoint_port))\\\\\\\\n\\\\\\\"\\\"); s=s.replace(\\\"resolver_answers=[\\\\\\\"127.0.0.2\\\\\\\", \\\\\\\"127.0.0.1\\\\\\\"],\\\", \\\"resolver_answers=[f\\\\\\\"127.0.0.1:{stale_port} (closed)\\\\\\\", f\\\\\\\"127.0.0.1:{server.server_port}\\\\\\\"],\\\"); p.write_text(s)' && rtk proxy python -m py_compile /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\np = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\\\")\ns = p.read_text()\ns = s.replace(\n'''        with mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", make_sleep_source(0.0)):\n            begin = len(spawned)''',\n'''        with mock.patch.object(bd, \\\"_start_dns_worker\\\", side_effect=tracked_start_worker), \\\\\\\\\n             mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", make_sleep_source(0.0)):\n            begin = len(spawned)''')\ns = s.replace(\n'''        outcome = \\\"\\\"\n        r3_source = (''',\n'''        outcome = \\\"\\\"\n        elapsed = 0.0\n        r3_source = (''')\ns = s.replace(\n'''                    except Exception as exc:\n                        outcome = type(exc).__name__\n        finally:\n            stop_server(server)\n\n        elapsed = time.monotonic() - started''',\n'''                    except Exception as exc:\n                        outcome = type(exc).__name__\n            elapsed = time.monotonic() - started\n        finally:\n            stop_server(server)''')\ns = s.replace(\n'''        counter_file.write_text(\\\"0\\\")\n        stale_source = (''',\n'''        counter_file.write_text(\\\"0\\\")\n        closed_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n        closed_socket.bind((\\\"127.0.0.1\\\", 0))\n        stale_port = closed_socket.getsockname()[1]\n        closed_socket.close()\n        stale_source = (''')\ns = s.replace(\n'''            \\\"ip='127.0.0.2' if count == 0 else '127.0.0.1'\\\\\\\\n\\\"\n            \\\"row=(socket.AF_INET,socket.SOCK_STREAM,6,'',(ip,port))\\\\\\\\n\\\"''',\n'''            \\\"ip='127.0.0.1'\\\\\\\\n\\\"\n            f\\\"endpoint_port={stale_port\"'!r} if count == 0 else port'\"\\\\\\\\n\\\"\n            \\\"row=(socket.AF_INET,socket.SOCK_STREAM,6,'',(ip,endpoint_port))\\\\\\\\n\\\"''')\ns = s.replace(\n'''                resolver_answers=[\\\"127.0.0.2\\\", \\\"127.0.0.1\\\"],''',\n'''                resolver_answers=[f\\\"127.0.0.1:{stale_port} (closed)\\\", f\\\"127.0.0.1:{server.server_port}\\\"],''')\np.write_text(s)\nPY\nrtk proxy python -m py_compile /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy nl -ba /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py | rtk proxy sed -n '213,226p;492,538p;826,846p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache /opt/anaconda3/bin/python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl 2>&1'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'from pathlib import Path; p=Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\\\"); s=p.read_text().replace(\\\"and len(phase_workers) == 1 and clean_children\\\\n                and target_connects == 0\\\", \\\"and len(phase_workers) == 2 and clean_children\\\\n                and target_connects == 0\\\"); p.write_text(s)' && rtk proxy python -m py_compile /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache /opt/anaconda3/bin/python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl 2>&1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git worktree add --detach /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r2 8682c1756ccc42c46a05f4e1f7f25de1f484761f && rtk git -C /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r2 show -s --format='commit=%H%ntree=%T%nparent=%P' HEAD > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-identity.txt && rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-identity.txt && rtk git -C /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r2 status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache /opt/anaconda3/bin/python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r2.jsonl 2>&1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r2.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy openssl version'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy openssl req -x509 -newkey rsa:2048 -nodes -keyout /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/tls_probe_key.pem -out /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/tls_probe_cert.pem -subj /CN=localhost -days 1 > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/tls_probe_certificate.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\np = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\\\")\ns = p.read_text()\ns = s.replace(\n'''    descriptor_count_before = len(os.listdir(\\\"/dev/fd\\\"))\n    phase_processes: list[object] = []''',\n'''    descriptor_count_before = len(os.listdir(\\\"/dev/fd\\\"))\n    thread_count_before = threading.active_count()\n    phase_processes: list[object] = []''')\ns = s.replace(\n'''        with mock.patch.object(bd, \\\"_start_dns_worker\\\", side_effect=tracked_start_worker), \\\\\\\\\n             mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", make_sleep_source(0.0)):\n            begin = len(spawned)\n            for _ in range(2):\n                now = time.monotonic()\n                bd._deadline_getaddrinfo(\n                    \\\"127.0.0.1\\\", 80, task_deadline=now + 2.0,\n                    monotonic=time.monotonic,\n                )\n            same_host_workers = spawned[begin:]\n        observe(\n            \\\"dns_cache_and_worker_startup\\\",\n            len(same_host_workers) == 2 and all(worker_reaped(p) for p in same_host_workers),\n            same_host_resolutions=2,\n            resolver_workers_started=len(same_host_workers),\n            implication=\\\"no transport-level cache; system resolver cache remains platform-controlled\\\",\n        )''',\n'''        startup_samples = []\n        with mock.patch.object(bd, \\\"_start_dns_worker\\\", side_effect=tracked_start_worker), \\\\\\\\\n             mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", make_sleep_source(0.0)):\n            begin = len(spawned)\n            for _ in range(8):\n                now = time.monotonic()\n                bd._deadline_getaddrinfo(\n                    \\\"127.0.0.1\\\", 80, task_deadline=now + 2.0,\n                    monotonic=time.monotonic,\n                )\n                startup_samples.append(time.monotonic() - now)\n            same_host_workers = spawned[begin:]\n        configured_budget = float(os.getenv(\n            \\\"JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS\\\",\n            str(getattr(bd, \\\"DEFAULT_TASK_TIMEOUT_SECONDS\\\", 300.0)),\n        ))\n        observe(\n            \\\"dns_cache_and_worker_startup\\\",\n            len(same_host_workers) == 8 and all(worker_reaped(p) for p in same_host_workers),\n            same_host_resolutions=8,\n            resolver_workers_started=len(same_host_workers),\n            startup_median_seconds=round(statistics.median(startup_samples), 6),\n            startup_max_seconds=round(max(startup_samples), 6),\n            configured_task_budget_seconds=configured_budget,\n            max_startup_fraction_of_configured_budget=round(max(startup_samples) / configured_budget, 8),\n            implication=\\\"no transport-level cache; system resolver cache remains platform-controlled\\\",\n        )''')\ns = s.replace(\n'''    observe(\n        \\\"dns_parent_descriptor_stability\\\",\n        descriptor_count_after <= descriptor_count_before + 1,\n        descriptor_count_before=descriptor_count_before,\n        descriptor_count_after=descriptor_count_after,\n    )''',\n'''    thread_count_after = threading.active_count()\n    observe(\n        \\\"dns_parent_descriptor_stability\\\",\n        descriptor_count_after <= descriptor_count_before + 1\n        and thread_count_after == thread_count_before,\n        descriptor_count_before=descriptor_count_before,\n        descriptor_count_after=descriptor_count_after,\n        thread_count_before=thread_count_before,\n        thread_count_after=thread_count_after,\n    )''')\nmarker = '''def run_matrix() -> None:\n'''\nnew_function = '''def probe_redirect_dns_success() -> None:\n    for target_scheme in (\\\"http\\\", \\\"https\\\"):\n        target_server = RecordingHTTPServer((\\\"127.0.0.1\\\", 0), MatrixHandler)\n        target_server.records = []\n        target_server.record_lock = threading.Lock()\n        target_server.other_port = 0\n        if target_scheme == \\\"https\\\":\n            server_context = __import__(\\\"ssl\\\").SSLContext(__import__(\\\"ssl\\\").PROTOCOL_TLS_SERVER)\n            server_context.load_cert_chain(\n                \\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/tls_probe_cert.pem\\\",\n                \\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/tls_probe_key.pem\\\",\n            )\n            target_server.socket = server_context.wrap_socket(target_server.socket, server_side=True)\n        target_server.probe_thread = threading.Thread(target=target_server.serve_forever, daemon=True)\n        target_server.probe_thread.start()\n        target_port = target_server.server_port\n\n        class RedirectOriginHandler(http.server.BaseHTTPRequestHandler):\n            protocol_version = \\\"HTTP/1.1\\\"\n\n            def do_GET(self):\n                self.server.records.append({\\\"path\\\": self.path, \\\"method\\\": self.command})\n                self.send_response(302)\n                self.send_header(\n                    \\\"Location\\\", f\\\"{target_scheme}://slow.example:{target_port}/target\\\",\n                )\n                self.send_header(\\\"Content-Length\\\", \\\"0\\\")\n                self.send_header(\\\"Connection\\\", \\\"close\\\")\n                self.end_headers()\n\n            def log_message(self, *_args):\n                return\n\n        origin = RecordingHTTPServer((\\\"127.0.0.1\\\", 0), RedirectOriginHandler)\n        origin.records = []\n        origin.probe_thread = threading.Thread(target=origin.serve_forever, daemon=True)\n        origin.probe_thread.start()\n        source = (\n            \\\"import json,socket,sys,time\\\\\\\\n\\\"\n            \\\"host=sys.argv[1]; port=int(sys.argv[2])\\\\\\\\n\\\"\n            \\\"if host == 'slow.example': time.sleep(0.08); addresses=[(socket.AF_INET,socket.SOCK_STREAM,6,'',('127.0.0.1',port))]\\\\\\\\n\\\"\n            \\\"else: addresses=socket.getaddrinfo(host,port,0,socket.SOCK_STREAM)\\\\\\\\n\\\"\n            \\\"print(json.dumps({'addresses':addresses}))\\\\\\\\n\\\"\n        )\n        started = time.monotonic()\n        budget = 1.5\n        attempts = []\n        begin_workers = len(spawned)\n        response = None\n        elapsed = 0.0\n        try:\n            with mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", source), \\\\\\\\\n                 mock.patch.object(bd, \\\"_start_dns_worker\\\", side_effect=tracked_start_worker), \\\\\\\\\n                 mock.patch.object(bd, \\\"API_ROOT\\\", f\\\"http://127.0.0.1:{origin.server_port}\\\"):\n                if target_scheme == \\\"https\\\":\n                    ssl_module = __import__(\\\"ssl\\\")\n                    context_patch = mock.patch.object(\n                        http.client.ssl, \\\"_create_default_https_context\\\",\n                        return_value=ssl_module._create_unverified_context(),\n                    )\n                else:\n                    context_patch = _null_context()\n                with context_patch:\n                    response = BrightDataHTTPTransport(timeout_seconds=1).request(\n                        \\\"GET\\\", \\\"/origin\\\", params={}, json_body=None,\n                        token=\\\"offline-probe-token\\\", timeout_seconds=1,\n                        task_deadline=started + budget,\n                        on_attempt=lambda: attempts.append(time.monotonic()),\n                    )\n            elapsed = time.monotonic() - started\n        finally:\n            stop_server(origin)\n            stop_server(target_server)\n        workers = spawned[begin_workers:]\n        with target_server.record_lock:\n            target_requests = [row for row in target_server.records if row[\\\"path\\\"] == \\\"/target\\\"]\n        observe(\n            f\\\"redirect_target_slow_dns_success_{target_scheme}\\\",\n            response is not None and response.status == 200 and elapsed < budget\n            and len(origin.records) == 1 and len(target_requests) == 1\n            and len(attempts) == 2 and len(workers) == 2\n            and all(worker_reaped(process) for process in workers),\n            resolver_delay_seconds=0.08,\n            task_budget_seconds=budget,\n            wall_seconds=round(elapsed, 6),\n            overrun_seconds=round(max(0.0, elapsed - budget), 6),\n            origin_requests=len(origin.records),\n            target_requests=len(target_requests),\n            attempts=len(attempts),\n            resolver_workers=len(workers),\n            all_workers_reaped=all(worker_reaped(process) for process in workers),\n            response_status=None if response is None else response.status,\n        )\n\n\n'''\ns = s.replace(marker, new_function + marker)\ns = s.replace(\n'''    probe_redirect_dns_expiry()\n    run_matrix()''',\n'''    probe_redirect_dns_expiry()\n    probe_redirect_dns_success()\n    run_matrix()''')\np.write_text(s)\nPY\nrtk proxy python -m py_compile /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache /opt/anaconda3/bin/python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl 2>&1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy tail -15 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\np = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\\\")\ns = p.read_text().replace(\n'''def probe_redirect_dns_success() -> None:\n    for target_scheme in (\\\"http\\\", \\\"https\\\"):''',\n'''def probe_redirect_dns_success() -> None:\n    if not is_r3:\n        emit(\\\"redirect_target_slow_dns_success\\\", status=\\\"r2 has no cancellable resolver\\\")\n        return\n    for target_scheme in (\\\"http\\\", \\\"https\\\"):''')\np.write_text(s)\nPY\nrtk proxy python -m py_compile /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache /opt/anaconda3/bin/python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r2.jsonl 2>&1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r2.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache /opt/anaconda3/bin/python -m unittest discover -s tests/integration -p test_acquisition_v2.py -v > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/test_acquisition_v2.log 2>&1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/test_acquisition_v2.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/compile-pycache /opt/anaconda3/bin/python -m compileall -q src tests/integration > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/compileall.log 2>&1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check 8682c1756ccc42c46a05f4e1f7f25de1f484761f 3d636986af9149ff7050fac5b6162dadf1c70d01 > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/diff_check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src python --version'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache python -m unittest discover -s tests/integration -p \"test_brightdata_jobs.py\" -v > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/test_brightdata_jobs.log 2>&1'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache python -m unittest discover -s tests/integration -p \"test_acquisition_v2.py\" -v > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/test_acquisition_v2.log 2>&1'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/compile-pycache python -m compileall -q src tests/integration > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/compileall.log 2>&1'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check 8682c1756ccc42c46a05f4e1f7f25de1f484761f 3d636986af9149ff7050fac5b6162dadf1c70d01 > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/diff_check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\np = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\\\")\ns = p.read_text()\nmarker = '''def probe_wire_shapes_and_deadlines() -> None:\n'''\nnew_function = '''def probe_redirect_attempt_limit() -> None:\n    class ChainHandler(http.server.BaseHTTPRequestHandler):\n        protocol_version = \\\"HTTP/1.1\\\"\n\n        def do_GET(self):\n            with self.server.record_lock:\n                self.server.records.append(self.path)\n            hop = int(self.path.rsplit(\\\"/\\\", 1)[1])\n            self.send_response(302)\n            self.send_header(\\\"Location\\\", f\\\"/hop/{hop + 1}\\\")\n            self.send_header(\\\"Content-Length\\\", \\\"0\\\")\n            self.send_header(\\\"Connection\\\", \\\"close\\\")\n            self.end_headers()\n\n        def log_message(self, *_args):\n            return\n\n    server = RecordingHTTPServer((\\\"127.0.0.1\\\", 0), ChainHandler)\n    server.records = []\n    server.record_lock = threading.Lock()\n    thread = threading.Thread(target=server.serve_forever, daemon=True)\n    thread.start()\n    attempts = []\n    started = time.monotonic()\n    response = None\n    try:\n        with mock.patch.object(bd, \\\"API_ROOT\\\", f\\\"http://127.0.0.1:{server.server_port}\\\"):\n            response = BrightDataHTTPTransport(timeout_seconds=2).request(\n                \\\"GET\\\", \\\"/hop/0\\\", params={}, json_body=None,\n                token=\\\"offline-probe-token\\\", timeout_seconds=2,\n                task_deadline=started + 4,\n                on_attempt=lambda: attempts.append(time.monotonic()),\n            )\n        elapsed = time.monotonic() - started\n    finally:\n        server.shutdown()\n        server.server_close()\n        thread.join(timeout=2)\n    observe(\n        \\\"redirect_hop_attempt_limit\\\",\n        len(attempts) == 11 and len(server.records) == 11\n        and server.records == [f\\\"/hop/{index}\\\" for index in range(11)]\n        and response is not None and response.status == 302 and elapsed < 4,\n        redirects_followed=10,\n        network_attempts=len(attempts),\n        server_requests=len(server.records),\n        last_path=server.records[-1] if server.records else None,\n        final_status=None if response is None else response.status,\n        wall_seconds=round(elapsed, 6),\n    )\n\n\n'''\ns = s.replace(marker, new_function + marker)\ns = s.replace(\n'''    run_matrix()\n    probe_wire_shapes_and_deadlines()''',\n'''    run_matrix()\n    probe_redirect_attempt_limit()\n    probe_wire_shapes_and_deadlines()''')\np.write_text(s)\nPY\nrtk proxy python -m py_compile /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl 2>&1'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy tail -8 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r2.jsonl 2>&1'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git -C /Users/haewonkim/.codex-fabric/repos/jobbot show -s --format='commit=%H%ntree=%T%nparent=%P' refs/remotes/origin/main > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/main-identity.txt && rtk git -C /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r3 show -s --format='commit=%H%ntree=%T%nparent=%P' HEAD > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-identity-final.txt && rtk git -C /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r2 show -s --format='commit=%H%ntree=%T%nparent=%P' HEAD > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-identity.txt\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git -C /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r3 status --short --branch --untracked-files=all > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-status-final.txt && rtk git -C /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r2 status --short --branch --untracked-files=all > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-status-final.txt && rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r3 -type d -name __pycache__ > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-pycache-check.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r3 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/live-remote-refs-final.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/live-remote-refs-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/main-identity.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-identity-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-identity.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-status-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-status-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-pycache-check.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'find /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r3 -type d -name __pycache__ -prune -exec rm -rf {} +' && rtk git status --short --branch --untracked-files=all > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-status-final.txt && rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r3 -type d -name __pycache__ > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-pycache-check.txt\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\np = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\\\")\ns = p.read_text()\nmarker = '''            timeout_process_ok = worker_reaped(phase_processes[-1])\n            observe(\n                \\\"dns_longer_than_remaining_budget\\\",\n                timed_out and timeout_process_ok and timeout_elapsed <= 0.32,\n                simulated_resolver_delay_seconds=5.0,\n                task_budget_seconds=0.22,\n                wall_seconds=round(timeout_elapsed, 6),\n                overrun_seconds=round(max(0.0, timeout_elapsed - 0.22), 6),\n                child_returncode=phase_processes[-1].returncode,\n                stdout_closed=phase_processes[-1].stdout.closed,\n                stderr_closed=phase_processes[-1].stderr is None or phase_processes[-1].stderr.closed,\n            )\n\n            with mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", make_sleep_source(30.0)):\n'''\nreplacement = '''            timeout_process_ok = worker_reaped(phase_processes[-1])\n            observe(\n                \\\"dns_longer_than_remaining_budget\\\",\n                timed_out and timeout_process_ok and timeout_elapsed <= 0.32,\n                simulated_resolver_delay_seconds=5.0,\n                task_budget_seconds=0.22,\n                wall_seconds=round(timeout_elapsed, 6),\n                overrun_seconds=round(max(0.0, timeout_elapsed - 0.22), 6),\n                child_returncode=phase_processes[-1].returncode,\n                stdout_closed=phase_processes[-1].stdout.closed,\n                stderr_closed=phase_processes[-1].stderr is None or phase_processes[-1].stderr.closed,\n            )\n\n            blocked_source = (\n                \\\"import json,socket,sys,time\\\\\\\\n\\\"\n                \\\"original=socket.getaddrinfo\\\\\\\\n\\\"\n                \\\"def blocked_getaddrinfo(*args,**kwargs):\\\\\\\\n\\\"\n                \\\" time.sleep(30)\\\\\\\\n\\\"\n                \\\" return original(*args,**kwargs)\\\\\\\\n\\\"\n                \\\"socket.getaddrinfo=blocked_getaddrinfo\\\\\\\\n\\\"\n                \\\"addresses=socket.getaddrinfo(sys.argv[1],int(sys.argv[2]),0,socket.SOCK_STREAM)\\\\\\\\n\\\"\n                \\\"print(json.dumps({'addresses':addresses}))\\\\\\\\n\\\"\n            )\n            with mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", blocked_source):\n                started = time.monotonic()\n                blocked_call_timed_out = False\n                try:\n                    bd._deadline_getaddrinfo(\n                        \\\"localhost\\\", 80, task_deadline=started + 0.22,\n                        monotonic=time.monotonic,\n                    )\n                except TimeoutError:\n                    blocked_call_timed_out = True\n                blocked_call_elapsed = time.monotonic() - started\n                phase_processes.append(spawned[-1])\n            observe(\n                \\\"dns_blocked_resolver_call_killed\\\",\n                blocked_call_timed_out and worker_reaped(phase_processes[-1])\n                and blocked_call_elapsed <= 0.32,\n                simulated_block_inside_socket_getaddrinfo=True,\n                task_budget_seconds=0.22,\n                wall_seconds=round(blocked_call_elapsed, 6),\n                child_returncode=phase_processes[-1].returncode,\n                stdout_closed=phase_processes[-1].stdout.closed,\n                stderr_closed=phase_processes[-1].stderr is None or phase_processes[-1].stderr.closed,\n            )\n\n            with mock.patch.object(bd, \\\"_DNS_WORKER_SOURCE\\\", make_sleep_source(30.0)):\n'''\nif marker not in s:\n    raise SystemExit(\\\"marker not found\\\")\np.write_text(s.replace(marker, replacement))\nPY\nrtk proxy python -m py_compile /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl 2>&1'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy tail -12 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r3.jsonl | rtk proxy head -14'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk run 'PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/pycache python /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe.py > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r2.jsonl 2>&1'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy tail -12 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/offline_verify_probe_r2.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python - <<'PY'\nfrom pathlib import Path\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence\\\")\nsummary = \\\"\\\"\\\"VERIFY R4 — JobBot CHG-286 Bright Data fix-r3\n\nIdentity gate (live remote refs captured before review and rechecked after):\n- origin/main: 8d193e200254e42af03c22b923137ef9a1ccb83d\n- sole candidate origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r3:\n  commit 3d636986af9149ff7050fac5b6162dadf1c70d01\n  tree   2a020461ca405da55a8bbb1001dd37740142b177\n  parent d0438d3aa1657ed4ee8c04b98ccabe187ec1bb4f\n- prior fix-r2 comparison:\n  commit 8682c1756ccc42c46a05f4e1f7f25de1f484761f\n- checkout-r3 and checkout-r2 are detached worktrees. Candidate working tree is clean;\n  compileall-generated __pycache__ directories were removed after the requested compile.\n\nRequired commands on detached checkout-r3 (exit 0 for each):\n1. PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\n   Executed through RTK with PATH=/opt/anaconda3/bin:\"'$PATH and external PYCACHEPREFIX.\n   Full output: test_brightdata_jobs.log (35 tests, OK).\n2. PYTHONPATH=src python -m unittest discover -s tests/integration -p '\"'test_acquisition_v2.py' -v\n   Executed through RTK with PATH=/opt/anaconda3/bin:\"'$PATH and external PYCACHEPREFIX.\n   Full output: test_acquisition_v2.log (7 tests, OK).\n3. PYTHONPATH=src python -m compileall -q src tests/integration\n   Executed through RTK with external PYCACHEPREFIX. Full output: compileall.log (empty).\n4. rtk git diff --check 8682c1756ccc42c46a05f4e1f7f25de1f484761f 3d636986af9149ff7050fac5b6162dadf1c70d01\n   Full output: diff_check.log (empty).\n\nIndependent offline probes:\n- Probe source: offline_verify_probe.py.\n- Candidate output: offline_verify_probe_r3.jsonl (all checks pass).\n- Comparison output: offline_verify_probe_r2.jsonl (expected r2 regression failures reproduced).\n- Probe coverage includes worker timeout/reap/descriptor/thread cleanup, repeated and concurrent\n  DNS calls, both direct schemes and redirect targets, short and long resolution delays,\n  redirect method/status wire matrix, Authorization origin rules, redirect hop cap/accounting,\n  body framing and HTTP error bodies, read/header deadlines, address-family fallback, and\n  fresh resolution after a stale endpoint.\n- Controlled DNS was injected inside the child worker to keep probes offline; the test blocked\n  the worker at its socket.getaddrinfo call and observed SIGKILL/reap. These measurements do not\n  characterize external recursive DNS behavior or OS scheduling under overload.\n- Current configured task timeout environment variable is unset; runtime default measured as 300s.\n  Eight warm numeric resolver launches: median 0.027248s, max 0.033494s (0.00011165 of 300s).\n  Synthetic 0.22s DNS deadlines returned in about 0.199–0.202s, no overrun; 0.28s redirect\n  target deadlines returned in about 0.259–0.261s. Body/header timeout probes on 0.16s budgets\n  returned in about 0.161–0.163s. These are measured bounds on this macOS 26.6.2 host, not a\n  hard real-time guarantee against process-launch stalls or OS scheduling delays.\n\nPrior-r2 regression repros:\n- HTTP DNS: 0.22s budget took 0.556s and TCP connect was invoked after expiry.\n- HTTP redirect-target DNS: 0.28s budget took 0.561s and a second TCP connect was invoked late.\n- 303 failures on GET (body/entity headers retained) and DELETE/PUT/OPTIONS (method/body replayed).\n\nArtifact Bridge:\n- Prior evidence-route response was INVALID_ARTIFACT_ROOT. No staging/readback retry, alternate\n  upload, duplicate bundle, Artifact Run mutation, or Fabric-publication substitution was made.\n  The promotion gate remains unresolved.\n\"\"\"\n(root / \"verification-summary.txt\").write_text(summary)\ncommands = \"\"\"Command results\n\nCandidate: detached checkout-r3 at 3d636986af9149ff7050fac5b6162dadf1c70d01\n\nRTK invocation (all exit 0):\n- PATH=/opt/anaconda3/bin:$PATH PYTHONPATH=src python -m unittest discover -s tests/integration -p '\"'test_brightdata_jobs.py' -v\n  log: test_brightdata_jobs.log\n- PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src python -m unittest discover -s tests/integration -p '\"'test_acquisition_v2.py' -v\n  log: test_acquisition_v2.log\n- PATH=/opt/anaconda3/bin:\"'$PATH PYTHONPATH=src python -m compileall -q src tests/integration\n  log: compileall.log\n- rtk git diff --check 8682c1756ccc42c46a05f4e1f7f25de1f484761f 3d636986af9149ff7050fac5b6162dadf1c70d01\n  log: diff_check.log\n- PYTHONPATH=src python offline_verify_probe.py (candidate; exit 0, all checks pass)\n  log: offline_verify_probe_r3.jsonl\n- PYTHONPATH=src python offline_verify_probe.py (r2 SHA; exit 0 as a data-capture run; failures listed in probe_summary)\n  log: offline_verify_probe_r2.jsonl\n- Live remote identity recheck (exit 0)\n  log: live-remote-refs-final.txt\n\nRTK paths used /opt/anaconda3/bin/python because the shell PATH exposed python only after\nexplicitly adding the installed Python directory. PYCACHEPREFIX values pointed into this\nVERIFY evidence root. All full command output is stored in the named files.\n\"\"\"\n(root / \"command-results.txt\").write_text(commands)\nPY'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch --untracked-files=all > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-status-final.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch --untracked-files=all > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-status-final.txt && rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/checkout-r3 -type d -name __pycache__ > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-pycache-check.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy tail -4 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/test_brightdata_jobs.log && rtk proxy tail -4 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/test_acquisition_v2.log && rtk proxy wc -c /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/compileall.log /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/diff_check.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r3 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 > /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/live-remote-refs-final.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/live-remote-refs-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-identity-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/main-identity.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-status-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/candidate-pycache-check.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/r2-status-final.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/diff_check.log /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.running/evidence/verification-summary.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 185,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 98.06,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 11278080,
+      "fresh_input_tokens": 223188,
+      "input_tokens": 11501268,
+      "non_reasoning_output_tokens": 28780,
+      "output_tokens": 83239,
+      "reasoning_output_tokens": 54459,
+      "total_processed_tokens": 11584507
+    },
+    "warnings": []
+  },
+  "commits": [],
+  "diff": {
+    "additions": 0,
+    "changed_files": 0,
+    "commit_count": 0,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-29T03:56:20Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r4",
+    "detached_verify": false,
+    "head_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "remote_exact_head": true,
+    "remote_head_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r4",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-c117ff0715fc5225dec80537",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r4",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r4"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-task-deadline-verify-r4",
+  "schema_version": 1,
+  "started_at": "2026-09-29T03:27:58Z",
+  "status": "EXECUTED_NO_CHANGE",
+  "timing": {
+    "execution_seconds": 1702,
+    "queue_seconds": 0,
+    "total_seconds": 1702
+  },
+  "transport": {
+    "bytes": 4244,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3893,
+    "prompt_sha256": "1abf255f250f8552bd8a672664828f01611e7df0b8ebb32e903fbd331b22bd0d",
+    "sha256": "c117ff0715fc5225dec80537095cd5ccab9aa1c271653be0b9017f081be388d4"
+  }
+}
