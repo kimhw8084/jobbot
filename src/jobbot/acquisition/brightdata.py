@@ -7,6 +7,8 @@ import json
 import math
 import os
 import socket
+import subprocess
+import sys
 import time
 import urllib.parse
 import uuid
@@ -23,6 +25,17 @@ from .models import (
 
 API_ROOT = "https://api.brightdata.com"
 _HTTPS_CONNECTION_TYPE = http.client.HTTPSConnection
+_HTTP_CONNECTION_TYPE = http.client.HTTPConnection
+_DNS_CLEANUP_RESERVE_SECONDS = 0.025
+_DNS_STARTUP_RESERVE_SECONDS = 0.05
+_DNS_WORKER_SOURCE = (
+    "import json,socket,sys\n"
+    "try:\n"
+    " addresses=socket.getaddrinfo(sys.argv[1], int(sys.argv[2]), 0, socket.SOCK_STREAM)\n"
+    " print(json.dumps({'addresses': addresses}))\n"
+    "except OSError as exc:\n"
+    " print(json.dumps({'error': [exc.errno, exc.strerror]}))\n"
+)
 TOKEN_ENV = "BRIGHTDATA_API_TOKEN"
 TASK_TIMEOUT_ENV = "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS"
 DEFAULT_TASK_TIMEOUT_SECONDS = 300.0
@@ -130,16 +143,11 @@ class _DeadlineSocketReader(io.RawIOBase):
 def _deadline_create_connection(address: tuple[str, int], *, timeout_seconds: float,
                                 task_deadline: float, monotonic: Callable[[], float],
                                 source_address: tuple[str, int] | None = None) -> Any:
-    """Bound TCP attempts together after synchronous name resolution returns."""
+    """Bound DNS and TCP connection attempts by the shared task deadline."""
     host, port = address
-    try:
-        addresses = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
-    except OSError:
-        if monotonic() >= task_deadline:
-            raise TimeoutError from None
-        raise
-    if monotonic() >= task_deadline:
-        raise TimeoutError from None
+    addresses = _deadline_getaddrinfo(
+        host, port, task_deadline=task_deadline, monotonic=monotonic,
+    )
 
     last_error: OSError | None = None
     for family, socktype, proto, _canonname, sockaddr in addresses:
@@ -147,6 +155,8 @@ def _deadline_create_connection(address: tuple[str, int], *, timeout_seconds: fl
         try:
             remaining = task_deadline - monotonic()
             if remaining <= 0:
+                raise TimeoutError
+            if monotonic() >= task_deadline:
                 raise TimeoutError
             network_socket = socket.socket(family, socktype, proto)
             if source_address:
@@ -165,6 +175,82 @@ def _deadline_create_connection(address: tuple[str, int], *, timeout_seconds: fl
     if last_error is not None:
         raise last_error
     raise OSError("getaddrinfo returns an empty list")
+
+
+def _start_dns_worker(host: str, port: int) -> subprocess.Popen[bytes]:
+    resolver_environment = {
+        key: os.environ[key]
+        for key in ("LOCALDOMAIN", "RES_OPTIONS", "HOSTALIASES")
+        if key in os.environ
+    }
+    return subprocess.Popen(
+        [sys.executable, "-c", _DNS_WORKER_SOURCE, host, str(port)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        close_fds=True,
+        env=resolver_environment,
+    )
+
+
+def _stop_dns_worker(process: subprocess.Popen[bytes], *, task_deadline: float,
+                     monotonic: Callable[[], float]) -> None:
+    if process.poll() is None:
+        process.kill()
+    try:
+        process.communicate(timeout=max(0.0, task_deadline - monotonic()))
+    except subprocess.TimeoutExpired:
+        if process.poll() is None:
+            process.kill()
+        try:
+            process.wait(timeout=max(0.0, task_deadline - monotonic()))
+        except subprocess.TimeoutExpired:
+            # SIGKILL has been sent. Popen will retain and reap this child if the
+            # OS has not scheduled it before the deadline-bound cleanup expires.
+            pass
+
+
+def _deadline_getaddrinfo(host: str, port: int, *, task_deadline: float,
+                          monotonic: Callable[[], float]) -> list[tuple[Any, ...]]:
+    """Resolve in a killable child and reserve deadline time to stop and reap it."""
+    remaining = task_deadline - monotonic()
+    if remaining <= _DNS_STARTUP_RESERVE_SECONDS + _DNS_CLEANUP_RESERVE_SECONDS:
+        raise TimeoutError from None
+
+    process = _start_dns_worker(host, port)
+    remaining = task_deadline - monotonic()
+    wait_seconds = remaining - _DNS_CLEANUP_RESERVE_SECONDS
+    if wait_seconds <= 0:
+        _stop_dns_worker(process, task_deadline=task_deadline, monotonic=monotonic)
+        raise TimeoutError from None
+
+    try:
+        output, _ = process.communicate(timeout=wait_seconds)
+    except subprocess.TimeoutExpired:
+        _stop_dns_worker(process, task_deadline=task_deadline, monotonic=monotonic)
+        raise TimeoutError from None
+    except BaseException:
+        _stop_dns_worker(process, task_deadline=task_deadline, monotonic=monotonic)
+        raise
+
+    if monotonic() >= task_deadline:
+        raise TimeoutError from None
+    if process.returncode != 0:
+        raise OSError("name resolution failed") from None
+    try:
+        result = json.loads(output.decode("utf-8"))
+        if "error" in result:
+            error_number, error_text = result["error"]
+            raise socket.gaierror(error_number, error_text)
+        addresses = [
+            (int(family), int(socktype), int(proto), str(canonname), tuple(sockaddr))
+            for family, socktype, proto, canonname, sockaddr in result["addresses"]
+        ]
+    except (KeyError, TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
+        raise OSError("name resolution failed") from None
+    if not addresses:
+        raise OSError("getaddrinfo returns an empty list")
+    return addresses
 
 
 class _DeadlineTLSContext:
@@ -194,17 +280,18 @@ class _DeadlineTLSContext:
         return wrapped_socket
 
 
-def _apply_https_task_deadline(connection: Any, *, timeout_seconds: float,
-                               task_deadline: float, monotonic: Callable[[], float]) -> None:
-    if not isinstance(connection, _HTTPS_CONNECTION_TYPE):
+def _apply_connection_task_deadline(connection: Any, *, timeout_seconds: float,
+                                    task_deadline: float, monotonic: Callable[[], float]) -> None:
+    if not isinstance(connection, _HTTP_CONNECTION_TYPE):
         return
     connection._create_connection = lambda address, _timeout, source_address: _deadline_create_connection(
         address, timeout_seconds=timeout_seconds, task_deadline=task_deadline,
         monotonic=monotonic, source_address=source_address,
     )
-    connection._context = _DeadlineTLSContext(
-        connection._context, timeout_seconds, task_deadline, monotonic,
-    )
+    if isinstance(connection, _HTTPS_CONNECTION_TYPE):
+        connection._context = _DeadlineTLSContext(
+            connection._context, timeout_seconds, task_deadline, monotonic,
+        )
 
 
 class BrightDataHTTPTransport:
@@ -245,11 +332,10 @@ class BrightDataHTTPTransport:
             connection_type = (http.client.HTTPSConnection if parsed.scheme == "https"
                                else http.client.HTTPConnection)
             connection = connection_type(parsed.hostname, parsed.port, timeout=request_timeout)
-            if parsed.scheme == "https":
-                _apply_https_task_deadline(
-                    connection, timeout_seconds=socket_timeout,
-                    task_deadline=task_deadline, monotonic=self.monotonic,
-                )
+            _apply_connection_task_deadline(
+                connection, timeout_seconds=socket_timeout,
+                task_deadline=task_deadline, monotonic=self.monotonic,
+            )
             http_response = None
             try:
                 connection.connect()
@@ -281,7 +367,10 @@ class BrightDataHTTPTransport:
                     if _url_origin(parsed) != _url_origin(next_parsed):
                         headers = {key: value for key, value in headers.items()
                                    if key.casefold() != "authorization"}
-                    if http_response.status in {301, 302, 303} and current_method.upper() == "POST":
+                    rewrite_to_get = (
+                        http_response.status in {301, 302} and current_method.upper() == "POST"
+                    ) or (http_response.status == 303 and current_method.upper() != "HEAD")
+                    if rewrite_to_get:
                         current_method = "GET"
                         current_data = None
                         headers = {key: value for key, value in headers.items()

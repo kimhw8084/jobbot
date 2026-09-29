@@ -4,12 +4,15 @@ import json
 import csv
 import copy
 import contextlib
+import http.client
 import http.server
 import io
 import os
 import shutil
 import socket
 import ssl
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -20,6 +23,7 @@ from typing import Any
 import urllib.request
 from unittest import mock
 
+from jobbot.acquisition import brightdata as brightdata_module
 from jobbot.acquisition.brightdata import (
     BrightDataHTTPResponse, BrightDataHTTPTransport, BrightDataJobsProvider,
     BrightDataRuntimeConfig, brightdata_preflight, brightdata_runtime_config,
@@ -665,7 +669,7 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         transport = BrightDataHTTPTransport(monotonic=clock)
         attempts = []
         with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
-             mock.patch("jobbot.acquisition.brightdata.socket.getaddrinfo", return_value=[
+             mock.patch("jobbot.acquisition.brightdata._deadline_getaddrinfo", return_value=[
                  (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443)),
              ]), \
              mock.patch("jobbot.acquisition.brightdata.socket.socket", return_value=network_socket), \
@@ -692,7 +696,7 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         transport = BrightDataHTTPTransport(monotonic=clock)
         attempts = []
         with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
-             mock.patch("jobbot.acquisition.brightdata.socket.getaddrinfo", return_value=[
+             mock.patch("jobbot.acquisition.brightdata._deadline_getaddrinfo", return_value=[
                  (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443)),
              ]), \
              mock.patch("jobbot.acquisition.brightdata.socket.socket", return_value=network_socket), \
@@ -710,32 +714,157 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertFalse(network_socket.sent)
         self.assertEqual(attempts, [1])
 
-    def test_expired_name_resolution_suppresses_tcp_but_is_not_wall_clock_bounded(self):
-        clock = FakeClock()
-        network_socket = FakeSetupSocket([], clock=clock, tcp_delay=0)
-        tls_context = FakeTLSContext(clock=clock, handshake_delay=0)
-        attempts = []
+    def test_slow_dns_is_killed_at_deadline_for_http_and_https(self):
+        for scheme in ("http", "https"):
+            with self.subTest(scheme=scheme):
+                spawned = []
+                attempts = []
+                request_calls = []
+                created_sockets = []
+                start = time.monotonic()
+                budget = 0.3
+                task_deadline = start + budget
+                transport = BrightDataHTTPTransport(monotonic=time.monotonic)
+                real_socket = socket.socket
 
-        def delayed_resolution(*_args):
-            clock.advance(1.1)
-            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))]
+                def start_slow_worker(_host, _port):
+                    process = subprocess.Popen(
+                        [sys.executable, "-c", "import time; time.sleep(30)"],
+                        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL, close_fds=True,
+                    )
+                    spawned.append(process)
+                    return process
 
-        transport = BrightDataHTTPTransport(monotonic=clock)
-        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
-             mock.patch("jobbot.acquisition.brightdata.socket.getaddrinfo", side_effect=delayed_resolution), \
-             mock.patch("jobbot.acquisition.brightdata.socket.socket", return_value=network_socket) as create_socket, \
-             mock.patch("jobbot.acquisition.brightdata.http.client.ssl._create_default_https_context",
-                        return_value=tls_context):
-            with self.assertRaises(TimeoutError):
-                transport.request(
-                    "GET", "/slow-resolution", params={}, json_body=None, token=SECRET,
-                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: attempts.append(1),
-                )
+                def track_socket(*args, **kwargs):
+                    created_sockets.append(time.monotonic())
+                    return real_socket(*args, **kwargs)
 
-        self.assertEqual(clock(), 1.1)
-        create_socket.assert_not_called()
-        self.assertFalse(network_socket.sent)
-        self.assertEqual(attempts, [1])
+                original_request = http.client.HTTPConnection.request
+
+                def track_request(connection, method, *args, **kwargs):
+                    request_calls.append((connection.host, method, time.monotonic()))
+                    return original_request(connection, method, *args, **kwargs)
+
+                try:
+                    with mock.patch("jobbot.acquisition.brightdata.API_ROOT",
+                                    f"{scheme}://dns-slow.example"), \
+                         mock.patch("jobbot.acquisition.brightdata._start_dns_worker",
+                                    side_effect=start_slow_worker), \
+                         mock.patch("jobbot.acquisition.brightdata.socket.socket",
+                                    side_effect=track_socket), \
+                         mock.patch.object(http.client.HTTPConnection, "request",
+                                           new=track_request):
+                        with self.assertRaises(TimeoutError):
+                            transport.request(
+                                "GET", "/slow-dns", params={}, json_body=None, token=SECRET,
+                                timeout_seconds=5, task_deadline=task_deadline,
+                                on_attempt=lambda: attempts.append(1),
+                            )
+
+                    elapsed = time.monotonic() - start
+                    self.assertGreaterEqual(elapsed, 0.2)
+                    self.assertLessEqual(elapsed, budget + 0.08)
+                    self.assertEqual(attempts, [1])
+                    self.assertEqual(created_sockets, [])
+                    self.assertEqual(request_calls, [])
+                    self.assertEqual(len(spawned), 1)
+                    self.assertIsNotNone(spawned[0].poll(), "DNS worker was not reaped")
+                finally:
+                    for process in spawned:
+                        if process.poll() is None:
+                            process.kill()
+                            process.wait(timeout=1)
+
+    def test_slow_dns_redirect_targets_are_suppressed_for_http_and_https(self):
+        for target_scheme in ("http", "https"):
+            with self.subTest(target_scheme=target_scheme):
+                requests_seen = []
+
+                class RedirectHandler(http.server.BaseHTTPRequestHandler):
+                    def do_GET(self):
+                        requests_seen.append(time.monotonic())
+                        self.send_response(302)
+                        self.send_header(
+                            "Location", f"{target_scheme}://dns-slow.example/target",
+                        )
+                        self.send_header("Content-Length", "0")
+                        self.end_headers()
+
+                    def log_message(self, *_args):
+                        return None
+
+                server = http.server.HTTPServer(("127.0.0.1", 0), RedirectHandler)
+                server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+                server_thread.start()
+                spawned = []
+                attempts = []
+                request_calls = []
+                created_sockets = []
+                start = time.monotonic()
+                budget = 0.4
+                task_deadline = start + budget
+                transport = BrightDataHTTPTransport(monotonic=time.monotonic)
+                original_start_worker = brightdata_module._start_dns_worker
+                real_socket = socket.socket
+                original_request = http.client.HTTPConnection.request
+
+                def start_worker(host, port):
+                    if host != "dns-slow.example":
+                        return original_start_worker(host, port)
+                    process = subprocess.Popen(
+                        [sys.executable, "-c", "import time; time.sleep(30)"],
+                        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL, close_fds=True,
+                    )
+                    spawned.append(process)
+                    return process
+
+                def track_socket(*args, **kwargs):
+                    created_sockets.append(time.monotonic())
+                    return real_socket(*args, **kwargs)
+
+                def track_request(connection, method, *args, **kwargs):
+                    request_calls.append((connection.host, method, time.monotonic()))
+                    return original_request(connection, method, *args, **kwargs)
+
+                try:
+                    api_root = f"http://127.0.0.1:{server.server_port}"
+                    with mock.patch("jobbot.acquisition.brightdata.API_ROOT", api_root), \
+                         mock.patch("jobbot.acquisition.brightdata._start_dns_worker",
+                                    side_effect=start_worker), \
+                         mock.patch("jobbot.acquisition.brightdata.socket.socket",
+                                    side_effect=track_socket), \
+                         mock.patch.object(http.client.HTTPConnection, "request",
+                                           new=track_request):
+                        with self.assertRaises(TimeoutError):
+                            transport.request(
+                                "GET", "/redirect", params={}, json_body=None, token=SECRET,
+                                timeout_seconds=5, task_deadline=task_deadline,
+                                on_attempt=lambda: attempts.append(1),
+                            )
+
+                    elapsed = time.monotonic() - start
+                    self.assertGreaterEqual(elapsed, 0.25)
+                    self.assertLessEqual(elapsed, budget + 0.08)
+                    self.assertEqual(len(requests_seen), 1)
+                    self.assertEqual(attempts, [1, 1])
+                    self.assertEqual(len(request_calls), 1)
+                    self.assertLess(request_calls[0][2], task_deadline)
+                    self.assertGreaterEqual(len(created_sockets), 1)
+                    self.assertTrue(all(created_at < task_deadline
+                                        for created_at in created_sockets))
+                    self.assertEqual(len(spawned), 1)
+                    self.assertIsNotNone(spawned[0].poll(), "DNS worker was not reaped")
+                finally:
+                    for process in spawned:
+                        if process.poll() is None:
+                            process.kill()
+                            process.wait(timeout=1)
+                    server.shutdown()
+                    server.server_close()
+                    server_thread.join(timeout=2)
+                    self.assertFalse(server_thread.is_alive())
 
     def test_deadline_covers_slow_content_length_body_reads(self):
         clock = FakeClock()
@@ -879,7 +1008,7 @@ class BrightDataJobsProviderTests(unittest.TestCase):
     def test_redirect_method_and_body_matrix(self):
         body = {"keyword": "offline-test"}
         body_bytes = json.dumps(body, ensure_ascii=False).encode("utf-8")
-        methods = ("GET", "HEAD", "POST", "DELETE", "PUT")
+        methods = ("GET", "HEAD", "POST", "DELETE", "PUT", "OPTIONS")
         statuses = (301, 302, 303, 307, 308)
 
         for method in methods:
@@ -887,10 +1016,11 @@ class BrightDataJobsProviderTests(unittest.TestCase):
                 with self.subTest(method=method, status=status):
                     clock = FakeClock()
                     factory = FakeHTTPConnectionFactory([
-                        http_wire_response(status, [("Location", "/target")]),
+                        http_wire_response(status, [("Location", "https://redirect.example/target")]),
                         json_http_wire_response(200, {"ok": True}),
                     ], clock=clock)
                     transport = BrightDataHTTPTransport(monotonic=clock)
+                    attempts = []
                     with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
                          mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection",
                                     side_effect=factory), \
@@ -898,21 +1028,26 @@ class BrightDataJobsProviderTests(unittest.TestCase):
                                     side_effect=factory):
                         transport.request(
                             method, "/origin", params={},
-                            json_body=body if method in {"POST", "DELETE", "PUT"} else None,
+                            json_body=None if method == "HEAD" else body,
                             token=SECRET, timeout_seconds=10, task_deadline=1,
-                            on_attempt=lambda: None,
+                            on_attempt=lambda: attempts.append(1),
                         )
 
                     redirected_method, _target, redirected_body, redirected_headers = \
                         factory.connections[1].request_info
-                    rewrite_post = method == "POST" and status in {301, 302, 303}
-                    self.assertEqual(redirected_method, "GET" if rewrite_post else method)
-                    if rewrite_post or method in {"GET", "HEAD"}:
+                    rewrite_to_get = (method == "POST" and status in {301, 302}) \
+                        or (status == 303 and method != "HEAD")
+                    self.assertEqual(redirected_method, "GET" if rewrite_to_get else method)
+                    self.assertEqual(attempts, [1, 1])
+                    self.assertEqual(len(factory.connections), 2)
+                    if rewrite_to_get or method == "HEAD":
                         self.assertIsNone(redirected_body)
                     else:
                         self.assertEqual(redirected_body, body_bytes)
-                    if rewrite_post:
-                        self.assertNotIn("Content-Type", redirected_headers)
+                    self.assertNotIn("Authorization", redirected_headers)
+                    if rewrite_to_get:
+                        for header in ("Content-Type", "Content-Length", "Transfer-Encoding"):
+                            self.assertNotIn(header, redirected_headers)
                     else:
                         self.assertEqual(redirected_headers.get("Content-Type"), "application/json")
 
