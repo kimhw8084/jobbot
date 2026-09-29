@@ -1,0 +1,575 @@
+{
+  "accepted_at": "2026-09-29T02:59:36Z",
+  "changed_files": [
+    {
+      "additions": 21,
+      "deletions": 0,
+      "path": "docs/BRIGHTDATA_PROVIDER.md",
+      "status": "M"
+    },
+    {
+      "additions": 571,
+      "deletions": 113,
+      "path": "src/jobbot/acquisition/brightdata.py",
+      "status": "M"
+    },
+    {
+      "additions": 870,
+      "deletions": 17,
+      "path": "tests/integration/test_brightdata_jobs.py",
+      "status": "M"
+    },
+    {
+      "additions": 81,
+      "deletions": 0,
+      "path": "verification/CHG-286-r1.json",
+      "status": "A"
+    },
+    {
+      "additions": 12,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-acquisition-v2-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 39,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-brightdata-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-committed-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-compileall.log",
+      "status": "A"
+    },
+    {
+      "additions": 13,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-identity.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-staged-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-worktree-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 83,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2.json",
+      "status": "A"
+    },
+    {
+      "additions": 12,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-acquisition-v2-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 40,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-brightdata-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-committed-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-compileall.log",
+      "status": "A"
+    },
+    {
+      "additions": 12,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-identity.log",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-json-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-remote-refs.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-staged-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-worktree-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 105,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk cat /Users/haewonkim/.codex/RTK.md /Users/haewonkim/.codex/law.md && rtk git status --short --branch && rtk git remote -v && rtk git show-ref --verify refs/remotes/origin/main && rtk git show-ref --verify refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 && rtk git show -s --format='%H%n%T%n%P%n%D' origin/main && rtk git show -s --format='%H%n%T%n%P%n%D' origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git branch -avv && rtk git show -s --format='HEAD %H%nTREE %T%nPARENTS %P%nSUBJECT %s' HEAD && rtk git show -s --format='CANDIDATE %H%nTREE %T%nPARENTS %P%nSUBJECT %s' origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 && rtk git show -s --format='CANDIDATE_PARENT %H%nTREE %T%nPARENTS %P%nSUBJECT %s' origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2\"'^ && rtk git merge-base --is-ancestor origin/main origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2; rtk git status --porcelain=v1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r3 && rtk git merge-base --is-ancestor origin/main origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2; rtk git merge-base origin/main origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 && rtk git merge-base origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 origin/main && rtk git log --graph --oneline --decorate --boundary -18 origin/main origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git merge-base --is-ancestor origin/main origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git merge-base --is-ancestor origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 origin/main'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git merge --ff-only origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 && rtk git show -s --format='HEAD %H%nTREE %T%nPARENTS %P%nSUBJECT %s' HEAD && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat verification/CHG-286-r2.json verification/CHG-286-r2-identity.log verification/CHG-286-r2-brightdata-tests.log verification/CHG-286-r2-acquisition-v2-tests.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"getaddrinfo|HTTPConnection|HTTPSConnection|deadline|redirect|303|_request\" src/jobbot/acquisition/brightdata.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk rg -n \"BrightData|deadline|redirect|Content-Length|chunk|expiry|partial|retry|reader|socket\" tests/integration/test_brightdata_jobs.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"evidence manifest|CHG-286|Artifact Bridge|promotion_gate|acceptance\\\" verification docs . --glob '*manifest*' --glob '*.json'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,335p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1,300p' tests/integration/test_brightdata_jobs.py && rtk sed -n '580,955p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '640,750p' tests/integration/test_brightdata_jobs.py && rtk sed -n '870,950p' tests/integration/test_brightdata_jobs.py && rtk sed -n '1,35p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '545,645p' tests/integration/test_brightdata_jobs.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"getaddrinfo|expired_name|_deadline_getaddrinfo|import http\\\" tests/integration/test_brightdata_jobs.py src/jobbot/acquisition/brightdata.py && rtk sed -n '20,45p' tests/integration/test_brightdata_jobs.py && rtk git diff --stat && rtk git diff --check\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src:tests/integration python -m unittest test_brightdata_jobs.BrightDataJobsProviderTests.test_slow_dns_is_killed_at_deadline_for_http_and_https test_brightdata_jobs.BrightDataJobsProviderTests.test_slow_dns_redirect_targets_are_suppressed_for_http_and_https test_brightdata_jobs.BrightDataJobsProviderTests.test_redirect_method_and_body_matrix -v'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src:tests/integration python -m unittest test_brightdata_jobs.BrightDataJobsProviderTests.test_slow_dns_is_killed_at_deadline_for_http_and_https test_brightdata_jobs.BrightDataJobsProviderTests.test_slow_dns_redirect_targets_are_suppressed_for_http_and_https test_brightdata_jobs.BrightDataJobsProviderTests.test_redirect_method_and_body_matrix -v'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff -- src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v > verification/CHG-286-r3-brightdata-tests.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat verification/CHG-286-r3-brightdata-tests.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v > verification/CHG-286-r3-acquisition-v2-tests.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat verification/CHG-286-r3-acquisition-v2-tests.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m compileall src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py > verification/CHG-286-r3-compileall.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --check > verification/CHG-286-r3-worktree-diff-check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r3 > verification/CHG-286-r3-remote-refs.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='CANDIDATE %H%nTREE %T%nPARENT %P' origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 > verification/CHG-286-r3-identity.log && rtk git show -s --format='MAIN %H%nTREE %T%nPARENTS %P' origin/main >> verification/CHG-286-r3-identity.log && rtk git show -s --format='FIX_R3_HEAD %H%nTREE %T%nPARENTS %P' HEAD >> verification/CHG-286-r3-identity.log && rtk git merge-base --is-ancestor origin/main origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat verification/CHG-286-r3-remote-refs.log verification/CHG-286-r3-identity.log verification/CHG-286-r3-compileall.log verification/CHG-286-r3-worktree-diff-check.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git diff --stat && rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py && rtk git diff --cached --check && rtk git status --short'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git commit -m 'fix(jobbot): bound CHG-286 DNS and honor 303 retrieval'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff-tree --check --no-commit-id -r HEAD > verification/CHG-286-r3-committed-diff-check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='IMPLEMENTATION %H%nTREE %T%nPARENT %P' HEAD >> verification/CHG-286-r3-identity.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat verification/CHG-286-r3-identity.log verification/CHG-286-r3-remote-refs.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import json,pathlib; json.loads(pathlib.Path(\\\"verification/CHG-286-r3.json\\\").read_text()); print(\\\"valid JSON\\\")' > verification/CHG-286-r3-json-check.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import json,pathlib; json.loads(pathlib.Path(\\\"verification/CHG-286-r3.json\\\").read_text()); print(\\\"valid JSON\\\")' > verification/CHG-286-r3-json-check.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add verification/CHG-286-r3* && rtk proxy git diff --cached --check > verification/CHG-286-r3-staged-diff-check.log 2>&1 && rtk git add verification/CHG-286-r3-staged-diff-check.log && rtk proxy git diff --cached --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git commit -m 'verify(jobbot): record CHG-286 r3 fix evidence'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push --set-upstream origin codex/jobbot-chg286-brightdata-task-deadline-fix-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='LOCAL_HEAD %H%nTREE %T%nPARENTS %P%nSUBJECT %s' HEAD && rtk git status --short --branch\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r3'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 105,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 95.97,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 3297024,
+      "fresh_input_tokens": 138311,
+      "input_tokens": 3435335,
+      "non_reasoning_output_tokens": 13977,
+      "output_tokens": 51768,
+      "reasoning_output_tokens": 37791,
+      "total_processed_tokens": 3487103
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "3d636986af9149ff7050fac5b6162dadf1c70d01",
+      "subject": "verify(jobbot): record CHG-286 r3 fix evidence"
+    },
+    {
+      "sha": "d0438d3aa1657ed4ee8c04b98ccabe187ec1bb4f",
+      "subject": "fix(jobbot): bound CHG-286 DNS and honor 303 retrieval"
+    },
+    {
+      "sha": "8682c1756ccc42c46a05f4e1f7f25de1f484761f",
+      "subject": "Clarify CHG-286 r2 network evidence"
+    },
+    {
+      "sha": "940f68d8d507ea7c64368b6b70657748f2fbd236",
+      "subject": "Record CHG-286 r2 fix evidence"
+    },
+    {
+      "sha": "83de1c78be04db5edaa63a7a69f7d0835bbe1a5a",
+      "subject": "Fix CHG-286 HTTPS deadline and redirects"
+    },
+    {
+      "sha": "ec8d159c38ae767c5fe75c928d05b6f693191090",
+      "subject": "Fix Bright Data task deadline enforcement"
+    },
+    {
+      "sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+      "subject": "CHG-286: record verification evidence"
+    },
+    {
+      "sha": "2f8e2d687ae0a5f5988d0632e98da5864f4a894f",
+      "subject": "CHG-286: bound Bright Data task runtime"
+    }
+  ],
+  "diff": {
+    "additions": 1862,
+    "changed_files": 22,
+    "commit_count": 8,
+    "deletions": 130
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 20,
+    "items": [
+      {
+        "bytes": 8382,
+        "path": "docs/BRIGHTDATA_PROVIDER.md",
+        "sha256": "5a3487464e194f8d1720c129e79abeb17732aa0c6e4e241a4f5f32bdd46528e7"
+      },
+      {
+        "bytes": 4498,
+        "path": "verification/CHG-286-r1.json",
+        "sha256": "e1454257f02d81f0b98b14892802beb36e915f772715c80f1f6f227c72916846"
+      },
+      {
+        "bytes": 1470,
+        "path": "verification/CHG-286-r2-acquisition-v2-tests.log",
+        "sha256": "fe425241343578a40cf6eac7431d6a59204e2053c253f8d0ab86a2b8fddf06b1"
+      },
+      {
+        "bytes": 6299,
+        "path": "verification/CHG-286-r2-brightdata-tests.log",
+        "sha256": "67e0e58f4e0d2b5a39db5dfab9e99e7411dd9022fc5b4e71f17cad03239d9ca6"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-committed-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-compileall.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 516,
+        "path": "verification/CHG-286-r2-identity.log",
+        "sha256": "96a5f9c28d5aeaad3c537b3f90ee1ccc8dcb2e29246465d88701a31a4685f4f7"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-staged-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-worktree-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 4355,
+        "path": "verification/CHG-286-r2.json",
+        "sha256": "e33c31443904a03b7426c192aa60f3a41e6117c1ac421c0959b8a8c0dfb65bbe"
+      },
+      {
+        "bytes": 1470,
+        "path": "verification/CHG-286-r3-acquisition-v2-tests.log",
+        "sha256": "289d7d05b974448c238e1af54e39e5bf33f0d0dc1ed06136a43e5558025df33e"
+      },
+      {
+        "bytes": 6449,
+        "path": "verification/CHG-286-r3-brightdata-tests.log",
+        "sha256": "7cee2df9941d9c68c0a032b3e0c7ce8ff21188cdebd93fbd9cc4e4f9021088da"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-committed-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-compileall.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 625,
+        "path": "verification/CHG-286-r3-identity.log",
+        "sha256": "f0490f3c667e03b15c0c757823644b7b97fd83f7e7f24146c896cee71a96064c"
+      },
+      {
+        "bytes": 11,
+        "path": "verification/CHG-286-r3-json-check.log",
+        "sha256": "dc1141badc727446ff7cac807aab2986c7d31b01fa60b2a935946d03eef41667"
+      },
+      {
+        "bytes": 161,
+        "path": "verification/CHG-286-r3-remote-refs.log",
+        "sha256": "2a235e3c70e2501eb0d7baac20d14a000d35c6794171e4e4c1cb9441606ae251"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-staged-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-worktree-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 5452,
+        "path": "verification/CHG-286-r3.json",
+        "sha256": "850db339dbe747cb4b1c289f573964509931a7402a047bfdfe7b14c909a431b2"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-29T03:23:29Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-fix-r3",
+    "detached_verify": false,
+    "head_sha": "3d636986af9149ff7050fac5b6162dadf1c70d01",
+    "remote_exact_head": true,
+    "remote_head_sha": "3d636986af9149ff7050fac5b6162dadf1c70d01",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-fix-r3",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-ad3b8d8e43c9b3e05d814e74",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-fix-r3",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-fix-r3"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-task-deadline-fix-r3",
+  "schema_version": 1,
+  "started_at": "2026-09-29T02:59:36Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1433,
+    "queue_seconds": 0,
+    "total_seconds": 1433
+  },
+  "transport": {
+    "bytes": 3959,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3617,
+    "prompt_sha256": "7babaa90b2ecff1d5f00b69f0a396027cbeebc3032602d9ba9c26a13321140e6",
+    "sha256": "ad3b8d8e43c9b3e05d814e7432ab52f5af478533c32ce18de10991695a51cc90"
+  }
+}
