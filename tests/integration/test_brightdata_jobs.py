@@ -4,17 +4,19 @@ import json
 import csv
 import copy
 import contextlib
+import http.server
 import io
 import os
 import shutil
 import socket
 import tempfile
+import threading
 import time
 import unittest
 from collections import deque
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
+import urllib.request
 from unittest import mock
 
 from jobbot.acquisition.brightdata import (
@@ -47,62 +49,102 @@ class FakeClock:
         self.now += seconds
 
 
-class FakeSocket:
-    def __init__(self):
+class FakeWireSocket:
+    """Scripted raw socket for exercising http.client's real response parser."""
+
+    def __init__(self, chunks, *, clock):
+        self.chunks = deque({"data": bytes(data), "delay": float(delay)} for data, delay in chunks)
+        self.clock = clock
         self.timeout = None
         self.timeout_history = []
+        self.attempted_chunks = []
+        self.closed = False
 
     def settimeout(self, timeout):
         self.timeout = timeout
         self.timeout_history.append(timeout)
 
-
-class FakeURLResponse:
-    def __init__(self, body, *, clock, delay_seconds=0.0, chunked=False):
-        self.status = 200
-        self.headers = {}
-        self.socket = FakeSocket()
-        self.chunks = deque(body)
-        self.clock = clock
-        self.delay_seconds = delay_seconds
-        self.fp = SimpleNamespace(
-            fp=SimpleNamespace(
-                raw=SimpleNamespace(_sock=self.socket),
-                read1=self.read1,
-            ),
-            chunked=chunked,
-            length=None if chunked else sum(len(chunk) for chunk in body),
-        )
-        self.fp.read1 = self.read_http_body
-
-    def read1(self, _size):
+    def recv_into(self, buffer):
         if not self.chunks:
-            return b""
-        if self.delay_seconds > self.socket.timeout:
-            self.clock.advance(self.socket.timeout)
+            return 0
+        segment = self.chunks[0]
+        self.attempted_chunks.append(bytes(segment["data"]))
+        if segment["delay"] > self.timeout:
+            self.clock.advance(self.timeout)
             raise socket.timeout()
-        self.clock.advance(self.delay_seconds)
-        chunk = self.chunks[0]
-        result = chunk[:_size]
-        if len(result) == len(chunk):
+        self.clock.advance(segment["delay"])
+        segment["delay"] = 0
+        count = min(len(buffer), len(segment["data"]))
+        buffer[:count] = segment["data"][:count]
+        segment["data"] = segment["data"][count:]
+        if not segment["data"]:
             self.chunks.popleft()
-        else:
-            self.chunks[0] = chunk[len(result):]
-        return result
+        return count
 
-    def read_http_body(self, size):
-        if self.fp.length is not None:
-            size = min(size, self.fp.length)
-        chunk = self.fp.fp.read1(size)
-        if self.fp.length is not None:
-            self.fp.length -= len(chunk)
-        return chunk
+    def close(self):
+        self.closed = True
 
-    def __enter__(self):
-        return self
 
-    def __exit__(self, *_args):
-        return False
+class FakeHTTPConnection:
+    def __init__(self, sock, *, on_connect=None, on_close=None):
+        self.sock = sock
+        self.on_connect = on_connect
+        self.on_close = on_close
+        self.request_info = None
+        self.closed = False
+
+    def connect(self):
+        if self.on_connect is not None:
+            self.on_connect()
+
+    def request(self, method, target, body=None, headers=None):
+        self.request_info = (method, target, body, dict(headers or {}))
+
+    def close(self):
+        if self.closed:
+            return
+        self.closed = True
+        self.sock.close()
+        if self.on_close is not None:
+            self.on_close()
+
+
+class FakeHTTPConnectionFactory:
+    def __init__(self, scripts, *, clock, on_connect=None, on_close=None):
+        self.scripts = deque(scripts)
+        self.clock = clock
+        self.on_connect = on_connect
+        self.on_close = on_close
+        self.connections = []
+
+    def __call__(self, _host, _port=None, timeout=None):
+        if not self.scripts:
+            raise AssertionError("unexpected HTTP connection")
+        sock = FakeWireSocket(self.scripts.popleft(), clock=self.clock)
+        connection = FakeHTTPConnection(sock, on_connect=self.on_connect, on_close=self.on_close)
+        connection.timeout = timeout
+        self.connections.append(connection)
+        return connection
+
+
+def http_wire_response(status, headers=(), body_chunks=()):
+    reason = {200: "OK", 302: "Found", 500: "Internal Server Error"}.get(status, "Response")
+    headers = list(headers)
+    if not any(key.casefold() in {"content-length", "transfer-encoding"} for key, _value in headers):
+        headers.append(("Content-Length", str(sum(len(data) for data, _delay in body_chunks))))
+    head = f"HTTP/1.1 {status} {reason}\r\n".encode("ascii")
+    head += b"".join(f"{key}: {value}\r\n".encode("ascii") for key, value in headers)
+    head += b"\r\n"
+    return [(head, 0), *[(data, delay) for data, delay in body_chunks]]
+
+
+def json_http_wire_response(status, payload, *, body_chunks=None):
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    if body_chunks is None:
+        body_chunks = [(body, 0)]
+    return http_wire_response(
+        status, [("Content-Type", "application/json"), ("Content-Length", str(len(body)))], body_chunks,
+    )
 
 
 class MockTransport:
@@ -470,50 +512,282 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertEqual(metadata["task_elapsed_seconds"], 1)
         self.assertNotIn(SECRET, json.dumps(metadata))
 
-    def test_urllib_body_reads_stop_at_total_deadline_and_keep_prior_result_part(self):
+    def test_urllib_success_response_shape_is_supported_by_deadline_transport(self):
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                body = b'{"snapshot_id":"local-only"}'
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *_args):
+                return None
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        api_root = f"http://127.0.0.1:{server.server_port}"
+        attempts = []
+        try:
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            with opener.open(f"{api_root}/shape", timeout=2) as urllib_response:
+                self.assertIsNotNone(urllib_response.fp)
+                self.assertTrue(callable(urllib_response.fp.read))
+                self.assertFalse(hasattr(urllib_response.fp, "fp"))
+
+            with mock.patch("jobbot.acquisition.brightdata.API_ROOT", api_root):
+                result = BrightDataHTTPTransport().request(
+                    "GET", "/shape", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=2, task_deadline=time.monotonic() + 3,
+                    on_attempt=lambda: attempts.append(1),
+                )
+            self.assertEqual(result.status, 200)
+            self.assertEqual(result.payload, {"snapshot_id": "local-only"})
+            self.assertEqual(attempts, [1])
+        finally:
+            server.shutdown()
+            server.server_close()
+            worker.join(timeout=2)
+        self.assertFalse(worker.is_alive())
+
+    def test_deadline_covers_delayed_response_headers(self):
+        clock = FakeClock()
+        factory = FakeHTTPConnectionFactory([[
+            (b"HTTP/1.1 200 OK\r\n", 0),
+            (b"Content-Length: 2\r\n\r\n", 1.1),
+        ]], clock=clock)
+        attempts = []
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/headers", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: attempts.append(1),
+                )
+        self.assertEqual(clock(), 1)
+        self.assertEqual(attempts, [1])
+        self.assertEqual(len(factory.connections), 1)
+        self.assertEqual(factory.connections[0].sock.attempted_chunks[-1], b"Content-Length: 2\r\n\r\n")
+
+    def test_deadline_is_checked_after_connection_before_http_request(self):
+        clock = FakeClock()
+        factory = FakeHTTPConnectionFactory(
+            [json_http_wire_response(200, {"unexpected": True})],
+            clock=clock, on_connect=lambda: clock.advance(1),
+        )
+        attempts = []
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/connect", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: attempts.append(1),
+                )
+        self.assertEqual(attempts, [1])
+        self.assertEqual(clock(), 1)
+        self.assertEqual(len(factory.connections), 1)
+        self.assertIsNone(factory.connections[0].request_info)
+
+    def test_connection_error_after_expiry_is_classified_as_timeout(self):
+        clock = FakeClock()
+
+        def fail_after_expiry():
+            clock.advance(1.1)
+            raise OSError("late connection failure")
+
+        factory = FakeHTTPConnectionFactory(
+            [json_http_wire_response(200, {"unexpected": True})],
+            clock=clock, on_connect=fail_after_expiry,
+        )
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/late-connect-error", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: None,
+                )
+        self.assertGreater(clock(), 1)
+        self.assertIsNone(factory.connections[0].request_info)
+
+    def test_deadline_covers_slow_content_length_body_reads(self):
+        clock = FakeClock()
+        factory = FakeHTTPConnectionFactory([http_wire_response(
+            200, [("Content-Length", "4")], [(b"ab", 0.6), (b"cd", 0.6)],
+        )], clock=clock)
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/slow-body", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: None,
+                )
+        self.assertEqual(clock(), 1)
+        self.assertEqual(factory.connections[0].sock.attempted_chunks[-1], b"cd")
+        self.assertLessEqual(factory.connections[0].sock.timeout_history[-1], 0.4)
+
+    def test_chunked_data_crlf_and_trailers_are_read_under_the_task_deadline(self):
+        frame = [
+            (b"4\r\n", 0), (b"Wiki", 0), (b"\r\n", 0),
+            (b"5\r\n", 0), (b"pedia", 0), (b"\r\n", 0), (b"0\r\n", 0),
+            (b"X-Trailer: verified\r\n", 0), (b"\r\n", 0),
+        ]
+        successful_clock = FakeClock()
+        successful_factory = FakeHTTPConnectionFactory([http_wire_response(
+            200, [("Transfer-Encoding", "chunked")], frame,
+        )], clock=successful_clock)
+        transport = BrightDataHTTPTransport(monotonic=successful_clock)
+        with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=successful_factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=successful_factory):
+            result = transport.request(
+                "GET", "/chunked", params={}, json_body=None, token=SECRET,
+                timeout_seconds=10, task_deadline=1, on_attempt=lambda: None,
+            )
+        self.assertEqual(result.payload, "Wikipedia")
+        self.assertEqual(dict(result.headers).get("Transfer-Encoding"), "chunked")
+
+        frame_phases = {
+            "chunk data": 1,
+            "chunk CRLF": 2,
+            "trailer": 7,
+        }
+        for phase, target_index in frame_phases.items():
+            with self.subTest(phase=phase):
+                clock = FakeClock()
+                delayed_frame = list(frame)
+                delayed_frame[target_index] = (delayed_frame[target_index][0], 1.1)
+                factory = FakeHTTPConnectionFactory([http_wire_response(
+                    200, [("Transfer-Encoding", "chunked")], delayed_frame,
+                )], clock=clock)
+                transport = BrightDataHTTPTransport(monotonic=clock)
+                with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+                     mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+                    with self.assertRaises(TimeoutError):
+                        transport.request(
+                            "GET", "/chunked", params={}, json_body=None, token=SECRET,
+                            timeout_seconds=10, task_deadline=1, on_attempt=lambda: None,
+                        )
+                self.assertEqual(clock(), 1)
+                self.assertEqual(factory.connections[0].sock.attempted_chunks[-1], delayed_frame[target_index][0])
+
+    def test_deadline_covers_http_error_body_reads(self):
+        clock = FakeClock()
+        factory = FakeHTTPConnectionFactory([http_wire_response(
+            500, [("Content-Length", "4")], [(b"fail", 1.1)],
+        )], clock=clock)
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/error", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: None,
+                )
+        self.assertEqual(clock(), 1)
+        self.assertEqual(factory.connections[0].sock.attempted_chunks[-1], b"fail")
+
+    def test_redirect_hops_are_counted_and_expired_targets_are_suppressed(self):
+        clock = FakeClock()
+        factory = FakeHTTPConnectionFactory([
+            http_wire_response(302, [("Location", "/target")]),
+            json_http_wire_response(200, {"ok": True}),
+        ], clock=clock)
+        attempts = []
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+            result = transport.request(
+                "GET", "/origin", params={}, json_body=None, token=SECRET,
+                timeout_seconds=10, task_deadline=1, on_attempt=lambda: attempts.append(1),
+            )
+        self.assertEqual(result.payload, {"ok": True})
+        self.assertEqual(attempts, [1, 1])
+        self.assertEqual([connection.request_info[1] for connection in factory.connections], ["/origin", "/target"])
+        self.assertTrue(all(connection.request_info[3].get("Authorization") == f"Bearer {SECRET}"
+                            for connection in factory.connections))
+
+        redirect_clock = FakeClock()
+        redirect_factory = FakeHTTPConnectionFactory([
+            http_wire_response(302, [("Location", "https://redirect.example/target")]),
+            json_http_wire_response(200, {"redirected": True}),
+        ], clock=redirect_clock)
+        redirect_attempts = []
+        transport = BrightDataHTTPTransport(monotonic=redirect_clock)
+        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=redirect_factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=redirect_factory):
+            redirected = transport.request(
+                "POST", "/trigger", params={}, json_body={"keyword": "test"}, token=SECRET,
+                timeout_seconds=10, task_deadline=1, on_attempt=lambda: redirect_attempts.append(1),
+            )
+        self.assertEqual(redirected.payload, {"redirected": True})
+        self.assertEqual(redirect_attempts, [1, 1])
+        self.assertEqual(redirect_factory.connections[1].request_info[0], "GET")
+        self.assertIsNone(redirect_factory.connections[1].request_info[2])
+        self.assertNotIn("Authorization", redirect_factory.connections[1].request_info[3])
+        self.assertNotIn("Content-Type", redirect_factory.connections[1].request_info[3])
+
+        expired_clock = FakeClock()
+        expired_factory = FakeHTTPConnectionFactory([
+            http_wire_response(302, [("Location", "/must-not-run")]),
+            json_http_wire_response(200, {"unexpected": True}),
+        ], clock=expired_clock, on_close=lambda: expired_clock.advance(1))
+        expired_attempts = []
+        transport = BrightDataHTTPTransport(monotonic=expired_clock)
+        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=expired_factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=expired_factory):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/origin", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1,
+                    on_attempt=lambda: expired_attempts.append(1),
+                )
+        self.assertEqual(expired_attempts, [1])
+        self.assertEqual(len(expired_factory.connections), 1)
+        self.assertEqual(expired_factory.connections[0].request_info[1], "/origin")
+
+    def test_transient_get_retries_are_counted_as_separate_attempts(self):
+        platform = "linkedin"
+        transport = MockTransport([
+            response(200, {"snapshot_id": "snapshot-retry-1"}),
+            response(503, {"message": "temporary"}),
+            response(200, {"status": "ready"}),
+            response(200, {"parts": 1}),
+            response(200, [self.row(platform, job_id="retry-601")]),
+        ])
+        batch = self.provider(platform, transport, retries=1).fetch(self.task(platform))
+        self.assertEqual(batch.completion_state, ProviderCompletionState.COMPLETE)
+        self.assertEqual(batch.requests_submitted, 5)
+        self.assertEqual(len(transport.calls), 5)
+        self.assertEqual(sum(call["path"].find("/progress/") >= 0 for call in transport.calls), 2)
+
+    def test_provider_request_count_includes_redirect_hops(self):
         platform = "linkedin"
         clock = FakeClock()
-        urlopen_calls = []
-        responses = []
-
-        def urlopen(request, *, timeout):
-            urlopen_calls.append((request.full_url, timeout))
-            endpoint = request.full_url.split("?", 1)[0]
-            if endpoint.endswith("/trigger"):
-                body, delay = [b'{"snapshot_id":"snapshot-build-1"}'], 0
-            elif "/progress/" in endpoint:
-                body, delay = [b'{"status":"ready"}'], 0
-            elif endpoint.endswith("/parts"):
-                body, delay = [b'{"parts":2}'], 0
-            elif "part=1" in request.full_url:
-                body, delay = [json.dumps([self.row(platform, job_id="body-part-1")]).encode()], 0
-            else:
-                body, delay = [b"[", b"]"], 0.6
-            response_obj = FakeURLResponse(
-                body, clock=clock, delay_seconds=delay,
-            )
-            responses.append(response_obj)
-            return response_obj
-
+        factory = FakeHTTPConnectionFactory([
+            json_http_wire_response(200, {"snapshot_id": "snapshot-redirect-1"}),
+            http_wire_response(302, [("Location", "/progress-redirected")]),
+            json_http_wire_response(200, {"status": "ready"}),
+            json_http_wire_response(200, {"parts": 1}),
+            json_http_wire_response(200, [self.row(platform, job_id="redirect-701")]),
+        ], clock=clock)
         transport = BrightDataHTTPTransport(monotonic=clock)
-        provider = self.provider(platform, transport, task_timeout_seconds=1, monotonic=clock)
-        with mock.patch("jobbot.acquisition.brightdata.urllib.request.urlopen", side_effect=urlopen):
+        provider = self.provider(platform, transport, monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
             batch = provider.fetch(self.task(platform))
-
-        self.assertEqual(batch.completion_state, ProviderCompletionState.RETRYABLE)
-        self.assertEqual(batch.failure_class, ProviderFailureClass.TIMEOUT)
-        self.assertEqual([record.source_job_id for record in batch.records], ["body-part-1"])
-        self.assertEqual(batch.completion_evidence, {})
-        self.assertNotIn("completion_observation", batch.provider_metadata)
+        self.assertEqual(batch.completion_state, ProviderCompletionState.COMPLETE)
         self.assertEqual(batch.requests_submitted, 5)
-        self.assertEqual(batch.provider_metadata["requests_submitted"], 5)
-        self.assertEqual(batch.provider_metadata["task_timeout_seconds"], 1)
-        self.assertEqual(batch.provider_metadata["task_elapsed_seconds"], 1)
-        self.assertEqual(len(urlopen_calls), 5)
-        self.assertEqual(responses[-1].socket.timeout_history[0], 1)
-        self.assertEqual(responses[-1].socket.timeout_history[-1], 0.4)
-        self.assertTrue(all(timeout <= 45 for _url, timeout in urlopen_calls))
-        self.assertNotIn(SECRET, json.dumps(batch.provider_metadata))
+        self.assertEqual(len(factory.connections), 5)
+        self.assertEqual(factory.connections[1].request_info[1].split("?", 1)[0],
+                         "/datasets/v3/progress/snapshot-redirect-1")
+        self.assertEqual(factory.connections[2].request_info[1], "/progress-redirected")
 
     def test_snapshot_ack_is_not_completion_and_missing_parts_are_ambiguous(self):
         platform = "glassdoor"
@@ -759,29 +1033,26 @@ class BrightDataSharedIngestionTests(unittest.TestCase):
     def test_deadline_after_result_part_persists_partial_records_without_completion_evidence(self):
         clock = FakeClock()
         task = compile_plan(self.bundle, "fast", ["linkedin"])[0]
-        transport = MockTransport([
-            response(200, {"snapshot_id": "snapshot-partial-1"}),
-            response(200, {"status": "ready"}), response(200, {"parts": 2}),
-            response(200, [self.provider_row("partial-501", "partial-row")]),
-        ])
+        factory = FakeHTTPConnectionFactory([
+            json_http_wire_response(200, {"snapshot_id": "snapshot-partial-1"}),
+            json_http_wire_response(200, {"status": "ready"}),
+            json_http_wire_response(200, {"parts": 2}),
+            json_http_wire_response(200, [self.provider_row("partial-501", "partial-row")]),
+            http_wire_response(200, [("Content-Length", "2")], [(b"[", 0.6), (b"]", 0.6)]),
+        ], clock=clock)
+        transport = BrightDataHTTPTransport(monotonic=clock)
         provider = self.provider(
             transport, run_id="brightdata-deadline-run", task_timeout_seconds=1, monotonic=clock,
         )
-        from jobbot.acquisition.brightdata import map_linkedin_row
-
-        def map_then_expire(*args):
-            record = map_linkedin_row(*args)
-            clock.advance(1)
-            return record
-
         with mock.patch("jobbot.acquisition.coordinator.compile_plan", return_value=[task]), \
-             mock.patch("jobbot.acquisition.brightdata.map_linkedin_row", side_effect=map_then_expire):
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
             result = acquire(self.bundle, provider, mode="fast", platforms=["linkedin"])
 
         self.assertEqual(result["status"], "partial")
         self.assertEqual(result["task_complete_count"], 0)
         self.assertEqual(result["task_incomplete_count"], 1)
-        self.assertEqual(len(transport.calls), 4)
+        self.assertEqual(len(factory.connections), 5)
         conn = self.database.connect()
         stored = conn.execute(
             "SELECT status,exhausted,provider_completion_state,provider_failure_class,"
@@ -793,10 +1064,10 @@ class BrightDataSharedIngestionTests(unittest.TestCase):
         self.assertEqual(stored["exhausted"], 0)
         self.assertEqual(stored["provider_completion_state"], "RETRYABLE")
         self.assertEqual(stored["provider_failure_class"], "TIMEOUT")
-        self.assertEqual(stored["provider_requests_submitted"], 4)
+        self.assertEqual(stored["provider_requests_submitted"], 5)
         self.assertEqual(json.loads(stored["completion_evidence_json"]), {})
         metadata = json.loads(stored["provider_metadata_json"])
-        self.assertEqual(metadata["requests_submitted"], 4)
+        self.assertEqual(metadata["requests_submitted"], 5)
         self.assertEqual(metadata["task_timeout_seconds"], 1)
         self.assertGreaterEqual(metadata["task_elapsed_seconds"], 1)
         self.assertNotIn("completion_observation", metadata)

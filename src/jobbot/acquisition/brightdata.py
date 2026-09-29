@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import http.client
+import io
 import json
 import math
 import os
 import socket
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -27,7 +26,6 @@ TOKEN_ENV = "BRIGHTDATA_API_TOKEN"
 TASK_TIMEOUT_ENV = "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS"
 DEFAULT_TASK_TIMEOUT_SECONDS = 300.0
 DEFAULT_HTTP_TIMEOUT_SECONDS = 45.0
-RESPONSE_READ_CHUNK_SIZE = 64 * 1024
 PLATFORM_ENV = {
     "linkedin": "JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG",
     "indeed": "JOBBOT_BRIGHTDATA_INDEED_CONFIG",
@@ -83,45 +81,53 @@ class BrightDataTransport(Protocol):
                 task_deadline: float, on_attempt: Callable[[], None]) -> BrightDataHTTPResponse: ...
 
 
-class _DeadlineBodyReader:
-    def __init__(self, stream: Any, network_socket: Any, timeout_seconds: float,
+class _DeadlineSocket:
+    """Apply the task deadline to each socket read used by HTTPResponse."""
+
+    def __init__(self, network_socket: Any, timeout_seconds: float,
                  task_deadline: float, monotonic: Callable[[], float]):
-        self.stream = stream
         self.network_socket = network_socket
         self.timeout_seconds = timeout_seconds
         self.task_deadline = task_deadline
         self.monotonic = monotonic
 
-    def read1(self, size: int = -1) -> bytes:
+    def makefile(self, mode: str) -> io.BufferedReader:
+        if mode != "rb":
+            raise OSError("Bright Data response stream requires binary reads")
+        return io.BufferedReader(_DeadlineSocketReader(self))
+
+    def recv_into(self, buffer: Any) -> int:
         remaining = self.task_deadline - self.monotonic()
         if remaining <= 0:
             raise TimeoutError from None
         self.network_socket.settimeout(min(self.timeout_seconds, remaining))
-        chunk = self.stream.read1(size)
+        try:
+            received = self.network_socket.recv_into(buffer)
+        except socket.timeout:
+            if self.monotonic() >= self.task_deadline:
+                raise TimeoutError from None
+            raise
         if self.monotonic() >= self.task_deadline:
             raise TimeoutError from None
-        return chunk
+        return received
 
-    def readline(self, size: int = -1) -> bytes:
-        line = bytearray()
-        while size < 0 or len(line) < size:
-            byte = self.read1(1)
-            if not byte:
-                break
-            line.extend(byte)
-            if byte == b"\n":
-                break
-        return bytes(line)
 
-    def close(self) -> None:
-        self.stream.close()
+class _DeadlineSocketReader(io.RawIOBase):
+    """Raw stream whose every refill is bounded by the remaining task budget."""
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self.stream, name)
+    def __init__(self, network_socket: _DeadlineSocket):
+        super().__init__()
+        self.network_socket = network_socket
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buffer: Any) -> int:
+        return self.network_socket.recv_into(buffer)
 
 
 class BrightDataHTTPTransport:
-    """Small urllib transport for Bright Data's documented dataset workflow."""
+    """HTTP transport that applies one monotonic deadline to the full exchange."""
 
     def __init__(self, *, timeout_seconds: float = DEFAULT_HTTP_TIMEOUT_SECONDS,
                  monotonic: Callable[[], float] = time.monotonic):
@@ -140,57 +146,90 @@ class BrightDataHTTPTransport:
         query = urllib.parse.urlencode({key: _query_value(value) for key, value in params.items()})
         url = f"{API_ROOT}{path}" + (f"?{query}" if query else "")
         data = None if json_body is None else json.dumps(json_body, ensure_ascii=False).encode("utf-8")
-        request = urllib.request.Request(
-            url, data=data, method=method,
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        )
-        remaining = task_deadline - self.monotonic()
-        if remaining <= 0:
-            raise TimeoutError from None
-        request_timeout = min(self.timeout_seconds, timeout_seconds, remaining)
-        on_attempt()
-        try:
-            response = urllib.request.urlopen(request, timeout=request_timeout)
-        except urllib.error.HTTPError as exc:
-            with exc:
-                raw = self._read_body(exc, task_deadline)
+        current_method = method
+        current_data = data
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        redirects = 0
+
+        while True:
+            remaining = task_deadline - self.monotonic()
+            if remaining <= 0:
+                raise TimeoutError from None
+            parsed = urllib.parse.urlsplit(url)
+            if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+                raise OSError("Bright Data redirect URL is invalid") from None
+            request_timeout = min(self.timeout_seconds, timeout_seconds, remaining)
+            on_attempt()
+            connection_type = (http.client.HTTPSConnection if parsed.scheme == "https"
+                               else http.client.HTTPConnection)
+            connection = connection_type(parsed.hostname, parsed.port, timeout=request_timeout)
+            http_response = None
+            try:
+                connection.connect()
+                remaining = task_deadline - self.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError from None
+                connection.sock.settimeout(min(self.timeout_seconds, timeout_seconds, remaining))
+                request_target = urllib.parse.urlunsplit(("", "", parsed.path or "/", parsed.query, ""))
+                connection.request(current_method, request_target, body=current_data, headers=headers)
+                if self.monotonic() >= task_deadline:
+                    raise TimeoutError from None
+
+                deadline_socket = _DeadlineSocket(
+                    connection.sock, min(self.timeout_seconds, timeout_seconds),
+                    task_deadline, self.monotonic,
+                )
+                http_response = http.client.HTTPResponse(deadline_socket, method=current_method)
+                http_response.begin()
+                if self.monotonic() >= task_deadline:
+                    raise TimeoutError from None
+
+                location = http_response.getheader("Location")
+                if http_response.status in {301, 302, 303, 307, 308} and location and redirects < 10:
+                    next_url = urllib.parse.urljoin(url, location)
+                    next_parsed = urllib.parse.urlsplit(next_url)
+                    if next_parsed.scheme not in {"http", "https"} or not next_parsed.hostname \
+                            or next_parsed.username or next_parsed.password:
+                        raise OSError("Bright Data redirect URL is invalid") from None
+                    if _url_origin(parsed) != _url_origin(next_parsed):
+                        headers = {key: value for key, value in headers.items()
+                                   if key.casefold() != "authorization"}
+                    if http_response.status in {301, 302, 303}:
+                        current_method = "GET"
+                        current_data = None
+                        headers = {key: value for key, value in headers.items()
+                                   if key.casefold() not in {"content-type", "content-length", "transfer-encoding"}}
+                    url = next_url
+                    redirects += 1
+                    continue
+
+                raw = http_response.read()
                 payload = _decode_payload(raw)
                 if self.monotonic() >= task_deadline:
                     raise TimeoutError from None
-                return BrightDataHTTPResponse(exc.code, payload, dict(exc.headers.items()))
-        except urllib.error.URLError as exc:
-            if isinstance(exc.reason, (TimeoutError, socket.timeout)) or self.monotonic() >= task_deadline:
-                raise TimeoutError from None
-            raise OSError(type(exc.reason).__name__) from None
-        with response:
-            raw = self._read_body(response, task_deadline)
-            payload = _decode_payload(raw)
-            if self.monotonic() >= task_deadline:
-                raise TimeoutError from None
-            return BrightDataHTTPResponse(
-                response.status, payload, dict(response.headers.items()),
-            )
+                return BrightDataHTTPResponse(
+                    http_response.status, payload, dict(http_response.getheaders()),
+                )
+            except (TimeoutError, socket.timeout):
+                if self.monotonic() >= task_deadline:
+                    raise TimeoutError from None
+                raise
+            except Exception:
+                if self.monotonic() >= task_deadline:
+                    raise TimeoutError from None
+                raise
+            finally:
+                if http_response is not None:
+                    http_response.close()
+                connection.close()
 
-    def _read_body(self, response: Any, task_deadline: float) -> bytes:
-        # urllib's timeout is per socket operation; read1 lets each body read receive a fresh deadline cap.
-        http_response = getattr(response, "fp", None)
-        buffered = getattr(http_response, "fp", None)
-        raw = getattr(buffered, "raw", None)
-        network_socket = getattr(raw, "_sock", None)
-        if network_socket is None or not callable(getattr(buffered, "read1", None)):
-            raise OSError("Bright Data response stream does not expose bounded reads")
-        http_response.fp = _DeadlineBodyReader(
-            buffered, network_socket, self.timeout_seconds, task_deadline, self.monotonic,
-        )
-        body: list[bytes] = []
-        while True:
-            chunk = http_response.read1(RESPONSE_READ_CHUNK_SIZE)
-            if not chunk:
-                content_length = getattr(http_response, "length", None)
-                if isinstance(content_length, int) and content_length > 0:
-                    raise http.client.IncompleteRead(b"".join(body), content_length)
-                return b"".join(body)
-            body.append(chunk)
+
+def _url_origin(parsed: urllib.parse.SplitResult) -> tuple[str, str, int | None]:
+    scheme = parsed.scheme.casefold()
+    port = parsed.port
+    if port is None:
+        port = 443 if scheme == "https" else 80
+    return scheme, (parsed.hostname or "").casefold(), port
 
 
 @dataclass(frozen=True)
