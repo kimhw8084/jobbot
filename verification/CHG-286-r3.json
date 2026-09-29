@@ -1,0 +1,105 @@
+{
+  "change": "CHG-286",
+  "job_id": "CF-8856384814e69f64c0b9d4c4",
+  "operation": "FIX only",
+  "status": "FIX_VALIDATIONS_PASSED_PROMOTION_BLOCKED",
+  "objective": "Fix the two independent VERIFY-R3 findings on the exact pushed fix-r2 candidate.",
+  "identity_gate": {
+    "fabric_route_base": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "origin_main": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "sole_parent_candidate_ref": "refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r2",
+    "sole_parent_candidate_commit": "8682c1756ccc42c46a05f4e1f7f25de1f484761f",
+    "sole_parent_candidate_tree": "b7c13cadbe11a739ba0ff97aa45c501900cba507",
+    "sole_parent_candidate_commit_parent": "940f68d8d507ea7c64368b6b70657748f2fbd236",
+    "fix_branch": "codex/jobbot-chg286-brightdata-task-deadline-fix-r3",
+    "branch_advanced_by": "fast-forward from origin/main to the exact r2 candidate before edits",
+    "implementation_commit": "d0438d3aa1657ed4ee8c04b98ccabe187ec1bb4f",
+    "implementation_tree": "b41feec68d9572f926273bb3f72ee0ccfdb57a09",
+    "remote_refs_output": "verification/CHG-286-r3-remote-refs.log",
+    "identity_output": "verification/CHG-286-r3-identity.log"
+  },
+  "findings": [
+    {
+      "id": 1,
+      "status": "FIXED",
+      "detail": "DNS resolution runs in a short-lived killable subprocess. The caller waits only within the shared monotonic task budget, leaves time to terminate and reap the resolver, rejects late results, and does not create a TCP socket or send an HTTP request after DNS consumes the deadline. Both HTTP and HTTPS use the deadline-bound connection factory, including redirect targets. No address cache or persistent resolver worker is used; fresh address results and the existing all-address TCP fallback preserve stale-address recovery."
+    },
+    {
+      "id": 2,
+      "status": "FIXED",
+      "detail": "A 303 changes every non-HEAD method to GET, clears the body and Content-Type, Content-Length, and Transfer-Encoding headers; HEAD remains HEAD. Existing 301/302 POST-to-GET handling and 307/308 method/body preservation remain. Authorization is stripped on cross-origin redirects."
+    }
+  ],
+  "validation": [
+    {
+      "command": "rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v",
+      "result": "PASS",
+      "tests": 35,
+      "full_output": "verification/CHG-286-r3-brightdata-tests.log"
+    },
+    {
+      "command": "rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v",
+      "result": "PASS",
+      "tests": 7,
+      "full_output": "verification/CHG-286-r3-acquisition-v2-tests.log"
+    },
+    {
+      "command": "rtk proxy env PYTHONPATH=src python -m compileall src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r3-compileall.log"
+    },
+    {
+      "command": "rtk proxy python -c 'import json,pathlib; json.loads(pathlib.Path(\"verification/CHG-286-r3.json\").read_text()); print(\"valid JSON\")'",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r3-json-check.log"
+    },
+    {
+      "command": "rtk proxy git diff --check",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r3-worktree-diff-check.log"
+    },
+    {
+      "command": "rtk proxy git diff-tree --check --no-commit-id -r HEAD",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r3-committed-diff-check.log"
+    },
+    {
+      "command": "rtk proxy git diff --cached --check",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r3-staged-diff-check.log"
+    },
+    {
+      "command": "rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r3",
+      "result": "PASS; main and r2 matched their pinned identities; r3 did not yet exist remotely",
+      "full_output": "verification/CHG-286-r3-remote-refs.log"
+    }
+  ],
+  "coverage_preserved": [
+    "standard HTTPResponse parsing and urllib-compatible response shape",
+    "Content-Length, chunk framing, error-body and delayed-header reads under the deadline",
+    "shared TCP/TLS setup budget",
+    "retry behavior, request and redirect attempt accounting, and expiry suppression",
+    "partial result persistence and incomplete versus complete state handling"
+  ],
+  "safety_boundary": {
+    "bright_data_or_job_board_calls": "NONE",
+    "network_used_by_tests": "Offline tests only; local loopback HTTP fixtures and controlled local resolver child processes.",
+    "real_credentials": "NOT_USED; tests use a synthetic marker.",
+    "production_databases": "NOT_ACCESSED",
+    "real_logins_challenges_or_submissions": "NONE",
+    "previous_fix_branches_and_evidence": "PRESERVED"
+  },
+  "promotion_gate": {
+    "project_os_artifact_bridge": "BLOCKED_PROMOTION",
+    "known_failure": "The qualified helper rejects this Fabric evidence root as INVALID_ARTIFACT_ROOT.",
+    "status": "Not invoked again. No alternate upload, transformed or duplicate evidence, staging, or readback is claimed."
+  },
+  "scope_boundary": {
+    "verify_run": false,
+    "merge_or_integration": false,
+    "main_update": false,
+    "apply_to_jobs": false,
+    "promotion": false,
+    "push": "Only the request-owned fix-r3 branch, after validations and evidence commit."
+  }
+}
