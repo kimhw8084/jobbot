@@ -1,0 +1,358 @@
+{
+  "accepted_at": "2026-09-29T02:26:09Z",
+  "changed_files": [],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import json; p=\\\"/Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log\\\"; d=json.load(open(p)); print(json.dumps({\\\"candidate_module\\\":d[\\\"candidate_module\\\"],\\\"framing\\\":d[\\\"urllib_and_framing\\\"],\\\"redirect_diff\\\":d[\\\"redirect_matrix\\\"][\\\"differences_from_rfc_redirect_semantics\\\"],\\\"cross_origin\\\":d[\\\"cross_origin_authorization\\\"],\\\"deadlines\\\":d[\\\"connection_phase_deadlines\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/compileall-python311.log && rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/diff_check-python311.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check HEAD''^ HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '\"'^test_(transient|provider_request_count|redirect_hops|deadline_after_result_part|successful_part_records|snapshot_ack|task_deadline|expired_name_resolution|https_tcp|chunked|deadline_covers_http)'\"' /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/brightdata-python311.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '1088,1145p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '635,785p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/fix_r1_tls_setup_regression.log && rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/fix_r1_tls_timeout_regression.log && rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/fix_r1_dns_suppression_regression.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=/tmp/CF-8856384814e69f64c0b9d4c4-jobbot-candidate/src /opt/anaconda3/bin/python3.11 /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/probes/independent_fix_r2_probes.py > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import json; p=\\\"/Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log\\\"; d=json.load(open(p)); print(json.dumps({\\\"http_dns\\\":d[\\\"connection_phase_deadlines\\\"][\\\"http_dns\\\"],\\\"https_dns\\\":d[\\\"connection_phase_deadlines\\\"][\\\"dns\\\"],\\\"redirect_mismatches\\\":d[\\\"redirect_matrix\\\"][\\\"differences_from_rfc_redirect_semantics\\\"],\\\"cross_origin\\\":d[\\\"cross_origin_authorization\\\"],\\\"body_reader\\\":d[\\\"urllib_and_framing\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse refs/remotes/origin/main refs/remotes/origin/main''^{tree} refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r1 refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r1''^{tree} refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r2''^{tree} > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/local-refs.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='commit=%H%ntree=%T%nparent=%P' 8682c1756ccc42c46a05f4e1f7f25de1f484761f > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/candidate-identity.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v2 --branch > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/candidate-status.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show -s --format='commit=%H%ntree=%T%nparent=%P' ec8d159c38ae767c5fe75c928d05b6f693191090 > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/r1-identity.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v2 --branch > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/r1-status.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r2 > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/remote-refs.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/candidate-identity.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/r1-identity.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/remote-refs.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/candidate-status.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/local-refs.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/r1-status.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=/tmp/CF-8856384814e69f64c0b9d4c4-jobbot-candidate/src /opt/anaconda3/bin/python3.11 /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/probes/independent_fix_r2_probes.py > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log 2>&1'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=/tmp/CF-8856384814e69f64c0b9d4c4-jobbot-candidate/src /opt/anaconda3/bin/python3.11 /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/probes/independent_fix_r2_probes.py > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log 2>&1'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import json; p=\\\"/Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log\\\"; d=json.load(open(p)); print(json.dumps({\\\"readers\\\":d[\\\"deadline_reader_refills\\\"],\\\"http_dns\\\":d[\\\"connection_phase_deadlines\\\"][\\\"http_dns\\\"],\\\"https_dns\\\":d[\\\"connection_phase_deadlines\\\"][\\\"dns\\\"],\\\"redirect_mismatches\\\":d[\\\"redirect_matrix\\\"][\\\"differences_from_rfc_redirect_semantics\\\"]},indent=2))'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import http.client,inspect; print(inspect.getsource(http.client.HTTPResponse.read)); print(inspect.getsource(http.client.HTTPResponse._read_chunked))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import http.client,inspect; print(inspect.getsource(http.client.HTTPResponse._get_chunk_left)); print(inspect.getsource(http.client.HTTPResponse._read_and_discard_trailer))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=/tmp/CF-8856384814e69f64c0b9d4c4-jobbot-candidate/src /opt/anaconda3/bin/python3.11 /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/probes/independent_fix_r2_probes.py > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import json; p=\\\"/Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/independent_fix_r2_probes.log\\\"; d=json.load(open(p)); print(json.dumps({\\\"readers\\\":d[\\\"deadline_reader_refills\\\"],\\\"http_dns\\\":d[\\\"connection_phase_deadlines\\\"][\\\"http_dns\\\"],\\\"https_dns\\\":d[\\\"connection_phase_deadlines\\\"][\\\"dns\\\"],\\\"redirect_mismatches\\\":d[\\\"redirect_matrix\\\"][\\\"differences_from_rfc_redirect_semantics\\\"]},indent=2))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mv /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/brightdata.log /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/initial-python-alias-brightdata.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mv /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/acquisition_v2.log /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/initial-python-alias-acquisition-v2.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk mv /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/compileall.log /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/initial-python-alias-compileall.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -R /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import json; json.load(open(\\\"/Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/evidence-manifest.json\\\")); print(\\\"valid JSON\\\")' > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/manifest-validation.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --stat HEAD''^ HEAD > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/candidate-tip-diff-stat.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v2 --branch > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/r1-status-final.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v2 --branch > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/candidate-status-final.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -a 256 /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/VERIFY.md /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/evidence-manifest.json /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/probes/*.py /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/*.log > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-sha256.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-sha256.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy rm /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-sha256.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy /opt/anaconda3/bin/python3.11 -c 'import json; json.load(open(\\\"/Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/evidence-manifest.json\\\")); print(\\\"valid JSON\\\")' > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/manifest-validation.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -a 256 /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/VERIFY.md /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/evidence-manifest.json /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/probes/*.py /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/*.log > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-sha256.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -c /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-sha256.log > /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-integrity-check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/manifest-validation.log && rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-sha256.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v2 --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --porcelain=v2 --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -R /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/evidence-integrity-check.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/candidate-tip-diff-stat.log && rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-8856384814e69f64c0b9d4c4/logs/remote-refs.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 257,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.57,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 5724416,
+      "fresh_input_tokens": 203154,
+      "input_tokens": 5927570,
+      "non_reasoning_output_tokens": 26455,
+      "output_tokens": 74458,
+      "reasoning_output_tokens": 48003,
+      "total_processed_tokens": 6002028
+    },
+    "warnings": []
+  },
+  "commits": [],
+  "diff": {
+    "additions": 0,
+    "changed_files": 0,
+    "commit_count": 0,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-29T02:56:47Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r3",
+    "detached_verify": false,
+    "head_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "remote_exact_head": true,
+    "remote_head_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r3",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-8856384814e69f64c0b9d4c4",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r3",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r3"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-task-deadline-verify-r3",
+  "schema_version": 1,
+  "started_at": "2026-09-29T02:26:09Z",
+  "status": "EXECUTED_NO_CHANGE",
+  "timing": {
+    "execution_seconds": 1838,
+    "queue_seconds": 0,
+    "total_seconds": 1838
+  },
+  "transport": {
+    "bytes": 3252,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 2901,
+    "prompt_sha256": "ac6b9fd9de99c4faa120768e6e50b0f69db9699b4e0817a8cd77a54cb1f95662",
+    "sha256": "8856384814e69f64c0b9d4c48947a92901f444d1638f2e8cc7b07fde882f24fb"
+  }
+}
