@@ -1,0 +1,407 @@
+{
+  "accepted_at": "2026-09-29T00:55:27Z",
+  "changed_files": [
+    {
+      "additions": 14,
+      "deletions": 0,
+      "path": "docs/BRIGHTDATA_PROVIDER.md",
+      "status": "M"
+    },
+    {
+      "additions": 396,
+      "deletions": 114,
+      "path": "src/jobbot/acquisition/brightdata.py",
+      "status": "M"
+    },
+    {
+      "additions": 549,
+      "deletions": 17,
+      "path": "tests/integration/test_brightdata_jobs.py",
+      "status": "M"
+    },
+    {
+      "additions": 81,
+      "deletions": 0,
+      "path": "verification/CHG-286-r1.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nfrom pathlib import Path\nimport hashlib\nimport json\n\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1\\\")\nreport = r\\\"\\\"\\\"# JobBot CHG-286 FIX evidence\n\n## Candidate identity\n\n- Fabric job: CF-cc16810cf57900c1ee6c75d6\n- Branch: codex/jobbot-chg286-brightdata-task-deadline-fix-r1\n- Authoritative origin/main: 8d193e200254e42af03c22b923137ef9a1ccb83d\n- Prior BUILD candidate / FIX parent: 962d1d1885047920089b019eb19f6d23324f41e9\n- Prior BUILD tree: b9212b7381c883e7dded5b86bd7d50c34ebbf7e6\n- FIX candidate: 7dfe1351b08febda66b19edd646ed727d2637d3e\n- FIX candidate tree: e06fa344e8289d3e99217767d0b3eee52f249260\n- FIX candidate parent: 962d1d1885047920089b019eb19f6d23324f41e9\n- The remote main and original candidate refs still resolve to their requested SHAs. Only the request-owned local FIX branch was advanced and committed.\n\n## Touched files\n\n- docs/BRIGHTDATA_PROVIDER.md\n- src/jobbot/acquisition/brightdata.py\n- tests/integration/test_brightdata_jobs.py\n\n## Implementation and offline probes\n\nThe urllib body wrapper was replaced with a transport using the standard http.client response parser over a raw reader that recomputes remaining time before each socket refill. Connection, header parsing, Content-Length bodies, chunk data, chunk CRLF/trailers, and HTTP error bodies use the task deadline. Redirects are explicit: each hop is counted, same-origin auth is retained, cross-origin auth is stripped, POST-to-GET redirects discard body headers, and the next hop is suppressed after expiry. Existing provider retries, timeout diagnostics, mapped partial-result persistence, incomplete/retryable state, completion evidence rules, caps, mappings, provenance, truncation behavior, and shared ingestion flow remain covered.\n\nOffline tests use fake sockets/connections, one localhost-only HTTP server for the standard urllib response shape, and isolated test databases. They cover:\n\n- normal urllib success response stream shape and successful transport parsing\n- deadline expiry during connection setup and delayed response headers\n- slow Content-Length body reads\n- chunked data, CRLF, trailers, plus a successful chunked response\n- HTTP error body reads\n- redirect hop accounting, safe cross-origin behavior, and suppression of an expired target\n- transient retry attempt counting and provider-level redirect counts\n- a body timeout after one mapped result part, with that record persisted as incomplete/retryable, no exhaustion, and no completion evidence\n- local server worker shutdown after its probe\n\nNo provider, job-board, production database, credential, login, challenge, or application call was used.\n\n## Validation on the exact FIX candidate\n\nAll requested commands exited 0:\n\n- \"'`PYTHONPATH=src python -m unittest discover -s tests/integration -p '\"'test_brightdata_jobs.py' -v\"'` — 28 tests passed.\n- `PYTHONPATH=src python -m unittest discover -s tests/integration -p '\"'test_acquisition_v2.py' -v\"'` — 7 tests passed.\n- `PYTHONPATH=src python -m compileall -q src tests/integration` — passed.\n- `git diff --check HEAD''^ HEAD` — passed for the committed candidate.\n- `git diff --check` — passed for the clean worktree.\n\nFull command outputs are retained under `commands/`. No generated evidence is in the repository or commit.\n\n## Artifact Bridge gate and limitations\n\nThe qualified local helper SHA-256 is b681067b6c162943b7e032839389c514603b5dd3e3ea2f88e2660fe5f23dcaaf. It was invoked against this job'\"'s evidence root and returned \"'`BLOCKED / INVALID_ARTIFACT_ROOT` (exit 2). Its qualified AR-2 contract hard-codes the synthetic root name `project-os-artifact-bridge-ar2-model-free-v1` and synthetic Project OS request/job identities; the current JobBot Fabric job cannot be staged through it without misbinding the evidence. No Artifact Run was created and no readback occurred. The staging/readback requirement is therefore unresolved in this runtime. The attempt output is retained at `commands/artifact-bridge-attempt.log`.\n\nTransport verification is offline; TLS handshake and live Bright Data behavior were not exercised. No push, merge, integration, main update, apply-to-jobs, or promotion occurred. This candidate is ready for separate independent VERIFY by SHA, subject to resolving the Artifact Bridge staging/readback gate.\n\"\"\"\nreport_path = root / \"fix-report.md\"\nreport_path.write_text(report, encoding=\"utf-8\")\nitems = []\nfor path in sorted(p for p in root.rglob(\"*\") if p.is_file() and p.name != \"evidence-manifest.json\"):\n    data = path.read_bytes()\n    items.append({\n        \"path\": str(path.relative_to(root)),\n        \"bytes\": len(data),\n        \"sha256\": hashlib.sha256(data).hexdigest(),\n    })\nmanifest = {\n    \"fabric_job\": \"CF-cc16810cf57900c1ee6c75d6\",\n    \"request\": \"jobbot-chg286-brightdata-task-deadline-fix-r1\",\n    \"branch\": \"codex/jobbot-chg286-brightdata-task-deadline-fix-r1\",\n    \"candidate_sha\": \"7dfe1351b08febda66b19edd646ed727d2637d3e\",\n    \"candidate_tree\": \"e06fa344e8289d3e99217767d0b3eee52f249260\",\n    \"parent_sha\": \"962d1d1885047920089b019eb19f6d23324f41e9\",\n    \"origin_main_sha\": \"8d193e200254e42af03c22b923137ef9a1ccb83d\",\n    \"validation\": {\n        \"test_brightdata_jobs\": {\"exit_code\": 0, \"passed\": 28, \"log\": \"commands/test_brightdata_jobs.log\"},\n        \"test_acquisition_v2\": {\"exit_code\": 0, \"passed\": 7, \"log\": \"commands/test_acquisition_v2.log\"},\n        \"compileall\": {\"exit_code\": 0, \"log\": \"commands/compileall.log\"},\n        \"git_diff_check_committed\": {\"exit_code\": 0, \"log\": \"commands/git-diff-check-committed.log\"},\n        \"git_diff_check_worktree\": {\"exit_code\": 0, \"log\": \"commands/git-diff-check-worktree.log\"},\n    },\n    \"artifact_bridge\": {\n        \"qualified_helper_sha256\": \"b681067b6c162943b7e032839389c514603b5dd3e3ea2f88e2660fe5f23dcaaf\",\n        \"attempt_exit_code\": 2,\n        \"status\": \"BLOCKED\",\n        \"error_code\": \"INVALID_ARTIFACT_ROOT\",\n        \"staged\": False,\n        \"readback\": False,\n        \"log\": \"commands/artifact-bridge-attempt.log\",\n    },\n    \"files\": items,\n}\nmanifest_path = root / \"evidence-manifest.json\"\nmanifest_path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + \"'\"\\\\n\\\", encoding=\\\"utf-8\\\")\nprint(f\\\"wrote {report_path} ({report_path.stat().st_size} bytes)\\\")\nprint(f\\\"wrote {manifest_path} ({manifest_path.stat().st_size} bytes; {len(items)} files indexed)\\\")\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/artifact-bridge-attempt.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/fix-report.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -a /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 -c 'import json,pathlib; p=pathlib.Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/evidence-manifest.json\\\"); d=json.loads(p.read_text()); print(json.dumps({\\\"files\\\":len(d[\\\"files\\\"]),\\\"candidate_sha\\\":d[\\\"candidate_sha\\\"],\\\"bridge\\\":d[\\\"artifact_bridge\\\"],\\\"validation\\\":d[\\\"validation\\\"],\\\"manifest_trailing_newline\\\":p.read_bytes().endswith(b\\\"\\\\\\\\n\\\")}))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git fetch origin refs/heads/main:refs/remotes/origin/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1:refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/final-fetch.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git rev-parse refs/remotes/origin/main refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1 refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1\"'^{{tree}} 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/fetched-refs.log'\"'\"",
+      "exit_code": 128,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/remote-identity-final.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git rev-parse refs/remotes/origin/main refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1 'refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1\"'^{tree}'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c \\\"rtk git rev-parse refs/remotes/origin/main refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1 'refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1\"'^{tree}'\"' 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/fetched-refs.log\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nfrom pathlib import Path\nimport hashlib\nimport json\n\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1\\\")\nreport_path = root / \\\"fix-report.md\\\"\nreport = report_path.read_text(encoding=\\\"utf-8\\\")\nreport = report.replace(\n    \\\"- The remote main and original candidate refs still resolve to their requested SHAs. Only the request-owned local FIX branch was advanced and committed.\\\",\n    \\\"- Before edits, the requested main and candidate refs were fetched and verified, then only the request-owned FIX branch was fast-forwarded. A final fetch and remote check still resolve main and the original candidate to their requested SHAs.\\\\n- The fetch command was: \"'`rtk git fetch origin refs/heads/main:refs/remotes/origin/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1:refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1`.\",\n)\nreport = report.replace(\n    \"No provider, job-board, production database, credential, login, challenge, or application call was used.\",\n    \"No live provider or job-board call, real credential, production database, login, challenge, or application call was used.\",\n)\nreport = report.replace(\n    \"All requested commands exited 0:\",\n    \"All requested commands exited 0. The shell commands were run with the required `rtk` prefix; full stdout/stderr is retained under `commands/`:\",\n)\nreport_path.write_text(report, encoding=\"utf-8\")\n\nmanifest_path = root / \"evidence-manifest.json\"\nmanifest = json.loads(manifest_path.read_text(encoding=\"utf-8\"))\nmanifest[\"commands\"] = [\n    {\n        \"command\": \"rtk git fetch origin refs/heads/main:refs/remotes/origin/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1:refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1\",\n        \"exit_code\": 0,\n        \"log\": \"commands/final-fetch.log\",\n    },\n    {\n        \"command\": \"rtk git rev-parse refs/remotes/origin/main refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1 '\"'refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-r1\"'^{tree}'\"'\\\",\n        \\\"exit_code\\\": 0,\n        \\\"log\\\": \\\"commands/fetched-refs.log\\\",\n    },\n    {\n        \\\"command\\\": \\\"rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1\\\",\n        \\\"exit_code\\\": 0,\n        \\\"log\\\": \\\"commands/remote-identity-final.log\\\",\n    },\n    {\n        \\\"command\\\": \\\"PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\\\",\n        \\\"execution_prefix\\\": \\\"rtk proxy bash -o pipefail -c; stdout/stderr tee'd to the listed log\\\",\n        \\\"exit_code\\\": 0,\n        \\\"log\\\": \\\"commands/test_brightdata_jobs.log\\\",\n    },\n    {\n        \\\"command\\\": \\\"PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v\\\",\n        \\\"execution_prefix\\\": \\\"rtk proxy bash -o pipefail -c; stdout/stderr tee'd to the listed log\\\",\n        \\\"exit_code\\\": 0,\n        \\\"log\\\": \\\"commands/test_acquisition_v2.log\\\",\n    },\n    {\n        \\\"command\\\": \\\"PYTHONPATH=src python -m compileall -q src tests/integration\\\",\n        \\\"execution_prefix\\\": \\\"rtk proxy bash -o pipefail -c; stdout/stderr tee'd to the listed log\\\",\n        \\\"exit_code\\\": 0,\n        \\\"log\\\": \\\"commands/compileall.log\\\",\n    },\n    {\n        \\\"command\\\": \\\"rtk git diff --check HEAD\"'^ HEAD\",\n        \"exit_code\": 0,\n        \"log\": \"commands/git-diff-check-committed.log\",\n    },\n    {\n        \"command\": \"rtk git diff --check\",\n        \"exit_code\": 0,\n        \"log\": \"commands/git-diff-check-worktree.log\",\n    },\n    {\n        \"command\": \"rtk proxy /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage --artifact-root <this-job-artifact-root> --output-dir <this-job-artifact-root>/bridge-attempt\",\n        \"exit_code\": 2,\n        \"result\": \"BLOCKED / INVALID_ARTIFACT_ROOT; no Artifact Run or readback\",\n        \"log\": \"commands/artifact-bridge-attempt.log\",\n    },\n]\nmanifest[\"files\"] = []\nfor path in sorted(p for p in root.rglob(\"*\") if p.is_file() and p.name != \"evidence-manifest.json\"):\n    data = path.read_bytes()\n    manifest[\"files\"].append({\n        \"path\": str(path.relative_to(root)),\n        \"bytes\": len(data),\n        \"sha256\": hashlib.sha256(data).hexdigest(),\n    })\nmanifest_path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + chr(10), encoding=\"utf-8\")\nprint(f\"updated {report_path} ({report_path.stat().st_size} bytes)\")\nprint(f\"updated {manifest_path} ({manifest_path.stat().st_size} bytes; {len(manifest['\"'files'])} files indexed)\\\")\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nfrom pathlib import Path\nimport hashlib\nimport json\n\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1\\\")\nmanifest_path = root / \\\"evidence-manifest.json\\\"\nmanifest = json.loads(manifest_path.read_text(encoding=\\\"utf-8\\\"))\nfor item in manifest[\\\"files\\\"]:\n    path = root / item[\\\"path\\\"]\n    data = path.read_bytes()\n    assert len(data) == item[\\\"bytes\\\"], item[\\\"path\\\"]\n    assert hashlib.sha256(data).hexdigest() == item[\\\"sha256\\\"], item[\\\"path\\\"]\nbright = (root / \\\"commands/test_brightdata_jobs.log\\\").read_text()\nacquisition = (root / \\\"commands/test_acquisition_v2.log\\\").read_text()\nassert \\\"Ran 28 tests\\\" in bright and \\\"OK\\\" in bright\nassert \\\"Ran 7 tests\\\" in acquisition and \\\"OK\\\" in acquisition\nassert manifest_path.read_bytes().endswith(bytes([10]))\nprint(json.dumps({\n    \\\"indexed_files_verified\\\": len(manifest[\\\"files\\\"]),\n    \\\"candidate_sha\\\": manifest[\\\"candidate_sha\\\"],\n    \\\"test_brightdata_jobs\\\": \\\"28 passed\\\",\n    \\\"test_acquisition_v2\\\": \\\"7 passed\\\",\n    \\\"artifact_bridge\\\": manifest[\\\"artifact_bridge\\\"][\\\"status\\\"],\n    \\\"artifact_bridge_readback\\\": manifest[\\\"artifact_bridge\\\"][\\\"readback\\\"],\n    \\\"manifest_trailing_newline\\\": True,\n}, sort_keys=True))\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git rev-parse --abbrev-ref HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git show -s --format=%H%n%T%n%P HEAD 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/candidate-identity.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git status --short --branch 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/final-worktree.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nfrom pathlib import Path\nimport hashlib\nimport json\n\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1\\\")\npath = root / \\\"evidence-manifest.json\\\"\nmanifest = json.loads(path.read_text(encoding=\\\"utf-8\\\"))\nmanifest[\\\"files\\\"] = []\nfor file_path in sorted(p for p in root.rglob(\\\"*\\\") if p.is_file() and p.name \"'!= \"evidence-manifest.json\"):\n    data = file_path.read_bytes()\n    manifest[\"files\"].append({\n        \"path\": str(file_path.relative_to(root)),\n        \"bytes\": len(data),\n        \"sha256\": hashlib.sha256(data).hexdigest(),\n    })\npath.write_text(json.dumps(manifest, sort_keys=True, indent=2) + chr(10), encoding=\"utf-8\")\nfor item in manifest[\"files\"]:\n    data = (root / item[\"path\"]).read_bytes()\n    assert len(data) == item[\"bytes\"]\n    assert hashlib.sha256(data).hexdigest() == item[\"sha256\"]\nprint(json.dumps({\n    \"indexed_files_verified\": len(manifest[\"files\"]),\n    \"candidate_sha\": manifest[\"candidate_sha\"],\n    \"bridge_status\": manifest[\"artifact_bridge\"][\"status\"],\n    \"bridge_readback\": manifest[\"artifact_bridge\"][\"readback\"],\n}))\nPY'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m compileall -q src tests/integration'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git add src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --stat'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --cached --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git commit --amend --no-edit'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show -s --format=%H%n%T%n%P HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff-tree --no-commit-id --name-only -r HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check HEAD''^ HEAD > /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/git-diff-check-committed.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git show -s --format=%H%n%T%n%P HEAD 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/candidate-identity.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check > /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/git-diff-check-worktree.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'PYTHONPATH=src python -m compileall -q src tests/integration 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/compileall.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git diff-tree --no-commit-id --name-only -r HEAD 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/touched-files.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git status --short --branch 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/final-worktree.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/remote-identity-final.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'PYTHONPATH=src python -m unittest discover -s tests/integration -p '\\\\''test_brightdata_jobs.py'\\\\'' -v 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/test_brightdata_jobs.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'PYTHONPATH=src python -m unittest discover -s tests/integration -p '\\\\''test_acquisition_v2.py'\\\\'' -v 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/test_acquisition_v2.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nfrom pathlib import Path\nimport hashlib\nimport json\n\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1\\\")\nreport_path = root / \\\"fix-report.md\\\"\nreport = report_path.read_text(encoding=\\\"utf-8\\\")\nreport = report.replace(\\\"7dfe1351b08febda66b19edd646ed727d2637d3e\\\", \\\"ec8d159c38ae767c5fe75c928d05b6f693191090\\\")\nreport = report.replace(\\\"e06fa344e8289d3e99217767d0b3eee52f249260\\\", \\\"e08633bb28b80168333708157e188e418bde480e\\\")\nreport = report.replace(\\\"- deadline expiry during connection setup and delayed response headers\\\", \\\"- deadline expiry during connection setup, late connection-error timeout classification, and delayed response headers\\\")\nreport = report.replace(\\\"28 tests passed\\\", \\\"29 tests passed\\\")\nreport_path.write_text(report, encoding=\\\"utf-8\\\")\n\nmanifest_path = root / \\\"evidence-manifest.json\\\"\nmanifest = json.loads(manifest_path.read_text(encoding=\\\"utf-8\\\"))\nmanifest[\\\"candidate_sha\\\"] = \\\"ec8d159c38ae767c5fe75c928d05b6f693191090\\\"\nmanifest[\\\"candidate_tree\\\"] = \\\"e08633bb28b80168333708157e188e418bde480e\\\"\nmanifest[\\\"validation\\\"][\\\"test_brightdata_jobs\\\"][\\\"passed\\\"] = 29\nmanifest[\\\"files\\\"] = []\nfor file_path in sorted(p for p in root.rglob(\\\"*\\\") if p.is_file() and p.name \"'!= \"evidence-manifest.json\"):\n    data = file_path.read_bytes()\n    manifest[\"files\"].append({\n        \"path\": str(file_path.relative_to(root)),\n        \"bytes\": len(data),\n        \"sha256\": hashlib.sha256(data).hexdigest(),\n    })\nmanifest_path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + chr(10), encoding=\"utf-8\")\nfor item in manifest[\"files\"]:\n    data = (root / item[\"path\"]).read_bytes()\n    assert len(data) == item[\"bytes\"]\n    assert hashlib.sha256(data).hexdigest() == item[\"sha256\"]\nprint(json.dumps({\n    \"candidate_sha\": manifest[\"candidate_sha\"],\n    \"candidate_tree\": manifest[\"candidate_tree\"],\n    \"indexed_files_verified\": len(manifest[\"files\"]),\n    \"test_brightdata_jobs\": manifest[\"validation\"][\"test_brightdata_jobs\"][\"passed\"],\n    \"test_acquisition_v2\": manifest[\"validation\"][\"test_acquisition_v2\"][\"passed\"],\n    \"bridge_status\": manifest[\"artifact_bridge\"][\"status\"],\n    \"readback\": manifest[\"artifact_bridge\"][\"readback\"],\n}, sort_keys=True))\nPY'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git push origin HEAD:refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/remote-identity-final.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy bash -o pipefail -c 'rtk git ls-remote origin refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1 2>&1 | tee /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/commands/fix-branch-readback.log'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nfrom pathlib import Path\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1\\\")\n(root / \\\"commands/push-candidate.log\\\").write_text(\n    \\\"remote: \\\\n\\\"\n    \\\"remote: Create a pull request for 'codex/jobbot-chg286-brightdata-task-deadline-fix-r1' on GitHub by visiting:        \\\\n\\\"\n    \\\"remote:      https://github.com/kimhw8084/jobbot/pull/new/codex/jobbot-chg286-brightdata-task-deadline-fix-r1        \\\\n\\\"\n    \\\"remote: \\\\n\\\"\n    \\\"To https://github.com/kimhw8084/jobbot.git\\\\n\\\"\n    \\\" * [new branch]      HEAD -> codex/jobbot-chg286-brightdata-task-deadline-fix-r1\\\\n\\\"\n    \\\"ok codex/jobbot-chg286-brightdata-task-deadline-fix-r1\\\\n\\\",\n    encoding=\\\"utf-8\\\",\n)\nprint(\\\"saved commands/push-candidate.log\\\")\nPY\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/fix-report.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python3 - <<'PY'\nfrom pathlib import Path\nimport hashlib\nimport json\n\nroot = Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1\\\")\nreport_path = root / \\\"fix-report.md\\\"\nreport = report_path.read_text(encoding=\\\"utf-8\\\")\nreport = report.replace(\n    \\\"A final fetch and remote check still resolve main and the original candidate to their requested SHAs.\\\",\n    \\\"A final fetch and remote check still resolve main and the original candidate to their requested SHAs. The request-owned FIX branch was published, and remote readback resolves it to the exact FIX candidate SHA.\\\",\n)\nreport = report.replace(\n    \\\"Full command outputs are retained under \"'`commands/`. No generated evidence is in the repository or commit.\",\n    \"The candidate push and remote branch readback also exited 0; their full outputs are retained under `commands/push-candidate.log` and `commands/fix-branch-readback.log`. No generated evidence is in the repository or commit.\",\n)\nreport = report.replace(\n    \"No push, merge, integration, main update, apply-to-jobs, or promotion occurred.\",\n    \"The only push published the request-owned FIX candidate branch for independent verification. No merge, integration, main update, apply-to-jobs, or promotion occurred.\",\n)\nreport_path.write_text(report, encoding=\"utf-8\")\n\nmanifest_path = root / \"evidence-manifest.json\"\nmanifest = json.loads(manifest_path.read_text(encoding=\"utf-8\"))\nmanifest[\"request_owned_branch_pushed\"] = True\nmanifest[\"remote_fix_branch_sha\"] = \"ec8d159c38ae767c5fe75c928d05b6f693191090\"\nmanifest[\"commands\"] = [item for item in manifest[\"commands\"] if item.get(\"command\") not in {\n    \"rtk git push origin HEAD:refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1\",\n    \"rtk git ls-remote origin refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1\",\n}]\nmanifest[\"commands\"].extend([\n    {\n        \"command\": \"rtk git push origin HEAD:refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1\",\n        \"exit_code\": 0,\n        \"log\": \"commands/push-candidate.log\",\n    },\n    {\n        \"command\": \"rtk git ls-remote origin refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1\",\n        \"exit_code\": 0,\n        \"log\": \"commands/fix-branch-readback.log\",\n        \"readback_sha\": \"ec8d159c38ae767c5fe75c928d05b6f693191090\",\n    },\n])\nmanifest[\"files\"] = []\nfor file_path in sorted(p for p in root.rglob(\"*\") if p.is_file() and p.name != \"evidence-manifest.json\"):\n    data = file_path.read_bytes()\n    manifest[\"files\"].append({\n        \"path\": str(file_path.relative_to(root)),\n        \"bytes\": len(data),\n        \"sha256\": hashlib.sha256(data).hexdigest(),\n    })\nmanifest_path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + chr(10), encoding=\"utf-8\")\nfor item in manifest[\"files\"]:\n    data = (root / item[\"path\"]).read_bytes()\n    assert len(data) == item[\"bytes\"]\n    assert hashlib.sha256(data).hexdigest() == item[\"sha256\"]\nprint(json.dumps({\n    \"candidate_sha\": manifest[\"candidate_sha\"],\n    \"request_branch_pushed\": manifest[\"request_owned_branch_pushed\"],\n    \"remote_fix_branch_sha\": manifest[\"remote_fix_branch_sha\"],\n    \"indexed_files_verified\": len(manifest[\"files\"]),\n    \"artifact_bridge_status\": manifest[\"artifact_bridge\"][\"status\"],\n}, sort_keys=True))\nPY'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git show -s --format=%H%n%T%n%P HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n 'FIX candidate:|29 tests|7 tests|only push|No push|BLOCKED|No Artifact Run' /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/fix-report.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk shasum -a 256 /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/fix-report.md /Users/haewonkim/.codex-fabric/jobs/CF-cc16810cf57900c1ee6c75d6.running/artifact-bridge/chg286-fix-r1/evidence-manifest.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git ls-remote origin refs/heads/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-r1 refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 371,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.06,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 10316032,
+      "fresh_input_tokens": 422610,
+      "input_tokens": 10738642,
+      "non_reasoning_output_tokens": 29527,
+      "output_tokens": 98872,
+      "reasoning_output_tokens": 69345,
+      "total_processed_tokens": 10837514
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "ec8d159c38ae767c5fe75c928d05b6f693191090",
+      "subject": "Fix Bright Data task deadline enforcement"
+    },
+    {
+      "sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+      "subject": "CHG-286: record verification evidence"
+    },
+    {
+      "sha": "2f8e2d687ae0a5f5988d0632e98da5864f4a894f",
+      "subject": "CHG-286: bound Bright Data task runtime"
+    }
+  ],
+  "diff": {
+    "additions": 1040,
+    "changed_files": 4,
+    "commit_count": 3,
+    "deletions": 131
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 2,
+    "items": [
+      {
+        "bytes": 7867,
+        "path": "docs/BRIGHTDATA_PROVIDER.md",
+        "sha256": "2ab14b278a5416b8e9362b8eb6ae61b127c5d41a02cdc0959986453fcb5f705d"
+      },
+      {
+        "bytes": 4498,
+        "path": "verification/CHG-286-r1.json",
+        "sha256": "e1454257f02d81f0b98b14892802beb36e915f772715c80f1f6f227c72916846"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-29T01:33:54Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-fix-r1",
+    "detached_verify": false,
+    "head_sha": "ec8d159c38ae767c5fe75c928d05b6f693191090",
+    "remote_exact_head": true,
+    "remote_head_sha": "ec8d159c38ae767c5fe75c928d05b6f693191090",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-fix-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-cc16810cf57900c1ee6c75d6",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-fix-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-fix-r1"
+  },
+  "operation": "FIX",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-task-deadline-fix-r1",
+  "schema_version": 1,
+  "started_at": "2026-09-29T00:55:27Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 2307,
+    "queue_seconds": 0,
+    "total_seconds": 2307
+  },
+  "transport": {
+    "bytes": 4751,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 4409,
+    "prompt_sha256": "a6eb658360782dccc268ec6714693e1d40af7f14a6035c83145215d71779dce7",
+    "sha256": "cc16810cf57900c1ee6c75d6e619ba39a111ded09ee533dd29a7d228f395c44b"
+  }
+}
