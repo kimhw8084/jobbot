@@ -1,0 +1,13 @@
+origin ls-remote refs:
+ec8d159c38ae767c5fe75c928d05b6f693191090	refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1
+8d193e200254e42af03c22b923137ef9a1ccb83d	refs/heads/main
+
+candidate commit and tree:
+commit ec8d159c38ae767c5fe75c928d05b6f693191090
+parent 962d1d1885047920089b019eb19f6d23324f41e9
+tree e08633bb28b80168333708157e188e418bde480e
+
+fix-r2 after fast-forward:
+codex/jobbot-chg286-brightdata-task-deadline-fix-r2
+ec8d159c38ae767c5fe75c928d05b6f693191090
+e08633bb28b80168333708157e188e418bde480e

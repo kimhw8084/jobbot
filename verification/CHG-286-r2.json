@@ -1,0 +1,83 @@
+{
+  "change": "CHG-286",
+  "operation": "FIX only",
+  "objective": "Correct the HTTPS connection deadline gap and redirect method rewriting found by independent VERIFY.",
+  "identity_gate": {
+    "fabric_route_base": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "origin_main": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "candidate_remote_ref": "refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1",
+    "candidate_commit": "ec8d159c38ae767c5fe75c928d05b6f693191090",
+    "candidate_parent": "962d1d1885047920089b019eb19f6d23324f41e9",
+    "candidate_tree": "e08633bb28b80168333708157e188e418bde480e",
+    "fix_branch": "codex/jobbot-chg286-brightdata-task-deadline-fix-r2",
+    "implementation_commit": "83de1c78be04db5edaa63a7a69f7d0835bbe1a5a",
+    "implementation_tree": "fe42721941259e1d1ccfc76a1be994d679721a75",
+    "identity_output": "verification/CHG-286-r2-identity.log"
+  },
+  "implementation": {
+    "https_setup": "Resolved TCP address attempts share the remaining monotonic budget; HTTPS recomputes and applies the remaining budget immediately before the TLS handshake.",
+    "dns_limit": "Synchronous getaddrinfo cannot be safely cancelled with this standard-library transport. Resolution may exceed the deadline; after it returns, an expired deadline prevents TCP connection and HTTP request submission. A strict wall-clock bound is not claimed.",
+    "redirects": "301/302/303 rewrite POST to GET and discard its body headers. HEAD, DELETE, and other non-POST methods retain their method and body. 307/308 retain method and body. Authorization is still stripped across origins.",
+    "preserved_contracts": [
+      "standard HTTPResponse parsing and normal urllib-compatible response shape",
+      "deadline enforcement for headers, response bodies, Content-Length, chunk framing, error bodies, redirects, and retries",
+      "request attempt accounting, including redirect hops",
+      "partial result persistence and incomplete/retryable completion semantics"
+    ]
+  },
+  "validation": [
+    {
+      "command": "rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v",
+      "result": "PASS",
+      "tests": 34,
+      "full_output": "verification/CHG-286-r2-brightdata-tests.log"
+    },
+    {
+      "command": "rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v",
+      "result": "PASS",
+      "tests": 7,
+      "full_output": "verification/CHG-286-r2-acquisition-v2-tests.log"
+    },
+    {
+      "command": "rtk proxy env PYTHONPATH=src python -m compileall src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r2-compileall.log"
+    },
+    {
+      "command": "rtk proxy git diff --check",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r2-worktree-diff-check.log"
+    },
+    {
+      "command": "rtk proxy git diff-tree --check --no-commit-id -r HEAD",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r2-committed-diff-check.log"
+    },
+    {
+      "command": "rtk proxy git diff --cached --check",
+      "result": "PASS",
+      "full_output": "verification/CHG-286-r2-staged-diff-check.log"
+    }
+  ],
+  "safety_boundary": {
+    "bright_data_or_job_board_calls": "NONE",
+    "external_network_behavior": "NONE; the response-shape regression test uses a local loopback HTTP server only.",
+    "real_credentials": "NOT_USED; tests use a synthetic marker.",
+    "production_databases": "NOT_ACCESSED",
+    "real_logins_challenges_or_submissions": "NONE",
+    "previous_fix_branch_and_evidence": "PRESERVED"
+  },
+  "promotion_gate": {
+    "artifact_bridge": "UNRESOLVED",
+    "known_failure": "INVALID_ARTIFACT_ROOT because the qualified AR-2 helper requires a synthetic root/project/request/job identity.",
+    "status": "Not retried; evidence is not called staged. This remains an explicit unresolved promotion gate."
+  },
+  "scope_boundary": {
+    "verify_run": false,
+    "merge_or_integration": false,
+    "main_update": false,
+    "apply_to_jobs": false,
+    "promotion": false,
+    "push": "Only the request-owned fix-r2 branch, after validations pass."
+  }
+}

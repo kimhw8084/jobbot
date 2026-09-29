@@ -1,0 +1,12 @@
+test_absent_completion_proof_partial_detail_and_unknown_fields_fail_closed (test_acquisition_v2.AcquisitionV2Tests.test_absent_completion_proof_partial_detail_and_unknown_fields_fail_closed) ... ok
+test_jsonl_card_detail_identity_order_completion_and_provider_outputs (test_acquisition_v2.AcquisitionV2Tests.test_jsonl_card_detail_identity_order_completion_and_provider_outputs) ... ok
+test_migration_backfills_history_as_legacy_browser_unknown (test_acquisition_v2.AcquisitionV2Tests.test_migration_backfills_history_as_legacy_browser_unknown) ... ok
+test_provider_input_and_legacy_rpc_share_canonical_truth_and_versioning (test_acquisition_v2.AcquisitionV2Tests.test_provider_input_and_legacy_rpc_share_canonical_truth_and_versioning) ... ok
+test_same_requisition_from_two_providers_reconciles_and_distinct_requisitions_stay_distinct (test_acquisition_v2.AcquisitionV2Tests.test_same_requisition_from_two_providers_reconciles_and_distinct_requisitions_stay_distinct) ... ok
+test_staged_acquisition_plan_retains_exact_universe_and_deep_pairs (test_acquisition_v2.AcquisitionV2Tests.test_staged_acquisition_plan_retains_exact_universe_and_deep_pairs) ... ok
+test_timeout_preserves_committed_sighting_and_managed_http_uses_injected_transport (test_acquisition_v2.AcquisitionV2Tests.test_timeout_preserves_committed_sighting_and_managed_http_uses_injected_transport) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.764s
+
+OK
