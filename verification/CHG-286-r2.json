@@ -61,7 +61,7 @@
   ],
   "safety_boundary": {
     "bright_data_or_job_board_calls": "NONE",
-    "external_network_behavior": "NONE; the response-shape regression test uses a local loopback HTTP server only.",
+    "provider_network_behavior": "NONE; the response-shape regression test uses a local loopback HTTP server only. Git remote ref reads and the explicitly requested fix-r2 push were the only external network operations.",
     "real_credentials": "NOT_USED; tests use a synthetic marker.",
     "production_databases": "NOT_ACCESSED",
     "real_logins_challenges_or_submissions": "NONE",
