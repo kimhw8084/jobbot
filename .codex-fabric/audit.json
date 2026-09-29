@@ -1,0 +1,358 @@
+{
+  "accepted_at": "2026-09-29T01:38:24Z",
+  "changed_files": [],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la /Users/haewonkim/.codex-fabric && rtk rg --files /Users/haewonkim/.codex-fabric/libexec /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge /Users/haewonkim/.codex-fabric/jobs | rtk rg -i 'bridge|artifact'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la /Users/haewonkim/.codex-fabric/bin && rtk ls -la /Users/haewonkim/.codex-fabric/jobs/CF-eeef533a2b9bf03a2bc39f24* && rtk rg --files /Users/haewonkim/.codex-fabric/bin /Users/haewonkim/.codex-fabric/libexec | rtk rg -i 'bridge|artifact|evidence' && rtk rg -n -i \\\"qualified|qualification|contract|fabric root|artifact runs\\\" /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/bridge-help.txt /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/RESULT.md /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/bridge-discovery.json\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/bin/fabricctl && rtk cat /Users/haewonkim/.codex-fabric/bin/projectos-integrate-stdin && rtk cat /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/bridge-help.txt && rtk cat /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/RESULT.md && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-eeef533a2b9bf03a2bc39f24.executed/job.json'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk which projectos-artifact-stage; rtk ls -la /Users/haewonkim/.codex-fabric/jobs | rtk rg 'CF-eeef'; rtk ls -la /Users/haewonkim/.codex-fabric/project-os-artifacts; rtk ls -la /Users/haewonkim/.codex-fabric/config; rtk rg --files /Users/haewonkim/.codex-fabric/current /Users/haewonkim/.codex-fabric/codex-runtime | rtk rg 'artifact-stage|artifact.*bridge|bridge.*artifact'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la /Users/haewonkim/.codex-fabric/jobs/CF-eeef533a2b9bf03a2bc39f24.running && rtk git show --stat --oneline 900245d && rtk git show --name-status --format=fuller 900245d && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-eeef533a2b9bf03a2bc39f24.running/job.json && rtk cat /Users/haewonkim/.codex-fabric/jobs/CF-eeef533a2b9bf03a2bc39f24.running/prompt.md'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la /Users/haewonkim/.codex-fabric/evidence | rtk rg 'CF-eeef' ; rtk cat /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/bridge-discovery.json /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/binding.json /Users/haewonkim/.codex-fabric/artifacts/CF-9eec5fb85695a39591e5162c/artifact-bridge/material/evidence-stage-status.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk ls -la /Users/haewonkim/.codex-fabric/evidence && rtk ls -la /Users/haewonkim/.codex-fabric/results | rtk rg 'CF-eeef' && rtk ls -la /Users/haewonkim/.codex-fabric/jobs/CF-eeef533a2b9bf03a2bc39f24.running\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk ls -la /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24'",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.projectos/qualifications/artifact-bridge-ar3-r3/PROJECT_OS_AR3_FINAL_RESULT_REPORT.md && rtk head -n 240 /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage && rtk sha256sum /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git worktree add --detach /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate ec8d159c38ae767c5fe75c928d05b6f693191090 && rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate rev-parse HEAD && rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate rev-parse HEAD''^{tree} && rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate status --short --branch && rtk mkdir -p /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n \\\"deadline|timeout|redirect|Content-Length|chunk|read\\\\(|_read|HTTPResponse|BufferedReader|Retry|incomplete|complete|partial|retryable\\\" src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py tests/integration/test_acquisition_v2.py && rtk git diff --unified=70 962d1d1885047920089b019eb19f6d23324f41e9 ec8d159c38ae767c5fe75c928d05b6f693191090 -- src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '\"'^class |''^    def test_'\"' tests/integration/test_brightdata_jobs.py && rtk sed -n '1,260p' tests/integration/test_brightdata_jobs.py && rtk sed -n '580,950p' tests/integration/test_brightdata_jobs.py && rtk sed -n '1,260p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '500,790p' tests/integration/test_brightdata_jobs.py && rtk sed -n '550,940p' src/jobbot/acquisition/brightdata.py && rtk sed -n '1,220p' src/jobbot/acquisition/models.py && rtk sed -n '120,390p' tests/integration/test_acquisition_v2.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src python -m compileall -q src tests/integration > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/compileall.log 2>&1'",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_acquisition_v2.log 2>&1\"",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_brightdata_jobs.log 2>&1\"",
+      "exit_code": 127,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git diff --check HEAD''^ HEAD > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/diff-check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_brightdata_jobs.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_acquisition_v2.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/compileall.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/diff-check.log && rtk --version'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy which python python3; rtk proxy python3 --version; rtk proxy env | rtk rg '\"'^(PATH|PYTHONPATH)='\"'; rtk proxy sh -c 'command -v python; command -v python3; printf \\\"%s\\\\n\\\" \\\"\"'$PATH\"'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy /opt/anaconda3/bin/python3.11 --version && rtk cat pyproject.toml'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m compileall -q src tests/integration > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/compileall.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_brightdata_jobs.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_acquisition_v2.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk tail -n 35 /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_brightdata_jobs.log && rtk tail -n 20 /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_acquisition_v2.log && rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/compileall.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk git show 962d1d1885047920089b019eb19f6d23324f41e9:src/jobbot/acquisition/brightdata.py | rtk rg -n -A65 -B8 'class _DeadlineBodyReader|def _read_body|def request\\\\('\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk sed -n '640,940p' src/jobbot/acquisition/brightdata.py && rtk sed -n '1000,1095p' src/jobbot/acquisition/brightdata.py && rtk git diff --unified=15 962d1d1885047920089b019eb19f6d23324f41e9 ec8d159c38ae767c5fe75c928d05b6f693191090 -- docs/BRIGHTDATA_PROVIDER.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n -A45 -B20 'EXPECTED_ROOT_NAME|def main|def run|read_token\\\\(' /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage && rtk git worktree add --detach /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-parent 962d1d1885047920089b019eb19f6d23324f41e9\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=/tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-parent/src /opt/anaconda3/bin/python3.11 -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -k urllib_success_response_shape -v > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/parent-reader-regression.log 2>&1\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/parent-reader-regression.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONPATH=src:tests/integration /opt/anaconda3/bin/python3.11 - > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/independent-probes.log 2>&1 <<'PY'\nfrom unittest import mock\nfrom test_brightdata_jobs import FakeClock, FakeHTTPConnectionFactory, http_wire_response, json_http_wire_response\nfrom jobbot.acquisition.brightdata import BrightDataHTTPTransport\n\nfor method in (\\\"HEAD\\\", \\\"DELETE\\\", \\\"POST\\\"):\n    clock = FakeClock()\n    factory = FakeHTTPConnectionFactory([\n        http_wire_response(302, [(\\\"Location\\\", \\\"/target\\\")]),\n        json_http_wire_response(200, {\\\"ok\\\": True}),\n    ], clock=clock)\n    attempts = []\n    with mock.patch(\\\"jobbot.acquisition.brightdata.API_ROOT\\\", \\\"http://origin.example\\\"), \\\\\n         mock.patch(\\\"jobbot.acquisition.brightdata.http.client.HTTPConnection\\\", side_effect=factory), \\\\\n         mock.patch(\\\"jobbot.acquisition.brightdata.http.client.HTTPSConnection\\\", side_effect=factory):\n        BrightDataHTTPTransport(monotonic=clock).request(\n            method, \\\"/source\\\", params={}, json_body={\\\"payload\\\": \\\"fixture\\\"},\n            token=\\\"offline-only\\\", timeout_seconds=10, task_deadline=1,\n            on_attempt=lambda: attempts.append(1),\n        )\n    first, target = factory.connections\n    print(f\\\"redirect method={method}: target_method={target.request_info[0]}, \\\"\n          f\\\"target_body={target.request_info[2]\"'!r}, attempts={len(attempts)}\")\n\nclass FakeSocket:\n    def __init__(self):\n        self.timeout = None\n    def settimeout(self, value):\n        self.timeout = value\n    def close(self):\n        pass\n\nclock = FakeClock()\nconnections = []\nclass SlowHTTPSConnection:\n    def __init__(self, host, port=None, timeout=None):\n        self.timeout = timeout\n        self.sock = FakeSocket()\n        self.request_info = None\n        connections.append(self)\n    def connect(self):\n        # Model the two separately blocking phases in HTTPSConnection.connect():\n        # TCP connect followed by TLS handshake, both with the same initial\n        # per-operation timeout. Each phase is below that timeout.\n        self.connect_phase_seconds = (self.timeout * 0.6, self.timeout * 0.6)\n        for seconds in self.connect_phase_seconds:\n            clock.advance(seconds)\n    def request(self, method, target, body=None, headers=None):\n        self.request_info = (method, target, body, headers)\n    def close(self):\n        self.sock.close()\n\nattempts = []\ntry:\n    with mock.patch(\"jobbot.acquisition.brightdata.API_ROOT\", \"https://origin.example\"), '\"\\\\\n         mock.patch(\\\"jobbot.acquisition.brightdata.http.client.HTTPSConnection\\\", side_effect=SlowHTTPSConnection):\n        BrightDataHTTPTransport(monotonic=clock).request(\n            \\\"GET\\\", \\\"/source\\\", params={}, json_body=None, token=\\\"offline-only\\\",\n            timeout_seconds=10, task_deadline=1,\n            on_attempt=lambda: attempts.append(1),\n        )\nexcept TimeoutError:\n    pass\nconnection = connections[0]\nprint(\\\"HTTPS connect budget probe: \\\"\n      f\\\"initial_timeout={connection.timeout:.1f}, \\\"\n      f\\\"individual_phases={connection.connect_phase_seconds\"'!r}, \"\n      f\"elapsed={clock():.1f}, request_issued={connection.request_info is not None}, \"\n      f\"attempts={len(attempts)}\")\nPY'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/independent-probes.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy test ! -e /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/bridge-output && rtk proxy env -u NOTION_TOKEN /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage --artifact-root /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24 --output-dir /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/bridge-output > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/artifact-bridge-attempt.log 2>&1'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/artifact-bridge-attempt.log && rtk test ! -e /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/bridge-output'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy /usr/bin/env NOTION_TOKEN= /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage --artifact-root /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24 --output-dir /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/bridge-output > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/artifact-bridge-attempt-clean.log 2>&1'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/artifact-bridge-attempt-clean.log && rtk test ! -e /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/bridge-output && rtk sha256sum /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'rtk git rev-parse origin/main; rtk git rev-parse origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r1; rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate rev-parse HEAD; rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate rev-parse HEAD\"'^{tree}; rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate rev-parse HEAD''^; rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate status --short --branch; rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate diff --stat HEAD''^ HEAD'\"' > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/refs-and-candidate.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/refs-and-candidate.log && rtk git -C /Users/haewonkim/.codex-fabric/worktrees/CF-eeef533a2b9bf03a2bc39f24 status --short --branch && rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate status --short --branch'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk rg -n '\"'^class _DeadlineSocket|''^class _DeadlineSocketReader|''^class BrightDataHTTPTransport|''^def _url_origin|remaining = task_deadline|connection.connect|http_response.begin|status in '\"\\\\{301|Authorization|current_method = \\\"GET\\\"|def test_urllib_success|def test_deadline_covers_delayed|def test_deadline_is_checked|def test_deadline_covers_slow|def test_chunked|def test_deadline_covers_http_error|def test_redirect_hops|def test_provider_request_count|def test_successful_part|def test_deadline_after_result_part' src/jobbot/acquisition/brightdata.py tests/integration/test_brightdata_jobs.py tests/integration/test_acquisition_v2.py && rtk wc -l /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/*\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/diff-check.log && rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate diff --check HEAD''^ HEAD'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy tee /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/VERIFY.md <<'EOF'\n# Independent VERIFY — JobBot CHG-286 task-deadline FIX\n\n**Verdict: FIX REQUIRED (code).** Review was limited to the fetched candidate ec8d159c38ae767c5fe75c928d05b6f693191090 (tree e08633bb28b80168333708157e188e418bde480e, parent 962d1d1885047920089b019eb19f6d23324f41e9). After explicit fetch, origin/main matched required route base 8d193e200254e42af03c22b923137ef9a1ccb83d, and the remote candidate ref matched the required SHA.\n\n## Prior defects\n\n| Defect | Independent finding |\n|---|---|\n| Standard urllib response/reader shape | **Closed by transport replacement.** The candidate no longer introspects urlopen().fp.fp; it feeds a deadline-aware socket adapter to http.client.HTTPResponse, whose makefile(\\\"rb\\\") returns a BufferedReader. The candidate’s loopback response test passes. Running that same regression against the prior parent fails with OSError: Bright Data response stream does not expose bounded reads (logs/parent-reader-regression.log). |\n| Content-Length and chunk framing reads | **Closed.** Every raw refill passes through _DeadlineSocket.recv_into, which recomputes remaining time and applies it before the blocking socket read. Candidate tests pass for slow Content-Length bodies, chunk data, CRLF, trailers, and HTTP error bodies. |\n| Connection and response-header deadline | **Not fully closed.** Response-header parsing is bounded by the deadline adapter. connection.connect() runs before that adapter is installed and receives only the timeout calculated once at hop start. The deterministic offline HTTPS setup probe modeled two connect phases, each shorter than that original timeout: a 1.0s budget elapsed to 1.2s before the code noticed expiry. It suppressed the HTTP request, but the blocking connection setup itself exceeded the task deadline. Name resolution can also block outside socket timeouts. See logs/independent-probes.log. |\n| Redirect count, credentials, methods, expiry | **Partly closed.** Current provider GET/POST hops are counted, cross-origin Authorization is stripped, POST is converted to GET for 301/302/303, 307/308 preserve method/body, and the target HTTP request is suppressed after expiry. Offline tests cover count, stripping and expiry. The rewrite is unconditional for 301/302/303: a deterministic probe shows HEAD and DELETE also become GET (and DELETE’s body is dropped). The generic transport therefore does not preserve method semantics safely for those inputs. |\n\n## Other regression checks\n\nThe two requested integration suites pass (29 Bright Data tests; 7 acquisition-v2 tests). Python 3.11 compileall and git diff --check HEAD\"'^ HEAD pass. Tests retain retry accounting, HTTP error body handling, partial records after later failure, retryable/incomplete states, and completion evidence rules. Full outputs and commands are in logs/; the parent regression is expected to fail.\n\n## Project OS Artifact Bridge\n\nThe qualified local helper SHA matched its documented qualification: b681067b6c162943b7e032839389c514603b5dd3e3ea2f88e2660fe5f23dcaaf. Its AR-2 contract requires root basename project-os-artifact-bridge-ar2-model-free-v1 and hard-codes synthetic project/request/job identity. Invoking it with this actual Fabric evidence root returned exit 2 / INVALID_ARTIFACT_ROOT. Root validation stopped the helper before credentials or provider operations; no output directory, Artifact Run, manifest, bundle, or readback was created. Its synthetic failure receipt is not staging evidence. **Bridge status remains BLOCKED and promotion-blocking.**\n\nNo product files were edited, and no commit, push, merge, integration, main update, job application, or promotion was performed. Machine-readable identities, command exits, log paths and hashes are in evidence-manifest.json.\nEOF'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sha256sum /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/VERIFY.md /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/refs-and-candidate.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_brightdata_jobs.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/test_acquisition_v2.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/compileall.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/diff-check.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/parent-reader-regression.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/independent-probes.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/artifact-bridge-attempt-clean.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk mkdir -p /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/probes && rtk proxy tee /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/probes/independent_transport_probe.py <<'EOF'\nfrom collections import deque\nfrom unittest import mock\n\nfrom jobbot.acquisition.brightdata import BrightDataHTTPTransport\n\n\nclass FakeClock:\n    def __init__(self):\n        self.now = 0.0\n\n    def __call__(self):\n        return self.now\n\n    def advance(self, seconds):\n        self.now += seconds\n\n\nclass FakeSocket:\n    def __init__(self, wire=b\\\"\\\", clock=None):\n        self.wire = bytearray(wire)\n        self.clock = clock\n        self.timeout = None\n\n    def settimeout(self, value):\n        self.timeout = value\n\n    def recv_into(self, buffer):\n        count = min(len(buffer), len(self.wire))\n        if count:\n            buffer[:count] = self.wire[:count]\n            del self.wire[:count]\n        return count\n\n    def close(self):\n        pass\n\n\nclass FakeConnection:\n    def __init__(self, wire, requests, timeout=None):\n        self.sock = FakeSocket(wire)\n        self.requests = requests\n        self.timeout = timeout\n        self.request_info = None\n\n    def connect(self):\n        pass\n\n    def request(self, method, target, body=None, headers=None):\n        self.request_info = (method, target, body, dict(headers or {}))\n        self.requests.append(self)\n\n    def close(self):\n        self.sock.close()\n\n\nclass ConnectionFactory:\n    def __init__(self, wires):\n        self.wires = deque(wires)\n        self.requests = []\n\n    def __call__(self, _host, _port=None, timeout=None):\n        return FakeConnection(self.wires.popleft(), self.requests, timeout)\n\n\ndef wire(status, headers=(), body=b\\\"\\\"):\n    lines = [f\\\"HTTP/1.1 {status} Fixture\\\\r\\\\n\\\".encode(\\\"ascii\\\")]\n    headers = list(headers)\n    if not any(name.casefold() in {\\\"content-length\\\", \\\"transfer-encoding\\\"} for name, _ in headers):\n        headers.append((\\\"Content-Length\\\", str(len(body))))\n    lines.extend(f\\\"{name}: {value}\\\\r\\\\n\\\".encode(\\\"ascii\\\") for name, value in headers)\n    lines.append(b\\\"\\\\r\\\\n\\\")\n    return b\\\"\\\".join(lines) + body\n\n\ndef redirect_method_probe(method):\n    factory = ConnectionFactory([\n        wire(302, [(\\\"Location\\\", \\\"/target\\\")]),\n        wire(200, [(\\\"Content-Type\\\", \\\"application/json\\\")], b'{\\\"ok\\\":true}'),\n    ])\n    attempts = []\n    with mock.patch(\\\"jobbot.acquisition.brightdata.API_ROOT\\\", \\\"http://fixture.invalid\\\"), \\\\\n         mock.patch(\\\"jobbot.acquisition.brightdata.http.client.HTTPConnection\\\", side_effect=factory), \\\\\n         mock.patch(\\\"jobbot.acquisition.brightdata.http.client.HTTPSConnection\\\", side_effect=factory):\n        BrightDataHTTPTransport(monotonic=FakeClock()).request(\n            method, \\\"/source\\\", params={}, json_body={\\\"fixture\\\": True},\n            token=\\\"offline-only\\\", timeout_seconds=10, task_deadline=1,\n            on_attempt=lambda: attempts.append(1),\n        )\n    target = factory.requests[1].request_info\n    assert len(attempts) == len(factory.requests) == 2\n    return target\n\n\ndef connection_budget_probe():\n    clock = FakeClock()\n    connections = []\n\n    class SlowHTTPSConnection:\n        def __init__(self, _host, _port=None, timeout=None):\n            self.timeout = timeout\n            self.sock = FakeSocket()\n            self.request_info = None\n            self.phases = (timeout * 0.6, timeout * 0.6)\n            connections.append(self)\n\n        def connect(self):\n            # Model TCP connect and TLS handshake as separate blocking phases\n            # sharing HTTPSConnection's unchanged initial socket timeout.\n            for seconds in self.phases:\n                clock.advance(seconds)\n\n        def request(self, method, target, body=None, headers=None):\n            self.request_info = (method, target, body, headers)\n\n        def close(self):\n            self.sock.close()\n\n    attempts = []\n    try:\n        with mock.patch(\\\"jobbot.acquisition.brightdata.API_ROOT\\\", \\\"https://fixture.invalid\\\"), \\\\\n             mock.patch(\\\"jobbot.acquisition.brightdata.http.client.HTTPSConnection\\\", side_effect=SlowHTTPSConnection):\n            BrightDataHTTPTransport(monotonic=clock).request(\n                \\\"GET\\\", \\\"/source\\\", params={}, json_body=None, token=\\\"offline-only\\\",\n                timeout_seconds=10, task_deadline=1,\n                on_attempt=lambda: attempts.append(1),\n            )\n    except TimeoutError:\n        pass\n    connection = connections[0]\n    assert connection.timeout == 1\n    assert all(phase < connection.timeout for phase in connection.phases)\n    assert clock() > 1\n    assert connection.request_info is None\n    return connection, len(attempts)\n\n\nfor verb in (\\\"HEAD\\\", \\\"DELETE\\\", \\\"POST\\\"):\n    target = redirect_method_probe(verb)\n    print(f\\\"redirect {verb}: target_method={target[0]}, target_body={target[2]\"'!r}, counted_hops=2\")\n\nconnection, attempts = connection_budget_probe()\nprint(f\"HTTPS setup: initial_timeout={connection.timeout:.1f}, phases={connection.phases!r}, \"\n      f\"elapsed={connection.timeout * 1.2:.1f}, request_issued={connection.request_info is not None}, \"\n      f\"counted_attempts={attempts}\")\nEOF'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=/tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate/src /opt/anaconda3/bin/python3.11 /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/probes/independent_transport_probe.py > /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/independent-probes-repro.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk cat /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/independent-probes-repro.log && rtk sha256sum /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/probes/independent_transport_probe.py'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk sha256sum /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/VERIFY.md /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/probes/independent_transport_probe.py /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/independent-probes-repro.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/artifact-bridge-attempt-clean.log /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/logs/artifact-bridge-attempt.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy tee /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/evidence-manifest.json <<'EOF'\n{\n  \\\"evidence_type\\\": \\\"independent_verify\\\",\n  \\\"project\\\": \\\"jobbot\\\",\n  \\\"repository\\\": \\\"kimhw8084/jobbot\\\",\n  \\\"request\\\": \\\"jobbot-chg286-brightdata-task-deadline-verify-r2\\\",\n  \\\"operation\\\": \\\"VERIFY\\\",\n  \\\"fabric_job_id\\\": \\\"CF-eeef533a2b9bf03a2bc39f24\\\",\n  \\\"evidence_root\\\": \\\"/Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24\\\",\n  \\\"verdict\\\": \\\"FIX_REQUIRED\\\",\n  \\\"route\\\": {\n    \\\"base_sha\\\": \\\"8d193e200254e42af03c22b923137ef9a1ccb83d\\\",\n    \\\"fetched_origin_main_sha\\\": \\\"8d193e200254e42af03c22b923137ef9a1ccb83d\\\",\n    \\\"fetch_command\\\": \\\"rtk git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main refs/heads/codex/jobbot-chg286-brightdata-task-deadline-fix-r1:refs/remotes/origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r1\\\",\n    \\\"fetch_exit_code\\\": 0,\n    \\\"fetch_output\\\": \\\"ok fetched\\\",\n    \\\"identity_log\\\": \\\"logs/refs-and-candidate.log\\\"\n  },\n  \\\"candidate\\\": {\n    \\\"ref\\\": \\\"origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r1\\\",\n    \\\"sha\\\": \\\"ec8d159c38ae767c5fe75c928d05b6f693191090\\\",\n    \\\"tree\\\": \\\"e08633bb28b80168333708157e188e418bde480e\\\",\n    \\\"parent\\\": \\\"962d1d1885047920089b019eb19f6d23324f41e9\\\",\n    \\\"detached_checkout\\\": \\\"/tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate\\\",\n    \\\"detached_checkout_clean\\\": true,\n    \\\"route_worktree_clean\\\": true\n  },\n  \\\"defect_results\\\": {\n    \\\"1_urllib_reader_shape\\\": \\\"CLOSED_BY_TRANSPORT_REPLACEMENT; prior parent regression fails with OSError\\\",\n    \\\"2_body_framing_reads\\\": \\\"CLOSED_IN_OFFLINE_TESTS\\\",\n    \\\"3_connection_and_headers\\\": \\\"OPEN_FOR_HARD_DEADLINE; headers bounded but HTTPS connect setup can exceed task budget\\\",\n    \\\"4_redirects\\\": \\\"PARTLY_CLOSED; hops counted, credentials stripped, expired target suppressed; generic HEAD/DELETE incorrectly become GET on 301/302/303\\\"\n  },\n  \\\"runtime\\\": {\n    \\\"python\\\": \\\"3.11.7\\\",\n    \\\"external_provider_or_job_board_calls\\\": 0,\n    \\\"production_database_or_login_use\\\": 0,\n    \\\"source_files_edited\\\": 0,\n    \\\"commit_or_push\\\": 0,\n    \\\"merge_or_promotion\\\": 0\n  },\n  \\\"commands\\\": [\n    {\n      \\\"name\\\": \\\"Bright Data integration suite\\\",\n      \\\"command\\\": \\\"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v\\\",\n      \\\"exit_code\\\": 0,\n      \\\"result\\\": \\\"29 tests passed\\\",\n      \\\"log\\\": \\\"logs/test_brightdata_jobs.log\\\"\n    },\n    {\n      \\\"name\\\": \\\"Acquisition v2 integration suite\\\",\n      \\\"command\\\": \\\"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v\\\",\n      \\\"exit_code\\\": 0,\n      \\\"result\\\": \\\"7 tests passed\\\",\n      \\\"log\\\": \\\"logs/test_acquisition_v2.log\\\"\n    },\n    {\n      \\\"name\\\": \\\"compileall\\\",\n      \\\"command\\\": \\\"rtk proxy env PYTHONPATH=src /opt/anaconda3/bin/python3.11 -m compileall -q src tests/integration\\\",\n      \\\"exit_code\\\": 0,\n      \\\"result\\\": \\\"passed\\\",\n      \\\"log\\\": \\\"logs/compileall.log\\\"\n    },\n    {\n      \\\"name\\\": \\\"diff check\\\",\n      \\\"command\\\": \\\"rtk git diff --check HEAD\"'^ HEAD\",\n      \"cwd\": \"/tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate\",\n      \"exit_code\": 0,\n      \"result\": \"passed\",\n      \"log\": \"logs/diff-check.log\"\n    },\n    {\n      \"name\": \"parent standard-reader negative control\",\n      \"command\": \"rtk proxy env PYTHONPATH=/tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-parent/src /opt/anaconda3/bin/python3.11 -m unittest discover -s tests/integration -p '\"'test_brightdata_jobs.py' -k urllib_success_response_shape -v\\\",\n      \\\"exit_code\\\": 1,\n      \\\"expected_exit_code\\\": 1,\n      \\\"result\\\": \\\"expected OSError: standard reader shape not exposed\\\",\n      \\\"log\\\": \\\"logs/parent-reader-regression.log\\\"\n    },\n    {\n      \\\"name\\\": \\\"independent offline probes\\\",\n      \\\"command\\\": \\\"rtk proxy env PYTHONPATH=/tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate/src /opt/anaconda3/bin/python3.11 probes/independent_transport_probe.py\\\",\n      \\\"cwd\\\": \\\"/Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24\\\",\n      \\\"exit_code\\\": 0,\n      \\\"probe_source\\\": \\\"probes/independent_transport_probe.py\\\",\n      \\\"log\\\": \\\"logs/independent-probes-repro.log\\\"\n    }\n  ],\n  \\\"artifact_bridge\\\": {\n    \\\"helper\\\": \\\"/Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage\\\",\n    \\\"helper_sha256\\\": \\\"b681067b6c162943b7e032839389c514603b5dd3e3ea2f88e2660fe5f23dcaaf\\\",\n    \\\"qualification\\\": \\\"/Users/haewonkim/.projectos/qualifications/artifact-bridge-ar3-r3/PROJECT_OS_AR3_FINAL_RESULT_REPORT.md\\\",\n    \\\"expected_root_name\\\": \\\"project-os-artifact-bridge-ar2-model-free-v1\\\",\n    \\\"actual_root_name\\\": \\\"CF-eeef533a2b9bf03a2bc39f24\\\",\n    \\\"invocation_exit_code\\\": 2,\n    \\\"status\\\": \\\"BLOCKED\\\",\n    \\\"error_code\\\": \\\"INVALID_ARTIFACT_ROOT\\\",\n    \\\"credentials_accessed\\\": false,\n    \\\"provider_operation_performed\\\": false,\n    \\\"artifact_run_id\\\": null,\n    \\\"artifact_run_url\\\": null,\n    \\\"manifest_or_bundle_created\\\": false,\n    \\\"reader_readback\\\": false,\n    \\\"promotion_blocking\\\": true,\n    \\\"failure_log\\\": \\\"logs/artifact-bridge-attempt-clean.log\\\",\n    \\\"note\\\": \\\"Fixed synthetic identity/no CLI overrides. Helper stdout is failure evidence only; RTK appended a shell diagnostic after its JSON.\\\"\n  },\n  \\\"evidence_sha256\\\": {\n    \\\"VERIFY.md\\\": \\\"f59694202034d4a591bc1a50bc8e32783e306b4be2202bab0608b1d52047dfd7\\\",\n    \\\"probes/independent_transport_probe.py\\\": \\\"9109b32b8554b91aed857adc99521fc204d0c75fb80f9b61f4f0b383f10d3e33\\\",\n    \\\"logs/refs-and-candidate.log\\\": \\\"36c7f7c1b4e5fe7e9c66938691a4bbd857c4280ddf07fd4b34e77edc433b746e\\\",\n    \\\"logs/test_brightdata_jobs.log\\\": \\\"bb59c0fc9bd6e9dcd870381985299ce513ba626f6f1b377682846732b4f65981\\\",\n    \\\"logs/test_acquisition_v2.log\\\": \\\"295bb06f26204f4b5f2128ed587bd09bc41cd8f8dcae6a13777b40b815ea5bbc\\\",\n    \\\"logs/compileall.log\\\": \\\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\\\",\n    \\\"logs/diff-check.log\\\": \\\"01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b\\\",\n    \\\"logs/parent-reader-regression.log\\\": \\\"c49422736d99c7e1f6125920b890e11e634df3dc31824ca7789b90d443ba13aa\\\",\n    \\\"logs/independent-probes.log\\\": \\\"b3a9198bf7686a015697402dade4140d9d9008b2b73463a3d56f3f8d68ea5507\\\",\n    \\\"logs/independent-probes-repro.log\\\": \\\"1a891b1825c26977c1d2a6b67d6618116965bd584388ee54bb4ab6d4515a92c0\\\",\n    \\\"logs/artifact-bridge-attempt.log\\\": \\\"c655c0d863cb2ae9afbf773a1a84be7a0d5d479b2f131562c7378ecfe516052e\\\",\n    \\\"logs/artifact-bridge-attempt-clean.log\\\": \\\"c655c0d863cb2ae9afbf773a1a84be7a0d5d479b2f131562c7378ecfe516052e\\\"\n  }\n}\nEOF\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env /opt/anaconda3/bin/python3.11 -c \\\"from pathlib import Path; p=Path('/Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/VERIFY.md'); s=p.read_text(); p.write_text(s.replace('See logs/independent-probes.log.', 'See probes/independent_transport_probe.py and logs/independent-probes-repro.log.'))\\\" && rtk sha256sum /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/VERIFY.md\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env /opt/anaconda3/bin/python3.11 -c \\\"import json; from pathlib import Path; p=Path('/Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/evidence-manifest.json'); m=json.loads(p.read_text()); m['evidence_sha256']['VERIFY.md']='f11e4512346be35862a6e6220ef4b15c53ec7469dcfb5186697c97c9fb7d3ecd'; c=next(x for x in m['commands'] if x['name']=='independent offline probes'); c['command']='rtk proxy env PYTHONPATH=/tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate/src /opt/anaconda3/bin/python3.11 /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/probes/independent_transport_probe.py'; c['cwd']='/Users/haewonkim/.codex-fabric/worktrees/CF-eeef533a2b9bf03a2bc39f24'; c['probe_source']='/Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/probes/independent_transport_probe.py'; p.write_text(json.dumps(m, indent=2)+'\\\\\\\\n')\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env VERIFY_ROOT=/Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24 /opt/anaconda3/bin/python3.11 -c \\\"import hashlib,json,os,pathlib; root=pathlib.Path(os.environ['VERIFY_ROOT']); m=json.loads((root/'evidence-manifest.json').read_text()); bad=[name for name,want in m['evidence_sha256'].items() if hashlib.sha256((root/name).read_bytes()).hexdigest()\"'!=want]; assert not bad, bad; print('\"'manifest JSON valid; verified',len(m['evidence_sha256']),'listed SHA-256 digests; verdict',m['verdict'])\\\"\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk git status --short --branch && rtk git -C /tmp/CF-eeef533a2b9bf03a2bc39f24-jobbot-candidate status --short --branch && rtk git rev-parse origin/main && rtk git rev-parse origin/codex/jobbot-chg286-brightdata-task-deadline-fix-r1 && rtk sha256sum /Users/haewonkim/.codex-fabric/evidence/CF-eeef533a2b9bf03a2bc39f24/evidence-manifest.json'",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.157.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 118,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 96.45,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 4525824,
+      "fresh_input_tokens": 166507,
+      "input_tokens": 4692331,
+      "non_reasoning_output_tokens": 18680,
+      "output_tokens": 64283,
+      "reasoning_output_tokens": 45603,
+      "total_processed_tokens": 4756614
+    },
+    "warnings": []
+  },
+  "commits": [],
+  "diff": {
+    "additions": 0,
+    "changed_files": 0,
+    "commit_count": 0,
+    "deletions": 0
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 0,
+    "items": [],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-09-29T02:00:06Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r2",
+    "detached_verify": false,
+    "head_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "remote_exact_head": true,
+    "remote_head_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-task-deadline-verify-r2",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-eeef533a2b9bf03a2bc39f24",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r2",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-task-deadline-verify-r2"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-task-deadline-verify-r2",
+  "schema_version": 1,
+  "started_at": "2026-09-29T01:38:24Z",
+  "status": "EXECUTED_NO_CHANGE",
+  "timing": {
+    "execution_seconds": 1302,
+    "queue_seconds": 0,
+    "total_seconds": 1302
+  },
+  "transport": {
+    "bytes": 3459,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3108,
+    "prompt_sha256": "789a8ef79df092452cb6c379f5cd390bdffff308b3a8b9f957aacb4c31434147",
+    "sha256": "eeef533a2b9bf03a2bc39f248bfde5d38f3fb6df449849ccac9f4b16f7592fa3"
+  }
+}
