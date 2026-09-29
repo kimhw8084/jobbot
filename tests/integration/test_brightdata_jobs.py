@@ -9,6 +9,7 @@ import io
 import os
 import shutil
 import socket
+import ssl
 import tempfile
 import threading
 import time
@@ -125,6 +126,48 @@ class FakeHTTPConnectionFactory:
         connection.timeout = timeout
         self.connections.append(connection)
         return connection
+
+
+class FakeSetupSocket(FakeWireSocket):
+    """Offline socket with separately timed TCP and TLS setup phases."""
+
+    def __init__(self, chunks, *, clock, tcp_delay):
+        super().__init__(chunks, clock=clock)
+        self.tcp_delay = tcp_delay
+        self.sent = []
+
+    def connect(self, _address):
+        if self.tcp_delay > self.timeout:
+            self.clock.advance(self.timeout)
+            raise socket.timeout()
+        self.clock.advance(self.tcp_delay)
+
+    def sendall(self, data):
+        self.sent.append(bytes(data))
+
+    def setsockopt(self, *_args):
+        return None
+
+
+class FakeTLSContext:
+    def __init__(self, *, clock, handshake_delay):
+        self.clock = clock
+        self.handshake_delay = handshake_delay
+        self.timeout = None
+        self.post_handshake_auth = None
+        self.verify_mode = ssl.CERT_REQUIRED
+        self.check_hostname = True
+
+    def set_alpn_protocols(self, _protocols):
+        return None
+
+    def wrap_socket(self, network_socket, **_kwargs):
+        self.timeout = network_socket.timeout
+        if self.handshake_delay > self.timeout:
+            self.clock.advance(self.timeout)
+            raise socket.timeout()
+        self.clock.advance(self.handshake_delay)
+        return network_socket
 
 
 def http_wire_response(status, headers=(), body_chunks=()):
@@ -613,6 +656,87 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertGreater(clock(), 1)
         self.assertIsNone(factory.connections[0].request_info)
 
+    def test_https_tcp_and_tls_setup_share_the_remaining_task_deadline(self):
+        clock = FakeClock()
+        network_socket = FakeSetupSocket(
+            json_http_wire_response(200, {"ok": True}), clock=clock, tcp_delay=0.6,
+        )
+        tls_context = FakeTLSContext(clock=clock, handshake_delay=0.3)
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        attempts = []
+        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+             mock.patch("jobbot.acquisition.brightdata.socket.getaddrinfo", return_value=[
+                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443)),
+             ]), \
+             mock.patch("jobbot.acquisition.brightdata.socket.socket", return_value=network_socket), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.ssl._create_default_https_context",
+                        return_value=tls_context):
+            result = transport.request(
+                "GET", "/setup", params={}, json_body=None, token=SECRET,
+                timeout_seconds=10, task_deadline=1, on_attempt=lambda: attempts.append(1),
+            )
+
+        self.assertEqual(result.payload, {"ok": True})
+        self.assertAlmostEqual(clock(), 0.9)
+        self.assertEqual(tls_context.timeout, 0.4)
+        self.assertEqual(network_socket.timeout_history[:2], [1, 0.4])
+        self.assertTrue(network_socket.sent)
+        self.assertEqual(attempts, [1])
+
+    def test_https_tls_handshake_cannot_reuse_the_full_tcp_timeout(self):
+        clock = FakeClock()
+        network_socket = FakeSetupSocket(
+            json_http_wire_response(200, {"unexpected": True}), clock=clock, tcp_delay=0.6,
+        )
+        tls_context = FakeTLSContext(clock=clock, handshake_delay=0.6)
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        attempts = []
+        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+             mock.patch("jobbot.acquisition.brightdata.socket.getaddrinfo", return_value=[
+                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443)),
+             ]), \
+             mock.patch("jobbot.acquisition.brightdata.socket.socket", return_value=network_socket), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.ssl._create_default_https_context",
+                        return_value=tls_context):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/staged-setup", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: attempts.append(1),
+                )
+
+        self.assertEqual(clock(), 1)
+        self.assertEqual(tls_context.timeout, 0.4)
+        self.assertEqual(network_socket.timeout_history[:2], [1, 0.4])
+        self.assertFalse(network_socket.sent)
+        self.assertEqual(attempts, [1])
+
+    def test_expired_name_resolution_suppresses_tcp_but_is_not_wall_clock_bounded(self):
+        clock = FakeClock()
+        network_socket = FakeSetupSocket([], clock=clock, tcp_delay=0)
+        tls_context = FakeTLSContext(clock=clock, handshake_delay=0)
+        attempts = []
+
+        def delayed_resolution(*_args):
+            clock.advance(1.1)
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))]
+
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+             mock.patch("jobbot.acquisition.brightdata.socket.getaddrinfo", side_effect=delayed_resolution), \
+             mock.patch("jobbot.acquisition.brightdata.socket.socket", return_value=network_socket) as create_socket, \
+             mock.patch("jobbot.acquisition.brightdata.http.client.ssl._create_default_https_context",
+                        return_value=tls_context):
+            with self.assertRaises(TimeoutError):
+                transport.request(
+                    "GET", "/slow-resolution", params={}, json_body=None, token=SECRET,
+                    timeout_seconds=10, task_deadline=1, on_attempt=lambda: attempts.append(1),
+                )
+
+        self.assertEqual(clock(), 1.1)
+        create_socket.assert_not_called()
+        self.assertFalse(network_socket.sent)
+        self.assertEqual(attempts, [1])
+
     def test_deadline_covers_slow_content_length_body_reads(self):
         clock = FakeClock()
         factory = FakeHTTPConnectionFactory([http_wire_response(
@@ -751,6 +875,68 @@ class BrightDataJobsProviderTests(unittest.TestCase):
         self.assertEqual(expired_attempts, [1])
         self.assertEqual(len(expired_factory.connections), 1)
         self.assertEqual(expired_factory.connections[0].request_info[1], "/origin")
+
+    def test_redirect_method_and_body_matrix(self):
+        body = {"keyword": "offline-test"}
+        body_bytes = json.dumps(body, ensure_ascii=False).encode("utf-8")
+        methods = ("GET", "HEAD", "POST", "DELETE", "PUT")
+        statuses = (301, 302, 303, 307, 308)
+
+        for method in methods:
+            for status in statuses:
+                with self.subTest(method=method, status=status):
+                    clock = FakeClock()
+                    factory = FakeHTTPConnectionFactory([
+                        http_wire_response(status, [("Location", "/target")]),
+                        json_http_wire_response(200, {"ok": True}),
+                    ], clock=clock)
+                    transport = BrightDataHTTPTransport(monotonic=clock)
+                    with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+                         mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection",
+                                    side_effect=factory), \
+                         mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection",
+                                    side_effect=factory):
+                        transport.request(
+                            method, "/origin", params={},
+                            json_body=body if method in {"POST", "DELETE", "PUT"} else None,
+                            token=SECRET, timeout_seconds=10, task_deadline=1,
+                            on_attempt=lambda: None,
+                        )
+
+                    redirected_method, _target, redirected_body, redirected_headers = \
+                        factory.connections[1].request_info
+                    rewrite_post = method == "POST" and status in {301, 302, 303}
+                    self.assertEqual(redirected_method, "GET" if rewrite_post else method)
+                    if rewrite_post or method in {"GET", "HEAD"}:
+                        self.assertIsNone(redirected_body)
+                    else:
+                        self.assertEqual(redirected_body, body_bytes)
+                    if rewrite_post:
+                        self.assertNotIn("Content-Type", redirected_headers)
+                    else:
+                        self.assertEqual(redirected_headers.get("Content-Type"), "application/json")
+
+    def test_cross_origin_preserved_method_redirect_strips_authorization(self):
+        clock = FakeClock()
+        factory = FakeHTTPConnectionFactory([
+            http_wire_response(307, [("Location", "https://redirect.example/target")]),
+            json_http_wire_response(200, {"ok": True}),
+        ], clock=clock)
+        body = {"keyword": "offline-test"}
+        transport = BrightDataHTTPTransport(monotonic=clock)
+        with mock.patch("jobbot.acquisition.brightdata.API_ROOT", "https://api.example"), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPConnection", side_effect=factory), \
+             mock.patch("jobbot.acquisition.brightdata.http.client.HTTPSConnection", side_effect=factory):
+            transport.request(
+                "DELETE", "/delete", params={}, json_body=body, token=SECRET,
+                timeout_seconds=10, task_deadline=1, on_attempt=lambda: None,
+            )
+
+        method, _target, redirected_body, redirected_headers = factory.connections[1].request_info
+        self.assertEqual(method, "DELETE")
+        self.assertEqual(redirected_body, json.dumps(body, ensure_ascii=False).encode("utf-8"))
+        self.assertEqual(redirected_headers.get("Content-Type"), "application/json")
+        self.assertNotIn("Authorization", redirected_headers)
 
     def test_transient_get_retries_are_counted_as_separate_attempts(self):
         platform = "linkedin"

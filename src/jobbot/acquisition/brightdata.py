@@ -22,6 +22,7 @@ from .models import (
 
 
 API_ROOT = "https://api.brightdata.com"
+_HTTPS_CONNECTION_TYPE = http.client.HTTPSConnection
 TOKEN_ENV = "BRIGHTDATA_API_TOKEN"
 TASK_TIMEOUT_ENV = "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS"
 DEFAULT_TASK_TIMEOUT_SECONDS = 300.0
@@ -126,6 +127,86 @@ class _DeadlineSocketReader(io.RawIOBase):
         return self.network_socket.recv_into(buffer)
 
 
+def _deadline_create_connection(address: tuple[str, int], *, timeout_seconds: float,
+                                task_deadline: float, monotonic: Callable[[], float],
+                                source_address: tuple[str, int] | None = None) -> Any:
+    """Bound TCP attempts together after synchronous name resolution returns."""
+    host, port = address
+    try:
+        addresses = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+    except OSError:
+        if monotonic() >= task_deadline:
+            raise TimeoutError from None
+        raise
+    if monotonic() >= task_deadline:
+        raise TimeoutError from None
+
+    last_error: OSError | None = None
+    for family, socktype, proto, _canonname, sockaddr in addresses:
+        network_socket = None
+        try:
+            remaining = task_deadline - monotonic()
+            if remaining <= 0:
+                raise TimeoutError
+            network_socket = socket.socket(family, socktype, proto)
+            if source_address:
+                network_socket.bind(source_address)
+            network_socket.settimeout(min(timeout_seconds, remaining))
+            network_socket.connect(sockaddr)
+            if monotonic() >= task_deadline:
+                raise TimeoutError
+            return network_socket
+        except OSError as exc:
+            if network_socket is not None:
+                network_socket.close()
+            if monotonic() >= task_deadline:
+                raise TimeoutError from None
+            last_error = exc
+    if last_error is not None:
+        raise last_error
+    raise OSError("getaddrinfo returns an empty list")
+
+
+class _DeadlineTLSContext:
+    """Refresh the HTTPS socket timeout immediately before the TLS handshake."""
+
+    def __init__(self, context: Any, timeout_seconds: float,
+                 task_deadline: float, monotonic: Callable[[], float]):
+        self.context = context
+        self.timeout_seconds = timeout_seconds
+        self.task_deadline = task_deadline
+        self.monotonic = monotonic
+
+    def wrap_socket(self, network_socket: Any, *args: Any, **kwargs: Any) -> Any:
+        remaining = self.task_deadline - self.monotonic()
+        if remaining <= 0:
+            raise TimeoutError from None
+        network_socket.settimeout(min(self.timeout_seconds, remaining))
+        try:
+            wrapped_socket = self.context.wrap_socket(network_socket, *args, **kwargs)
+        except (TimeoutError, socket.timeout):
+            if self.monotonic() >= self.task_deadline:
+                raise TimeoutError from None
+            raise
+        if self.monotonic() >= self.task_deadline:
+            wrapped_socket.close()
+            raise TimeoutError from None
+        return wrapped_socket
+
+
+def _apply_https_task_deadline(connection: Any, *, timeout_seconds: float,
+                               task_deadline: float, monotonic: Callable[[], float]) -> None:
+    if not isinstance(connection, _HTTPS_CONNECTION_TYPE):
+        return
+    connection._create_connection = lambda address, _timeout, source_address: _deadline_create_connection(
+        address, timeout_seconds=timeout_seconds, task_deadline=task_deadline,
+        monotonic=monotonic, source_address=source_address,
+    )
+    connection._context = _DeadlineTLSContext(
+        connection._context, timeout_seconds, task_deadline, monotonic,
+    )
+
+
 class BrightDataHTTPTransport:
     """HTTP transport that applies one monotonic deadline to the full exchange."""
 
@@ -158,11 +239,17 @@ class BrightDataHTTPTransport:
             parsed = urllib.parse.urlsplit(url)
             if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
                 raise OSError("Bright Data redirect URL is invalid") from None
-            request_timeout = min(self.timeout_seconds, timeout_seconds, remaining)
+            socket_timeout = min(self.timeout_seconds, timeout_seconds)
+            request_timeout = min(socket_timeout, remaining)
             on_attempt()
             connection_type = (http.client.HTTPSConnection if parsed.scheme == "https"
                                else http.client.HTTPConnection)
             connection = connection_type(parsed.hostname, parsed.port, timeout=request_timeout)
+            if parsed.scheme == "https":
+                _apply_https_task_deadline(
+                    connection, timeout_seconds=socket_timeout,
+                    task_deadline=task_deadline, monotonic=self.monotonic,
+                )
             http_response = None
             try:
                 connection.connect()
@@ -194,7 +281,7 @@ class BrightDataHTTPTransport:
                     if _url_origin(parsed) != _url_origin(next_parsed):
                         headers = {key: value for key, value in headers.items()
                                    if key.casefold() != "authorization"}
-                    if http_response.status in {301, 302, 303}:
+                    if http_response.status in {301, 302, 303} and current_method.upper() == "POST":
                         current_method = "GET"
                         current_data = None
                         headers = {key: value for key, value in headers.items()

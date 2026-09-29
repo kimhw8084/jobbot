@@ -33,16 +33,23 @@ platform:
 - `JOBBOT_BRIGHTDATA_INDEED_CONFIG`
 - `JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG`
 
-Each search task uses a monotonic 300-second total runtime budget by default.
-Set `JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS` to another positive finite number
-of seconds when the deployment needs a different bound. The budget covers the
-trigger, connection setup, response-header parsing, all response bodies
-(including HTTP error bodies), Content-Length and chunked framing reads, every
-redirect hop and retry attempt, polling, all result parts, and retry/poll
-sleeps. Each socket operation is capped by the remaining task budget and the
-existing 45-second socket timeout. Redirects and retries are checked against
-the same deadline before another request starts; `requests_submitted` counts
-each actual trigger or GET hop. A timed-out task remains retryable/incomplete,
+Each search task uses a monotonic 300-second runtime budget by default. Set
+`JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS` to another positive finite number of
+seconds when the deployment needs a different bound. The budget covers the
+trigger, TCP connection attempts, TLS handshake, response-header parsing, all
+response bodies (including HTTP error bodies), Content-Length and chunked
+framing reads, every redirect hop and retry attempt, polling, all result parts,
+and retry/poll sleeps. TCP attempts share the remaining budget, and HTTPS
+recomputes the remaining budget between TCP establishment and the TLS
+handshake. Synchronous system name resolution uses `getaddrinfo` and cannot be
+cancelled safely with the repository's standard-library transport; a stalled
+resolver can exceed the task deadline. Once resolution returns, an expired
+deadline prevents TCP connection and HTTP request submission. The configured
+timeout is therefore not a strict wall-clock bound when DNS stalls. Each
+socket operation is capped by the remaining task budget and the existing
+45-second socket timeout. Redirects and retries are checked against the same
+deadline before another request starts; `requests_submitted` counts each
+trigger or HTTP hop attempt. A timed-out task remains retryable/incomplete,
 and mapped results from earlier parts are persisted without completion or
 exhaustion evidence. The transport uses the standard HTTP response parser over
 a raw reader that rechecks the monotonic deadline on every socket refill.
