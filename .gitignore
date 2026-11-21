@@ -13,6 +13,8 @@ htmlcov/
 .browser-profile/
 browser-profile/
 resumes/
+/config/candidate.toml
+/config/candidate.local.toml
 data/*.sqlite3
 data/*.sqlite3-*
 data/backups/

@@ -1,0 +1,37 @@
+[candidate]
+# Fictional data for tests only; this is not an actual candidate profile.
+name = "Synthetic test candidate"
+country = "US"
+state = "TX"
+metro = "Austin Metropolitan Area"
+professional_positioning = "Synthetic fixture; not a real profile"
+work_authorization = "authorized"
+remote_only = true
+metro_terms = ["Austin"]
+relevant_operations_years = 5
+direct_healthcare_years = 5
+professional_data_analytics_years = 5
+professional_implementation_years = 5
+higher_ed_years = 5
+
+[[capabilities]]
+name = "Healthcare enrollment operations"
+level = "proven"
+aliases = ["patient enrollment", "healthcare enrollment", "enrollment operations"]
+
+[[capabilities]]
+name = "HIPAA documentation"
+level = "proven"
+aliases = ["HIPAA", "documentation"]
+
+[[capabilities]]
+name = "Excel workflows"
+level = "proven"
+aliases = ["Excel", "Microsoft Excel"]
+
+[[capabilities]]
+name = "Academic records administration"
+level = "proven"
+aliases = ["student records", "academic records", "registrar"]
+
+[resume_files]

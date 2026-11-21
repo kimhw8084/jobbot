@@ -164,7 +164,7 @@ do not point unattended tests at `data/jobs.sqlite3`.
 ## Configuration and data safety
 
 - `config/strategy.toml` is the sole executable search taxonomy and allocation source.
-- `config/candidate.toml` is the factual candidate evidence graph and resume routing registry.
+- `config/candidate.toml` is local-only factual candidate evidence and resume routing; Git ignores it. Start with `config/candidate.example.toml` and fill in the required fields before searching. An optional `config/candidate.local.toml` takes precedence, and `JOBBOT_CANDIDATE_CONFIG` can point to a private file outside the repository.
 - `config/runtime.toml` contains local runtime, durability, cooldown, and source settings.
 - `data/jobs.sqlite3` is append-oriented local state and is intentionally ignored by Git.
 - Migrations run integrity checks before and after, and use SQLite’s backup API before changing an existing schema.
@@ -180,4 +180,4 @@ for file in extension/*.js; do node --check "$file"; done
 .venv/bin/python scripts/build_release.py
 ```
 
-The release builder excludes databases, resumes, browser state, credentials, logs, caches, virtual environments, and ZIP artifacts from the package. See [architecture](docs/ARCHITECTURE.md), [operations](docs/OPERATIONS.md), [database](docs/DATABASE.md), and [troubleshooting](docs/TROUBLESHOOTING.md).
+The release builder excludes local candidate profiles as well as databases, resumes, browser state, credentials, logs, caches, virtual environments, and ZIP artifacts. The safe example template is included. See [architecture](docs/ARCHITECTURE.md), [operations](docs/OPERATIONS.md), [database](docs/DATABASE.md), and [troubleshooting](docs/TROUBLESHOOTING.md).

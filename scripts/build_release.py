@@ -13,6 +13,7 @@ DIST = ROOT / "dist"
 TARGET = DIST / f"jobbot-{VERSION}.zip"
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", "cache", "out", "logs", "data", "resumes", "artifacts", "dist", ".browser-profile", "release"}
 FORBIDDEN_SUFFIXES = {".sqlite3", ".pyc", ".zip"}
+FORBIDDEN_FILES = {"config/candidate.toml", "config/candidate.local.toml"}
 
 
 def release_files() -> list[Path]:
@@ -25,7 +26,7 @@ def release_files() -> list[Path]:
         path = Path(raw)
         if not (ROOT / path).is_file():
             continue
-        if any(part in FORBIDDEN_PARTS for part in path.parts) or path.suffix.lower() in FORBIDDEN_SUFFIXES:
+        if path.as_posix() in FORBIDDEN_FILES or any(part in FORBIDDEN_PARTS for part in path.parts) or path.suffix.lower() in FORBIDDEN_SUFFIXES:
             continue
         files.append(path)
     return sorted(set(files))

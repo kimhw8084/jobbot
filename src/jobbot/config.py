@@ -101,7 +101,18 @@ def load_bundle(root: Path | None = None) -> ConfigBundle:
     strategy = load_toml(base / "config" / "strategy.toml")
     strategy["searches"] = _legacy_searches(strategy)
     live_search = load_toml(base / "config" / "live_search.toml")
-    candidate_raw = load_toml(base / "config" / "candidate.toml")
+    candidate_override = os.environ.get("JOBBOT_CANDIDATE_CONFIG")
+    if candidate_override:
+        candidate_path = resolve_path(candidate_override, root=base)
+    else:
+        local_candidate = base / "config" / "candidate.local.toml"
+        candidate_path = local_candidate if local_candidate.is_file() else base / "config" / "candidate.toml"
+    if not candidate_path.is_file():
+        raise ConfigError(
+            "candidate profile is missing; copy config/candidate.example.toml to "
+            "config/candidate.toml and fill in its required fields"
+        )
+    candidate_raw = load_toml(candidate_path)
     runtime = load_toml(base / "config" / "runtime.toml")
     if os.environ.get("JOBBOT_DATABASE_PATH"):
         runtime["runtime"]["database_path"] = os.environ["JOBBOT_DATABASE_PATH"]
