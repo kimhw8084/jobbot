@@ -41,11 +41,16 @@ response bodies (including HTTP error bodies), Content-Length and chunked
 framing reads, every redirect hop and retry attempt, polling, all result parts,
 and retry/poll sleeps. TCP attempts share the remaining budget, and HTTPS
 recomputes the remaining budget between TCP establishment and the TLS
-handshake. Synchronous system name resolution uses `getaddrinfo` and cannot be
-cancelled safely with the repository's standard-library transport; a stalled
-resolver can exceed the task deadline. Once resolution returns, an expired
-deadline prevents TCP connection and HTTP request submission. The configured
-timeout is therefore not a strict wall-clock bound when DNS stalls. Each
+handshake. Name resolution runs in a separate child process that the transport
+can kill. It starts resolution only when the remaining budget exceeds the
+reserved 50 ms startup and 25 ms cleanup time, and the resolver wait excludes
+the cleanup reserve. If resolution does not finish in that window, the
+transport kills the child and attempts to stop and reap it using the remaining
+task budget.
+Deadline checks guard TCP connection attempts and HTTP request submission, so
+the transport stops when it observes that the deadline has expired. Process
+startup, OS scheduling, signal delivery, and cleanup can still cause a small
+wall-clock overshoot; this is not a hard real-time guarantee. Each
 socket operation is capped by the remaining task budget and the existing
 45-second socket timeout. Redirects and retries are checked against the same
 deadline before another request starts; `requests_submitted` counts each
