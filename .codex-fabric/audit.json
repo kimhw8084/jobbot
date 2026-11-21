@@ -1,0 +1,629 @@
+{
+  "accepted_at": "2026-11-21T16:19:32Z",
+  "changed_files": [
+    {
+      "additions": 26,
+      "deletions": 0,
+      "path": "docs/BRIGHTDATA_PROVIDER.md",
+      "status": "M"
+    },
+    {
+      "additions": 571,
+      "deletions": 113,
+      "path": "src/jobbot/acquisition/brightdata.py",
+      "status": "M"
+    },
+    {
+      "additions": 870,
+      "deletions": 17,
+      "path": "tests/integration/test_brightdata_jobs.py",
+      "status": "M"
+    },
+    {
+      "additions": 81,
+      "deletions": 0,
+      "path": "verification/CHG-286-r1.json",
+      "status": "A"
+    },
+    {
+      "additions": 12,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-acquisition-v2-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 39,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-brightdata-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-committed-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-compileall.log",
+      "status": "A"
+    },
+    {
+      "additions": 13,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-identity.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-staged-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2-worktree-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 83,
+      "deletions": 0,
+      "path": "verification/CHG-286-r2.json",
+      "status": "A"
+    },
+    {
+      "additions": 12,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-acquisition-v2-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 40,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-brightdata-tests.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-committed-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-compileall.log",
+      "status": "A"
+    },
+    {
+      "additions": 12,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-identity.log",
+      "status": "A"
+    },
+    {
+      "additions": 1,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-json-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 2,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-remote-refs.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-staged-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 0,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3-worktree-diff-check.log",
+      "status": "A"
+    },
+    {
+      "additions": 105,
+      "deletions": 0,
+      "path": "verification/CHG-286-r3.json",
+      "status": "A"
+    }
+  ],
+  "checks": [
+    {
+      "command": "/bin/zsh -lc \"rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed -maxdepth 5 -type f -print | rg '(CHG-286-r3|offline_verify_probe_r[23]|verification-summary|command-results|AR-110|artifact-manifest|artifact-bundle)' | head -80\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/offline_verify_probe_r3.jsonl\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/offline_verify_probe_r2.jsonl\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/verification-summary.txt\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/checkout-r3/verification/CHG-286-r3.json\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'printf \\\"%s\\\\n\\\" \\\"COMMAND: PYTHONPATH=src python -m unittest discover -s tests/integration -p \\\\'test_brightdata_jobs.py\\\\' -v\\\" > \\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/brightdata-tests.log\\\"; env -u BRIGHTDATA_API_TOKEN -u JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG -u JOBBOT_BRIGHTDATA_INDEED_CONFIG -u JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG -u JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS PYTHONPATH=src PYTHONPYCACHEPREFIX=\\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-brightdata\\\" python -m unittest discover -s tests/integration -p \\\"test_brightdata_jobs.py\\\" -v >> \\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/brightdata-tests.log\\\" 2>&1; status=\"'$?; printf \"EXIT_STATUS=%s'\"\\\\n\\\" \\\"\"'$status\" >> \"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/brightdata-tests.log\"; exit \"$status\"'\"'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy sh -c 'printf \\\"%s\\\\n\\\" \\\"COMMAND: PYTHONPATH=src python -m unittest discover -s tests/integration -p \\\\'test_acquisition_v2.py\\\\' -v\\\" > \\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/acquisition-v2-tests.log\\\"; env -u BRIGHTDATA_API_TOKEN -u JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG -u JOBBOT_BRIGHTDATA_INDEED_CONFIG -u JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG -u JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS PYTHONPATH=src PYTHONPYCACHEPREFIX=\\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-acquisition-v2\\\" python -m unittest discover -s tests/integration -p \\\"test_acquisition_v2.py\\\" -v >> \\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/acquisition-v2-tests.log\\\" 2>&1; status=\"'$?; printf \"EXIT_STATUS=%s'\"\\\\n\\\" \\\"\"'$status\" >> \"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/acquisition-v2-tests.log\"; exit \"$status\"'\"'\"",
+      "exit_code": 1,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --check 8d193e200254e42af03c22b923137ef9a1ccb83d 65e2c0cd725a356c668ea733b344160793e2fe07 > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/diff-check.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-compileall python -m compileall -q src tests/integration > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/compileall.log 2>&1'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env -u BRIGHTDATA_API_TOKEN -u JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG -u JOBBOT_BRIGHTDATA_INDEED_CONFIG -u JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG -u JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-acquisition-v2 python -m unittest discover -s tests/integration -p 'test_acquisition_v2.py' -v > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/acquisition-v2-tests.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env -u BRIGHTDATA_API_TOKEN -u JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG -u JOBBOT_BRIGHTDATA_INDEED_CONFIG -u JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG -u JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-brightdata python -m unittest discover -s tests/integration -p 'test_brightdata_jobs.py' -v > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/brightdata-tests.log 2>&1\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printf '%s\\\\n' 'COMMAND=rtk proxy env -u BRIGHTDATA_API_TOKEN -u JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG -u JOBBOT_BRIGHTDATA_INDEED_CONFIG -u JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG -u JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-brightdata python -m unittest discover -s tests/integration -p '\\\\''test_brightdata_jobs.py'\\\\'' -v > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/brightdata-tests.log 2>&1' 'EXIT_STATUS=0' >> /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/brightdata-tests.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printf '%s\\\\n' 'COMMAND=rtk proxy env PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-compileall python -m compileall -q src tests/integration > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/compileall.log 2>&1' 'EXIT_STATUS=0' >> /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/compileall.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printf '%s\\\\n' 'COMMAND=rtk proxy env -u BRIGHTDATA_API_TOKEN -u JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG -u JOBBOT_BRIGHTDATA_INDEED_CONFIG -u JOBBOT_BRIGHTDATA_GLASSDOOR_CONFIG -u JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS PYTHONPATH=src PYTHONPYCACHEPREFIX=/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-acquisition-v2 python -m unittest discover -s tests/integration -p '\\\\''test_acquisition_v2.py'\\\\'' -v > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/acquisition-v2-tests.log 2>&1' 'EXIT_STATUS=0' >> /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/acquisition-v2-tests.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printf '%s\\\\n' 'COMMAND=rtk proxy git diff --check 8d193e200254e42af03c22b923137ef9a1ccb83d 65e2c0cd725a356c668ea733b344160793e2fe07 > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/diff-check.log 2>&1' 'EXIT_STATUS=0' >> /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/diff-check.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printf '%s\\\\n' 'COMMAND WRAPPER FAILED BEFORE TEST START' 'zsh:1: unmatched \\\"' 'EXIT_STATUS=1' > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/runner-shell-syntax-error.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy tail -12 /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/brightdata-tests.log\nrtk proxy tail -12 /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/acquisition-v2-tests.log\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/compileall.log\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/diff-check.log\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/runner-shell-syntax-error.log\nrtk proxy git status --short --branch\nrtk proxy git rev-parse HEAD\nrtk proxy git diff --check'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence -maxdepth 4 -type f -print | rg -v '__pycache__|\\\\.pem\"'$'\"' | rg '(verification-summary|offline_verify_probe|test_brightdata|test_acquisition|compileall|diff_check|CHG-286-r3|identity|remote-refs|command-results)'\nrtk proxy sed -n '823,882p' /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage\nrtk proxy nl -ba src/jobbot/acquisition/brightdata.py | sed -n '24,38p;140,242p;311,360p;828,852p'\nrtk proxy nl -ba docs/BRIGHTDATA_PROVIDER.md | sed -n '38,60p'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy rg -n 'class _TaskDeadline|class BrightDataRuntime|task_timeout_seconds|def _runtime|TASK_TIMEOUT_ENV|def partial_result_failure|def bounded_sleep|def _sleep_until|def _get\\\\(' src/jobbot/acquisition/brightdata.py\nrtk proxy sed -n '480,600p' src/jobbot/acquisition/brightdata.py\nrtk proxy sed -n '710,770p' src/jobbot/acquisition/brightdata.py\nrtk proxy sed -n '828,940p' src/jobbot/acquisition/brightdata.py\nrtk proxy sed -n '930,1010p' src/jobbot/acquisition/brightdata.py\nrtk proxy sed -n '1010,1105p' src/jobbot/acquisition/brightdata.py\nrtk proxy sed -n '1185,1238p' src/jobbot/acquisition/brightdata.py\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy nl -ba src/jobbot/acquisition/brightdata.py | sed -n '400,480p;550,630p;849,870p;940,990p;1230,1270p'\nrtk proxy rg -n 'deadline|task_timeout|requests_submitted|elapsed_seconds|retryable|completion_evidence' tests/integration/test_brightdata_jobs.py tests/integration/test_acquisition_v2.py | head -140\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed -maxdepth 6 -type f \\\\( -iname '*manifest*' -o -iname '*bundle*' -o -iname '*brightdata_jobs.log' -o -iname '*acquisition_v2.log' -o -iname '*verification-summary*' -o -iname '*offline_verify_probe_r?.jsonl' \\\\) -print\nrtk proxy sed -n '1,8p' /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/test_brightdata_jobs.log\nrtk proxy tail -6 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/test_brightdata_jobs.log\nrtk proxy tail -6 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/test_acquisition_v2.log\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/compileall.log\nrtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/diff_check.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cp /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/test_acquisition_v2.log /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/test_acquisition_v2.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cp /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/test_brightdata_jobs.log /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/test_brightdata_jobs.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cp /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/offline_verify_probe_r3.jsonl /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/offline_verify_probe_r3.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy mkdir -m 700 -p /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cp /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/compileall.log /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/compileall.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cp /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/offline_verify_probe_r2.jsonl /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/offline_verify_probe_r2.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cp /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/diff_check.log /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/diff_check.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cp /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/verification-summary.txt /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/verification-summary.txt'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git show -s --format='commit=%H%ntree=%T%nparent=%P' refs/remotes/origin/main > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/base-identity.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy git show -s --format='commit=%H%ntree=%T%nparent=%P' HEAD > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/candidate-identity.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy nl -ba src/jobbot/acquisition/brightdata.py | sed -n '26,38p;143,240p;311,360p;411,477p;828,858p;953,972p' > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/implementation-excerpts.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy nl -ba docs/BRIGHTDATA_PROVIDER.md | sed -n '36,62p' > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/corrected-guide-paragraph.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git status --short --branch > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/working-tree-status.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --stat 8d193e200254e42af03c22b923137ef9a1ccb83d 65e2c0cd725a356c668ea733b344160793e2fe07 > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/full-main-diff-stat.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --name-status 3d636986af9149ff7050fac5b6162dadf1c70d01 65e2c0cd725a356c668ea733b344160793e2fe07 > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/predecessor-diff-files.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --name-status 8d193e200254e42af03c22b923137ef9a1ccb83d 65e2c0cd725a356c668ea733b344160793e2fe07 > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/full-main-diff-files.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff 3d636986af9149ff7050fac5b6162dadf1c70d01 65e2c0cd725a356c668ea733b344160793e2fe07 -- docs/BRIGHTDATA_PROVIDER.md > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/predecessor-doc-correction.diff'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git diff --check > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/working-tree-diff-check.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy rm -rf /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-brightdata /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-acquisition-v2 /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/pycache-compileall'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy git merge-base --is-ancestor 8d193e200254e42af03c22b923137ef9a1ccb83d 65e2c0cd725a356c668ea733b344160793e2fe07'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -a 256 /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/verification-summary.txt /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/verification-summary.txt /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/offline_verify_probe_r2.jsonl /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/offline_verify_probe_r2.jsonl /Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence/offline_verify_probe_r3.jsonl /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/offline_verify_probe_r3.jsonl'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy find /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge -maxdepth 2 -type f -print | sort'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import base64,pathlib; pathlib.Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/metadata.json\\\").write_bytes(base64.b64decode(\\\"ewogICJhcnRpZmFjdF9ydW5faWQiOiAiQVItMTEwIiwKICAidGl0bGUiOiAiSm9iQm90IENIRy0yODYgQnJpZ2h0IERhdGEgRGVhZGxpbmUgVkVSSUZZIHI0IiwKICAicHJvamVjdF9pZCI6ICJqb2Jib3QiLAogICJyZXF1ZXN0IjogImpvYmJvdC1jaGcyODYtYnJpZ2h0ZGF0YS10YXNrLWRlYWRsaW5lLXZlcmlmeS1yNCIsCiAgIm9wZXJhdGlvbiI6ICJWRVJJRlkiLAogICJmYWJyaWNfam9iIjogIkNGLWMxMTdmZjA3MTVmYzUyMjVkZWM4MDUzNyIsCiAgInNvdXJjZV9zaGEiOiAiM2Q2MzY5ODZhZjkxNDlmZjcwNTBmYWM1YjYxNjJkYWRmMWM3MGQwMSIsCiAgInNvdXJjZV90cmVlIjogIjJhMDIwNDYxY2E0MDVkYTU1YThiYmIxMDAxZGQzNzc0MDE0MmIxNzciLAogICJzdGF0dXMiOiAiU3RhZ2VkIiwKICAiYXJ0aWZhY3RfY291bnQiOiAxMywKICAibWFuaWZlc3Rfc2hhMjU2IjogImI4MWZhODhjNWU5NWRiYTA4NjFmMzUzOWZlZmI5N2I3NDBkMTE4MTI2MWM1YTIyNzk5MzcxZGQ0YTA5ZGM4ZWMiLAogICJidW5kbGVfc2hhMjU2IjogIjI3OGRiMTIwYWM2MzdiYzFiZGZlNzliZWNiMDNhNzQ5ZWRiYTZiMjg4NTgyZGRlODZmNDU5MjhhZGZlNDhhMSIsCiAgInN0YWdlX2Vycm9yX2NvZGUiOiAiIiwKICAiYnJpZGdlX3ZlcnNpb24iOiAicHJvamVjdC1vcy5hcnRpZmFjdC1idW5kbGUvMSAvIGRpcmVjdC1ub3Rpb24tYXBpLWZhbGxiYWNrIiwKICAiaW5zcGVjdGVkX2xvY2FsX3BheWxvYWRzIjogWwogICAgInZlcmlmaWNhdGlvbi1zdW1tYXJ5LnR4dCIsCiAgICAib2ZmbGluZV92ZXJpZnlfcHJvYmVfcjIuanNvbmwiLAogICAgIm9mZmxpbmVfdmVyaWZ5X3Byb2JlX3IzLmpzb25sIiwKICAgICJ0ZXN0X2JyaWdodGRhdGFfam9icy5sb2ciLAogICAgInRlc3RfYWNxdWlzaXRpb25fdjIubG9nIiwKICAgICJjb21waWxlYWxsLmxvZyIsCiAgICAiZGlmZl9jaGVjay5sb2ciCiAgXSwKICAiYXR0YWNobWVudF9ieXRlc19yZWRvd25sb2FkZWRfZm9yX3RoaXNfYXVkaXQiOiBmYWxzZQp9Cg==\\\"))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy python -c 'import base64,pathlib; pathlib.Path(\\\"/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/verify-report.md\\\").write_bytes(base64.b64decode(\\\"IyBDSEctMjg2IEluZGVwZW5kZW50IFZFUklGWQoKIyMgVmVyZGljdAoKU291cmNlIGFuZCByZXF1ZXN0ZWQgb2ZmbGluZSB2YWxpZGF0aW9uIGNoZWNrcyBwYXNzIG9uIHRoZSBleGFjdCBjYW5kaWRhdGUuIFRoZSBvdmVyYWxsIFZFUklGWSBpcyAqKkVOVklST05NRU5UIEJMT0NLRUQ6IElOVkFMSURfQVJUSUZBQ1RfUk9PVCoqIGJlY2F1c2UgdGhlIHF1YWxpZmllZCBBcnRpZmFjdCBCcmlkZ2UgaGVscGVyIHJlamVjdGVkIHRoaXMgam9iJ3Mgcm9vdCBiZWZvcmUgcGFja2FnaW5nLCBzdGFnaW5nLCBvciByZWFkYmFjay4gTm8gR08gaXMgcmVjb3JkZWQuCgojIyBJZGVudGl0eSBhbmQgc2NvcGUKCi0gUHJvamVjdC9yZXBvc2l0b3J5OiBKb2JCb3QsIGtpbWh3ODA4NC9qb2Jib3QuCi0gVGFyZ2V0L2Jhc2U6IG1haW4gYXQgOGQxOTNlMjAwMjU0ZTQyYWYwM2MyMmI5MjMxMzdlZjlhMWNjYjgzZC4KLSBGSVggY2FuZGlkYXRlOiA2NWUyYzBjZDcyNWEzNTZjNjY4ZWE3MzNiMzQ0MTYwNzkzZTJmZTA3LCB0cmVlIGIxMTA2MzM5ZjZkY2JjNTA0OTkyNTgzZWVkZTVmNDUzMDQ1ZjNjZjksIGJyYW5jaCBjb2RleC9qb2Jib3QtY2hnMjg2LWJyaWdodGRhdGEtZG5zLWRvYy1jb3JyZWN0aW9uLXIxLgotIFZFUklGWSBicmFuY2g6IGNvZGV4L2pvYmJvdC1jaGcyODYtYnJpZ2h0ZGF0YS1kbnMtZG9jLWNvcnJlY3Rpb24tdmVyaWZ5LXIxOyBIRUFEIGlzIHRoZSBleGFjdCBGSVggY2FuZGlkYXRlLgotIENhbmRpZGF0ZSBwYXJlbnQ6IDNkNjM2OTg2YWY5MTQ5ZmY3MDUwZmFjNWI2MTYyZGFkZjFjNzBkMDEsIHRyZWUgMmEwMjA0NjFjYTQwNWRhNTVhOGJiYjEwMDFkZDM3NzQwMTQyYjE3Ny4gVGhlIHN0YXRlZCBiYXNlIGlzIGl0cyBhbmNlc3Rvci4KLSBGdWxsIG1haW4tdG8tY2FuZGlkYXRlIHNjb3BlOiAyMiBmaWxlcyAoc291cmNlLCB0ZXN0cywgZ3VpZGUsIGFuZCBlYXJsaWVyIHZlcmlmaWNhdGlvbiBldmlkZW5jZSk7IHNlZSBmdWxsLW1haW4tZGlmZi1maWxlcy5sb2cgYW5kIGZ1bGwtbWFpbi1kaWZmLXN0YXQubG9nLgotIEV4YWN0IHByZWRlY2Vzc29yLXRvLWNhbmRpZGF0ZSBkaWZmOiBvbmUgZmlsZSBvbmx5LCBkb2NzL0JSSUdIVERBVEFfUFJPVklERVIubWQ7IHNlZSBwcmVkZWNlc3Nvci1kaWZmLWZpbGVzLmxvZyBhbmQgcHJlZGVjZXNzb3ItZG9jLWNvcnJlY3Rpb24uZGlmZi4KLSBUaGUgVkVSSUZZIHdvcmt0cmVlIGlzIGNsZWFuLiBObyBwcm9kdWN0LCB0ZXN0LCBkb2N1bWVudGF0aW9uLCBGSVggYnJhbmNoLCBvciBtYWluIHJlZiB3YXMgZWRpdGVkIG9yIGNvbW1pdHRlZCBieSB0aGlzIFZFUklGWS4KCiMjIEluZGVwZW5kZW50IGltcGxlbWVudGF0aW9uIGFuZCB3b3JkaW5nIHJldmlldwoKVGhlIGNvcnJlY3RlZCBndWlkZSBwYXJhZ3JhcGggd2FzIGNvbXBhcmVkIHdpdGggc3JjL2pvYmJvdC9hY3F1aXNpdGlvbi9icmlnaHRkYXRhLnB5OgoKLSBfRE5TX1NUQVJUVVBfUkVTRVJWRV9TRUNPTkRTIGlzIDAuMDUgYW5kIF9ETlNfQ0xFQU5VUF9SRVNFUlZFX1NFQ09ORFMgaXMgMC4wMjUuCi0gX2RlYWRsaW5lX2dldGFkZHJpbmZvIHJlZnVzZXMgdG8gc3RhcnQgd2hlbiByZW1haW5pbmcgdGltZSBpcyBhdCBvciBiZWxvdyB0aGVpciBzdW0sIHN0YXJ0cyB0aGUgcmVzb2x2ZXIgaW4gYSBjaGlsZCwgYW5kIHdhaXRzIGZvciBjb21wbGV0aW9uIG9ubHkgdW50aWwgdGhlIGNsZWFudXAgcmVzZXJ2ZSByZW1haW5zLgotIF9zdG9wX2Ruc193b3JrZXIgc2VuZHMga2lsbCBhbmQgYXR0ZW1wdHMgYm91bmRlZCBjb21tdW5pY2F0ZS93YWl0IHJlYXBpbmc7IHRoZSBjb2RlIHBlcm1pdHMgY2xlYW51cCB0byByZW1haW4gaW5jb21wbGV0ZSBpZiB0aGUgT1MgaGFzIG5vdCBzY2hlZHVsZWQgdGhlIGtpbGxlZCBjaGlsZCBiZWZvcmUgdGhlIGRlYWRsaW5lLgotIF9kZWFkbGluZV9jcmVhdGVfY29ubmVjdGlvbiBjaGVja3MgdGhlIG1vbm90b25pYyBkZWFkbGluZSBiZWZvcmUgVENQIGNvbm5lY3Rpb24gd29yayBhbmQgcmVqZWN0cyBhIGNvbm5lY3Rpb24gdGhhdCByZXR1cm5zIGFmdGVyIGV4cGlyeS4gQnJpZ2h0RGF0YUhUVFBUcmFuc3BvcnQucmVxdWVzdCBjaGVja3MgYmVmb3JlIHN1Ym1pc3Npb24gYW5kIHVzZXMgYW4gb24tYXR0ZW1wdCBjaGVjay9jb3VudGVyOyBpdCBjaGVja3MgYWdhaW4gYWZ0ZXIgY29ubmVjdGlvbiBiZWZvcmUgcmVxdWVzdCBzdWJtaXNzaW9uLgotIFNvY2tldCByZWFkcywgcmVzcG9uc2UgaGVhZGVycy9ib2RpZXMsIFRMUywgcmV0cmllcywgcmVkaXJlY3RzLCBwb2xsaW5nLCBwYXJ0cywgYW5kIHNsZWVwcyBzaGFyZSB0aGUgdGFzayBkZWFkbGluZS4gUnVudGltZSBjb25maWd1cmF0aW9uIGlzIHBvc2l0aXZlIGFuZCBmaW5pdGUsIGRlZmF1bHRzIHRvIDMwMCBzZWNvbmRzLCBhbmQgZGlhZ25vc3RpY3MgaW5jbHVkZSBjb25maWd1cmVkIGJ1ZGdldCwgZWxhcHNlZCB0aW1lLCBhbmQgcmVxdWVzdCBhdHRlbXB0cy4KLSBUaGUgZ3VpZGUgc2F5cyByZXNvbHV0aW9uIHJ1bnMgaW4gYSBraWxsYWJsZSBjaGlsZCwgc3RhdGVzIHRoZSA1MCBtcy8yNSBtcyByZXNlcnZlcyBhbmQgYm91bmRlZCB3YWl0LCBkZXNjcmliZXMga2lsbC9zdG9wL3JlYXAgYXMgYXR0ZW1wdHMsIGFuZCBzYXlzIGRlYWRsaW5lIGNoZWNrcyBzdG9wIHdvcmsgd2hlbiBleHBpcnkgaXMgb2JzZXJ2ZWQuIEl0IGV4cGxpY2l0bHkgYWxsb3dzIHBvc3NpYmxlIHNtYWxsIG92ZXJzaG9vdCBmcm9tIHByb2Nlc3Mgc3RhcnR1cCwgT1Mgc2NoZWR1bGluZywgc2lnbmFsIGRlbGl2ZXJ5LCBhbmQgY2xlYW51cCwgYW5kIGRpc2NsYWltcyBoYXJkIHJlYWwtdGltZSBndWFyYW50ZWVzLgoKQ29uY2x1c2lvbjogdGhlIGNoYW5nZWQgd29yZGluZyBtYXRjaGVzIHRoZSBjb2RlIGFuZCBkb2VzIG5vdCBjbGFpbSBhIGhhcmQgcmVhbC10aW1lIHdhbGwtY2xvY2sgYm91bmQuIFRoZSBwcmUtY29ubmVjdGlvbiBhbmQgcHJlLXJlcXVlc3QgY2hlY2tzIHN1cHByZXNzIHdvcmsgb25jZSBleHBpcnkgaXMgb2JzZXJ2ZWQ7IHRoZSBkb2N1bWVudGVkIHNjaGVkdWxpbmcgY2F2ZWF0IHJlbWFpbnMgYXBwbGljYWJsZS4KCiMjIE9mZmxpbmUgdmFsaWRhdGlvbiBvbiBleGFjdCBjYW5kaWRhdGUKCi0gYFBZVEhPTlBBVEg9c3JjIHB5dGhvbiAtbSB1bml0dGVzdCBkaXNjb3ZlciAtcyB0ZXN0cy9pbnRlZ3JhdGlvbiAtcCAndGVzdF9icmlnaHRkYXRhX2pvYnMucHknIC12YDogUEFTUywgMzUgdGVzdHMsIGV4aXQgMC4KLSBgUFlUSE9OUEFUSD1zcmMgcHl0aG9uIC1tIHVuaXR0ZXN0IGRpc2NvdmVyIC1zIHRlc3RzL2ludGVncmF0aW9uIC1wICd0ZXN0X2FjcXVpc2l0aW9uX3YyLnB5JyAtdmA6IFBBU1MsIDcgdGVzdHMsIGV4aXQgMC4KLSBgUFlUSE9OUEFUSD1zcmMgcHl0aG9uIC1tIGNvbXBpbGVhbGwgLXEgc3JjIHRlc3RzL2ludGVncmF0aW9uYDogUEFTUywgZXhpdCAwLiBQWUNBQ0hFUFJFRklYIGtlcHQgZ2VuZXJhdGVkIGJ5dGVjb2RlIHVuZGVyIHRoaXMgQXJ0aWZhY3QgQnJpZGdlIHJvb3Q7IHRoYXQgY2FjaGUgd2FzIHJlbW92ZWQgYWZ0ZXIgdmFsaWRhdGlvbi4KLSBgZ2l0IGRpZmYgLS1jaGVjayA4ZDE5M2UyMDAyNTRlNDJhZjAzYzIyYjkyMzEzN2VmOWExY2NiODNkIDY1ZTJjMGNkNzI1YTM1NmM2NjhlYTczM2IzNDQxNjA3OTNlMmZlMDdgOiBQQVNTLCBleGl0IDAuCi0gQSB3b3JraW5nLXRyZWUgYGdpdCBkaWZmIC0tY2hlY2tgIGFsc28gcGFzc2VkIHdpdGggbm8gb3V0cHV0LgotIFByb3ZpZGVyIHRva2VuL2NvbmZpZyBlbnZpcm9ubWVudCB2YXJpYWJsZXMgd2VyZSB1bnNldCBkdXJpbmcgYm90aCBzdWl0ZXMuIFRlc3RzIHVzZSBmYWtlIHRyYW5zcG9ydCwgbG9jYWwgbG9vcGJhY2sgZml4dHVyZXMsIGFuZCB0ZW1wb3JhcnkgZGF0YWJhc2VzLiBObyBCcmlnaHQgRGF0YSBvciBqb2ItYm9hcmQgcmVxdWVzdCwgcHJvZHVjdGlvbiBkYXRhYmFzZSwgbG9naW4sIGNoYWxsZW5nZSwgYXBwbGljYXRpb24gc3VibWlzc2lvbiwgcHJvdmlkZXIgY3JlZGVudGlhbCwgUlVOX05PVyBjaGFuZ2UsIG9yIHByb3ZpZGVyIGNvc3Qgd2FzIGludm9sdmVkLgoKUmF3IG91dHB1dCBpcyBpbiBicmlnaHRkYXRhLXRlc3RzLmxvZywgYWNxdWlzaXRpb24tdjItdGVzdHMubG9nLCBjb21waWxlYWxsLmxvZywgZGlmZi1jaGVjay5sb2csIGFuZCB3b3JraW5nLXRyZWUtZGlmZi1jaGVjay5sb2cuIFRoZSBmaXJzdCBzaGVsbCB3cmFwcGVyIGF0dGVtcHQgZmFpbGVkIGR1cmluZyBzaGVsbCBwYXJzaW5nIGJlZm9yZSBlaXRoZXIgdGVzdCBjb21tYW5kIGJlZ2FuOyBpdCBpcyByZXRhaW5lZCBpbiBydW5uZXItc2hlbGwtc3ludGF4LWVycm9yLmxvZyBhbmQgd2FzIGZvbGxvd2VkIGJ5IHRoZSBzdWNjZXNzZnVsIHJlcXVlc3RlZCBjb21tYW5kcy4KCiMjIFByaW9yIHN0YWdlZCBBUi0xMTAgZXZpZGVuY2UgaW5zcGVjdGVkCgpUaGUgQXJ0aWZhY3QgUnVucyByb3cgd2FzIHJlLXJlYWQgZm9yIGV4YWN0IGlkZW50aXR5OiBBUi0xMTAsIHByb2plY3Qgam9iYm90LCByZXF1ZXN0IGpvYmJvdC1jaGcyODYtYnJpZ2h0ZGF0YS10YXNrLWRlYWRsaW5lLXZlcmlmeS1yNCwgb3BlcmF0aW9uIFZFUklGWSwgRmFicmljIGpvYiBDRi1jMTE3ZmYwNzE1ZmM1MjI1ZGVjODA1MzcsIHNvdXJjZSAzZDYzNjk4NmFmOTE0OWZmNzA1MGZhYzViNjE2MmRhZGYxYzcwZDAxLCB0cmVlIDJhMDIwNDYxY2E0MDVkYTU1YThiYmIxMDAxZGQzNzc0MDE0MmIxNzcsIHN0YXR1cyBTdGFnZWQsIDEzIGFydGlmYWN0cy4gSXRzIG1hbmlmZXN0IFNIQS0yNTYgaXMgYjgxZmE4OGM1ZTk1ZGJhMDg2MWYzNTM5ZmVmYjk3Yjc0MGQxMTgxMjYxYzVhMjI3OTkzNzFkZDRhMDlkYzhlYyBhbmQgYnVuZGxlIFNIQS0yNTYgaXMgMjc4ZGIxMjBhYzYzN2JjMWJkZmU3OWJlY2IwM2E3NDllZGJhNmIyODg1ODJkZGU4NmY0NTkyOGFkZmU0OGExLiBTdGFnZWQgaXMgbm90IGFuIGF1ZGl0IHZlcmRpY3QuCgpUaGUgZXhhY3QgRmFicmljIGpvYidzIHJldGFpbmVkIHJlcG9ydCwgdGVzdCBsb2dzLCBhbmQgcjIvcjMgcHJvYmUgSlNPTkwgb3V0cHV0cyB3ZXJlIGluc3BlY3RlZCBhbmQgY29waWVkIHVuZGVyIHByaW9yLWFyMTEwLy4gQ29weSBoYXNoZXMgbWF0Y2ggdGhlIG9yaWdpbmFsIGxvY2FsIGZpbGVzLiBUaGUgcjMgc3RhbmRhbG9uZSBwcm9iZXMgcmVwb3J0IGFsbCBjaGVja3MgcGFzc2VkLCBpbmNsdWRpbmcgRE5TIHdvcmtlciBraWxsL3JlYXAsIHplcm8gbGF0ZSBUQ1AvcmVxdWVzdCBjYWxscyB0byBleHBpcmVkIHJlZGlyZWN0IHRhcmdldHMsIGFuZCBzbWFsbCBtZWFzdXJlZCBoZWFkZXIvYm9keSBvdmVycnVucy4gVGhlIHIyIGNvbXBhcmlzb24gY29udGFpbnMgZWFybGllciBETlMgYW5kIHJlZGlyZWN0LW1ldGhvZCBmYWlsdXJlcy4gVGhlc2UgcHJpb3Igc3RhbmRhbG9uZSBwcm9iZXMgd2VyZSBub3QgcmVydW4gaW4gdGhpcyBWRVJJRlkuIFRoZSBmb2N1c2VkIHJlZ3Jlc3Npb24gc3VpdGVzIGFib3ZlIHdlcmUgcmVydW4gYW5kIHRoZWlyIGxvZ3MgYXJlIHNlcGFyYXRlLiBUaGUgcHJpb3IgcmVwb3J0J3MgYnJpZGdlIHNlY3Rpb24gcHJlZGF0ZXMgdGhlIGxhdGVyIGRpcmVjdC1Ob3Rpb24gZmFsbGJhY2sgcmVmbGVjdGVkIGluIHRoZSBBUi0xMTAgcm93OyB0aGF0IGZhbGxiYWNrIHN0YWdlcyBldmlkZW5jZSBvbmx5IGFuZCBkb2VzIG5vdCBjaGFuZ2UgdGhpcyBhdWRpdCdzIHZlcmRpY3QuIExvY2FsIHN0YWdlZC1wYXlsb2FkIGJ5dGVzIHdlcmUgbm90IHJlLWRvd25sb2FkZWQgZnJvbSBOb3Rpb24gZm9yIHRoaXMgVkVSSUZZLgoKIyMgQXJ0aWZhY3QgQnJpZGdlIHJlc3VsdAoKVGhlIGN1cnJlbnQgcXVhbGlmaWVkIG1vZGVsLWZyZWUgaGVscGVyIGlzIHRoZSBBUi0yIHNpZGVjYXIgYXQgYH4vLnByb2plY3Rvcy9zaWRlY2Fycy9hcnRpZmFjdC1icmlkZ2UtdjEtYXIyLWNhbmRpZGF0ZS9wcm9qZWN0b3MtYXJ0aWZhY3Qtc3RhZ2VgOyBpdHMgU0hBLTI1NiBtYXRjaGVzIHRoZSBxdWFsaWZpZWQgaGVscGVyIGlkZW50aXR5IGI2ODEwNjdiNmMxNjI5NDNiN2UwMzI4MzkzODljNTE0NjAzYjVkZDNlM2VhMmY4OGUyNjYwZmU1ZjIzZGNhYWYuIEN1cnJlbnQgQXJ0aWZhY3QgQnJpZGdlIGF1dGhvcml0eSByZWNvcmRzIEFSLTMgYXV0b21hdGlvbiBhcyBkZWZlcnJlZCBiZWNhdXNlIHRoaXMgaGVscGVyIGFjY2VwdHMgb25seSBpdHMgQVItMiBxdWFsaWZpY2F0aW9uIHJvb3QvbmFtZS9sYXlvdXQgYW5kIHJldHVybnMgSU5WQUxJRF9BUlRJRkFDVF9ST09UIGZvciBhIGdlbmVyYWwgRmFicmljIGpvYiByb290LgoKT25lIGludm9jYXRpb24gd2FzIG1hZGUgYWdhaW5zdCB0aGlzIGpvYidzIGJvdW5kZWQgcm9vdC4gVGhlIGhlbHBlciByZXR1cm5lZCBJTlZBTElEX0FSVElGQUNUX1JPT1QgYmVmb3JlIGNyZWF0aW5nIGEgbWFuaWZlc3QvYnVuZGxlLCBhY2Nlc3NpbmcgaXRzIE5vdGlvbiB0b2tlbiwgc3RhZ2luZyBhIHJvdywgb3IgYXR0ZW1wdGluZyByZWFkYmFjay4gSXRzIGV4YWN0IG1hY2hpbmUgb3V0cHV0IGFuZCBleGl0IHN0YXR1cyBhcmUgaW4gYnJpZGdlLXN0YWdlLWF0dGVtcHQubG9nLiBObyBBcnRpZmFjdCBSdW4gSUQsIGN1cnJlbnQtcnVuIG1hbmlmZXN0IGRpZ2VzdCwgYnVuZGxlIGRpZ2VzdCwgc3VjY2Vzc2Z1bCBzdGFnZSByZWNlaXB0LCBvciByZWFkYmFjayBleGlzdHMuIE5vIG1hbnVhbCB1cGxvYWQsIGFsdGVybmF0ZSBoZWxwZXIsIHJldHJ5LCByZWNhcHR1cmUsIG9yIHByb21vdGlvbiB3YXMgcGVyZm9ybWVkLgoKVGhlIGxvY2FsIHJlcG9ydCBhbmQgZGVjaXNpdmUgb3V0cHV0cyByZW1haW4gdW5kZXIgdGhpcyBqb2IncyBBcnRpZmFjdCBCcmlkZ2Ugcm9vdC4gVGhleSB3ZXJlIG5vdCBjb21taXR0ZWQuIE5vIGludGVncmF0aW9uLCBwcm9tb3Rpb24sIHByb3ZpZGVyIHF1YWxpZmljYXRpb24sIG9yIHByb2R1Y3Rpb24tcmVhZGluZXNzIGNsYWltIGlzIG1hZGUuCg==\\\"))'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printf '%s\\\\n' 'BASE_ANCESTOR_OF_CANDIDATE=PASS (git merge-base --is-ancestor exit 0)' >> /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/candidate-identity.log\nrtk proxy printf '%s\\\\n' 'EXIT_STATUS=0' >> /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/working-tree-diff-check.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy shasum -a 256 /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy env PYTHONDONTWRITEBYTECODE=1 python /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage --artifact-root /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge --output-dir /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge > /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/bridge-stage-attempt.log 2>&1'",
+      "exit_code": 2,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy printf '%s\\\\n' 'COMMAND=python /Users/haewonkim/.projectos/sidecars/artifact-bridge-v1-ar2-candidate/projectos-artifact-stage --artifact-root /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge --output-dir /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge' 'EXIT_STATUS=2' >> /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/bridge-stage-attempt.log\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc 'rtk proxy cat /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/bridge-stage-attempt.log'",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONDONTWRITEBYTECODE=1 zsh -lc 'pwd; ls -la /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge; if test -f /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/bridge-stage-attempt.log; then cat /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/bridge-stage-attempt.log; fi; git status --short --branch; git rev-parse HEAD'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONDONTWRITEBYTECODE=1 zsh -lc 'cat /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/verify-report.md; find /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge -maxdepth 2 -type f -print | sort; git status --porcelain=v1'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONDONTWRITEBYTECODE=1 zsh -lc 'cat /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/metadata.json; shasum -a 256 /Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110/*'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    },
+    {
+      "command": "/bin/zsh -lc \"rtk proxy env PYTHONDONTWRITEBYTECODE=1 zsh -lc 'src=/Users/haewonkim/.codex-fabric/jobs/CF-c117ff0715fc5225dec80537.executed/evidence; dst=/Users/haewonkim/.codex-fabric/jobs/CF-321d22225d698b8a5bbdee15.running/artifact-bridge/prior-ar110; for f in verification-summary.txt offline_verify_probe_r2.jsonl offline_verify_probe_r3.jsonl test_brightdata_jobs.log test_acquisition_v2.log compileall.log diff_check.log; do if cmp -s \\\"\"'$src/$f\" \"$dst/$f\"; then print \"MATCH $f\"; else print \"MISMATCH_OR_MISSING $f\"; fi; done; git status --short --branch; git rev-parse HEAD; git diff --check 8d193e200254e42af03c22b923137ef9a1ccb83d 65e2c0cd725a356c668ea733b344160793e2fe07'\"'\"",
+      "exit_code": 0,
+      "type": "command_execution"
+    }
+  ],
+  "codex": {
+    "cli_version": "codex-cli 0.166.0",
+    "configured_model": "gpt-6-luna",
+    "event_count": 202,
+    "provider_reported_model": null,
+    "reasoning_effort": "xhigh",
+    "terminal_type": "turn.completed",
+    "usage": {
+      "cache_hit_percent": 93.86,
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 3779968,
+      "fresh_input_tokens": 247324,
+      "input_tokens": 4027292,
+      "non_reasoning_output_tokens": 16549,
+      "output_tokens": 77177,
+      "reasoning_output_tokens": 60628,
+      "total_processed_tokens": 4104469
+    },
+    "warnings": []
+  },
+  "commits": [
+    {
+      "sha": "65e2c0cd725a356c668ea733b344160793e2fe07",
+      "subject": "docs: clarify Bright Data DNS deadline behavior"
+    },
+    {
+      "sha": "3d636986af9149ff7050fac5b6162dadf1c70d01",
+      "subject": "verify(jobbot): record CHG-286 r3 fix evidence"
+    },
+    {
+      "sha": "d0438d3aa1657ed4ee8c04b98ccabe187ec1bb4f",
+      "subject": "fix(jobbot): bound CHG-286 DNS and honor 303 retrieval"
+    },
+    {
+      "sha": "8682c1756ccc42c46a05f4e1f7f25de1f484761f",
+      "subject": "Clarify CHG-286 r2 network evidence"
+    },
+    {
+      "sha": "940f68d8d507ea7c64368b6b70657748f2fbd236",
+      "subject": "Record CHG-286 r2 fix evidence"
+    },
+    {
+      "sha": "83de1c78be04db5edaa63a7a69f7d0835bbe1a5a",
+      "subject": "Fix CHG-286 HTTPS deadline and redirects"
+    },
+    {
+      "sha": "ec8d159c38ae767c5fe75c928d05b6f693191090",
+      "subject": "Fix Bright Data task deadline enforcement"
+    },
+    {
+      "sha": "962d1d1885047920089b019eb19f6d23324f41e9",
+      "subject": "CHG-286: record verification evidence"
+    },
+    {
+      "sha": "2f8e2d687ae0a5f5988d0632e98da5864f4a894f",
+      "subject": "CHG-286: bound Bright Data task runtime"
+    }
+  ],
+  "diff": {
+    "additions": 1867,
+    "changed_files": 22,
+    "commit_count": 9,
+    "deletions": 130
+  },
+  "error_code": null,
+  "evidence_manifest": {
+    "count": 20,
+    "items": [
+      {
+        "bytes": 8693,
+        "path": "docs/BRIGHTDATA_PROVIDER.md",
+        "sha256": "3282cb2f90a717f33e4bc9f31d35dfd200b649db217216d01551aa06aef5a9b8"
+      },
+      {
+        "bytes": 4498,
+        "path": "verification/CHG-286-r1.json",
+        "sha256": "e1454257f02d81f0b98b14892802beb36e915f772715c80f1f6f227c72916846"
+      },
+      {
+        "bytes": 1470,
+        "path": "verification/CHG-286-r2-acquisition-v2-tests.log",
+        "sha256": "fe425241343578a40cf6eac7431d6a59204e2053c253f8d0ab86a2b8fddf06b1"
+      },
+      {
+        "bytes": 6299,
+        "path": "verification/CHG-286-r2-brightdata-tests.log",
+        "sha256": "67e0e58f4e0d2b5a39db5dfab9e99e7411dd9022fc5b4e71f17cad03239d9ca6"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-committed-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-compileall.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 516,
+        "path": "verification/CHG-286-r2-identity.log",
+        "sha256": "96a5f9c28d5aeaad3c537b3f90ee1ccc8dcb2e29246465d88701a31a4685f4f7"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-staged-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r2-worktree-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 4355,
+        "path": "verification/CHG-286-r2.json",
+        "sha256": "e33c31443904a03b7426c192aa60f3a41e6117c1ac421c0959b8a8c0dfb65bbe"
+      },
+      {
+        "bytes": 1470,
+        "path": "verification/CHG-286-r3-acquisition-v2-tests.log",
+        "sha256": "289d7d05b974448c238e1af54e39e5bf33f0d0dc1ed06136a43e5558025df33e"
+      },
+      {
+        "bytes": 6449,
+        "path": "verification/CHG-286-r3-brightdata-tests.log",
+        "sha256": "7cee2df9941d9c68c0a032b3e0c7ce8ff21188cdebd93fbd9cc4e4f9021088da"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-committed-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-compileall.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 625,
+        "path": "verification/CHG-286-r3-identity.log",
+        "sha256": "f0490f3c667e03b15c0c757823644b7b97fd83f7e7f24146c896cee71a96064c"
+      },
+      {
+        "bytes": 11,
+        "path": "verification/CHG-286-r3-json-check.log",
+        "sha256": "dc1141badc727446ff7cac807aab2986c7d31b01fa60b2a935946d03eef41667"
+      },
+      {
+        "bytes": 161,
+        "path": "verification/CHG-286-r3-remote-refs.log",
+        "sha256": "2a235e3c70e2501eb0d7baac20d14a000d35c6794171e4e4c1cb9441606ae251"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-staged-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 0,
+        "path": "verification/CHG-286-r3-worktree-diff-check.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 5452,
+        "path": "verification/CHG-286-r3.json",
+        "sha256": "850db339dbe747cb4b1c289f573964509931a7402a047bfdfe7b14c909a431b2"
+      }
+    ],
+    "version": 1
+  },
+  "evidence_publisher_release": "1.2.5-dashboard-controls-candidate",
+  "fabric_capture": {
+    "applied": false,
+    "paths_before": 0,
+    "transient_untracked_removed": {
+      "count": 0,
+      "items": []
+    }
+  },
+  "fabric_release": "1.2.5-dashboard-controls-candidate",
+  "failure_class": null,
+  "finished_at": "2026-11-21T16:45:05Z",
+  "git": {
+    "base_is_ancestor": true,
+    "base_sha": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "branch": "codex/jobbot-chg286-brightdata-dns-doc-correction-verify-r1",
+    "detached_verify": false,
+    "head_sha": "65e2c0cd725a356c668ea733b344160793e2fe07",
+    "remote_exact_head": true,
+    "remote_head_sha": "65e2c0cd725a356c668ea733b344160793e2fe07",
+    "target_branch": "main",
+    "target_drifted_since_acceptance": false,
+    "target_head_observed_after_execution": "8d193e200254e42af03c22b923137ef9a1ccb83d",
+    "work_branch": "codex/jobbot-chg286-brightdata-dns-doc-correction-verify-r1",
+    "worktree_clean": true
+  },
+  "instructions": {
+    "files": [],
+    "total_bytes": 0,
+    "warning": null
+  },
+  "job_id": "CF-321d22225d698b8a5bbdee15",
+  "kind": "codex-fabric-audit-evidence",
+  "locator": {
+    "branch": "codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-dns-doc-correction-verify-r1",
+    "path": ".codex-fabric/audit.json",
+    "ref": "refs/heads/codex-fabric/evidence/jobbot/jobbot-chg286-brightdata-dns-doc-correction-verify-r1"
+  },
+  "operation": "VERIFY",
+  "policy": {
+    "environment_policy_sha256": "e077daca74297b3c30bee8989f00f8ca5338f7610b4d016a6c48db524205d064",
+    "fabric_release": "1.2.5-dashboard-controls-candidate",
+    "policy_sha256": "123615bf2f6e57dcac197e49ca98ceac59ada86a55e2c84445ea5d00812c0833",
+    "registry_sha256": "af81b8552f9d6a33847310e3c6bcd2d48401782b963a58efd2993e93570cb4aa"
+  },
+  "project_id": "jobbot",
+  "recovery": {
+    "model_rerun_safe": false,
+    "recovery_required": false,
+    "retry_safe": false,
+    "retry_scope": null,
+    "worktree_retained": true
+  },
+  "request": "jobbot-chg286-brightdata-dns-doc-correction-verify-r1",
+  "schema_version": 1,
+  "started_at": "2026-11-21T16:19:32Z",
+  "status": "EXECUTED_CHANGE",
+  "timing": {
+    "execution_seconds": 1533,
+    "queue_seconds": 0,
+    "total_seconds": 1533
+  },
+  "transport": {
+    "bytes": 4289,
+    "envelope": "FABRIC/2",
+    "prompt_bytes": 3928,
+    "prompt_sha256": "98ef9c79bf6525be0600c80db810e1e05952574f51c8372dfdb1492dd0266571",
+    "sha256": "321d22225d698b8a5bbdee15db1b3ac03660624714d5f58147706be4322823e1"
+  }
+}
