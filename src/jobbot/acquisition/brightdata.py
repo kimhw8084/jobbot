@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+import math
 import os
+import queue
 import socket
+import ssl
+import threading
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -21,6 +24,9 @@ from .models import (
 
 
 API_ROOT = "https://api.brightdata.com"
+TASK_TIMEOUT_ENV = "JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS"
+DEFAULT_TASK_TIMEOUT_SECONDS = 300.0
+MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 TOKEN_ENV = "BRIGHTDATA_API_TOKEN"
 PLATFORM_ENV = {
     "linkedin": "JOBBOT_BRIGHTDATA_LINKEDIN_CONFIG",
@@ -77,39 +83,282 @@ class BrightDataTransport(Protocol):
 
 
 class BrightDataHTTPTransport:
-    """Small urllib transport for Bright Data's documented dataset workflow."""
+    """HTTP transport with a true overall deadline for each request."""
 
-    def __init__(self, *, timeout_seconds: float = 45):
+    def __init__(self, *, timeout_seconds: float = 45, api_root: str = API_ROOT):
         self.timeout_seconds = timeout_seconds
+        self.api_root = api_root.rstrip("/")
 
     def request(self, method: str, path: str, *, params: Mapping[str, Any],
-                json_body: Any, token: str) -> BrightDataHTTPResponse:
+                json_body: Any, token: str, timeout_seconds: float | None = None,
+                on_request: Callable[[], None] | None = None) -> BrightDataHTTPResponse:
         query = urllib.parse.urlencode({key: _query_value(value) for key, value in params.items()})
-        url = f"{API_ROOT}{path}" + (f"?{query}" if query else "")
+        url = f"{self.api_root}{path}" + (f"?{query}" if query else "")
         data = None if json_body is None else json.dumps(json_body, ensure_ascii=False).encode("utf-8")
-        request = urllib.request.Request(
-            url, data=data, method=method,
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        if not token or any(not 33 <= ord(character) <= 126 for character in token):
+            raise ValueError("Bright Data token contains invalid header characters")
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        timeout = self.timeout_seconds if timeout_seconds is None else min(self.timeout_seconds, timeout_seconds)
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise TimeoutError
+        deadline = time.monotonic() + timeout
+        redirects = 0
+        original_origin = _origin(url)
+        root = urllib.parse.urlsplit(self.api_root)
+        local_http_origin = (
+            _origin(self.api_root)
+            if root.scheme.casefold() == "http" and (root.hostname or "").casefold() in {"localhost", "127.0.0.1", "::1"}
+            else None
         )
-        try:
-            response = urllib.request.urlopen(request, timeout=self.timeout_seconds)
-        except urllib.error.HTTPError as exc:
-            raw = exc.read()
-            return BrightDataHTTPResponse(exc.code, _decode_payload(raw), dict(exc.headers.items()))
-        except urllib.error.URLError as exc:
-            if isinstance(exc.reason, (TimeoutError, socket.timeout)):
-                raise TimeoutError from None
-            raise OSError(type(exc.reason).__name__) from None
-        with response:
-            return BrightDataHTTPResponse(
-                response.status, _decode_payload(response.read()), dict(response.headers.items()),
+        while True:
+            if time.monotonic() >= deadline:
+                raise TimeoutError
+            status, response_headers, raw = asyncio.run(
+                _async_http_exchange(url, method, headers, data, deadline, on_request),
             )
+            if status not in {301, 302, 303, 307, 308}:
+                return BrightDataHTTPResponse(status, _decode_payload(raw), response_headers)
+            location = _header(response_headers, "location")
+            if not location or redirects >= 10:
+                return BrightDataHTTPResponse(status, _decode_payload(raw), response_headers)
+            next_url = urllib.parse.urljoin(url, location)
+            parsed = urllib.parse.urlsplit(next_url)
+            is_local_test_redirect = (
+                local_http_origin is not None and _origin(next_url) == local_http_origin
+            )
+            if (parsed.scheme.casefold() != "https" and not is_local_test_redirect) or not parsed.hostname:
+                raise OSError("Bright Data returned an unsupported redirect")
+            if _origin(next_url) != original_origin:
+                headers = {key: value for key, value in headers.items() if key.casefold() != "authorization"}
+            if status in {301, 302, 303} and method.upper() != "GET":
+                method, data = "GET", None
+                headers = {key: value for key, value in headers.items()
+                           if key.casefold() not in {"content-type", "content-length"}}
+            url = next_url
+            redirects += 1
+
+
+class _BoundedDNSResolver:
+    """A single daemon resolver prevents stalled getaddrinfo calls piling up."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._cache: dict[tuple[str, int], tuple[float, list[tuple[Any, ...]]]] = {}
+        self._pending: dict[tuple[str, int], dict[str, Any]] = {}
+        self._queue: queue.Queue[tuple[tuple[str, int], dict[str, Any]]] = queue.Queue()
+        self._worker_started = False
+
+    def resolve(self, host: str, port: int, timeout: float) -> list[tuple[Any, ...]]:
+        key = (host, port)
+        with self._lock:
+            cached = self._cache.get(key)
+            if cached and cached[0] > time.monotonic():
+                return list(cached[1])
+            pending = self._pending.get(key)
+            if pending is None:
+                pending = {"event": threading.Event(), "result": None, "error": None}
+                self._pending[key] = pending
+                self._queue.put((key, pending))
+            if not self._worker_started:
+                threading.Thread(target=self._resolve_worker, daemon=True,
+                                 name="jobbot-brightdata-dns").start()
+                self._worker_started = True
+        if not pending["event"].wait(max(0.0, timeout)):
+            raise TimeoutError
+        if pending["error"] is not None:
+            raise OSError("Bright Data host name resolution failed") from None
+        return list(pending["result"] or [])
+
+    def _resolve_worker(self) -> None:
+        while True:
+            key, pending = self._queue.get()
+            try:
+                result = socket.getaddrinfo(key[0], key[1], type=socket.SOCK_STREAM)
+                pending["result"] = result
+                with self._lock:
+                    self._cache[key] = (time.monotonic() + 60.0, result)
+            except Exception:
+                pending["error"] = True
+            finally:
+                with self._lock:
+                    if self._pending.get(key) is pending:
+                        self._pending.pop(key, None)
+                pending["event"].set()
+                self._queue.task_done()
+
+
+_DNS_RESOLVER = _BoundedDNSResolver()
+
+
+def _origin(url: str) -> tuple[str, str, int]:
+    parsed = urllib.parse.urlsplit(url)
+    scheme = parsed.scheme.casefold()
+    return scheme, (parsed.hostname or "").casefold(), parsed.port or (443 if scheme == "https" else 80)
+
+
+def _header(headers: Mapping[str, str], wanted: str) -> str:
+    return next((str(value) for key, value in headers.items() if key.casefold() == wanted.casefold()), "")
+
+
+async def _async_http_exchange(
+    url: str, method: str, headers: Mapping[str, str], body: bytes | None, deadline: float,
+    on_request: Callable[[], None] | None = None,
+) -> tuple[int, dict[str, str], bytes]:
+    parsed = urllib.parse.urlsplit(url)
+    host = parsed.hostname or ""
+    port = parsed.port or (443 if parsed.scheme.casefold() == "https" else 80)
+    addresses = _DNS_RESOLVER.resolve(host, port, deadline - time.monotonic())
+    loop = asyncio.get_running_loop()
+    reader: asyncio.StreamReader | None = None
+    writer: asyncio.StreamWriter | None = None
+    last_error: Exception | None = None
+    for family, socktype, proto, _canonname, sockaddr in addresses:
+        sock = socket.socket(family, socktype, proto)
+        sock.setblocking(False)
+        try:
+            async with asyncio.timeout_at(deadline):
+                await loop.sock_connect(sock, sockaddr)
+                if parsed.scheme.casefold() == "https":
+                    reader, writer = await asyncio.open_connection(
+                        sock=sock, ssl=ssl.create_default_context(), server_hostname=host,
+                        ssl_handshake_timeout=max(0.001, deadline - time.monotonic()),
+                    )
+                elif parsed.scheme.casefold() == "http":
+                    reader, writer = await asyncio.open_connection(sock=sock)
+                else:
+                    raise OSError("unsupported URL scheme")
+            break
+        except TimeoutError:
+            sock.close()
+            raise
+        except Exception as exc:
+            sock.close()
+            last_error = exc
+            reader = writer = None
+    if reader is None or writer is None:
+        raise OSError(type(last_error).__name__ if last_error else "connect failed") from None
+
+    target_path = urllib.parse.quote(parsed.path or "/", safe="/%:@!$&'()*+,;=-._~")
+    target_query = urllib.parse.quote(parsed.query, safe="=&?/:@!$'()*+,;%-._~")
+    target = target_path + (f"?{target_query}" if target_query else "")
+    if "\r" in target or "\n" in target:
+        writer.close()
+        raise OSError("invalid HTTP request target")
+    display_host = f"[{host}]" if ":" in host else host.encode("idna").decode("ascii")
+    default_port = 443 if parsed.scheme.casefold() == "https" else 80
+    host_header = display_host if port == default_port else f"{display_host}:{port}"
+    outgoing = {"Host": host_header, "Connection": "close", "Accept": "application/json", **headers}
+    if body is not None:
+        outgoing["Content-Length"] = str(len(body))
+    request_bytes = bytearray(f"{method} {target} HTTP/1.1\r\n".encode("ascii"))
+    for name, value in outgoing.items():
+        if "\r" in name or "\n" in name or "\r" in str(value) or "\n" in str(value):
+            writer.close()
+            raise ValueError("invalid HTTP header")
+        request_bytes.extend(f"{name}: {value}\r\n".encode("latin-1"))
+    request_bytes.extend(b"\r\n")
+    if body is not None:
+        request_bytes.extend(body)
+
+    try:
+        async with asyncio.timeout_at(deadline):
+            if on_request is not None:
+                on_request()
+            writer.write(request_bytes)
+            await writer.drain()
+            status = 0
+            response_headers: dict[str, str] = {}
+            header_bytes = 0
+            while True:
+                status_line = await reader.readline()
+                header_bytes += len(status_line)
+                if not status_line or header_bytes > 65536:
+                    raise OSError("invalid HTTP response headers")
+                try:
+                    version, raw_status, _reason = status_line.decode("latin-1").rstrip("\r\n").split(" ", 2)
+                    status = int(raw_status)
+                except (ValueError, TypeError):
+                    raise OSError("invalid HTTP status line") from None
+                if not version.startswith("HTTP/"):
+                    raise OSError("invalid HTTP status line")
+                response_headers = {}
+                while True:
+                    line = await reader.readline()
+                    header_bytes += len(line)
+                    if not line or header_bytes > 65536:
+                        raise OSError("invalid HTTP response headers")
+                    if line in (b"\r\n", b"\n"):
+                        break
+                    if b":" not in line:
+                        raise OSError("invalid HTTP response header")
+                    key, value = line.decode("latin-1").split(":", 1)
+                    response_headers[key.strip()] = value.strip()
+                if 100 <= status < 200 and status != 101:
+                    continue
+                break
+
+            if status in {301, 302, 303, 307, 308}:
+                return status, response_headers, b""
+            if method.upper() == "HEAD" or status in {204, 304}:
+                return status, response_headers, b""
+            transfer_encoding = _header(response_headers, "transfer-encoding").casefold()
+            length_header = _header(response_headers, "content-length")
+            chunks = bytearray()
+            if "chunked" in transfer_encoding:
+                while True:
+                    size_line = await reader.readline()
+                    if len(size_line) > 8192 or not size_line:
+                        raise OSError("invalid chunked response")
+                    try:
+                        chunk_size = int(size_line.split(b";", 1)[0].strip(), 16)
+                    except ValueError:
+                        raise OSError("invalid chunked response") from None
+                    if chunk_size == 0:
+                        while True:
+                            trailer = await reader.readline()
+                            if trailer in (b"\r\n", b"\n"):
+                                break
+                            if not trailer:
+                                raise OSError("invalid chunked response trailer")
+                        break
+                    if len(chunks) + chunk_size > MAX_RESPONSE_BYTES:
+                        raise OSError("Bright Data response exceeded the supported size bound")
+                    chunks.extend(await reader.readexactly(chunk_size))
+                    if await reader.readexactly(2) != b"\r\n":
+                        raise OSError("invalid chunk framing")
+            elif length_header:
+                try:
+                    length = int(length_header)
+                except ValueError:
+                    raise OSError("invalid content length") from None
+                if length < 0 or length > MAX_RESPONSE_BYTES:
+                    raise OSError("Bright Data response exceeded the supported size bound")
+                chunks.extend(await reader.readexactly(length))
+            else:
+                while True:
+                    piece = await reader.read(65536)
+                    if not piece:
+                        break
+                    if len(chunks) + len(piece) > MAX_RESPONSE_BYTES:
+                        raise OSError("Bright Data response exceeded the supported size bound")
+                    chunks.extend(piece)
+            return status, response_headers, bytes(chunks)
+    finally:
+        writer.close()
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            try:
+                async with asyncio.timeout(remaining):
+                    await writer.wait_closed()
+            except Exception:
+                pass
 
 
 @dataclass(frozen=True)
 class BrightDataRuntimeConfig:
     token: str = field(repr=False)
     platforms: Mapping[str, BrightDataPlatformConfig] = field(default_factory=dict)
+    task_timeout_seconds: float = DEFAULT_TASK_TIMEOUT_SECONDS
 
 
 def _query_value(value: Any) -> str:
@@ -229,6 +478,11 @@ def brightdata_preflight(platforms: list[str], environ: Mapping[str, str] | None
     """Offline presence/schema check; never verifies a credential with the network."""
     env = os.environ if environ is None else environ
     token_present = bool(str(env.get(TOKEN_ENV, "")).strip())
+    try:
+        task_timeout = float(str(env.get(TASK_TIMEOUT_ENV, DEFAULT_TASK_TIMEOUT_SECONDS)).strip())
+        task_timeout_valid = math.isfinite(task_timeout) and task_timeout > 0
+    except (TypeError, ValueError):
+        task_timeout_valid = False
     configured: dict[str, dict[str, bool]] = {}
     for platform in platforms:
         key = PLATFORM_ENV.get(platform)
@@ -244,8 +498,10 @@ def brightdata_preflight(platforms: list[str], environ: Mapping[str, str] | None
     return {
         "provider": "brightdata-jobs", "token_present": token_present,
         "token_validity": "not_checked_offline",
+        "task_timeout_valid": task_timeout_valid,
         "platform_configs": configured,
-        "valid": token_present and all(value["valid"] for value in configured.values()),
+        "valid": token_present and task_timeout_valid
+        and all(value["valid"] for value in configured.values()),
     }
 
 
@@ -263,7 +519,15 @@ def brightdata_runtime_config(platforms: list[str], *, environ: Mapping[str, str
         if not raw:
             raise BrightDataConfigurationError(f"{variable} is required for the selected source surface")
         configs[platform] = parse_platform_config(platform, raw)
-    return BrightDataRuntimeConfig(token=token, platforms=configs)
+    timeout_raw = str(env.get(TASK_TIMEOUT_ENV, DEFAULT_TASK_TIMEOUT_SECONDS)).strip()
+    try:
+        task_timeout_seconds = float(timeout_raw)
+    except (TypeError, ValueError):
+        raise BrightDataConfigurationError(f"{TASK_TIMEOUT_ENV} must be a positive finite number") from None
+    if not math.isfinite(task_timeout_seconds) or task_timeout_seconds <= 0:
+        raise BrightDataConfigurationError(f"{TASK_TIMEOUT_ENV} must be a positive finite number")
+    return BrightDataRuntimeConfig(token=token, platforms=configs,
+                                   task_timeout_seconds=task_timeout_seconds)
 
 
 def _canonical_json(value: Any) -> str:
@@ -367,6 +631,7 @@ class BrightDataJobsProvider:
         transport: BrightDataTransport | None = None, run_id: str = "", max_polls: int = 20,
         max_transient_retries: int = 2, poll_interval_seconds: float = 5,
         sleep: Callable[[float], None] = time.sleep, batch_size: int = 1000,
+        monotonic: Callable[[], float] = time.monotonic,
     ):
         if int(max_records) < 1:
             raise BrightDataConfigurationError("max_records must be a positive explicit validation budget")
@@ -374,6 +639,8 @@ class BrightDataJobsProvider:
             raise BrightDataConfigurationError("Bright Data poll/retry bounds are invalid")
         if int(batch_size) < 1000:
             raise BrightDataConfigurationError("Bright Data batch_size must follow the documented minimum of 1000")
+        if not math.isfinite(float(runtime.task_timeout_seconds)) or float(runtime.task_timeout_seconds) <= 0:
+            raise BrightDataConfigurationError("Bright Data task timeout must be positive and finite")
         self._token = runtime.token
         self.platforms = dict(runtime.platforms)
         self.candidate = dict(candidate)
@@ -385,13 +652,48 @@ class BrightDataJobsProvider:
         self.poll_interval_seconds = max(0, float(poll_interval_seconds))
         self.sleep = sleep
         self.batch_size = int(batch_size)
+        self.task_timeout_seconds = float(runtime.task_timeout_seconds)
+        self.monotonic = monotonic
         self._records_delivered_total = 0
+        self._active_started = 0.0
+        self._active_deadline = 0.0
+        self._active_requests_submitted = 0
+
+    def _remaining_seconds(self) -> float:
+        return max(0.0, self._active_deadline - self.monotonic())
+
+    def _note_http_attempt(self) -> None:
+        if self._remaining_seconds() <= 0:
+            raise TimeoutError
+        self._active_requests_submitted += 1
+
+    def _transport_request(self, method: str, path: str, *, params: Mapping[str, Any],
+                           json_body: Any) -> BrightDataHTTPResponse:
+        remaining = self._remaining_seconds()
+        if remaining <= 0:
+            raise TimeoutError
+        if isinstance(self.transport, BrightDataHTTPTransport):
+            response = self.transport.request(
+                method, path, params=params, json_body=json_body, token=self._token,
+                timeout_seconds=remaining, on_request=self._note_http_attempt,
+            )
+            if self._remaining_seconds() <= 0:
+                raise TimeoutError
+            return response
+        self._note_http_attempt()
+        response = self.transport.request(method, path, params=params, json_body=json_body, token=self._token)
+        if self._remaining_seconds() <= 0:
+            raise TimeoutError
+        return response
 
     @property
     def records_delivered_total(self) -> int:
         return self._records_delivered_total
 
     def fetch(self, task: SearchTask) -> ProviderBatch:
+        self._active_started = self.monotonic()
+        self._active_deadline = self._active_started + self.task_timeout_seconds
+        self._active_requests_submitted = 0
         config = self.platforms.get(task.platform)
         if config is None:
             raise ProviderFailure(ProviderFailureClass.CONFIGURATION,
@@ -404,7 +706,10 @@ class BrightDataJobsProvider:
         }
         if remaining <= 0:
             metadata = {"task_provenance": task_provenance, "budget_stop": True,
-                        "records_budget": self.max_records, "records_delivered_total": self._records_delivered_total}
+                        "records_budget": self.max_records, "records_delivered_total": self._records_delivered_total,
+                        "task_timeout_seconds": self.task_timeout_seconds,
+                        "task_elapsed_seconds": round(max(0.0, self.monotonic() - self._active_started), 3),
+                        "requests_submitted": 0}
             return ProviderBatch(
                 completion_state=ProviderCompletionState.INCOMPLETE,
                 failure_class=ProviderFailureClass.PARTIAL_BATCH,
@@ -425,7 +730,7 @@ class BrightDataJobsProvider:
             "trigger": trigger_shape,
             "progress_checks": [], "parts_request": None, "result_requests": [],
         }
-        requests_submitted = 1
+        requests_submitted = 0
         provider_task_id = ""
         actual_records = 0
         reported_cost: dict[str, Any] = {}
@@ -433,19 +738,20 @@ class BrightDataJobsProvider:
             "task_provenance": task_provenance, "request_shape": shape,
             "request_fingerprint": fingerprint, "records_budget": self.max_records,
             "records_delivered_before_task": self._records_delivered_total,
+            "task_timeout_seconds": self.task_timeout_seconds,
         }
         try:
-            triggered = self.transport.request(
-                "POST", trigger_shape["path"], params=trigger_params,
-                json_body=[dict(input_row)], token=self._token,
+            triggered = self._transport_request(
+                "POST", trigger_shape["path"], params=trigger_params, json_body=[dict(input_row)],
             )
         except (TimeoutError, socket.timeout):
             raise self._failure(ProviderFailureClass.TIMEOUT, "Bright Data trigger timed out",
-                                base_metadata, requests_submitted, 0, reported_cost) from None
+                                base_metadata, self._active_requests_submitted, 0, reported_cost) from None
         except Exception as exc:
             raise self._failure(ProviderFailureClass.TRANSPORT,
                                 f"Bright Data trigger transport failed ({type(exc).__name__})",
-                                base_metadata, requests_submitted, 0, reported_cost) from None
+                                base_metadata, self._active_requests_submitted, 0, reported_cost) from None
+        requests_submitted = self._active_requests_submitted
         reported_cost.update(_reported_cost(triggered.payload, token=self._token))
         if triggered.status in (401, 403):
             raise self._failure(ProviderFailureClass.AUTHORIZATION,
@@ -476,7 +782,18 @@ class BrightDataJobsProvider:
 
         for poll_index in range(self.max_polls):
             if poll_index:
-                self.sleep(self.poll_interval_seconds)
+                remaining_time = self._remaining_seconds()
+                if remaining_time <= 0:
+                    raise self._failure(
+                        ProviderFailureClass.TIMEOUT, "Bright Data task exceeded its total time budget",
+                        base_metadata, self._active_requests_submitted, actual_records, reported_cost,
+                    )
+                self.sleep(min(self.poll_interval_seconds, remaining_time))
+                if self._remaining_seconds() <= 0:
+                    raise self._failure(
+                        ProviderFailureClass.TIMEOUT, "Bright Data task exceeded its total time budget",
+                        base_metadata, self._active_requests_submitted, actual_records, reported_cost,
+                    )
             progress_path = f"/datasets/v3/progress/{urllib.parse.quote(provider_task_id, safe='')}"
             progress_request = {"method": "GET", "path": progress_path, "query": {}}
             shape["progress_checks"].append(progress_request)
@@ -541,7 +858,7 @@ class BrightDataJobsProvider:
                     provider_metadata=self._provider_metadata(
                         {**dict(failure.provider_metadata), **base_metadata}, shape, fingerprint, reported_cost,
                     ),
-                    requests_submitted=requests_submitted, records_delivered=actual_records,
+                    requests_submitted=self._active_requests_submitted, records_delivered=actual_records,
                     reported_cost=reported_cost,
                 )
 
@@ -591,6 +908,12 @@ class BrightDataJobsProvider:
                         ProviderFailureClass.INVALID_RESPONSE, str(exc), base_metadata,
                         requests_submitted, actual_records, reported_cost, retryable=False,
                     ))
+                if self._remaining_seconds() <= 0:
+                    return partial_result_failure(self._failure(
+                        ProviderFailureClass.TIMEOUT,
+                        "Bright Data task exceeded its total time budget",
+                        base_metadata, self._active_requests_submitted, actual_records, reported_cost,
+                    ))
                 more, marker = _continuation(envelope)
                 if more:
                     continuation.update(marker)
@@ -598,6 +921,12 @@ class BrightDataJobsProvider:
                 actual_records += len(rows)
                 self._records_delivered_total += len(rows)
                 for row in rows:
+                    if self._remaining_seconds() <= 0:
+                        return partial_result_failure(self._failure(
+                            ProviderFailureClass.TIMEOUT,
+                            "Bright Data task exceeded its total time budget",
+                            base_metadata, self._active_requests_submitted, actual_records, reported_cost,
+                        ))
                     if row.get("error") not in (None, "", False, []):
                         provider_errors += 1
                         continue
@@ -614,6 +943,12 @@ class BrightDataJobsProvider:
                         invalid_rows += 1
                         continue
                     mapped_records.append(mapped)
+                    if self._remaining_seconds() <= 0:
+                        return partial_result_failure(self._failure(
+                            ProviderFailureClass.TIMEOUT,
+                            "Bright Data task exceeded its total time budget",
+                            base_metadata, self._active_requests_submitted, actual_records, reported_cost,
+                        ))
             actual_count = actual_records
             records_for_ingestion = mapped_records[:remaining_for_task]
             if len(mapped_records) > remaining_for_task:
@@ -625,6 +960,12 @@ class BrightDataJobsProvider:
             })
             if continuation:
                 base_metadata["continuation_markers"] = _sanitize(continuation, token=self._token)
+            if self._remaining_seconds() <= 0:
+                return partial_result_failure(self._failure(
+                    ProviderFailureClass.TIMEOUT,
+                    "Bright Data task exceeded its total time budget",
+                    base_metadata, self._active_requests_submitted, actual_records, reported_cost,
+                ))
             capped = actual_count >= remaining
             parts_missing = len(part_numbers) < parts_total
             incomplete = bool(continuation or invalid_rows or provider_errors or capped or parts_missing)
@@ -649,7 +990,7 @@ class BrightDataJobsProvider:
                 failure_class=failure_class,
                 provider_task_id=provider_task_id,
                 provider_metadata=self._provider_metadata(base_metadata, shape, fingerprint, reported_cost),
-                requests_submitted=requests_submitted,
+                requests_submitted=self._active_requests_submitted,
                 records_delivered=actual_count,
                 reported_cost=reported_cost,
             )
@@ -745,7 +1086,7 @@ class BrightDataJobsProvider:
         last_error = ""
         for attempt in range(self.max_transient_retries + 1):
             try:
-                response = self.transport.request("GET", path, params=params, json_body=None, token=self._token)
+                response = self._transport_request("GET", path, params=params, json_body=None)
             except (TimeoutError, socket.timeout):
                 last_error = "timeout"
                 if attempt < self.max_transient_retries:
@@ -790,13 +1131,16 @@ class BrightDataJobsProvider:
                                            str(base_metadata.get("request_fingerprint") or ""), reported_cost)
         return ProviderFailure(
             classification, message, retryable=retryable, provider_metadata=metadata,
-            requests_submitted=requests_submitted, records_delivered=records_delivered,
+            requests_submitted=self._active_requests_submitted, records_delivered=records_delivered,
             reported_cost=reported_cost,
         )
 
     def _provider_metadata(self, metadata: Mapping[str, Any], request_shape: Mapping[str, Any],
                            fingerprint: str, reported_cost: Mapping[str, Any]) -> dict[str, Any]:
         output = dict(metadata)
+        output["task_timeout_seconds"] = self.task_timeout_seconds
+        output["task_elapsed_seconds"] = round(max(0.0, self.monotonic() - self._active_started), 3)
+        output["requests_submitted"] = self._active_requests_submitted
         output["request_shape"] = _sanitize(request_shape, token=self._token)
         if fingerprint:
             output["request_fingerprint"] = fingerprint

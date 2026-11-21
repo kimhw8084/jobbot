@@ -62,7 +62,16 @@ class AcquisitionV2Tests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
-        shutil.copytree(PROJECT_ROOT / "config", self.root / "config")
+        config_dir = self.root / "config"
+        config_dir.mkdir()
+        for filename in ("strategy.toml", "runtime.toml", "live_search.toml"):
+            shutil.copy2(PROJECT_ROOT / "config" / filename, config_dir / filename)
+        (config_dir / "candidate.toml").write_text(
+            '[candidate]\nname = "Synthetic candidate"\ncountry = "US"\n'
+            'state = "Test State"\nmetro = "Test Metro"\n'
+            'professional_positioning = "Synthetic test profile"\n',
+            encoding="utf-8",
+        )
         (self.root / "data").mkdir()
         (self.root / "out").mkdir()
         original = load_bundle(self.root)

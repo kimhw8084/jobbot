@@ -39,6 +39,15 @@ shape only; replace each angle-bracket value with the exact field/schema value
 shown for the selected account scraper. No dataset ID or per-account field name
 is assumed by JobBot:
 
+`JOBBOT_BRIGHTDATA_TASK_TIMEOUT_SECONDS` optionally sets one positive finite
+deadline for the entire provider task. It defaults to 300 seconds and covers
+the trigger, readiness polls, poll delays, retries, redirects, and all result
+parts. Each individual HTTP operation is additionally capped at 45 seconds or
+the remaining task budget, whichever is shorter. Diagnostics count each
+outbound HTTP attempt, including retries and redirects. A response body is
+limited to 64 MiB so an unexpected provider payload cannot exhaust local
+memory.
+
 ```json
 {
   "dataset_id": "<account-specific-dataset-id>",
@@ -108,7 +117,10 @@ markers, and sanitized completion evidence containing platform, CHG-170 task
 key, snapshot ID, terminal state, part information, and request fingerprint.
 Transient timeouts, 429/5xx, missing results, malformed data, unsupported
 cursors, uncertain truncation, and exact-budget caps stay retryable/incomplete.
-Retries and pending polls have provider-local bounds.
+Retries and pending polls have provider-local bounds. A total monotonic deadline
+also stops work across polls, retry delays, and all result parts. If a later
+part times out, records already mapped from successful parts stay available to
+the common ingestion path with incomplete status.
 
 The `max_records` budget is caller supplied and is sent as Bright Data's
 documented `limit_multiple_results`; it is not a hard-coded provider or
